@@ -5,7 +5,7 @@ import cc.redberry.pipe.OutputPort;
 public interface MatchingResult {
     OutputPort<Match> getMatches();
 
-    CaptureGroupMatch getBestMatch();
+    Match getBestMatch();
 
     long getMatchesNumber();
 }
