@@ -4,13 +4,13 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 
 public final class CaptureGroupMatch {
-    final NSequenceWithQuality target;
+    private final NSequenceWithQuality target;
     /**
      * actualTargetId + 1 if matched on forward strand
      * -actualTargetId - 1 if matched on reverse strand
      */
-    final byte targetId;
-    final Range range;
+    private final byte targetId;
+    private final Range range;
 
     public CaptureGroupMatch(NSequenceWithQuality target, byte targetId, Range range) {
         this.target = target;
@@ -30,5 +30,13 @@ public final class CaptureGroupMatch {
         if (!isFound())
             throw new IllegalStateException("Pattern not found.");
         return target.getRange(range);
+    }
+
+    public NSequenceWithQuality getTarget() {
+        return target;
+    }
+
+    public byte getTargetId() {
+        return targetId;
     }
 }

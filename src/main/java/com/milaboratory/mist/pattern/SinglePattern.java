@@ -12,8 +12,8 @@ public interface SinglePattern extends Pattern {
     }
 
     default MatchingResult match(NSequenceWithQuality input) {
-        return match(input, 1);
+        return match(input, (byte)1);
     }
 
-    MatchingResult match(NSequenceWithQuality input, int targetId);
+    MatchingResult match(NSequenceWithQuality input, byte targetId);
 }
