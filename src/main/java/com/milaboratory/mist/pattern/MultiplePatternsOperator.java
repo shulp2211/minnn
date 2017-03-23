@@ -51,7 +51,6 @@ public abstract class MultiplePatternsOperator implements SinglePattern {
 
         for (int i = 0; i < matches.length; i++) {
             groupMatches.putAll(matches[i].groupMatches);
-            groupMatches.remove(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + 0);
             ranges[i] = matches[i].getWholePatternMatch(0).getRange();
         }
 
