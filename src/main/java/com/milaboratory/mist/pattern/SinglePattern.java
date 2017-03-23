@@ -4,7 +4,7 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 
-interface SinglePattern extends Pattern {
+public interface SinglePattern extends Pattern {
     @Override
     default MatchingResult match(MultiNSequenceWithQuality input) {
         if (!(input instanceof NSequenceWithQuality))
