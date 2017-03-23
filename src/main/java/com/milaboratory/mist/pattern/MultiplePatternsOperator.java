@@ -35,16 +35,14 @@ public abstract class MultiplePatternsOperator implements SinglePattern {
             throw new IllegalStateException("Cannot combine 0 ranges.");
         int lower = ranges[0].getLower();
         int upper = ranges[0].getUpper();
-        boolean reversed = ranges[0].isReverse();
 
         for (Range range: ranges) {
             if (range == ranges[0]) continue;
             lower = Math.min(lower, range.getLower());
             upper = Math.max(upper, range.getUpper());
-            reversed = reversed && range.isReverse();
         }
 
-        return new Range(lower, upper, reversed);
+        return new Range(lower, upper, false);
     }
 
     static Match combineMatches(NSequenceWithQuality target, byte targetId, Match... matches) {
