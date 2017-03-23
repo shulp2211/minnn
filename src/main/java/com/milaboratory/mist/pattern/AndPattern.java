@@ -11,41 +11,55 @@ public class AndPattern extends MultiplePatternsOperator {
     }
 
     @Override
-    public MultiplePatternsMatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId) {
+    public MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId, boolean quickMatch) {
         final Match[] bestMatches = new Match[operandPatterns.length];
         final Range[] bestMatchRanges = new Range[operandPatterns.length];
         boolean rangeIntersection = false;
 
+        // If one pattern doesn't match, AndPattern doesn't match
+        for (SinglePattern operandPattern : operandPatterns) {
+            MatchingResult result = operandPattern.match(input, from, to, targetId, true);
+            if (result.getMatchesNumber() == 0)
+                if (quickMatch)
+                    return new QuickMatchingResult(false);
+                else
+                    return new MultiplePatternsMatchingResult(null, 0);
+        }
+
+        OUTER:
         for (int patternNumber = 0; patternNumber < operandPatterns.length; patternNumber++) {
-            MatchingResult result = operandPatterns[patternNumber].match(input, from, to, targetId);
-            if (result.getMatchesNumber() == 0) {
-                // If one pattern doesn't match, AndPattern doesn't match
-                return new MultiplePatternsMatchingResult(null, 0);
-            } else if (!rangeIntersection) {
-                bestMatches[patternNumber] = result.getBestMatch();
-                Range currentRange = bestMatches[patternNumber].getWholePatternMatch().getRange();
-                bestMatchRanges[patternNumber] = currentRange;
-                for (int i = 0; i < patternNumber; i++)  // Compare with all previously added matches
-                    if (bestMatchRanges[i].intersectsWith(currentRange)) {
-                        rangeIntersection = true;
-                        break;
-                    }
-            }
+            bestMatches[patternNumber] = operandPatterns[patternNumber].match(input, from, to, targetId).getBestMatch();
+            Range currentRange = bestMatches[patternNumber].getWholePatternMatch().getRange();
+            bestMatchRanges[patternNumber] = currentRange;
+            for (int i = 0; i < patternNumber; i++)  // Compare with all previously added matches
+                if (bestMatchRanges[i].intersectsWith(currentRange)) {
+                    rangeIntersection = true;
+                    break OUTER;
+                }
         }
 
         if (!rangeIntersection)
-            return new MultiplePatternsMatchingResult(combineMatches(input, targetId, bestMatches), 1);
+            if (quickMatch)
+                return new QuickMatchingResult(true);
+            else
+                return new MultiplePatternsMatchingResult(combineMatches(input, targetId, bestMatches), 1);
         else {
             // Best match has range intersection, check all other matches
-            Match bestMatch = findBestMatchByScore(input, from, to, targetId);
+            Match bestMatch = findBestMatchByScore(input, from, to, targetId, quickMatch);
             if (bestMatch != null)
-                return new MultiplePatternsMatchingResult(bestMatch, 1);
+                if (quickMatch)
+                    return new QuickMatchingResult(true);
+                else
+                    return new MultiplePatternsMatchingResult(bestMatch, 1);
             else
-                return new MultiplePatternsMatchingResult(null, 0);
+                if (quickMatch)
+                    return new QuickMatchingResult(false);
+                else
+                    return new MultiplePatternsMatchingResult(null, 0);
         }
     }
 
-    private Match findBestMatchByScore(NSequenceWithQuality input, int from, int to, byte targetId) {
+    private Match findBestMatchByScore(NSequenceWithQuality input, int from, int to, byte targetId, boolean quickMatch) {
         Match bestMatch = null;
         int bestScore = 0;
         ArrayList<ArrayList<Match>> matches = new ArrayList<>();
@@ -80,6 +94,11 @@ public class AndPattern extends MultiplePatternsOperator {
                 currentRanges[j] = currentMatches[j].getWholePatternMatch(0).getRange();
             }
             if (!checkRangesIntersection(currentRanges)) {
+                /* for quick match return first found valid match
+                 * TODO: rewrite procedure to avoid calling getMatches().take() for all possible combination for quick match
+                 */
+                if (quickMatch)
+                    return combineMatches(input, targetId, currentMatches);
                 int currentSum = sumMatchesScore(currentMatches);
                 if (currentSum > bestScore) {
                     bestMatch = combineMatches(input, targetId, currentMatches);

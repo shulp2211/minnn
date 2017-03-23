@@ -33,4 +33,13 @@ public interface MatchingResult {
      * @return number of matching results
      */
     long getMatchesNumber();
+
+    /**
+     * Check is pattern matched or not
+     *
+     * @return true if pattern matched
+     */
+    default boolean isFound() {
+        return getMatchesNumber() > 0;
+    }
 }

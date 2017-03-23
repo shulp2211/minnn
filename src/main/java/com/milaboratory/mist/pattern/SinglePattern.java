@@ -26,5 +26,20 @@ public interface SinglePattern extends Pattern {
         return match(input, from, to, (byte) 1);
     }
 
-    MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId);
+    default MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId) {
+        return match(input, from, to, targetId, false);
+    }
+
+    /**
+     * Search this pattern in target sequence
+     *
+     * @param input target sequence
+     * @param from starting point in target sequence (inclusive)
+     * @param to ending point in target sequence (exclusive)
+     * @param targetId number of current block in multiple pattern match
+     * @param quickMatch if true, match.isFound() returns true or false, other methods throw exception;
+     *                   used for quick checking is pattern matching or not
+     * @return matching result
+     */
+    MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId, boolean quickMatch);
 }
