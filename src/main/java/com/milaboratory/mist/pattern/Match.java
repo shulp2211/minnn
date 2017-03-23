@@ -19,8 +19,26 @@ public final class Match {
         this.groupMatches = groupMatches;
     }
 
-    public CaptureGroupMatch getWholePatternMatch(int id) {
-        return wholePatternMatch[id];
+    /**
+     * Return capturing group for the whole i-th pattern.
+     *
+     * @param patternIndex pattern index for multi-pattern matchers (e.g. paired-end read matchers), 0 - for single
+     *                     target matchers
+     * @return capturing group for the whole i-th pattern
+     */
+    public CaptureGroupMatch getWholePatternMatch(int patternIndex) {
+        return wholePatternMatch[patternIndex];
+    }
+
+    /**
+     * Return capturing group for the whole pattern. Applicable only to single pattern matchers.
+     *
+     * @return capturing group for the whole pattern; single pattern matchers only
+     */
+    public CaptureGroupMatch getWholePatternMatch() {
+        if (numberOfPatterns != 1)
+            throw new IllegalStateException("Multiple pattern. Use getWholePatternMatch(int) instead.");
+        return getWholePatternMatch(0);
     }
 
     public boolean isFound() {

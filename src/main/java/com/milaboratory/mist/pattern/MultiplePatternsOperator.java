@@ -17,6 +17,7 @@ public abstract class MultiplePatternsOperator implements SinglePattern {
 
     /**
      * Check if there are any intersections between ranges
+     *
      * @param ranges ranges
      * @return false if all ranges don't intersect, true if any 2 intersects
      */
@@ -30,14 +31,21 @@ public abstract class MultiplePatternsOperator implements SinglePattern {
         return false;
     }
 
+    // For performance, to avoid allocation of new array
+    static Range combine2Ranges(Range range0, Range range1) {
+        return new Range(Math.min(range0.getLower(), range1.getLower()),
+                Math.max(range0.getUpper(), range1.getUpper()));
+    }
+
     static Range combineRanges(Range... ranges) {
         if (ranges.length == 0)
             throw new IllegalStateException("Cannot combine 0 ranges.");
+
         int lower = ranges[0].getLower();
         int upper = ranges[0].getUpper();
 
-        for (Range range: ranges) {
-            if (range == ranges[0]) continue;
+        for (int i = 1; i < ranges.length; i++) {
+            Range range = ranges[i];
             lower = Math.min(lower, range.getLower());
             upper = Math.max(upper, range.getUpper());
         }
@@ -57,11 +65,11 @@ public abstract class MultiplePatternsOperator implements SinglePattern {
         CaptureGroupMatch wholePatternMatch = new CaptureGroupMatch(target, targetId, combineRanges(ranges));
         groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + 0, wholePatternMatch);
         return new Match(1, sumMatchesScore(matches), groupMatches);
-}
+    }
 
     static int sumMatchesScore(Match... matches) {
         int score = 0;
-        for (Match match: matches) {
+        for (Match match : matches) {
             score += match.getScore();
         }
         return score;

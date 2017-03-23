@@ -8,51 +8,45 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AndPattern extends MultiplePatternsOperator {
+    public AndPattern(Pattern... operandPatterns) {
+        super(operandPatterns);
+    }
+
     @Override
     public AndMatchingResult match(NSequenceWithQuality input, byte targetId) {
         final Match[] bestMatches = new Match[operandPatterns.length];
         final Range[] bestMatchRanges = new Range[operandPatterns.length];
         final Map<String, CaptureGroupMatch> groupMatches = new HashMap<>();
         boolean rangeIntersection = false;
+
+        OUTER:
         for (int patternNumber = 0; patternNumber < operandPatterns.length; patternNumber++) {
             MatchingResult result = operandPatterns[patternNumber].match(input);
             if (result.getMatchesNumber() == 0) {
-                /*
-                 * If one pattern doesn't match, all AndPattern doesn't match
-                 */
+                // If one pattern doesn't match, all AndPattern doesn't match
                 return new AndMatchingResult(null, 0);
             } else {
-                if (!rangeIntersection) {
-                    bestMatches[patternNumber] = result.getBestMatch();
-                    Range currentRange = bestMatches[patternNumber].getWholePatternMatch(0).getRange();
-                    for (Range range: bestMatchRanges) {
-                        if (range.intersectsWith(currentRange)) {
-                            rangeIntersection = true;
-                            break;
-                        }
+                bestMatches[patternNumber] = result.getBestMatch();
+                Range currentRange = bestMatches[patternNumber].getWholePatternMatch().getRange();
+                bestMatchRanges[patternNumber] = currentRange;
+                for (int i = 0; i < patternNumber; i++)  // Compare with all previously added matches
+                    if (bestMatchRanges[i].intersectsWith(currentRange)) {
+                        rangeIntersection = true;
+                        break OUTER;
                     }
-                    bestMatchRanges[patternNumber] = currentRange;
-                }
             }
         }
-        if (!rangeIntersection) {
-            Match bestMatch = combineMatches(input, targetId, bestMatches);
-            return new AndMatchingResult(bestMatch, 1);
-        } else {
-            /*
-             * Best match has range intersection, check all other matches
-             */
-            Match bestMatch = findBestMatchByScore(input, targetId);
-            if (bestMatch != null) {
-                return new AndMatchingResult(bestMatch, 1);
-            } else {
-                return new AndMatchingResult(null, 0);
-            }
-        }
-    }
 
-    public AndPattern(Pattern... operandPatterns) {
-        super(operandPatterns);
+        if (!rangeIntersection)
+            return new AndMatchingResult(combineMatches(input, targetId, bestMatches), 1);
+        else {
+            // Best match has range intersection, check all other matches
+            Match bestMatch = findBestMatchByScore(input, targetId);
+            if (bestMatch != null)
+                return new AndMatchingResult(bestMatch, 1);
+            else
+                return new AndMatchingResult(null, 0);
+        }
     }
 
     private Match findBestMatchByScore(NSequenceWithQuality input, byte targetId) {
@@ -63,15 +57,14 @@ public class AndPattern extends MultiplePatternsOperator {
         /*
          * Fill array with all matches for all operands
          */
-        for (Pattern pattern: operandPatterns) {
+        for (Pattern pattern : operandPatterns) {
             ArrayList<Match> currentPatternMatches = new ArrayList<>();
             MatchingResult result = pattern.match(input);
             while (true) {
                 Match currentResult = result.getMatches().take();
                 if (currentResult != null) {
                     currentPatternMatches.add(currentResult);
-                }
-                else break;
+                } else break;
             }
             matches.add(currentPatternMatches);
         }
