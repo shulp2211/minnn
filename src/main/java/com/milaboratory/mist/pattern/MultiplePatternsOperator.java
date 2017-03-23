@@ -9,9 +9,9 @@ import java.util.Map;
 import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
 
 public abstract class MultiplePatternsOperator implements SinglePattern {
-    protected final Pattern[] operandPatterns;
+    protected final SinglePattern[] operandPatterns;
 
-    MultiplePatternsOperator(Pattern... operandPatterns) {
+    MultiplePatternsOperator(SinglePattern... operandPatterns) {
         this.operandPatterns = operandPatterns;
     }
 

@@ -2,17 +2,17 @@ package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
 
-public class AndMatchingResult implements MatchingResult {
+public class MultiplePatternsMatchingResult implements MatchingResult {
     private final Match bestMatch;
     private final long matchesNumber;
 
-    public AndMatchingResult(Match bestMatch, long matchesNumber) {
+    public MultiplePatternsMatchingResult(Match bestMatch, long matchesNumber) {
         this.bestMatch = bestMatch;
         this.matchesNumber = matchesNumber;
     }
 
     @Override
-    public OutputPort<Match> getMatches() {
+    public OutputPort<Match> getMatches(boolean byScore) {
         return null;
     }
 
