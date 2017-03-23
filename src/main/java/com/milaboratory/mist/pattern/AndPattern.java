@@ -16,20 +16,19 @@ public class AndPattern extends MultiplePatternsOperator {
         final Range[] bestMatchRanges = new Range[operandPatterns.length];
         boolean rangeIntersection = false;
 
-        OUTER:
         for (int patternNumber = 0; patternNumber < operandPatterns.length; patternNumber++) {
             MatchingResult result = operandPatterns[patternNumber].match(input, from, to, targetId);
             if (result.getMatchesNumber() == 0) {
-                // If one pattern doesn't match, all AndPattern doesn't match
+                // If one pattern doesn't match, AndPattern doesn't match
                 return new MultiplePatternsMatchingResult(null, 0);
-            } else {
+            } else if (!rangeIntersection) {
                 bestMatches[patternNumber] = result.getBestMatch();
                 Range currentRange = bestMatches[patternNumber].getWholePatternMatch().getRange();
                 bestMatchRanges[patternNumber] = currentRange;
                 for (int i = 0; i < patternNumber; i++)  // Compare with all previously added matches
                     if (bestMatchRanges[i].intersectsWith(currentRange)) {
                         rangeIntersection = true;
-                        break OUTER;
+                        break;
                     }
             }
         }
