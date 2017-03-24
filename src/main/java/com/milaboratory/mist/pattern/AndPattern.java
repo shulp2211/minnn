@@ -1,5 +1,6 @@
 package com.milaboratory.mist.pattern;
 
+import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 
@@ -62,41 +63,35 @@ public class AndPattern extends MultiplePatternsOperator {
     private Match findBestMatchByScore(NSequenceWithQuality input, int from, int to, byte targetId, boolean quickMatch) {
         Match bestMatch = null;
         int bestScore = 0;
+        int numOperands = operandPatterns.length;
         ArrayList<ArrayList<Match>> matches = new ArrayList<>();
-
-        // Fill array with all matches for all operands
-        for (SinglePattern pattern : operandPatterns) {
-            ArrayList<Match> currentPatternMatches = new ArrayList<>();
-            MatchingResult result = pattern.match(input, from, to, targetId);
-            while (true) {
-                Match currentResult = result.getMatches().take();
-                if (currentResult != null) {
-                    currentPatternMatches.add(currentResult);
-                } else break;
-            }
-            matches.add(currentPatternMatches);
-        }
-
-        // Loop through all combinations and find the best, or leave bestMatch = null if nothing found
-        int matchArraySizes[] = new int[matches.size()];
-        int innerArrayIndexes[] = new int[matches.size()];
+        ArrayList<OutputPort<Match>> matchOutputPorts = new ArrayList<>();
+        MatchingResult[] matchingResults = new MatchingResult[numOperands];
+        int[] matchArraySizes = new int[numOperands];
+        int[] innerArrayIndexes = new int[numOperands];
         int totalCombinationCount = 1;
-        for (int i = 0; i < matches.size(); i++) {
-            matchArraySizes[i] = matches.get(i).size();
+
+        for (int i = 0; i < numOperands; i++) {
+            matches.add(new ArrayList<>());
+            matchingResults[i] = operandPatterns[i].match(input, from, to, targetId);
+            matchArraySizes[i] = Math.toIntExact(matchingResults[i].getMatchesNumber());
+            matchOutputPorts.add(matchingResults[i].getMatches());
             totalCombinationCount *= matchArraySizes[i];
         }
 
+        // Loop through all combinations and find the best, or leave bestMatch = null if nothing found
         for (int i = 0; i < totalCombinationCount; i++) {
-            Match[] currentMatches = new Match[matches.size()];
-            Range[] currentRanges = new Range[matches.size()];
-            for (int j = 0; j < matches.size(); j++) {
+            Match[] currentMatches = new Match[numOperands];
+            Range[] currentRanges = new Range[numOperands];
+            for (int j = 0; j < numOperands; j++) {
+                // if current array element doesn't exist, we didn't take that match, so let's take it now
+                if (innerArrayIndexes[j] == matches.get(j).size())
+                    matches.get(j).add(matchOutputPorts.get(j).take());
                 currentMatches[j] = matches.get(j).get(innerArrayIndexes[j]);
                 currentRanges[j] = currentMatches[j].getWholePatternMatch(0).getRange();
             }
             if (!checkRangesIntersection(currentRanges)) {
-                /* for quick match return first found valid match
-                 * TODO: rewrite procedure to avoid calling getMatches().take() for all possible combination for quick match
-                 */
+                // for quick match return first found valid match
                 if (quickMatch)
                     return combineMatches(input, targetId, currentMatches);
                 int currentSum = sumMatchesScore(currentMatches);
