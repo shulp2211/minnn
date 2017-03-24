@@ -102,7 +102,7 @@ public class AndPattern extends MultiplePatternsOperator {
             }
 
             // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
-            for (int j = 0; j < matches.size(); j++) {
+            for (int j = 0; j < numOperands; j++) {
                 if (innerArrayIndexes[j] + 1 < matchArraySizes[j]) {
                     innerArrayIndexes[j]++;
                     break;
