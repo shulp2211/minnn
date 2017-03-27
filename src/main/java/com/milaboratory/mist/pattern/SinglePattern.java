@@ -12,14 +12,34 @@ public interface SinglePattern extends Pattern {
         return match((NSequenceWithQuality) input);
     }
 
-    default MatchingResult match(NSequenceWithQuality input) {
-        return match(input, 0, input.size(), (byte) 1);
+    default MatchingResult match(NSequenceWithQuality input, Range range) {
+        return match(input, range, (byte) 1);
     }
 
-    default MatchingResult match(NSequenceWithQuality input, Range range) {
+    default MatchingResult match(NSequenceWithQuality input, Range range, byte targetId) {
+        return match(input, range, targetId, false);
+    }
+
+    /**
+     * Search this pattern in target sequence
+     *
+     * @param input target sequence
+     * @param range searching range in target sequence, non-reversed only
+     * @param targetId number of read where sequence is matched, numbers start from 1
+     *                 negative if matched in reverse complement
+     *                 0 if complex pattern uses multiple reads to match
+     * @param quickMatch if true, match.isFound() returns true or false, other methods throw exception;
+     *                   used for quick checking is pattern matching or not
+     * @return matching result
+     */
+    default MatchingResult match(NSequenceWithQuality input, Range range, byte targetId, boolean quickMatch) {
         if (range.isReverse())
             throw new IllegalArgumentException("Doesn't support reversed ranges.");
-        return match(input, range.getFrom(), range.getTo());
+        return match(input, range.getFrom(), range.getTo(), targetId, quickMatch);
+    }
+
+    default MatchingResult match(NSequenceWithQuality input) {
+        return match(input, 0, input.size(), (byte) 1);
     }
 
     default MatchingResult match(NSequenceWithQuality input, int from, int to) {
