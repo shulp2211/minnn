@@ -19,20 +19,16 @@ public class MatchTest {
 
     @Test
     public void matchTest() throws Exception {
-        NSequenceWithQuality seqWhole0 = new NSequenceWithQuality("AATTAAGGCAAA");
-        NSequenceWithQuality seqWhole1 = new NSequenceWithQuality("ATTAGACA");
-        NSequenceWithQuality seqGroup0 = new NSequenceWithQuality("ATT");
-        NSequenceWithQuality seqGroup1 = new NSequenceWithQuality("AAGG");
-        NSequenceWithQuality seqGroup2 = new NSequenceWithQuality("ATTA");
-        NSequenceWithQuality seqGroup3 = new NSequenceWithQuality("ACA");
+        NSequenceWithQuality seq0 = new NSequenceWithQuality("AATTAAGGCAAA");
+        NSequenceWithQuality seq1 = new NSequenceWithQuality("ATTAGACA");
 
         Map<String, CaptureGroupMatch> testGroups = new HashMap<String, CaptureGroupMatch>() {{
-            put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0", new CaptureGroupMatch(seqWhole0, (byte)0, new Range(0, 9)));
-            put(COMMON_GROUP_NAME_PREFIX + "0", new CaptureGroupMatch(seqGroup0, (byte)0, new Range(1, 4)));
-            put(COMMON_GROUP_NAME_PREFIX + "1", new CaptureGroupMatch(seqGroup1, (byte)0, new Range(4, 8)));
-            put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "1", new CaptureGroupMatch(seqWhole1, (byte)1, new Range(0, 8)));
-            put(COMMON_GROUP_NAME_PREFIX + "2", new CaptureGroupMatch(seqGroup2, (byte)1, new Range(0, 4)));
-            put(COMMON_GROUP_NAME_PREFIX + "3", new CaptureGroupMatch(seqGroup3, (byte)1, new Range(5, 8)));
+            put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0", new CaptureGroupMatch(seq0, (byte)0, new Range(0, 9)));
+            put(COMMON_GROUP_NAME_PREFIX + "0", new CaptureGroupMatch(seq0, (byte)0, new Range(1, 4)));
+            put(COMMON_GROUP_NAME_PREFIX + "1", new CaptureGroupMatch(seq1, (byte)0, new Range(4, 8)));
+            put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "1", new CaptureGroupMatch(seq1, (byte)1, new Range(0, 8)));
+            put(COMMON_GROUP_NAME_PREFIX + "2", new CaptureGroupMatch(seq1, (byte)1, new Range(0, 4)));
+            put(COMMON_GROUP_NAME_PREFIX + "3", new CaptureGroupMatch(seq1, (byte)1, new Range(5, 8)));
         }};
         Match testMatch = new Match(2, 10, testGroups);
         assertEquals(true, testMatch.isFound());
