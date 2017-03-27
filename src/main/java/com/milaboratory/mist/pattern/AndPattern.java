@@ -20,7 +20,7 @@ public class AndPattern extends MultiplePatternsOperator {
         // If one pattern doesn't match, AndPattern doesn't match
         for (SinglePattern operandPattern : operandPatterns) {
             MatchingResult result = operandPattern.match(input, from, to, targetId, true);
-            if (result.getMatchesNumber() == 0)
+            if (!result.isFound())
                 if (quickMatch)
                     return new QuickMatchingResult(false);
                 else
