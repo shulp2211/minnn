@@ -36,7 +36,9 @@ public interface SinglePattern extends Pattern {
      * @param input target sequence
      * @param from starting point in target sequence (inclusive)
      * @param to ending point in target sequence (exclusive)
-     * @param targetId number of current block in multiple pattern match
+     * @param targetId number of read where sequence is matched, numbers start from 1
+     *                 negative if matched in reverse complement
+     *                 0 if complex pattern uses multiple reads to match
      * @param quickMatch if true, match.isFound() returns true or false, other methods throw exception;
      *                   used for quick checking is pattern matching or not
      * @return matching result

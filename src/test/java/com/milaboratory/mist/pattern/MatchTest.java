@@ -26,9 +26,9 @@ public class MatchTest {
             put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0", new CaptureGroupMatch(seq0, (byte)0, new Range(0, 9)));
             put(COMMON_GROUP_NAME_PREFIX + "0", new CaptureGroupMatch(seq0, (byte)0, new Range(1, 4)));
             put(COMMON_GROUP_NAME_PREFIX + "1", new CaptureGroupMatch(seq1, (byte)0, new Range(4, 8)));
-            put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "1", new CaptureGroupMatch(seq1, (byte)1, new Range(0, 8)));
-            put(COMMON_GROUP_NAME_PREFIX + "2", new CaptureGroupMatch(seq1, (byte)1, new Range(0, 4)));
-            put(COMMON_GROUP_NAME_PREFIX + "3", new CaptureGroupMatch(seq1, (byte)1, new Range(5, 8)));
+            put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "1", new CaptureGroupMatch(seq1, (byte)0, new Range(0, 8)));
+            put(COMMON_GROUP_NAME_PREFIX + "2", new CaptureGroupMatch(seq1, (byte)0, new Range(0, 4)));
+            put(COMMON_GROUP_NAME_PREFIX + "3", new CaptureGroupMatch(seq1, (byte)0, new Range(5, 8)));
         }};
         Match testMatch = new Match(2, 10, testGroups);
         assertEquals(true, testMatch.isFound());
@@ -37,6 +37,8 @@ public class MatchTest {
         assertEquals(new Range(0, 9), testMatch.getWholePatternMatch(0).getRange());
         assertEquals(new Range(0, 8), testMatch.getWholePatternMatch(1).getRange());
         assertEquals(new Range(4, 8), testMatch.groupMatches.get(COMMON_GROUP_NAME_PREFIX + "1").getRange());
+        assertEquals(0, testMatch.getWholePatternMatch(0).getTargetId());
+        assertEquals(0, testMatch.getWholePatternMatch(1).getTargetId());
 
         exception.expect(IllegalStateException.class);
         testMatch.getWholePatternMatch();

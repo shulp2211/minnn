@@ -8,6 +8,7 @@ public final class CaptureGroupMatch {
     /**
      * actualTargetId + 1 if matched on forward strand
      * -actualTargetId - 1 if matched on reverse strand
+     * 0 if complex pattern uses multiple reads to match
      */
     private final byte targetId;
     private final Range range;
