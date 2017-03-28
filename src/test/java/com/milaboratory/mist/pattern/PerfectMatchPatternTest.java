@@ -1,5 +1,6 @@
 package com.milaboratory.mist.pattern;
 
+import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.motif.Motif;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
@@ -23,7 +24,7 @@ public class PerfectMatchPatternTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void simpleMatchTest() throws Exception {
+    public void bestMatchTest() throws Exception {
         PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("ATTAGACA").toMotif());
         NSequenceWithQuality nseq = new NSequenceWithQuality("ACTGCGATAAATTAGACAGTACGTA");
         ArrayList<MatchingResult> results = new ArrayList<>(Arrays.asList(
@@ -51,7 +52,7 @@ public class PerfectMatchPatternTest {
     }
 
     @Test
-    public void simpleMismatchTest() throws Exception {
+    public void noMatchesTest() throws Exception {
         PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("ATTAGACA").toMotif());
         NSequenceWithQuality nseq1 = new NSequenceWithQuality("ACTGCGATAAATTAGACAGTACGTA");
         NSequenceWithQuality nseq2 = new NSequenceWithQuality("ACTGCGATAAATTACACAGTACGTA");
@@ -112,5 +113,28 @@ public class PerfectMatchPatternTest {
             boolean isMatching = seq.toString().contains(motifSeq.toString());
             assertEquals(isMatching, pattern.match(target).isFound());
         }
+    }
+
+    @Test
+    public void multipleMatchesTest() throws Exception {
+        PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("ATTAGACA").toMotif());
+        NSequenceWithQuality nseq = new NSequenceWithQuality("ACTGCGATAAATTAGACATTAGACATTAGACAGTACGTATTAGACA");
+        MatchingResult result = pattern.match(nseq);
+        Match bestMatch1 = result.getBestMatch();
+        Match firstMatchByScore = result.getMatches(true).take();
+        Match bestMatch2 = result.getBestMatch();
+        Match firstMatchByCoordinate = result.getMatches(false).take();
+        Match bestMatch3 = result.getBestMatch();
+        assertEquals(bestMatch1, bestMatch2);
+        assertEquals(bestMatch1, bestMatch3);
+        assertEquals(bestMatch1, firstMatchByScore);
+        assertEquals(bestMatch1, firstMatchByCoordinate);
+        assertEquals(true, result.isFound());
+        assertEquals(4, result.getMatchesNumber());
+        OutputPort<Match> matches = result.getMatches();
+        assertEquals(10, matches.take().getWholePatternMatch().getRange().getLower());
+        assertEquals("ATTAGACA", matches.take().getWholePatternMatch().getValue().getSequence().toString());
+        assertEquals(24, matches.take().groupMatches.get(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0").getRange().getLower());
+        assertEquals(46, matches.take().getWholePatternMatch(0).getRange().getUpper());
     }
 }
