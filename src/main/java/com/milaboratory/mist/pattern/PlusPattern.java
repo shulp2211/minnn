@@ -92,7 +92,7 @@ public class PlusPattern extends MultiplePatternsOperator {
                 if (innerArrayIndexes[j] == matches.get(j).size())
                     matches.get(j).add(matchOutputPorts.get(j).take());
                 currentMatches[j] = matches.get(j).get(innerArrayIndexes[j]);
-                currentRanges[j] = currentMatches[j].getWholePatternMatch(0).getRange();
+                currentRanges[j] = currentMatches[j].getWholePatternMatch().getRange();
                 // check for misplaced ranges
                 if (j > 0)
                     if (currentRanges[j - 1].getUpper() >= currentRanges[j].getLower()) {

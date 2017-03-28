@@ -88,7 +88,7 @@ public class AndPattern extends MultiplePatternsOperator {
                 if (innerArrayIndexes[j] == matches.get(j).size())
                     matches.get(j).add(matchOutputPorts.get(j).take());
                 currentMatches[j] = matches.get(j).get(innerArrayIndexes[j]);
-                currentRanges[j] = currentMatches[j].getWholePatternMatch(0).getRange();
+                currentRanges[j] = currentMatches[j].getWholePatternMatch().getRange();
             }
             if (!checkRangesIntersection(currentRanges)) {
                 // for quick match return first found valid match
