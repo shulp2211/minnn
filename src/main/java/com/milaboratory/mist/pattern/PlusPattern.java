@@ -31,7 +31,7 @@ public class PlusPattern extends MultiplePatternsOperator {
             if (patternNumber > 0) {
                 int previousRangeUpper = bestMatches[patternNumber - 1].getWholePatternMatch().getRange().getUpper();
                 int currentRangeLower = bestMatches[patternNumber].getWholePatternMatch().getRange().getLower();
-                if (previousRangeUpper >= currentRangeLower) {
+                if (previousRangeUpper > currentRangeLower) {
                     rangeMisplaced = true;
                     break;
                 }
@@ -95,7 +95,7 @@ public class PlusPattern extends MultiplePatternsOperator {
                 currentRanges[j] = currentMatches[j].getWholePatternMatch().getRange();
                 // check for misplaced ranges
                 if (j > 0)
-                    if (currentRanges[j - 1].getUpper() >= currentRanges[j].getLower()) {
+                    if (currentRanges[j - 1].getUpper() > currentRanges[j].getLower()) {
                         skippedMatches[j] = innerArrayIndexes[j] + 1;  // number of skipped matches counts from 1
                         if (skippedMatches[j] == matchArraySizes[j]) {
                             // if we skipped all matches for this operand, we can stop the search
@@ -116,12 +116,15 @@ public class PlusPattern extends MultiplePatternsOperator {
                 }
             }
 
-            // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
-            for (int j = 0; j < numOperands; j++) {
+            /* Update innerArrayIndexes to switch to the next combination on next iteration of outer loop.
+               Order is reversed because we check skipped matches by comparing with previous operand. */
+            for (int j = numOperands - 1; j >= 0; j--) {
                 if (innerArrayIndexes[j] + 1 < matchArraySizes[j]) {
                     innerArrayIndexes[j]++;
                     break;
                 }
+                // if we reached the last combination, stop the search
+                if (j == 0) break OUTER;
                 // we need to update next index and reset current index to the first not skipped match
                 innerArrayIndexes[j] = skippedMatches[j];
             }
