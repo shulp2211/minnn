@@ -4,16 +4,21 @@ import cc.redberry.pipe.OutputPort;
 
 public class MultiplePatternsMatchingResult implements MatchingResult {
     private final Match bestMatch;
-    private final long matchesNumber;
+    private final OperatorOutputPort matchesByScore;
+    private final OperatorOutputPort matchesByCoordinate;
 
-    public MultiplePatternsMatchingResult(Match bestMatch, long matchesNumber) {
+    public MultiplePatternsMatchingResult(Match bestMatch, OperatorOutputPort matchesByScore, OperatorOutputPort matchesByCoordinate) {
         this.bestMatch = bestMatch;
-        this.matchesNumber = matchesNumber;
+        this.matchesByScore = matchesByScore;
+        this.matchesByCoordinate = matchesByCoordinate;
     }
 
     @Override
     public OutputPort<Match> getMatches(boolean byScore) {
-        return null;
+        if (byScore)
+            return matchesByScore;
+        else
+            return matchesByCoordinate;
     }
 
     @Override
@@ -23,6 +28,16 @@ public class MultiplePatternsMatchingResult implements MatchingResult {
 
     @Override
     public long getMatchesNumber() {
-        return matchesNumber;
+        return matchesByScore.getMatchesNumber();
+    }
+
+    /**
+     * Overriding isFound() because calling getMatchesNumber() may lead to complex calculations.
+     *
+     * @return true if pattern matched
+     */
+    @Override
+    public boolean isFound() {
+        return bestMatch != null;
     }
 }
