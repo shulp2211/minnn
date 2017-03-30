@@ -129,11 +129,11 @@ public class PlusPattern extends MultiplePatternsOperator {
                     if (j > 0)
                         if (currentRanges[j - 1].getUpper() > currentRanges[j].getLower()) {
                             skippedMatches[j] = innerArrayIndexes[j] + 1;  // number of skipped matches counts from 1
-                            if (skippedMatches[j] == matchArraySizes[j]) {
-                                // if we skipped all matches for this operand, we can stop the search
-                                break OUTER;
-                            }
                             rangesMisplaced = true;
+                            if (skippedMatches[j] == matchArraySizes[j]) {
+                                // if we skipped all matches for this operand, we can interrupt this search iteration
+                                break;
+                            }
                         }
                 }
 
@@ -157,19 +157,35 @@ public class PlusPattern extends MultiplePatternsOperator {
                     }
                 }
 
-        /* Update innerArrayIndexes to switch to the next combination on next iteration of outer loop.
-           Order is reversed because we check skipped matches by comparing with previous operand. */
-                for (int j = numOperands - 1; j >= 0; j--) {
-                    if (innerArrayIndexes[j] + 1 < matchArraySizes[j]) {
-                        innerArrayIndexes[j]++;
+                /* Update innerArrayIndexes to switch to the next combination on next iteration of outer loop.
+                   Order is reversed because we check skipped matches by comparing with previous operand. */
+                int indexCountdown = numOperands - 1;
+                while (indexCountdown >= 0) {
+                    if (innerArrayIndexes[indexCountdown] + 1 < matchArraySizes[indexCountdown]) {
+                        innerArrayIndexes[indexCountdown]++;
+                        /* we must forget skipped matches that are 2 and more indexes to the right
+                        to avoid skipping valid combinations */
+                        for (int j = indexCountdown + 2; j < numOperands; j++) {
+                            skippedMatches[j] = 0;
+                            innerArrayIndexes[j] = 0;
+                        }
                         break;
                     }
                     // if we reached the last combination, stop the search
-                    if (j == 0) break OUTER;
+                    if (indexCountdown == 0) break OUTER;
                     // we need to update next index and reset current index to the first not skipped match
-                    innerArrayIndexes[j] = skippedMatches[j];
+                    innerArrayIndexes[indexCountdown] = skippedMatches[indexCountdown];
+                    // if we skipped all matches on this iteration, we must go 2 indexes to the left immediately
+                    if (innerArrayIndexes[indexCountdown] == matchArraySizes[indexCountdown]) {
+                        indexCountdown--;
+                        if (indexCountdown == 0) break OUTER;
+                        innerArrayIndexes[indexCountdown] = skippedMatches[indexCountdown];
+                    }
+                    indexCountdown--;
                 }
             }
+
+            searchPerformed = true;
         }
     }
 }
