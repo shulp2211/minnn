@@ -1,5 +1,6 @@
 package com.milaboratory.mist.pattern;
 
+import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.motif.Motif;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
@@ -78,5 +79,47 @@ public class PlusPatternTest {
             assertEquals(true, patternMotif1.match(foundSequence).isFound());
             assertEquals(true, patternMotif2.match(foundSequence).isFound());
         }
+    }
+
+    @Test
+    public void allMatchesTest() throws Exception {
+        PerfectMatchPattern pattern1 = new PerfectMatchPattern(new NucleotideSequence("ATTA").toMotif());
+        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("GACA").toMotif());
+        NSequenceWithQuality nseq = new NSequenceWithQuality("GACATTATTATTAGACAGACATTAGACATTATTAGACAGACATTAATTA");
+        PlusPattern plusPattern1 = new PlusPattern(pattern1, pattern2);
+        PlusPattern plusPattern2 = new PlusPattern(pattern1, pattern1, pattern2);
+        assertNotNull(plusPattern1.match(nseq).getBestMatch());
+        assertNotNull(plusPattern2.match(nseq).getBestMatch());
+        assertEquals(22, plusPattern1.match(nseq).getMatchesNumber());
+        assertEquals(13, plusPattern2.match(nseq).getMatchesNumber());
+        for (boolean byScore : new boolean[] {true, false}) {
+            OutputPort<Match> matchesPattern1 = plusPattern1.match(nseq).getMatches(byScore);
+            OutputPort<Match> matchesPattern2 = plusPattern2.match(nseq).getMatches(byScore);
+            for (int i = 0; i < 22; i++) {
+                assertNotNull(matchesPattern1.take().getWholePatternMatch().getValue());
+            }
+            assertNull(matchesPattern1.take());
+            for (int i = 0; i < 13; i++) {
+                assertNotNull(matchesPattern2.take().getWholePatternMatch().getValue());
+            }
+            assertNull(matchesPattern2.take());
+        }
+    }
+
+    @Test
+    public void matchesIntersectionTest() throws Exception {
+        PerfectMatchPattern pattern1 = new PerfectMatchPattern(new NucleotideSequence("ATA").toMotif());
+        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("TAT").toMotif());
+        PlusPattern plusPattern = new PlusPattern(pattern1, pattern2);
+        NSequenceWithQuality nseq = new NSequenceWithQuality("ATATATATTATA");
+        OutputPort<Match> matches = plusPattern.match(nseq).getMatches(false);
+        while (true) {
+            Match match = matches.take();
+            if (match == null) break;
+            String seq = match.getWholePatternMatch().getValue().getSequence().toString();
+            Range range = match.getWholePatternMatch().getRange();
+            System.out.println(seq + " " + range.getLower() + " " + range.getUpper());
+        }
+        assertEquals(6, plusPattern.match(nseq).getMatchesNumber());
     }
 }
