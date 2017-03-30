@@ -5,6 +5,7 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class PlusPattern extends MultiplePatternsOperator {
     public PlusPattern(SinglePattern... operandPatterns) {
@@ -93,6 +94,7 @@ public class PlusPattern extends MultiplePatternsOperator {
         private void performSearch(boolean quickMatch) {
             int bestScore = 0;
             int numOperands = operandPatterns.length;
+            HashSet<Range> uniqueRanges = new HashSet<>();
             ArrayList<ArrayList<Match>> matches = new ArrayList<>();
             ArrayList<OutputPort<Match>> matchOutputPorts = new ArrayList<>();
             MatchingResult[] matchingResults = new MatchingResult[numOperands];
@@ -142,12 +144,17 @@ public class PlusPattern extends MultiplePatternsOperator {
                         return;
                     }
                     Match currentMatch = combineMatches(input, targetId, currentMatches);
-                    int currentSum = sumMatchesScore(currentMatches);
-                    if (currentSum > bestScore) {
-                        bestMatch = currentMatch;
-                        bestScore = currentSum;
+                    Range currentRange = currentMatch.getWholePatternMatch().getRange();
+                    // don't duplicate entries with the same range
+                    if (!uniqueRanges.contains(currentRange)) {
+                        int currentSum = sumMatchesScore(currentMatches);
+                        if (currentSum > bestScore) {
+                            bestMatch = currentMatch;
+                            bestScore = currentSum;
+                        }
+                        allMatches.add(currentMatch);
+                        uniqueRanges.add(currentRange);
                     }
-                    allMatches.add(currentMatch);
                 }
 
         /* Update innerArrayIndexes to switch to the next combination on next iteration of outer loop.
