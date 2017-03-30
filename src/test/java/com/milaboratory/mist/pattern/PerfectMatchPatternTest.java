@@ -137,4 +137,20 @@ public class PerfectMatchPatternTest {
         assertEquals(24, matches.take().groupMatches.get(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0").getRange().getLower());
         assertEquals(46, matches.take().getWholePatternMatch(0).getRange().getUpper());
     }
+
+    @Test
+    public void matchesIntersectionTest() throws Exception {
+        PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("ATA").toMotif());
+        NSequenceWithQuality nseq = new NSequenceWithQuality("ATATATTAAATATATATTTAATATATAAT");
+        OutputPort<Match> matches = pattern.match(nseq).getMatches();
+        assertEquals(new Range(0, 3), matches.take().getWholePatternMatch().getRange());
+        assertEquals(new Range(2, 5), matches.take().getWholePatternMatch().getRange());
+        assertEquals(new Range(9, 12), matches.take().getWholePatternMatch().getRange());
+        assertEquals(new Range(11, 14), matches.take().getWholePatternMatch().getRange());
+        assertEquals(new Range(13, 16), matches.take().getWholePatternMatch().getRange());
+        assertEquals(new Range(20, 23), matches.take().getWholePatternMatch().getRange());
+        assertEquals(new Range(22, 25), matches.take().getWholePatternMatch().getRange());
+        assertEquals(new Range(24, 27), matches.take().getWholePatternMatch().getRange());
+        assertEquals(null, matches.take());
+    }
 }
