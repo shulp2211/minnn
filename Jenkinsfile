@@ -1,12 +1,22 @@
 pipeline {
     agent any
+
     options {
         timeout(time: 1, unit: 'HOURS') 
     }
+
     stages {
-        stage('Example') {
+        stage('Updating submodules') {
+            steps{
+                sh 'git submodule update --init'
+            }
+        }
+
+        stage('Building MiLib from submodule') {
             steps {
-                echo 'Hello World'
+                dir ('milib') {
+                    sh 'mvn -B clean install -DskipTests'
+                }
             }
         }
     }
