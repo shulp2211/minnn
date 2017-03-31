@@ -76,6 +76,10 @@
         </dependency>
     </dependencies>
 
+    <scm>
+        <connection>scm:git:https://github.com/milaboratory/mist.git</connection>
+    </scm>
+
     <build>
         <plugins>
             <plugin>
