@@ -1,4 +1,6 @@
 node('big'){
+    properties([pipelineTriggers([[$class: 'GitHubPushTrigger'], pollSCM('H * * * *')])])
+
     stage('Updating submodules') {
         checkout scm
         sh 'git submodule update --init'
