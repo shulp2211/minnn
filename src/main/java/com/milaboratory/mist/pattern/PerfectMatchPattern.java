@@ -10,12 +10,30 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
+import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
 
 public class PerfectMatchPattern implements SinglePattern {
     private final Motif<NucleotideSequence> motif;
+    private final Map<String, Range> groups;
 
     public PerfectMatchPattern(Motif<NucleotideSequence> motif) {
+        this(motif, new HashMap<>());
+    }
+
+    /**
+     * Find match without insertions or deletions using bitap algorithm.
+     *
+     * @param motif motif to find
+     * @param groups map of group names and their ranges
+     */
+    public PerfectMatchPattern(Motif<NucleotideSequence> motif, Map<String, Range> groups) {
         this.motif = motif;
+        this.groups = groups;
+
+        for (Map.Entry<String, Range> group : groups.entrySet())
+            if (group.getValue().getUpper() > motif.size())
+                throw new IllegalStateException("Group " + group.getKey() + " (" + group.getValue()
+                        + ") doesn't fit into motif length " + motif.size());
     }
 
     /**
@@ -29,7 +47,7 @@ public class PerfectMatchPattern implements SinglePattern {
      */
     @Override
     public MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId) {
-        final PerfectMatchesSearch matchesSearch = new PerfectMatchesSearch(motif, input, from, to, targetId);
+        final PerfectMatchesSearch matchesSearch = new PerfectMatchesSearch(motif, groups, input, from, to, targetId);
         final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
         final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
 
@@ -38,13 +56,15 @@ public class PerfectMatchPattern implements SinglePattern {
 
     private final class PerfectMatchesSearch extends MatchesSearch {
         private final Motif<NucleotideSequence> motif;
+        private final Map<String, Range> groups;
         private final NSequenceWithQuality input;
         private final int from;
         private final int to;
         private final byte targetId;
 
-        public PerfectMatchesSearch(Motif<NucleotideSequence> motif, NSequenceWithQuality input, int from, int to, byte targetId) {
+        public PerfectMatchesSearch(Motif<NucleotideSequence> motif, Map<String, Range> groups, NSequenceWithQuality input, int from, int to, byte targetId) {
             this.motif = motif;
+            this.groups = groups;
             this.input = input;
             this.from = from;
             this.to = to;
@@ -71,6 +91,11 @@ public class PerfectMatchPattern implements SinglePattern {
                     Map<String, CaptureGroupMatch> groupMatchMap = new HashMap<String, CaptureGroupMatch>() {{
                         put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0", wholePatternMatch);
                     }};
+
+                    for (Map.Entry<String, Range> group : groups.entrySet()) {
+                        CaptureGroupMatch currentGroupMatch = new CaptureGroupMatch(input, targetId, group.getValue().move(currentMatchPosition));
+                        groupMatchMap.put(COMMON_GROUP_NAME_PREFIX + group.getKey(), currentGroupMatch);
+                    }
 
                     // TODO: create scoring rules
                     int currentScore = 1;

@@ -3,8 +3,8 @@ package com.milaboratory.mist.pattern;
 import java.util.Map;
 
 public final class Match {
-    public static final String WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX = "WM";
-    public static final String COMMON_GROUP_NAME_PREFIX = "G";
+    public static final String WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX = "WM_";
+    public static final String COMMON_GROUP_NAME_PREFIX = "G_";
     private final int numberOfPatterns;
     private final int score;
     private final CaptureGroupMatch[] wholePatternMatch;
