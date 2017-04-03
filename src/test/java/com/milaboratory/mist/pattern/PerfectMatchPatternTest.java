@@ -20,16 +20,13 @@ import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME
 import static org.junit.Assert.*;
 
 public class PerfectMatchPatternTest {
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
     @Test
     public void bestMatchTest() throws Exception {
         PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("ATTAGACA").toMotif());
         NSequenceWithQuality nseq = new NSequenceWithQuality("ACTGCGATAAATTAGACAGTACGTA");
         ArrayList<MatchingResult> results = new ArrayList<>(Arrays.asList(
-                pattern.match(nseq, 1, 19, (byte)0, false),
-                pattern.match(nseq, 10, 18, (byte)0, false),
+                pattern.match(nseq, 1, 19, (byte)0),
+                pattern.match(nseq, 10, 18, (byte)0),
                 pattern.match(nseq, 10, 18, (byte)0),
                 pattern.match(nseq, new Range(10, 18)),
                 pattern.match(nseq)
@@ -57,8 +54,8 @@ public class PerfectMatchPatternTest {
         NSequenceWithQuality nseq1 = new NSequenceWithQuality("ACTGCGATAAATTAGACAGTACGTA");
         NSequenceWithQuality nseq2 = new NSequenceWithQuality("ACTGCGATAAATTACACAGTACGTA");
         ArrayList<MatchingResult> results = new ArrayList<>(Arrays.asList(
-                pattern.match(nseq1, 11, 19, (byte)0, false),
-                pattern.match(nseq1, 10, 17, (byte)0, false),
+                pattern.match(nseq1, 11, 19, (byte)0),
+                pattern.match(nseq1, 10, 17, (byte)0),
                 pattern.match(nseq2)
         ));
         for (MatchingResult result : results) {
@@ -73,17 +70,16 @@ public class PerfectMatchPatternTest {
     public void quickMatchTest() throws Exception {
         PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("ATTAGACA").toMotif());
         NSequenceWithQuality nseq = new NSequenceWithQuality("ACTGCGATAAATTAGACAGTACGTA");
-        MatchingResult result = pattern.match(nseq, 1, 19, (byte)0, true);
+        MatchingResult result = pattern.match(nseq, 1, 19, (byte)0);
         assertEquals(true, result.isFound());
-        result = pattern.match(nseq, 1, 17, (byte)0, true);
+        result = pattern.match(nseq, 1, 17, (byte)0);
         assertEquals(false, result.isFound());
-        result = pattern.match(nseq, 11, 20, (byte)0, true);
+        result = pattern.match(nseq, 11, 20, (byte)0);
         assertEquals(false, result.isFound());
         pattern = new PerfectMatchPattern(new NucleotideSequence("ATTTTACA").toMotif());
-        result = pattern.match(nseq, 1, 19, (byte)0, true);
+        result = pattern.match(nseq, 1, 19, (byte)0);
         assertEquals(false, result.isFound());
-        exception.expect(IllegalStateException.class);
-        result.getMatchesNumber();
+        assertEquals(0, result.getMatchesNumber());
     }
 
     @Test
@@ -131,7 +127,8 @@ public class PerfectMatchPatternTest {
         assertEquals(bestMatch1, firstMatchByCoordinate);
         assertEquals(true, result.isFound());
         assertEquals(4, result.getMatchesNumber());
-        OutputPort<Match> matches = result.getMatches();
+        result = pattern.match(nseq);
+        OutputPort<Match> matches = result.getMatches(false);
         assertEquals(10, matches.take().getWholePatternMatch().getRange().getLower());
         assertEquals("ATTAGACA", matches.take().getWholePatternMatch().getValue().getSequence().toString());
         assertEquals(24, matches.take().groupMatches.get(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0").getRange().getLower());

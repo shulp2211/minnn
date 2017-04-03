@@ -36,20 +36,20 @@ public class PlusPatternTest {
         PlusPattern plusPattern7 = new PlusPattern(pattern1, pattern3, pattern2);
 
         assertEquals(false, plusPattern1.match(nseq1).isFound());
-        assertEquals(false, plusPattern1.match(nseq1, 0, 25, (byte)1, true).isFound());
+        assertEquals(false, plusPattern1.match(nseq1, 0, 25, (byte)1).isFound());
         assertEquals(false, plusPattern1.match(nseq1, new Range(0, 25)).isFound());
         assertEquals(true, plusPattern2.match(nseq1).isFound());
-        assertEquals(true, plusPattern2.match(nseq1, 0, 25, (byte)1, true).isFound());
+        assertEquals(true, plusPattern2.match(nseq1, 0, 25, (byte)1).isFound());
         assertEquals(true, plusPattern2.match(nseq1, new Range(0, 25)).isFound());
-        assertEquals(false, plusPattern4.match(nseq3, new Range(0, 24), (byte)-1, false).isFound());
-        assertEquals(false, plusPattern3.match(nseq3, new Range(0, 24), (byte)-1, false).isFound());
-        assertEquals(true, plusPattern7.match(nseq3, new Range(0, 24), (byte)-1, false).isFound());
+        assertEquals(false, plusPattern4.match(nseq3, new Range(0, 24), (byte)-1).isFound());
+        assertEquals(false, plusPattern3.match(nseq3, new Range(0, 24), (byte)-1).isFound());
+        assertEquals(true, plusPattern7.match(nseq3, new Range(0, 24), (byte)-1).isFound());
         assertEquals(false, plusPattern3.match(nseq1).isFound());
         assertEquals(false, plusPattern6.match(nseq2).isFound());
         assertEquals(true, plusPattern6.match(nseq1).isFound());
         assertEquals(false, plusPattern2.match(nseq1, new Range(12, 21)).isFound());
 
-        assertEquals(new Range(0, 17), plusPattern7.match(nseq3, new Range(0, 24), (byte)-1, false).getBestMatch().getWholePatternMatch().getRange());
+        assertEquals(new Range(0, 17), plusPattern7.match(nseq3, new Range(0, 24), (byte)-1).getBestMatch().getWholePatternMatch().getRange());
         assertEquals(new Range(11, 21), plusPattern2.match(nseq1, new Range(1, 21)).getBestMatch().getWholePatternMatch().getRange());
         assertEquals(null, plusPattern2.match(nseq1, new Range(11, 20)).getBestMatch());
 
@@ -91,7 +91,7 @@ public class PlusPatternTest {
         assertNotNull(plusPattern1.match(nseq).getBestMatch());
         assertNotNull(plusPattern2.match(nseq).getBestMatch());
         assertEquals(22, plusPattern1.match(nseq).getMatchesNumber());
-        assertEquals(13, plusPattern2.match(nseq).getMatchesNumber());
+        assertEquals(30, plusPattern2.match(nseq).getMatchesNumber());
         for (boolean byScore : new boolean[] {true, false}) {
             OutputPort<Match> matchesPattern1 = plusPattern1.match(nseq).getMatches(byScore);
             OutputPort<Match> matchesPattern2 = plusPattern2.match(nseq).getMatches(byScore);
@@ -99,7 +99,7 @@ public class PlusPatternTest {
                 assertNotNull(matchesPattern1.take().getWholePatternMatch().getValue());
             }
             assertNull(matchesPattern1.take());
-            for (int i = 0; i < 13; i++) {
+            for (int i = 0; i < 30; i++) {
                 assertNotNull(matchesPattern2.take().getWholePatternMatch().getValue());
             }
             assertNull(matchesPattern2.take());

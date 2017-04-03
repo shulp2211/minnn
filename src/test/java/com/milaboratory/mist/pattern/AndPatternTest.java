@@ -35,19 +35,19 @@ public class AndPatternTest {
         AndPattern andPattern6 = new AndPattern(pattern1);
 
         assertEquals(false, andPattern1.match(nseq1).isFound());
-        assertEquals(false, andPattern1.match(nseq1, 0, 25, (byte)1, true).isFound());
+        assertEquals(false, andPattern1.match(nseq1, 0, 25, (byte)1).isFound());
         assertEquals(false, andPattern1.match(nseq1, new Range(0, 25)).isFound());
         assertEquals(true, andPattern2.match(nseq1).isFound());
-        assertEquals(true, andPattern2.match(nseq1, 0, 25, (byte)1, true).isFound());
+        assertEquals(true, andPattern2.match(nseq1, 0, 25, (byte)1).isFound());
         assertEquals(true, andPattern2.match(nseq1, new Range(0, 25)).isFound());
-        assertEquals(false, andPattern4.match(nseq3, new Range(0, 24), (byte)-1, false).isFound());
-        assertEquals(true, andPattern3.match(nseq3, new Range(0, 24), (byte)-1, false).isFound());
+        assertEquals(false, andPattern4.match(nseq3, new Range(0, 24), (byte)-1).isFound());
+        assertEquals(true, andPattern3.match(nseq3, new Range(0, 24), (byte)-1).isFound());
         assertEquals(false, andPattern3.match(nseq1).isFound());
         assertEquals(false, andPattern6.match(nseq2).isFound());
         assertEquals(true, andPattern6.match(nseq1).isFound());
         assertEquals(false, andPattern2.match(nseq1, new Range(12, 21)).isFound());
 
-        assertEquals(new Range(0, 17), andPattern3.match(nseq3, new Range(0, 24), (byte)-1, false).getBestMatch().getWholePatternMatch().getRange());
+        assertEquals(new Range(0, 17), andPattern3.match(nseq3, new Range(0, 24), (byte)-1).getBestMatch().getWholePatternMatch().getRange());
         assertEquals(new Range(11, 21), andPattern2.match(nseq1, new Range(1, 21)).getBestMatch().getWholePatternMatch().getRange());
         assertEquals(null, andPattern2.match(nseq1, new Range(11, 20)).getBestMatch());
 
@@ -91,7 +91,7 @@ public class AndPatternTest {
         assertNotNull(andPattern1.match(nseq).getBestMatch());
         assertNotNull(andPattern2.match(nseq).getBestMatch());
         assertEquals(44, andPattern1.match(nseq).getMatchesNumber());
-        assertEquals(49, andPattern2.match(nseq).getMatchesNumber());
+        assertEquals(248, andPattern2.match(nseq).getMatchesNumber());
         for (boolean byScore : new boolean[] {true, false}) {
             OutputPort<Match> matchesPattern1 = andPattern1.match(nseq).getMatches(byScore);
             OutputPort<Match> matchesPattern2 = andPattern2.match(nseq).getMatches(byScore);
@@ -99,7 +99,7 @@ public class AndPatternTest {
                 assertNotNull(matchesPattern1.take().getWholePatternMatch().getValue());
             }
             assertNull(matchesPattern1.take());
-            for (int i = 0; i < 49; i++) {
+            for (int i = 0; i < 248; i++) {
                 assertNotNull(matchesPattern2.take().getWholePatternMatch().getValue());
             }
             assertNull(matchesPattern2.take());
