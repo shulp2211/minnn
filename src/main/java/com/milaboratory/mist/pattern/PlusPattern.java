@@ -45,17 +45,12 @@ public class PlusPattern extends MultiplePatternsOperator {
             return new MultiplePatternsMatchingResult(allMatchesByScore, allMatchesByCoordinate);
     }
 
-    private final class PlusMatchesSearch implements MatchesSearch {
+    private final class PlusMatchesSearch extends MatchesSearch {
         private final SinglePattern[] operandPatterns;
         private final NSequenceWithQuality input;
         private final int from;
         private final int to;
         private final byte targetId;
-        private ArrayList<Match> allMatches = new ArrayList<>();
-        private Match bestMatch = null;
-        private boolean quickSearchPerformed = false;
-        private boolean matchFound = false;
-        private boolean fullSearchPerformed = false;
         private ArrayList<ArrayList<Match>> matches = new ArrayList<>();
         private ArrayList<OutputPort<Match>> matchOutputPorts = new ArrayList<>();
         private MatchingResult[] matchingResults;
@@ -74,33 +69,7 @@ public class PlusPattern extends MultiplePatternsOperator {
         }
 
         @Override
-        public Match[] getAllMatches() {
-            if (!fullSearchPerformed) performSearch(false);
-            return allMatches.toArray(new Match[allMatches.size()]);
-        }
-
-        @Override
-        public Match getBestMatch() {
-            if (!fullSearchPerformed) performSearch(false);
-            return bestMatch;
-        }
-
-        @Override
-        public long getMatchesNumber() {
-            if (!fullSearchPerformed) performSearch(false);
-            return allMatches.size();
-        }
-
-        @Override
-        public boolean isFound() {
-            if (!quickSearchPerformed) performSearch(true);
-            return matchFound;
-        }
-
-        /**
-         * Find all matches and best match, calculate matches number.
-         */
-        private void performSearch(boolean quickSearch) {
+        protected void performSearch(boolean quickSearch) {
             int bestScore = 0;
             int numOperands = operandPatterns.length;
 

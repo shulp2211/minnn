@@ -6,7 +6,6 @@ import com.milaboratory.core.motif.Motif;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,17 +36,12 @@ public class PerfectMatchPattern implements SinglePattern {
         return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
     }
 
-    private final class PerfectMatchesSearch implements MatchesSearch {
+    private final class PerfectMatchesSearch extends MatchesSearch {
         private final Motif<NucleotideSequence> motif;
         private final NSequenceWithQuality input;
         private final int from;
         private final int to;
         private final byte targetId;
-        ArrayList<Match> allMatches = new ArrayList<>();
-        private Match bestMatch = null;
-        private boolean quickSearchPerformed = false;
-        private boolean matchFound = false;
-        private boolean fullSearchPerformed = false;
 
         public PerfectMatchesSearch(Motif<NucleotideSequence> motif, NSequenceWithQuality input, int from, int to, byte targetId) {
             this.motif = motif;
@@ -58,33 +52,7 @@ public class PerfectMatchPattern implements SinglePattern {
         }
 
         @Override
-        public Match[] getAllMatches() {
-            if (!fullSearchPerformed) performSearch(false);
-            return allMatches.toArray(new Match[allMatches.size()]);
-        }
-
-        @Override
-        public Match getBestMatch() {
-            if (!fullSearchPerformed) performSearch(false);
-            return bestMatch;
-        }
-
-        @Override
-        public long getMatchesNumber() {
-            if (!fullSearchPerformed) performSearch(false);
-            return allMatches.size();
-        }
-
-        @Override
-        public boolean isFound() {
-            if (!quickSearchPerformed) performSearch(true);
-            return matchFound;
-        }
-
-        /**
-         * Find all matches and best match, calculate matches number.
-         */
-        private void performSearch(boolean quickSearch) {
+        protected void performSearch(boolean quickSearch) {
             BitapMatcher matcher = motif.getBitapPattern().exactMatcher(input.getSequence(), from, to);
             int currentMatchPosition;
             int bestScore = 0;
