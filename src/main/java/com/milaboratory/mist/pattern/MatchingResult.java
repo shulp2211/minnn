@@ -39,7 +39,5 @@ public interface MatchingResult {
      *
      * @return true if pattern matched
      */
-    default boolean isFound() {
-        return getMatchesNumber() > 0;
-    }
+    boolean isFound();
 }

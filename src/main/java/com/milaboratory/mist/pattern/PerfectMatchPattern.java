@@ -22,41 +22,101 @@ public class PerfectMatchPattern implements SinglePattern {
     /**
      * Find perfect match with bitap.
      *
-     * @param input target sequence
-     * @param from starting point in target sequence (inclusive)
-     * @param to ending point in target sequence (exclusive)
+     * @param input    target sequence
+     * @param from     starting point in target sequence (inclusive)
+     * @param to       ending point in target sequence (exclusive)
      * @param targetId number of read where sequence is matched
-     * @param quickMatch if true, match.isFound() returns true or false, other methods throw exception
      * @return matching result
      */
     @Override
-    public MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId, boolean quickMatch) {
-        BitapMatcher matcher = motif.getBitapPattern().exactMatcher(input.getSequence(), from, to);
-        if (quickMatch)
-            if (matcher.findNext() == -1)
-                return new QuickMatchingResult(false);
-            else
-                return new QuickMatchingResult(true);
-        else {
-            ArrayList<Match> matches = new ArrayList<>();
-            int currentMatch;
+    public MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId) {
+        final PerfectMatchesSearch matchesSearch = new PerfectMatchesSearch(motif, input, from, to, targetId);
+        final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
+        final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
+
+        return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
+    }
+
+    private final class PerfectMatchesSearch implements MatchesSearch {
+        private final Motif<NucleotideSequence> motif;
+        private final NSequenceWithQuality input;
+        private final int from;
+        private final int to;
+        private final byte targetId;
+        ArrayList<Match> allMatches = new ArrayList<>();
+        private Match bestMatch = null;
+        private boolean quickSearchPerformed = false;
+        private boolean matchFound = false;
+        private boolean fullSearchPerformed = false;
+
+        public PerfectMatchesSearch(Motif<NucleotideSequence> motif, NSequenceWithQuality input, int from, int to, byte targetId) {
+            this.motif = motif;
+            this.input = input;
+            this.from = from;
+            this.to = to;
+            this.targetId = targetId;
+        }
+
+        @Override
+        public Match[] getAllMatches() {
+            if (!fullSearchPerformed) performSearch(false);
+            return allMatches.toArray(new Match[allMatches.size()]);
+        }
+
+        @Override
+        public Match getBestMatch() {
+            if (!fullSearchPerformed) performSearch(false);
+            return bestMatch;
+        }
+
+        @Override
+        public long getMatchesNumber() {
+            if (!fullSearchPerformed) performSearch(false);
+            return allMatches.size();
+        }
+
+        @Override
+        public boolean isFound() {
+            if (!quickSearchPerformed) performSearch(true);
+            return matchFound;
+        }
+
+        /**
+         * Find all matches and best match, calculate matches number.
+         */
+        private void performSearch(boolean quickSearch) {
+            BitapMatcher matcher = motif.getBitapPattern().exactMatcher(input.getSequence(), from, to);
+            int currentMatchPosition;
+            int bestScore = 0;
+
             do {
-                currentMatch = matcher.findNext();
-                if (currentMatch != -1) {
-                    Range foundRange = new Range(currentMatch, currentMatch + motif.size(), false);
+                currentMatchPosition = matcher.findNext();
+                if (currentMatchPosition != -1) {
+                    matchFound = true;
+                    // for quick search stop on first found valid match
+                    if (quickSearch) {
+                        quickSearchPerformed = true;
+                        return;
+                    }
+                    Range foundRange = new Range(currentMatchPosition, currentMatchPosition + motif.size(), false);
                     CaptureGroupMatch wholePatternMatch = new CaptureGroupMatch(input, targetId, foundRange);
                     Map<String, CaptureGroupMatch> groupMatchMap = new HashMap<String, CaptureGroupMatch>() {{
                         put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0", wholePatternMatch);
                     }};
-                    // TODO: create scoring rules
-                    matches.add(new Match(1, 1, groupMatchMap));
-                }
-            } while (currentMatch != -1);
 
-            if (matches.size() == 0)
-                return new SimpleMatchingResult();
-            else
-                return new SimpleMatchingResult(matches.toArray(new Match[matches.size()]));
+                    // TODO: create scoring rules
+                    int currentScore = 1;
+                    Match currentMatch = new Match(1, currentScore, groupMatchMap);
+                    allMatches.add(currentMatch);
+                    if (currentScore > bestScore) {
+                        bestMatch = currentMatch;
+                        bestScore = currentScore;
+                    }
+                }
+            } while (currentMatchPosition != -1);
+
+            quickSearchPerformed = true;
+            fullSearchPerformed = true;
         }
     }
 }

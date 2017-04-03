@@ -5,7 +5,6 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 public class PlusPattern extends MultiplePatternsOperator {
     public PlusPattern(SinglePattern... operandPatterns) {
@@ -13,21 +12,18 @@ public class PlusPattern extends MultiplePatternsOperator {
     }
 
     @Override
-    public MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId, boolean quickMatch) {
+    public MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId) {
         final PlusMatchesSearch matchesSearch = new PlusMatchesSearch(operandPatterns, input, from, to, targetId);
-        final OperatorOutputPort allMatchesByScore = new OperatorOutputPort(matchesSearch, true);
-        final OperatorOutputPort allMatchesByCoordinate = new OperatorOutputPort(matchesSearch, false);
+        final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
+        final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
         final Match[] bestMatches = new Match[operandPatterns.length];
         boolean rangeMisplaced = false;
 
         // If one pattern doesn't match, PlusPattern doesn't match
         for (SinglePattern operandPattern : operandPatterns) {
-            MatchingResult result = operandPattern.match(input, from, to, targetId, true);
+            MatchingResult result = operandPattern.match(input, from, to, targetId);
             if (!result.isFound())
-                if (quickMatch)
-                    return new QuickMatchingResult(false);
-                else
-                    return new MultiplePatternsMatchingResult(null, new OperatorOutputPort(), new OperatorOutputPort());
+                return new MultiplePatternsMatchingResult(new MatchesOutputPort(), new MatchesOutputPort());
         }
 
         for (int patternNumber = 0; patternNumber < operandPatterns.length; patternNumber++) {
@@ -42,15 +38,11 @@ public class PlusPattern extends MultiplePatternsOperator {
             }
         }
 
-        if (!rangeMisplaced)
-            if (quickMatch)
-                return new QuickMatchingResult(true);
-            else
-                return new MultiplePatternsMatchingResult(combineMatches(input, targetId, bestMatches), allMatchesByScore, allMatchesByCoordinate);
-        else {
-            // Best matches from operands has misplaced ranges, calculate all matches now and get the best
-            return new MultiplePatternsMatchingResult(matchesSearch.getBestMatch(quickMatch), allMatchesByScore, allMatchesByCoordinate);
-        }
+        if (!rangeMisplaced) {
+            // quick best match found, we can provide it now, and getBestMatch() will not start the full search
+            return new MultiplePatternsMatchingResult(allMatchesByScore, allMatchesByCoordinate, combineMatches(input, targetId, bestMatches));
+        } else
+            return new MultiplePatternsMatchingResult(allMatchesByScore, allMatchesByCoordinate);
     }
 
     private final class PlusMatchesSearch implements MatchesSearch {
@@ -61,7 +53,17 @@ public class PlusPattern extends MultiplePatternsOperator {
         private final byte targetId;
         private ArrayList<Match> allMatches = new ArrayList<>();
         private Match bestMatch = null;
-        private boolean searchPerformed = false;
+        private boolean quickSearchPerformed = false;
+        private boolean matchFound = false;
+        private boolean fullSearchPerformed = false;
+        private ArrayList<ArrayList<Match>> matches = new ArrayList<>();
+        private ArrayList<OutputPort<Match>> matchOutputPorts = new ArrayList<>();
+        private MatchingResult[] matchingResults;
+        private int[] matchArraySizes;
+        private int[] innerArrayIndexes;
+        // we can skip checks for matches whose lower range border is lower than previous operand's upper border
+        private int[] skippedMatches;
+        private int totalCombinationCount = 1;
 
         PlusMatchesSearch(SinglePattern[] operandPatterns, NSequenceWithQuality input, int from, int to, byte targetId) {
             this.operandPatterns = operandPatterns;
@@ -73,44 +75,49 @@ public class PlusPattern extends MultiplePatternsOperator {
 
         @Override
         public Match[] getAllMatches() {
-            if (!searchPerformed) performSearch(false);
+            if (!fullSearchPerformed) performSearch(false);
             return allMatches.toArray(new Match[allMatches.size()]);
         }
 
         @Override
+        public Match getBestMatch() {
+            if (!fullSearchPerformed) performSearch(false);
+            return bestMatch;
+        }
+
+        @Override
         public long getMatchesNumber() {
-            if (!searchPerformed) performSearch(false);
+            if (!fullSearchPerformed) performSearch(false);
             return allMatches.size();
         }
 
-        public Match getBestMatch(boolean quickMatch) {
-            if (!searchPerformed) performSearch(quickMatch);
-            return bestMatch;
+        @Override
+        public boolean isFound() {
+            if (!quickSearchPerformed) performSearch(true);
+            return matchFound;
         }
 
         /**
          * Find all matches and best match, calculate matches number.
          */
-        private void performSearch(boolean quickMatch) {
+        private void performSearch(boolean quickSearch) {
             int bestScore = 0;
             int numOperands = operandPatterns.length;
-            HashSet<Range> uniqueRanges = new HashSet<>();
-            ArrayList<ArrayList<Match>> matches = new ArrayList<>();
-            ArrayList<OutputPort<Match>> matchOutputPorts = new ArrayList<>();
-            MatchingResult[] matchingResults = new MatchingResult[numOperands];
-            int[] matchArraySizes = new int[numOperands];
-            int[] innerArrayIndexes = new int[numOperands];
-            // we can skip checks for matches whose lower range border is lower than previous operand's upper border
-            int[] skippedMatches = new int[numOperands];
-            int totalCombinationCount = 1;
 
-            for (int i = 0; i < numOperands; i++) {
-                matches.add(new ArrayList<>());
-                matchingResults[i] = operandPatterns[i].match(input, from, to, targetId);
-                matchArraySizes[i] = Math.toIntExact(matchingResults[i].getMatchesNumber());
-                // get matches ordered by their left border position from left to right
-                matchOutputPorts.add(matchingResults[i].getMatches(false));
-                totalCombinationCount *= matchArraySizes[i];
+            // initialize arrays and get matches for all operands
+            if (!quickSearchPerformed) {
+                matchingResults = new MatchingResult[numOperands];
+                matchArraySizes = new int[numOperands];
+                innerArrayIndexes = new int[numOperands];
+                skippedMatches = new int[numOperands];
+                for (int i = 0; i < numOperands; i++) {
+                    matches.add(new ArrayList<>());
+                    matchingResults[i] = operandPatterns[i].match(input, from, to, targetId);
+                    matchArraySizes[i] = Math.toIntExact(matchingResults[i].getMatchesNumber());
+                    // get matches ordered by their left border position from left to right
+                    matchOutputPorts.add(matchingResults[i].getMatches(false));
+                    totalCombinationCount *= matchArraySizes[i];
+                }
             }
 
             // Loop through all combinations and find the best, or leave bestMatch = null if nothing found
@@ -138,23 +145,19 @@ public class PlusPattern extends MultiplePatternsOperator {
                 }
 
                 if (!rangesMisplaced) {
-                    // for quick match stop on first found valid match
-                    if (quickMatch) {
-                        bestMatch = combineMatches(input, targetId, currentMatches);
+                    matchFound = true;
+                    // for quick search stop on first found valid match
+                    if (quickSearch) {
+                        quickSearchPerformed = true;
                         return;
                     }
                     Match currentMatch = combineMatches(input, targetId, currentMatches);
-                    Range currentRange = currentMatch.getWholePatternMatch().getRange();
-                    // don't duplicate entries with the same range
-                    if (!uniqueRanges.contains(currentRange)) {
-                        int currentSum = sumMatchesScore(currentMatches);
-                        if (currentSum > bestScore) {
-                            bestMatch = currentMatch;
-                            bestScore = currentSum;
-                        }
-                        allMatches.add(currentMatch);
-                        uniqueRanges.add(currentRange);
+                    int currentSum = sumMatchesScore(currentMatches);
+                    if (currentSum > bestScore) {
+                        bestMatch = currentMatch;
+                        bestScore = currentSum;
                     }
+                    allMatches.add(currentMatch);
                 }
 
                 /* Update innerArrayIndexes to switch to the next combination on next iteration of outer loop.
@@ -185,7 +188,8 @@ public class PlusPattern extends MultiplePatternsOperator {
                 }
             }
 
-            searchPerformed = true;
+            quickSearchPerformed = true;
+            fullSearchPerformed = true;
         }
     }
 }

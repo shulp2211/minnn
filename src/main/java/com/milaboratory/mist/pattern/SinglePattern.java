@@ -16,10 +16,6 @@ public interface SinglePattern extends Pattern {
         return match(input, range, (byte) 1);
     }
 
-    default MatchingResult match(NSequenceWithQuality input, Range range, byte targetId) {
-        return match(input, range, targetId, false);
-    }
-
     /**
      * Search this pattern in target sequence
      *
@@ -28,14 +24,12 @@ public interface SinglePattern extends Pattern {
      * @param targetId number of read where sequence is matched, numbers start from 1
      *                 negative if matched in reverse complement
      *                 0 if complex pattern uses multiple reads to match
-     * @param quickMatch if true, match.isFound() returns true or false, other methods throw exception;
-     *                   used for quick checking is pattern matching or not
      * @return matching result
      */
-    default MatchingResult match(NSequenceWithQuality input, Range range, byte targetId, boolean quickMatch) {
+    default MatchingResult match(NSequenceWithQuality input, Range range, byte targetId) {
         if (range.isReverse())
             throw new IllegalArgumentException("Doesn't support reversed ranges.");
-        return match(input, range.getFrom(), range.getTo(), targetId, quickMatch);
+        return match(input, range.getFrom(), range.getTo(), targetId);
     }
 
     default MatchingResult match(NSequenceWithQuality input) {
@@ -44,10 +38,6 @@ public interface SinglePattern extends Pattern {
 
     default MatchingResult match(NSequenceWithQuality input, int from, int to) {
         return match(input, from, to, (byte) 1);
-    }
-
-    default MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId) {
-        return match(input, from, to, targetId, false);
     }
 
     /**
@@ -59,9 +49,7 @@ public interface SinglePattern extends Pattern {
      * @param targetId number of read where sequence is matched, numbers start from 1
      *                 negative if matched in reverse complement
      *                 0 if complex pattern uses multiple reads to match
-     * @param quickMatch if true, match.isFound() returns true or false, other methods throw exception;
-     *                   used for quick checking is pattern matching or not
      * @return matching result
      */
-    MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId, boolean quickMatch);
+    MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId);
 }

@@ -1,43 +1,29 @@
 package com.milaboratory.mist.pattern;
 
-import cc.redberry.pipe.OutputPort;
+public class MultiplePatternsMatchingResult extends SimpleMatchingResult {
+    private boolean quickBestMatchFound = false;
+    private Match quickBestMatch;
 
-public class MultiplePatternsMatchingResult implements MatchingResult {
-    private final Match bestMatch;
-    private final OperatorOutputPort matchesByScore;
-    private final OperatorOutputPort matchesByCoordinate;
-
-    public MultiplePatternsMatchingResult(Match bestMatch, OperatorOutputPort matchesByScore, OperatorOutputPort matchesByCoordinate) {
-        this.bestMatch = bestMatch;
-        this.matchesByScore = matchesByScore;
-        this.matchesByCoordinate = matchesByCoordinate;
+    public MultiplePatternsMatchingResult(MatchesOutputPort matchesByScore, MatchesOutputPort matchesByCoordinate) {
+        super(matchesByScore, matchesByCoordinate);
     }
 
-    @Override
-    public OutputPort<Match> getMatches(boolean byScore) {
-        if (byScore)
-            return matchesByScore;
-        else
-            return matchesByCoordinate;
+    public MultiplePatternsMatchingResult(MatchesOutputPort matchesByScore, MatchesOutputPort matchesByCoordinate, Match quickBestMatch) {
+        super(matchesByScore, matchesByCoordinate);
+        this.quickBestMatch = quickBestMatch;
+        this.quickBestMatchFound = true;
     }
 
     @Override
     public Match getBestMatch() {
-        return bestMatch;
+        if (quickBestMatchFound)
+            return quickBestMatch;
+        else
+            return matchesByScore.getBestMatch();
     }
 
-    @Override
-    public long getMatchesNumber() {
-        return matchesByScore.getMatchesNumber();
-    }
-
-    /**
-     * Overriding isFound() because calling getMatchesNumber() may lead to complex calculations.
-     *
-     * @return true if pattern matched
-     */
     @Override
     public boolean isFound() {
-        return bestMatch != null;
+        return quickBestMatchFound || matchesByScore.isFound();
     }
 }
