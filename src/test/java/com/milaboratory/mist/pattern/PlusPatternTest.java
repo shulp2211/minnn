@@ -122,4 +122,32 @@ public class PlusPatternTest {
         }
         assertEquals(6, plusPattern.match(nseq).getMatchesNumber());
     }
+
+    @Test
+    public void quickSearchTest() throws Exception {
+        PerfectMatchPattern pattern1 = new PerfectMatchPattern(new NucleotideSequence("ATA").toMotif());
+        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("TAT").toMotif());
+        PlusPattern plusPattern = new PlusPattern(pattern1, pattern2);
+        NSequenceWithQuality nseq1 = new NSequenceWithQuality("ATATATATTATA");
+        NSequenceWithQuality nseq2 = new NSequenceWithQuality("GCGGTGCGTATAGCG");
+        MatchingResult match1 = plusPattern.match(nseq1);
+        MatchingResult match2 = plusPattern.match(nseq2);
+        assertEquals(true, match1.isFound());
+        assertEquals(false, match2.isFound());
+        assertEquals(6, match1.getMatchesNumber());
+        assertEquals(0, match2.getMatchesNumber());
+        match1 = plusPattern.match(nseq1);
+        match2 = plusPattern.match(nseq2);
+        assertEquals(true, match1.isFound());
+        assertEquals(false, match2.isFound());
+        assertNotNull(match1.getMatches(true).take());
+        assertNotNull(match1.getMatches(false).take());
+        assertNotNull(match1.getMatches().take());
+        assertNotNull(match2.getMatches(true));
+        assertNotNull(match2.getMatches(false));
+        assertNotNull(match2.getMatches());
+        assertNull(match2.getMatches().take());
+        assertEquals(6, match1.getMatchesNumber());
+        assertEquals(0, match2.getMatchesNumber());
+    }
 }
