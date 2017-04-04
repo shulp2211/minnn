@@ -14,12 +14,16 @@ import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
 import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
 import static org.junit.Assert.*;
 
 public class PerfectMatchPatternTest {
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     @Test
     public void bestMatchTest() throws Exception {
         PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("ATTAGACA").toMotif());
@@ -149,5 +153,24 @@ public class PerfectMatchPatternTest {
         assertEquals(new Range(22, 25), matches.take().getWholePatternMatch().getRange());
         assertEquals(new Range(24, 27), matches.take().getWholePatternMatch().getRange());
         assertEquals(null, matches.take());
+    }
+
+    @Test
+    public void groupsTest() throws Exception {
+        HashMap<String, Range> groups = new HashMap<String, Range>() {{
+            put("ABC", new Range(1, 3));
+            put("DEF", new Range(6, 7));
+            put("GH", new Range(10, 11));
+        }};
+        PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups);
+        NSequenceWithQuality nseq = new NSequenceWithQuality("GTGTTGTGGTTGTGTTGTTGTGGTTGTGTTGTGG");
+        MatchingResult result = pattern.match(nseq);
+        assertEquals("G", result.getBestMatch().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "DEF").getValue().getSequence().toString());
+        assertEquals("TG", result.getMatches().take().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "ABC").getValue().getSequence().toString());
+        assertEquals(new Range(29, 30), result.getMatches().take().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "GH").getRange());
+        assertNull(result.getMatches().take());
+
+        exception.expect(IllegalStateException.class);
+        new PerfectMatchPattern(new NucleotideSequence("GGTGTGTCAC").toMotif(), groups);
     }
 }
