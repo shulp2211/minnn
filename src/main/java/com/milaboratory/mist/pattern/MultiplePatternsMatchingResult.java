@@ -4,6 +4,10 @@ public class MultiplePatternsMatchingResult extends SimpleMatchingResult {
     private boolean quickBestMatchFound = false;
     private Match quickBestMatch;
 
+    public MultiplePatternsMatchingResult() {
+        super();
+    }
+
     public MultiplePatternsMatchingResult(MatchesOutputPort matchesByScore, MatchesOutputPort matchesByCoordinate) {
         super(matchesByScore, matchesByCoordinate);
     }

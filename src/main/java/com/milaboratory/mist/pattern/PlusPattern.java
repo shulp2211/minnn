@@ -23,7 +23,7 @@ public class PlusPattern extends MultiplePatternsOperator {
         for (SinglePattern operandPattern : operandPatterns) {
             MatchingResult result = operandPattern.match(input, from, to, targetId);
             if (!result.isFound())
-                return new MultiplePatternsMatchingResult(new MatchesOutputPort(), new MatchesOutputPort());
+                return new MultiplePatternsMatchingResult();
         }
 
         for (int patternNumber = 0; patternNumber < operandPatterns.length; patternNumber++) {

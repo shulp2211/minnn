@@ -6,6 +6,11 @@ public class SimpleMatchingResult implements MatchingResult {
     protected final MatchesOutputPort matchesByScore;
     protected final MatchesOutputPort matchesByCoordinate;
 
+    public SimpleMatchingResult() {
+        this.matchesByScore = new MatchesOutputPort();
+        this.matchesByCoordinate = new MatchesOutputPort();
+    }
+
     public SimpleMatchingResult(MatchesOutputPort matchesByScore, MatchesOutputPort matchesByCoordinate) {
         this.matchesByScore = matchesByScore;
         this.matchesByCoordinate = matchesByCoordinate;
