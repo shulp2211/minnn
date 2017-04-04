@@ -86,7 +86,8 @@ public class AndPattern extends MultiplePatternsOperator {
                 }
             }
 
-            // Loop through all combinations and find the best, or leave bestMatch = null if nothing found
+            /* Loop through all combinations, fill allMatches and find bestMatch,
+               or leave bestMatch = null if nothing found */
             for (int i = 0; i < totalCombinationCount; i++) {
                 Match[] currentMatches = new Match[numOperands];
                 Range[] currentRanges = new Range[numOperands];
