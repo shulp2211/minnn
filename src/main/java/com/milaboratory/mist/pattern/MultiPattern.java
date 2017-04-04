@@ -40,8 +40,9 @@ public class MultiPattern implements Pattern {
      * @return matching result
      */
     public MatchingResult match(MultiNSequenceWithQuality input, Range[] ranges, int[] reverseComplements) {
+        final Match[] bestMatches = new Match[singlePatterns.length];
         // 2 dimensional array: [][0] items contain non-reversed matching results, [][1] - reversed
-        MatchingResult[][] allResults = new MatchingResult[singlePatterns.length][2];
+        final MatchingResult[][] allResults = new MatchingResult[singlePatterns.length][2];
 
         if (input.numberOfSequences() != reverseComplements.length)
             throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
@@ -50,23 +51,26 @@ public class MultiPattern implements Pattern {
             throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
                     + ") and patterns (" + singlePatterns.length + ")!");
 
-        // fill allResults array, and if at least 1 pattern didn't match, return no results
+        /* fill allResults array, and if at least 1 pattern didn't match, return no results;
+           also collect best matches to provide quickBestMatch */
         for (int i = 0; i < singlePatterns.length; i++) {
             MatchingResult currentResult;
             switch (reverseComplements[i]) {
                 case 1:
                     currentResult = singlePatterns[i].match(input.get(i), ranges[i], (byte) (i + 1));
                     if (!currentResult.isFound())
-                        return new SimpleMatchingResult();
+                        return new MultiplePatternsMatchingResult();
                     allResults[i][0] = currentResult;
                     allResults[i][1] = null;
+                    bestMatches[i] = currentResult.getBestMatch();
                     break;
                 case -1:
                     currentResult = singlePatterns[i].match(input.get(i).getReverseComplement(), ranges[i].inverse(), (byte) (-i - 1));
                     if (!currentResult.isFound())
-                        return new SimpleMatchingResult();
+                        return new MultiplePatternsMatchingResult();
                     allResults[i][0] = null;
                     allResults[i][1] = currentResult;
+                    bestMatches[i] = currentResult.getBestMatch();
                     break;
                 case 0:
                     currentResult = singlePatterns[i].match(input.get(i), ranges[i], (byte) (i + 1));
@@ -80,7 +84,13 @@ public class MultiPattern implements Pattern {
                     else
                         allResults[i][1] = null;
                     if ((allResults[i][0] == null) && (allResults[i][1] == null))
-                        return new SimpleMatchingResult();
+                        return new MultiplePatternsMatchingResult();
+                    Match bestMatch0 = allResults[i][0].getBestMatch();
+                    Match bestMatch1 = allResults[i][1].getBestMatch();
+                    if (bestMatch0.getScore() >= bestMatch1.getScore())
+                        bestMatches[i] = bestMatch0;
+                    else
+                        bestMatches[i] = bestMatch1;
                     break;
             }
         }
@@ -89,7 +99,20 @@ public class MultiPattern implements Pattern {
         final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
         final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
 
-        return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
+        return new MultiplePatternsMatchingResult(allMatchesByScore, allMatchesByCoordinate, combineMatches(bestMatches));
+    }
+
+    private Match combineMatches(Match... matches) {
+        Map<String, CaptureGroupMatch> groupMatches = new HashMap<>();
+
+        for (int i = 0; i < matches.length; i++) {
+            groupMatches.putAll(matches[i].groupMatches);
+            // put whole pattern match with read index; reads are numbered from 1
+            groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + (i + 1), matches[i].getWholePatternMatch(0));
+        }
+
+        groupMatches.remove(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + 0);
+        return new Match(matches.length, sumMatchesScore(matches), groupMatches);
     }
 
     private final class MultiPatternMatchesSearch extends MatchesSearch {
@@ -101,7 +124,7 @@ public class MultiPattern implements Pattern {
 
         MultiPatternMatchesSearch(MatchingResult[][] matchingResults) {
             this.matchingResults = matchingResults;
-            // if there are no matches, we should already return empty SimpleMatchingResult
+            // if there are no matches, we should already return empty MatchingResult
             quickSearchPerformed = true;
             matchFound = true;
         }
@@ -155,19 +178,6 @@ public class MultiPattern implements Pattern {
                     innerArrayIndexes[j] = 0;
                 }
             fullSearchPerformed = true;
-        }
-
-        private Match combineMatches(Match... matches) {
-            Map<String, CaptureGroupMatch> groupMatches = new HashMap<>();
-
-            for (int i = 0; i < matches.length; i++) {
-                groupMatches.putAll(matches[i].groupMatches);
-                // put whole pattern match with read index; reads are numbered from 1
-                groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + (i + 1), matches[i].getWholePatternMatch(0));
-            }
-
-            groupMatches.remove(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + 0);
-            return new Match(matches.length, sumMatchesScore(matches), groupMatches);
         }
     }
 }
