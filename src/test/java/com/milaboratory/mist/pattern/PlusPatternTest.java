@@ -12,6 +12,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.HashMap;
+
+import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
 import static org.junit.Assert.*;
 
 public class PlusPatternTest {
@@ -149,5 +152,28 @@ public class PlusPatternTest {
         assertNull(match2.getMatches().take());
         assertEquals(6, match1.getMatchesNumber());
         assertEquals(0, match2.getMatchesNumber());
+    }
+
+    @Test
+    public void groupsTest() throws Exception {
+        HashMap<String, Range> groups1 = new HashMap<String, Range>() {{
+            put("1", new Range(0, 1));
+            put("2", new Range(1, 3));
+            put("4", new Range(4, 5));
+        }};
+        HashMap<String, Range> groups2 = new HashMap<String, Range>() {{
+            put("3", new Range(1, 3));
+            put("5", new Range(5, 6));
+        }};
+
+        PerfectMatchPattern pattern1 = new PerfectMatchPattern(new NucleotideSequence("TAGCC").toMotif(), groups1);
+        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("CAGATGCA").toMotif(), groups2);
+        PlusPattern plusPattern = new PlusPattern(pattern2, pattern1);
+        NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGCC");
+        MatchingResult result = plusPattern.match(nseq);
+        assertEquals("AG", result.getMatches(false).take().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "2").getValue().getSequence().toString());
+        assertEquals(new Range(8, 9), result.getMatches(true).take().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "5").getRange());
+        assertEquals("AG", result.getBestMatch().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "3").getValue().getSequence().toString());
+        assertNull(result.getMatches().take());
     }
 }
