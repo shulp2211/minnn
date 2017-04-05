@@ -25,9 +25,21 @@ public class MultiPattern implements Pattern {
                 .mapToObj(i -> new Range(0, input.get(i).getSequence().size())).toArray(Range[]::new));
     }
 
+    public MatchingResult match(MultiNSequenceWithQuality input, boolean... reverseComplements) {
+        if (input.numberOfSequences() != reverseComplements.length)
+            throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
+                    + ") and reverse complement flags (" + reverseComplements.length + ")!");
+        // for reverse complement reads automatically inverse generated ranges
+        return this.match(input, IntStream.range(0, input.numberOfSequences())
+                .mapToObj(i -> new Range(0, input.get(i).getSequence().size(), reverseComplements[i])).toArray(Range[]::new), reverseComplements);
+    }
+
     public MatchingResult match(MultiNSequenceWithQuality input, Range... ranges) {
+        if (input.numberOfSequences() != ranges.length)
+            throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
+                    + ") and ranges (" + ranges.length + ")!");
         // if reverseComplements array not provided, match without reverse complements only
-        return this.match(input, ranges, IntStream.generate(() -> 1).limit(input.numberOfSequences()).toArray());
+        return this.match(input, ranges, new boolean[input.numberOfSequences()]);
     }
 
     /**
@@ -35,17 +47,19 @@ public class MultiPattern implements Pattern {
      *
      * @param input multiple sequences that come from multiple reads
      * @param ranges ranges for input reads
-     * @param reverseComplements 1 if non-reversed match only, -1 if reversed complement only, 0 if both;
+     * @param reverseComplements false if non-reversed match, true if reversed complement;
      *                           one array element for one read in input
      * @return matching result
      */
-    public MatchingResult match(MultiNSequenceWithQuality input, Range[] ranges, int[] reverseComplements) {
-        // 2 dimensional array: [][0] items contain non-reversed matching results, [][1] - reversed
-        final MatchingResult[][] allResults = new MatchingResult[singlePatterns.length][2];
+    public MatchingResult match(MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements) {
+        final MatchingResult[] allResults = new MatchingResult[singlePatterns.length];
 
+        if (input.numberOfSequences() != ranges.length)
+            throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
+                    + ") and ranges (" + ranges.length + ")!");
         if (input.numberOfSequences() != reverseComplements.length)
             throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
-                    + ") and reverse complement flags array size (" + reverseComplements.length + ")!");
+                    + ") and reverse complement flags (" + reverseComplements.length + ")!");
         if (input.numberOfSequences() != singlePatterns.length)
             throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
                     + ") and patterns (" + singlePatterns.length + ")!");
@@ -53,36 +67,13 @@ public class MultiPattern implements Pattern {
         // fill allResults array, and if at least 1 pattern didn't match, return no results
         for (int i = 0; i < singlePatterns.length; i++) {
             MatchingResult currentResult;
-            switch (reverseComplements[i]) {
-                case 1:
-                    currentResult = singlePatterns[i].match(input.get(i), ranges[i], (byte) (i + 1));
-                    if (!currentResult.isFound())
-                        return new SimpleMatchingResult();
-                    allResults[i][0] = currentResult;
-                    allResults[i][1] = null;
-                    break;
-                case -1:
-                    currentResult = singlePatterns[i].match(input.get(i).getReverseComplement(), ranges[i].inverse(), (byte) (-i - 1));
-                    if (!currentResult.isFound())
-                        return new SimpleMatchingResult();
-                    allResults[i][0] = null;
-                    allResults[i][1] = currentResult;
-                    break;
-                case 0:
-                    currentResult = singlePatterns[i].match(input.get(i), ranges[i], (byte) (i + 1));
-                    if (currentResult.isFound())
-                        allResults[i][0] = currentResult;
-                    else
-                        allResults[i][0] = null;
-                    currentResult = singlePatterns[i].match(input.get(i).getReverseComplement(), ranges[i].inverse(), (byte) (-i - 1));
-                    if (currentResult.isFound())
-                        allResults[i][1] = currentResult;
-                    else
-                        allResults[i][1] = null;
-                    if ((allResults[i][0] == null) && (allResults[i][1] == null))
-                        return new SimpleMatchingResult();
-                    break;
-            }
+            if (!reverseComplements[i])
+                currentResult = singlePatterns[i].match(input.get(i), ranges[i], (byte) (i + 1));
+            else
+                currentResult = singlePatterns[i].match(input.get(i).getReverseComplement(), ranges[i].inverse(), (byte) (-i - 1));
+            if (!currentResult.isFound())
+                return new SimpleMatchingResult();
+            allResults[i] = currentResult;
         }
 
         final MultiPatternMatchesSearch matchesSearch = new MultiPatternMatchesSearch(allResults);
@@ -98,21 +89,19 @@ public class MultiPattern implements Pattern {
         for (int i = 0; i < matches.length; i++) {
             groupMatches.putAll(matches[i].groupMatches);
             // put whole pattern match with read index; reads are numbered from 1
-            groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + (i + 1), matches[i].getWholePatternMatch(0));
+            groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + i, matches[i].getWholePatternMatch(0));
         }
-
-        groupMatches.remove(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + 0);
         return new Match(matches.length, sumMatchesScore(matches), groupMatches);
     }
 
     private final class MultiPatternMatchesSearch extends MatchesSearchWithQuickBestMatch {
-        private final MatchingResult[][] matchingResults;
+        private final MatchingResult[] matchingResults;
         private ArrayList<ArrayList<Match>> matches = new ArrayList<>();
         private int[] matchArraySizes;
         private int[] innerArrayIndexes;
         private int totalCombinationCount = 1;
 
-        MultiPatternMatchesSearch(MatchingResult[][] matchingResults) {
+        MultiPatternMatchesSearch(MatchingResult[] matchingResults) {
             this.matchingResults = matchingResults;
             // if there are no matches, we should already return empty MatchingResult
             quickSearchPerformed = true;
@@ -122,17 +111,14 @@ public class MultiPattern implements Pattern {
         @Override
         protected void performSearch(boolean quickSearch) {
             int bestScore = 0;
-            int numOperands = matchingResults[0].length;
+            int numOperands = matchingResults.length;
 
             // initialize arrays and get matches for all operands
             matchArraySizes = new int[numOperands];
             innerArrayIndexes = new int[numOperands];
             for (int i = 0; i < numOperands; i++) {
                 matches.add(new ArrayList<>());
-                matchArraySizes[i] = 0;
-                for (int reverse = 0; reverse <= 1; reverse++)
-                    if (matchingResults[i][reverse] != null)
-                        matchArraySizes[i] += Math.toIntExact(matchingResults[i][reverse].getMatchesNumber());
+                matchArraySizes[i] = Math.toIntExact(matchingResults[i].getMatchesNumber());
                 totalCombinationCount *= matchArraySizes[i];
             }
 
@@ -140,14 +126,12 @@ public class MultiPattern implements Pattern {
                or leave bestMatch = null if nothing found */
             for (int i = 0; i < totalCombinationCount; i++) {
                 Match[] currentMatches = new Match[numOperands];
-                for (int j = 0; j < numOperands; j++)
-                    for (int reverse = 0; reverse <= 1; reverse++) {
-                        if (matchingResults[j][reverse] == null) continue;
-                        // if current array element doesn't exist, we didn't take that match, so let's take it now
-                        if (innerArrayIndexes[j] == matches.get(j).size())
-                            matches.get(j).add(matchingResults[j][reverse].getMatches().take());
-                        currentMatches[j] = matches.get(j).get(innerArrayIndexes[j]);
-                    }
+                for (int j = 0; j < numOperands; j++) {
+                    // if current array element doesn't exist, we didn't take that match, so let's take it now
+                    if (innerArrayIndexes[j] == matches.get(j).size())
+                        matches.get(j).add(matchingResults[j].getMatches().take());
+                    currentMatches[j] = matches.get(j).get(innerArrayIndexes[j]);
+                }
 
                 Match currentMatch = combineMatches(currentMatches);
                 if (!quickBestMatchFound) {
@@ -178,19 +162,8 @@ public class MultiPattern implements Pattern {
         protected void performQuickBestMatchSearch() {
             final Match[] bestMatches = new Match[singlePatterns.length];
 
-            for (int i = 0; i < singlePatterns.length; i++) {
-                if ((matchingResults[i][0] != null) && (matchingResults[i][1] != null)) {
-                    Match bestMatch0 = matchingResults[i][0].getBestMatch();
-                    Match bestMatch1 = matchingResults[i][1].getBestMatch();
-                    if (bestMatch0.getScore() >= bestMatch1.getScore())
-                        bestMatches[i] = bestMatch0;
-                    else
-                        bestMatches[i] = bestMatch1;
-                } else if (matchingResults[i][0] != null)
-                    bestMatches[i] = matchingResults[i][0].getBestMatch();
-                else
-                    bestMatches[i] = matchingResults[i][1].getBestMatch();
-            }
+            for (int i = 0; i < singlePatterns.length; i++)
+                bestMatches[i] = matchingResults[i].getBestMatch();
 
             bestMatch = combineMatches(bestMatches);
 
