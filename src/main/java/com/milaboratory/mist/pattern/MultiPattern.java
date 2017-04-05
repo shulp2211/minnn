@@ -31,7 +31,8 @@ public class MultiPattern implements Pattern {
                     + ") and reverse complement flags (" + reverseComplements.length + ")!");
         // for reverse complement reads automatically inverse generated ranges
         return this.match(input, IntStream.range(0, input.numberOfSequences())
-                .mapToObj(i -> new Range(0, input.get(i).getSequence().size(), reverseComplements[i])).toArray(Range[]::new), reverseComplements);
+                .mapToObj(i -> new Range(0, input.get(i).getSequence().size(),
+                        reverseComplements[i])).toArray(Range[]::new), reverseComplements);
     }
 
     public MatchingResult match(MultiNSequenceWithQuality input, Range... ranges) {
@@ -39,7 +40,10 @@ public class MultiPattern implements Pattern {
             throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
                     + ") and ranges (" + ranges.length + ")!");
         // if reverseComplements array not provided, match without reverse complements only
-        return this.match(input, ranges, new boolean[input.numberOfSequences()]);
+        boolean[] reverseComplements = new boolean[ranges.length];
+        for (int i = 0; i < ranges.length; i++)
+            reverseComplements[i] = ranges[i].isReverse();
+        return this.match(input, ranges, reverseComplements);
     }
 
     /**
