@@ -166,6 +166,8 @@ public class PlusPattern extends MultiplePatternsOperator {
 
             if (!rangeMisplaced) {
                 quickBestMatchFound = true;
+                quickSearchPerformed = true;
+                matchFound = true;
                 bestMatch = combineMatches(input, targetId, bestMatches);
             }
 

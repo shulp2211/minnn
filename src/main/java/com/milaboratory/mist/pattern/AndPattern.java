@@ -133,6 +133,8 @@ public class AndPattern extends MultiplePatternsOperator {
 
             if (!rangeIntersection) {
                 quickBestMatchFound = true;
+                quickSearchPerformed = true;
+                matchFound = true;
                 bestMatch = combineMatches(input, targetId, bestMatches);
             }
 
