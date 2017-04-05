@@ -16,36 +16,18 @@ public class PlusPattern extends MultiplePatternsOperator {
         final PlusMatchesSearch matchesSearch = new PlusMatchesSearch(operandPatterns, input, from, to, targetId);
         final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
         final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
-        final Match[] bestMatches = new Match[operandPatterns.length];
-        boolean rangeMisplaced = false;
 
         // If one pattern doesn't match, PlusPattern doesn't match
         for (SinglePattern operandPattern : operandPatterns) {
             MatchingResult result = operandPattern.match(input, from, to, targetId);
             if (!result.isFound())
-                return new MultiplePatternsMatchingResult();
+                return new SimpleMatchingResult();
         }
 
-        for (int patternNumber = 0; patternNumber < operandPatterns.length; patternNumber++) {
-            bestMatches[patternNumber] = operandPatterns[patternNumber].match(input, from, to, targetId).getBestMatch();
-            if (patternNumber > 0) {
-                int previousRangeUpper = bestMatches[patternNumber - 1].getWholePatternMatch().getRange().getUpper();
-                int currentRangeLower = bestMatches[patternNumber].getWholePatternMatch().getRange().getLower();
-                if (previousRangeUpper > currentRangeLower) {
-                    rangeMisplaced = true;
-                    break;
-                }
-            }
-        }
-
-        if (!rangeMisplaced) {
-            // quick best match found, we can provide it now, and getBestMatch() will not start the full search
-            return new MultiplePatternsMatchingResult(allMatchesByScore, allMatchesByCoordinate, combineMatches(input, targetId, bestMatches));
-        } else
-            return new MultiplePatternsMatchingResult(allMatchesByScore, allMatchesByCoordinate);
+        return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
     }
 
-    private final class PlusMatchesSearch extends MatchesSearch {
+    private final class PlusMatchesSearch extends MatchesSearchWithQuickBestMatch {
         private final SinglePattern[] operandPatterns;
         private final NSequenceWithQuality input;
         private final int from;
@@ -122,10 +104,12 @@ public class PlusPattern extends MultiplePatternsOperator {
                         return;
                     }
                     Match currentMatch = combineMatches(input, targetId, currentMatches);
-                    int currentSum = sumMatchesScore(currentMatches);
-                    if (currentSum > bestScore) {
-                        bestMatch = currentMatch;
-                        bestScore = currentSum;
+                    if (!quickBestMatchFound) {
+                        int currentSum = sumMatchesScore(currentMatches);
+                        if (currentSum > bestScore) {
+                            bestMatch = currentMatch;
+                            bestScore = currentSum;
+                        }
                     }
                     allMatches.add(currentMatch);
                 }
@@ -159,7 +143,33 @@ public class PlusPattern extends MultiplePatternsOperator {
             }
 
             quickSearchPerformed = true;
+            quickBestMatchSearchPerformed = true;
             fullSearchPerformed = true;
+        }
+
+        @Override
+        protected void performQuickBestMatchSearch() {
+            final Match[] bestMatches = new Match[operandPatterns.length];
+            boolean rangeMisplaced = false;
+
+            for (int patternNumber = 0; patternNumber < operandPatterns.length; patternNumber++) {
+                bestMatches[patternNumber] = operandPatterns[patternNumber].match(input, from, to, targetId).getBestMatch();
+                if (patternNumber > 0) {
+                    int previousRangeUpper = bestMatches[patternNumber - 1].getWholePatternMatch().getRange().getUpper();
+                    int currentRangeLower = bestMatches[patternNumber].getWholePatternMatch().getRange().getLower();
+                    if (previousRangeUpper > currentRangeLower) {
+                        rangeMisplaced = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!rangeMisplaced) {
+                quickBestMatchFound = true;
+                bestMatch = combineMatches(input, targetId, bestMatches);
+            }
+
+            quickBestMatchSearchPerformed = true;
         }
     }
 }

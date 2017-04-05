@@ -31,6 +31,8 @@ public abstract class MatchesSearch {
 
     /**
      * Find all matches and best match, calculate matches number.
+     *
+     * @param quickSearch true if searching only for isFound(), false for full search
      */
     protected abstract void performSearch(boolean quickSearch);
 }

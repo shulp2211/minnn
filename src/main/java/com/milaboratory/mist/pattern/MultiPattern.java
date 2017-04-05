@@ -40,7 +40,6 @@ public class MultiPattern implements Pattern {
      * @return matching result
      */
     public MatchingResult match(MultiNSequenceWithQuality input, Range[] ranges, int[] reverseComplements) {
-        final Match[] bestMatches = new Match[singlePatterns.length];
         // 2 dimensional array: [][0] items contain non-reversed matching results, [][1] - reversed
         final MatchingResult[][] allResults = new MatchingResult[singlePatterns.length][2];
 
@@ -51,26 +50,23 @@ public class MultiPattern implements Pattern {
             throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
                     + ") and patterns (" + singlePatterns.length + ")!");
 
-        /* fill allResults array, and if at least 1 pattern didn't match, return no results;
-           also collect best matches to provide quickBestMatch */
+        // fill allResults array, and if at least 1 pattern didn't match, return no results
         for (int i = 0; i < singlePatterns.length; i++) {
             MatchingResult currentResult;
             switch (reverseComplements[i]) {
                 case 1:
                     currentResult = singlePatterns[i].match(input.get(i), ranges[i], (byte) (i + 1));
                     if (!currentResult.isFound())
-                        return new MultiplePatternsMatchingResult();
+                        return new SimpleMatchingResult();
                     allResults[i][0] = currentResult;
                     allResults[i][1] = null;
-                    bestMatches[i] = currentResult.getBestMatch();
                     break;
                 case -1:
                     currentResult = singlePatterns[i].match(input.get(i).getReverseComplement(), ranges[i].inverse(), (byte) (-i - 1));
                     if (!currentResult.isFound())
-                        return new MultiplePatternsMatchingResult();
+                        return new SimpleMatchingResult();
                     allResults[i][0] = null;
                     allResults[i][1] = currentResult;
-                    bestMatches[i] = currentResult.getBestMatch();
                     break;
                 case 0:
                     currentResult = singlePatterns[i].match(input.get(i), ranges[i], (byte) (i + 1));
@@ -84,13 +80,7 @@ public class MultiPattern implements Pattern {
                     else
                         allResults[i][1] = null;
                     if ((allResults[i][0] == null) && (allResults[i][1] == null))
-                        return new MultiplePatternsMatchingResult();
-                    Match bestMatch0 = allResults[i][0].getBestMatch();
-                    Match bestMatch1 = allResults[i][1].getBestMatch();
-                    if (bestMatch0.getScore() >= bestMatch1.getScore())
-                        bestMatches[i] = bestMatch0;
-                    else
-                        bestMatches[i] = bestMatch1;
+                        return new SimpleMatchingResult();
                     break;
             }
         }
@@ -99,7 +89,7 @@ public class MultiPattern implements Pattern {
         final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
         final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
 
-        return new MultiplePatternsMatchingResult(allMatchesByScore, allMatchesByCoordinate, combineMatches(bestMatches));
+        return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
     }
 
     private Match combineMatches(Match... matches) {
@@ -115,7 +105,7 @@ public class MultiPattern implements Pattern {
         return new Match(matches.length, sumMatchesScore(matches), groupMatches);
     }
 
-    private final class MultiPatternMatchesSearch extends MatchesSearch {
+    private final class MultiPatternMatchesSearch extends MatchesSearchWithQuickBestMatch {
         private final MatchingResult[][] matchingResults;
         private ArrayList<ArrayList<Match>> matches = new ArrayList<>();
         private int[] matchArraySizes;
@@ -160,10 +150,12 @@ public class MultiPattern implements Pattern {
                     }
 
                 Match currentMatch = combineMatches(currentMatches);
-                int currentSum = sumMatchesScore(currentMatches);
-                if (currentSum > bestScore) {
-                    bestMatch = currentMatch;
-                    bestScore = currentSum;
+                if (!quickBestMatchFound) {
+                    int currentSum = sumMatchesScore(currentMatches);
+                    if (currentSum > bestScore) {
+                        bestMatch = currentMatch;
+                        bestScore = currentSum;
+                    }
                 }
                 allMatches.add(currentMatch);
             }
@@ -177,7 +169,33 @@ public class MultiPattern implements Pattern {
                     // we need to update next index and reset current index to zero
                     innerArrayIndexes[j] = 0;
                 }
+
+            quickBestMatchSearchPerformed = true;
             fullSearchPerformed = true;
+        }
+
+        @Override
+        protected void performQuickBestMatchSearch() {
+            final Match[] bestMatches = new Match[singlePatterns.length];
+
+            for (int i = 0; i < singlePatterns.length; i++) {
+                if ((matchingResults[i][0] != null) && (matchingResults[i][1] != null)) {
+                    Match bestMatch0 = matchingResults[i][0].getBestMatch();
+                    Match bestMatch1 = matchingResults[i][1].getBestMatch();
+                    if (bestMatch0.getScore() >= bestMatch1.getScore())
+                        bestMatches[i] = bestMatch0;
+                    else
+                        bestMatches[i] = bestMatch1;
+                } else if (matchingResults[i][0] != null)
+                    bestMatches[i] = matchingResults[i][0].getBestMatch();
+                else
+                    bestMatches[i] = matchingResults[i][1].getBestMatch();
+            }
+
+            bestMatch = combineMatches(bestMatches);
+
+            quickBestMatchFound = true;
+            quickBestMatchSearchPerformed = true;
         }
     }
 }

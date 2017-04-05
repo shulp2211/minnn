@@ -16,37 +16,18 @@ public class AndPattern extends MultiplePatternsOperator {
         final AndMatchesSearch matchesSearch = new AndMatchesSearch(operandPatterns, input, from, to, targetId);
         final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
         final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
-        final Match[] bestMatches = new Match[operandPatterns.length];
-        final Range[] bestMatchRanges = new Range[operandPatterns.length];
-        boolean rangeIntersection = false;
 
         // If one pattern doesn't match, AndPattern doesn't match
         for (SinglePattern operandPattern : operandPatterns) {
             MatchingResult result = operandPattern.match(input, from, to, targetId);
             if (!result.isFound())
-                return new MultiplePatternsMatchingResult();
+                return new SimpleMatchingResult();
         }
 
-        OUTER:
-        for (int patternNumber = 0; patternNumber < operandPatterns.length; patternNumber++) {
-            bestMatches[patternNumber] = operandPatterns[patternNumber].match(input, from, to, targetId).getBestMatch();
-            Range currentRange = bestMatches[patternNumber].getWholePatternMatch().getRange();
-            bestMatchRanges[patternNumber] = currentRange;
-            for (int i = 0; i < patternNumber; i++)  // Compare with all previously added matches
-                if (bestMatchRanges[i].intersectsWith(currentRange)) {
-                    rangeIntersection = true;
-                    break OUTER;
-                }
-        }
-
-        if (!rangeIntersection) {
-            // quick best match found, we can provide it now, and getBestMatch() will not start the full search
-            return new MultiplePatternsMatchingResult(allMatchesByScore, allMatchesByCoordinate, combineMatches(input, targetId, bestMatches));
-        } else
-            return new MultiplePatternsMatchingResult(allMatchesByScore, allMatchesByCoordinate);
+        return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
     }
 
-    private final class AndMatchesSearch extends MatchesSearch {
+    private final class AndMatchesSearch extends MatchesSearchWithQuickBestMatch {
         private final SinglePattern[] operandPatterns;
         private final NSequenceWithQuality input;
         private final int from;
@@ -106,10 +87,12 @@ public class AndPattern extends MultiplePatternsOperator {
                         return;
                     }
                     Match currentMatch = combineMatches(input, targetId, currentMatches);
-                    int currentSum = sumMatchesScore(currentMatches);
-                    if (currentSum > bestScore) {
-                        bestMatch = currentMatch;
-                        bestScore = currentSum;
+                    if (!quickBestMatchFound) {
+                        int currentSum = sumMatchesScore(currentMatches);
+                        if (currentSum > bestScore) {
+                            bestMatch = currentMatch;
+                            bestScore = currentSum;
+                        }
                     }
                     allMatches.add(currentMatch);
                 }
@@ -126,7 +109,34 @@ public class AndPattern extends MultiplePatternsOperator {
             }
 
             quickSearchPerformed = true;
+            quickBestMatchSearchPerformed = true;
             fullSearchPerformed = true;
+        }
+
+        @Override
+        protected void performQuickBestMatchSearch() {
+            final Match[] bestMatches = new Match[operandPatterns.length];
+            final Range[] bestMatchRanges = new Range[operandPatterns.length];
+            boolean rangeIntersection = false;
+
+            OUTER:
+            for (int patternNumber = 0; patternNumber < operandPatterns.length; patternNumber++) {
+                bestMatches[patternNumber] = operandPatterns[patternNumber].match(input, from, to, targetId).getBestMatch();
+                Range currentRange = bestMatches[patternNumber].getWholePatternMatch().getRange();
+                bestMatchRanges[patternNumber] = currentRange;
+                for (int i = 0; i < patternNumber; i++)  // Compare with all previously added matches
+                    if (bestMatchRanges[i].intersectsWith(currentRange)) {
+                        rangeIntersection = true;
+                        break OUTER;
+                    }
+            }
+
+            if (!rangeIntersection) {
+                quickBestMatchFound = true;
+                bestMatch = combineMatches(input, targetId, bestMatches);
+            }
+
+            quickBestMatchSearchPerformed = true;
         }
     }
 }

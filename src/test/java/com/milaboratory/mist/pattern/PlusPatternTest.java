@@ -57,7 +57,7 @@ public class PlusPatternTest {
         assertEquals(null, plusPattern2.match(nseq1, new Range(11, 20)).getBestMatch());
 
         exception.expect(IllegalStateException.class);
-        plusPattern5.match(nseq1);
+        plusPattern5.match(nseq1).getBestMatch();
     }
 
     @Test
