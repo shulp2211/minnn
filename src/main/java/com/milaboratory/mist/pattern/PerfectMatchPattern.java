@@ -54,6 +54,11 @@ public class PerfectMatchPattern implements SinglePattern {
         return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
     }
 
+    @Override
+    public boolean areGroupsInside() {
+        return groups.size() > 0;
+    }
+
     private final class PerfectMatchesSearch extends MatchesSearch {
         private final Motif<NucleotideSequence> motif;
         private final Map<String, Range> groups;

@@ -15,6 +15,13 @@ public abstract class MultiplePatternsOperator implements SinglePattern {
         this.operandPatterns = operandPatterns;
     }
 
+    @Override
+    public boolean areGroupsInside() {
+        for (SinglePattern pattern : operandPatterns)
+            if (pattern.areGroupsInside()) return true;
+        return false;
+    }
+
     /**
      * Check if there are any intersections between ranges
      *
