@@ -10,17 +10,20 @@ public abstract class MatchesSearch {
     protected boolean fullSearchPerformed = false;
 
     public Match[] getAllMatches() {
-        if (!fullSearchPerformed) performSearch(false);
+        if (!(quickSearchPerformed && !matchFound) && !fullSearchPerformed)
+            performSearch(false);
         return allMatches.toArray(new Match[allMatches.size()]);
     }
 
     public Match getBestMatch() {
-        if (!fullSearchPerformed) performSearch(false);
+        if (!(quickSearchPerformed && !matchFound) && !fullSearchPerformed)
+            performSearch(false);
         return bestMatch;
     }
 
     public long getMatchesNumber() {
-        if (!fullSearchPerformed) performSearch(false);
+        if (!(quickSearchPerformed && !matchFound) && !fullSearchPerformed)
+            performSearch(false);
         return allMatches.size();
     }
 

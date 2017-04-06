@@ -6,8 +6,10 @@ public abstract class MatchesSearchWithQuickBestMatch extends MatchesSearch {
 
     @Override
     public Match getBestMatch() {
-        if (!quickBestMatchSearchPerformed) performQuickBestMatchSearch();
-        if (!quickBestMatchFound && !fullSearchPerformed) performSearch(false);
+        if (!(quickSearchPerformed && !matchFound)) {
+            if (!quickBestMatchSearchPerformed) performQuickBestMatchSearch();
+            if (!quickBestMatchFound && !fullSearchPerformed) performSearch(false);
+        }
         return bestMatch;
     }
 
