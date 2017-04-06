@@ -3,19 +3,11 @@ package com.milaboratory.mist.pattern;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.IntStream;
 
-import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
-import static com.milaboratory.mist.pattern.MultiplePatternsOperator.sumMatchesScore;
-
-public class MultiPattern implements Pattern {
-    private final SinglePattern[] singlePatterns;
-
+public class MultiPattern extends MultipleReadsOperator {
     public MultiPattern(SinglePattern... singlePatterns) {
-        this.singlePatterns = singlePatterns;
+        super(singlePatterns);
     }
 
     @Override
@@ -87,23 +79,8 @@ public class MultiPattern implements Pattern {
         return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
     }
 
-    private Match combineMatches(Match... matches) {
-        Map<String, CaptureGroupMatch> groupMatches = new HashMap<>();
-
-        for (int i = 0; i < matches.length; i++) {
-            groupMatches.putAll(matches[i].groupMatches);
-            // put whole pattern match with read index; reads are numbered from 1
-            groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + i, matches[i].getWholePatternMatch(0));
-        }
-        return new Match(matches.length, sumMatchesScore(matches), groupMatches);
-    }
-
     private final class MultiPatternMatchesSearch extends MatchesSearchWithQuickBestMatch {
         private final MatchingResult[] matchingResults;
-        private ArrayList<ArrayList<Match>> matches = new ArrayList<>();
-        private int[] matchArraySizes;
-        private int[] innerArrayIndexes;
-        private int totalCombinationCount = 1;
 
         MultiPatternMatchesSearch(MatchingResult[] matchingResults) {
             this.matchingResults = matchingResults;
@@ -114,50 +91,12 @@ public class MultiPattern implements Pattern {
 
         @Override
         protected void performSearch(boolean quickSearch) {
-            int bestScore = 0;
-            int numOperands = matchingResults.length;
+            /* Search for all matches and for best match if not already searched;
+               found matches will be added to allMatches list */
+            Match returnedBestMatch = findAllMatchesFromMatchingResults(matchingResults, allMatches, !quickBestMatchSearchPerformed);
+            if (!quickBestMatchSearchPerformed) bestMatch = returnedBestMatch;
 
-            // initialize arrays and get matches for all operands
-            matchArraySizes = new int[numOperands];
-            innerArrayIndexes = new int[numOperands];
-            for (int i = 0; i < numOperands; i++) {
-                matches.add(new ArrayList<>());
-                matchArraySizes[i] = Math.toIntExact(matchingResults[i].getMatchesNumber());
-                totalCombinationCount *= matchArraySizes[i];
-            }
-
-            /* Loop through all combinations, fill allMatches and find bestMatch,
-               or leave bestMatch = null if nothing found */
-            for (int i = 0; i < totalCombinationCount; i++) {
-                Match[] currentMatches = new Match[numOperands];
-                for (int j = 0; j < numOperands; j++) {
-                    // if current array element doesn't exist, we didn't take that match, so let's take it now
-                    if (innerArrayIndexes[j] == matches.get(j).size())
-                        matches.get(j).add(matchingResults[j].getMatches().take());
-                    currentMatches[j] = matches.get(j).get(innerArrayIndexes[j]);
-                }
-
-                Match currentMatch = combineMatches(currentMatches);
-                if (!quickBestMatchFound) {
-                    int currentSum = sumMatchesScore(currentMatches);
-                    if (currentSum > bestScore) {
-                        bestMatch = currentMatch;
-                        bestScore = currentSum;
-                    }
-                }
-                allMatches.add(currentMatch);
-            }
-
-                // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
-                for (int j = 0; j < numOperands; j++) {
-                    if (innerArrayIndexes[j] + 1 < matchArraySizes[j]) {
-                        innerArrayIndexes[j]++;
-                        break;
-                    }
-                    // we need to update next index and reset current index to zero
-                    innerArrayIndexes[j] = 0;
-                }
-
+            quickBestMatchFound = true;
             quickBestMatchSearchPerformed = true;
             fullSearchPerformed = true;
         }
