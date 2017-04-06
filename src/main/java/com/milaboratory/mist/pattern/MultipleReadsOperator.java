@@ -95,12 +95,14 @@ public abstract class MultipleReadsOperator implements Pattern {
         for (int i = 0; i < totalCombinationCount; i++) {
             Match[] currentMatches = new Match[numOperands];
             for (int j = 0; j < numOperands; j++) {
-                // if current array element doesn't exist, we didn't take that match, so let's take it now
+                /* If current array element doesn't exist, we didn't take that match, so let's take it now;
+                   null values are valid here in case of multiple pattern operators */
                 if (innerArrayIndexes[j] == matches.get(j).size())
                     matches.get(j).add(results[j].getMatches().take());
                 currentMatches[j] = matches.get(j).get(innerArrayIndexes[j]);
             }
 
+            // null values are valid here in case of multiple pattern operators
             Match currentMatch = combineMatches(currentMatches);
             if (returnBestMatch) {
                 int currentSum = sumMatchesScore(currentMatches);
