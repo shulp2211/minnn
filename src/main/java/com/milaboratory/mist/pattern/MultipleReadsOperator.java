@@ -84,17 +84,20 @@ public abstract class MultipleReadsOperator implements Pattern {
     protected Match combineMatches(Match... matches) {
         Map<String, CaptureGroupMatch> groupMatches = new HashMap<>();
 
+        int wholeGroupIndex = 0;
         for (int i = 0; i < matches.length; i++) {
             if (matches[i] == null)
                 if (!useSinglePatterns) {
                     // if we use MultiPatterns, null values are valid because of possible NotOperator patterns
-                    groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + i, null);
+                    groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + wholeGroupIndex++, null);
                     continue;
                 } else throw new IllegalStateException("Must not combine null matches for single patterns!");
             groupMatches.putAll(matches[i].groupMatches);
-            groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + i, matches[i].getWholePatternMatch(0));
+            for (int j = 0; j < matches[i].getNumberOfPatterns(); j++)
+                groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + wholeGroupIndex++,
+                        matches[i].getWholePatternMatch(j));
         }
-        return new Match(matches.length, sumMatchesScore(matches), groupMatches);
+        return new Match(wholeGroupIndex, sumMatchesScore(matches), groupMatches);
     }
 
     protected int sumMatchesScore(Match... matches) {
