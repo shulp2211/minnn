@@ -3,9 +3,7 @@ package com.milaboratory.mist.pattern;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
@@ -14,17 +12,22 @@ public abstract class MultipleReadsOperator implements Pattern {
     protected final MultipleReadsOperator[] operandPatterns;
     protected final SinglePattern[] singlePatterns;
     private final boolean useSinglePatterns;
+    protected final ArrayList<String> groupNames;
 
     public MultipleReadsOperator(MultipleReadsOperator... operandPatterns) {
         this.operandPatterns = operandPatterns;
         this.singlePatterns = new SinglePattern[0];
         useSinglePatterns = false;
+        this.groupNames = new ArrayList<>();
+        getGroupNamesFromOperands(operandPatterns);
     }
 
     public MultipleReadsOperator(SinglePattern... singlePatterns) {
         this.singlePatterns = singlePatterns;
         this.operandPatterns = new MultipleReadsOperator[0];
         useSinglePatterns = true;
+        this.groupNames = new ArrayList<>();
+        getGroupNamesFromOperands(singlePatterns);
     }
 
     @Override
@@ -67,14 +70,15 @@ public abstract class MultipleReadsOperator implements Pattern {
     public abstract MatchingResult match(MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements);
 
     @Override
-    public boolean areGroupsInside() {
-        if (useSinglePatterns)
-            for (SinglePattern singlePattern : singlePatterns)
-                if (singlePattern.areGroupsInside()) return true;
-        else
-            for (MultipleReadsOperator pattern : operandPatterns)
-                if (pattern.areGroupsInside()) return true;
-        return false;
+    public ArrayList<String> getGroupNames() {
+        return groupNames;
+    }
+
+    private <T extends Pattern> void getGroupNamesFromOperands(T[] patterns) {
+        for (T pattern : patterns)
+            groupNames.addAll(pattern.getGroupNames());
+        if (groupNames.size() != new HashSet<>(groupNames).size())
+            throw new IllegalStateException("Operands contain groups with equal names!");
     }
 
     protected Match combineMatches(Match... matches) {

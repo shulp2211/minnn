@@ -8,7 +8,7 @@ public class NotOperator extends MultipleReadsOperator {
         super(operandPatterns);
         if (operandPatterns.length != 1)
             throw new IllegalStateException("Not operator must take exactly 1 argument!");
-        if (operandPatterns[0].areGroupsInside())
+        if (groupNames.size() > 0)
             throw new IllegalStateException("Not operator must not contain groups inside!");
     }
 
@@ -19,11 +19,6 @@ public class NotOperator extends MultipleReadsOperator {
         final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
 
         return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
-    }
-
-    @Override
-    public boolean areGroupsInside() {
-        return false;
     }
 
     private final class NotOperatorMatchesSearch extends MatchesSearch {

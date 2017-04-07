@@ -6,6 +6,7 @@ import com.milaboratory.core.motif.Motif;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,8 +56,8 @@ public class PerfectMatchPattern implements SinglePattern {
     }
 
     @Override
-    public boolean areGroupsInside() {
-        return groups.size() > 0;
+    public ArrayList<String> getGroupNames() {
+        return new ArrayList<>(groups.keySet());
     }
 
     private final class PerfectMatchesSearch extends MatchesSearch {

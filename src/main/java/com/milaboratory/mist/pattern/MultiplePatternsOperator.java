@@ -3,23 +3,26 @@ package com.milaboratory.mist.pattern;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
 
 public abstract class MultiplePatternsOperator implements SinglePattern {
     protected final SinglePattern[] operandPatterns;
+    protected final ArrayList<String> groupNames;
 
     MultiplePatternsOperator(SinglePattern... operandPatterns) {
         this.operandPatterns = operandPatterns;
+        this.groupNames = new ArrayList<>();
+        for (SinglePattern pattern : operandPatterns)
+            groupNames.addAll(pattern.getGroupNames());
+        if (groupNames.size() != new HashSet<>(groupNames).size())
+            throw new IllegalStateException("Operands contain groups with equal names!");
     }
 
     @Override
-    public boolean areGroupsInside() {
-        for (SinglePattern pattern : operandPatterns)
-            if (pattern.areGroupsInside()) return true;
-        return false;
+    public ArrayList<String> getGroupNames() {
+        return groupNames;
     }
 
     /**
