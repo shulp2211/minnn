@@ -87,6 +87,9 @@ public abstract class MultipleReadsOperator implements Pattern {
         for (int i = 0; i < numOperands; i++) {
             matches.add(new ArrayList<>());
             matchArraySizes[i] = Math.toIntExact(results[i].getMatchesNumber());
+            /* Quick search must be already performed; use 1 "null" match instead of 0 matches;
+               this can appear in "Or" operator or because of "Not" result as operand */
+            if (matchArraySizes[i] == 0) matchArraySizes[i] = 1;
             totalCombinationCount *= matchArraySizes[i];
         }
 
