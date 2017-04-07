@@ -1,15 +1,16 @@
 package com.milaboratory.mist.pattern;
 
+import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 
 public class OrOperator extends MultipleReadsOperator {
-    public OrOperator(Pattern[] operandPatterns) {
+    public OrOperator(MultipleReadsOperator... operandPatterns) {
         super(operandPatterns);
     }
 
     @Override
-    public MatchingResult match(MultiNSequenceWithQuality input) {
-        final OrOperatorMatchesSearch matchesSearch = new OrOperatorMatchesSearch(operandPatterns, input);
+    public MatchingResult match(MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements) {
+        final OrOperatorMatchesSearch matchesSearch = new OrOperatorMatchesSearch(operandPatterns, input, ranges, reverseComplements);
         final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
         final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
 
@@ -17,11 +18,15 @@ public class OrOperator extends MultipleReadsOperator {
     }
 
     private final class OrOperatorMatchesSearch extends MatchesSearchWithQuickBestMatch {
-        private final Pattern[] operandPatterns;
+        private final MultipleReadsOperator[] operandPatterns;
+        private final Range[] ranges;
+        private final boolean[] reverseComplements;
         private final MultiNSequenceWithQuality input;
 
-        public OrOperatorMatchesSearch(Pattern[] operandPatterns, MultiNSequenceWithQuality input) {
+        OrOperatorMatchesSearch(MultipleReadsOperator[] operandPatterns, MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements) {
             this.operandPatterns = operandPatterns;
+            this.ranges = ranges;
+            this.reverseComplements = reverseComplements;
             this.input = input;
         }
 
@@ -31,7 +36,7 @@ public class OrOperator extends MultipleReadsOperator {
 
             matchFound = false;
             for (int i = 0; i < operandPatterns.length; i++) {
-                matchingResults[i] = operandPatterns[i].match(input);
+                matchingResults[i] = operandPatterns[i].match(input, ranges, reverseComplements);
                 if (matchingResults[i].isFound()) {
                     matchFound = true;
                     quickSearchPerformed = true;
@@ -60,7 +65,7 @@ public class OrOperator extends MultipleReadsOperator {
             final Match[] bestMatches = new Match[operandPatterns.length];
 
             for (int i = 0; i < operandPatterns.length; i++) {
-                MatchingResult currentResult = operandPatterns[i].match(input);
+                MatchingResult currentResult = operandPatterns[i].match(input, ranges, reverseComplements);
                 if (!quickSearchPerformed)
                     if (currentResult.isFound()) {
                         quickSearchPerformed = true;
@@ -87,7 +92,6 @@ public class OrOperator extends MultipleReadsOperator {
             quickBestMatchSearchPerformed = true;
             matchFound = true;
             quickBestMatchFound = (bestMatch != null);
-
         }
     }
 }

@@ -1,19 +1,20 @@
 package com.milaboratory.mist.pattern;
 
+import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 
-public class NotOperator implements Pattern {
-    private final Pattern operandPattern;
-
-    public NotOperator(Pattern operandPattern) {
-        if (operandPattern.areGroupsInside())
+public class NotOperator extends MultipleReadsOperator {
+    public NotOperator(MultipleReadsOperator... operandPatterns) {
+        super(operandPatterns);
+        if (operandPatterns.length != 1)
+            throw new IllegalStateException("Not operator must take exactly 1 argument!");
+        if (operandPatterns[0].areGroupsInside())
             throw new IllegalStateException("Not operator must not contain groups inside!");
-        this.operandPattern = operandPattern;
     }
 
     @Override
-    public MatchingResult match(MultiNSequenceWithQuality input) {
-        final NotOperatorMatchesSearch matchesSearch = new NotOperatorMatchesSearch(operandPattern, input);
+    public MatchingResult match(MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements) {
+        final NotOperatorMatchesSearch matchesSearch = new NotOperatorMatchesSearch(operandPatterns, input, ranges, reverseComplements);
         final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
         final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
 
@@ -26,17 +27,21 @@ public class NotOperator implements Pattern {
     }
 
     private final class NotOperatorMatchesSearch extends MatchesSearch {
-        private final Pattern operandPattern;
+        private final MultipleReadsOperator[] operandPatterns;
+        private final Range[] ranges;
+        private final boolean[] reverseComplements;
         private final MultiNSequenceWithQuality input;
 
-        public NotOperatorMatchesSearch(Pattern operandPattern, MultiNSequenceWithQuality input) {
-            this.operandPattern = operandPattern;
+        NotOperatorMatchesSearch(MultipleReadsOperator[] operandPatterns, MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements) {
+            this.operandPatterns = operandPatterns;
+            this.ranges = ranges;
+            this.reverseComplements = reverseComplements;
             this.input = input;
         }
 
         @Override
         protected void performSearch(boolean quickSearch) {
-            matchFound = !operandPattern.match(input).isFound();
+            matchFound = !operandPatterns[0].match(input, ranges, reverseComplements).isFound();
             quickSearchPerformed = true;
             fullSearchPerformed = true;
         }

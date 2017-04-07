@@ -1,27 +1,70 @@
 package com.milaboratory.mist.pattern;
 
+import com.milaboratory.core.Range;
+import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
 
 public abstract class MultipleReadsOperator implements Pattern {
-    protected final Pattern[] operandPatterns;
+    protected final MultipleReadsOperator[] operandPatterns;
     protected final SinglePattern[] singlePatterns;
     private final boolean useSinglePatterns;
 
-    public MultipleReadsOperator(Pattern[] operandPatterns) {
+    public MultipleReadsOperator(MultipleReadsOperator... operandPatterns) {
         this.operandPatterns = operandPatterns;
         this.singlePatterns = new SinglePattern[0];
         useSinglePatterns = false;
     }
 
-    public MultipleReadsOperator(SinglePattern[] singlePatterns) {
+    public MultipleReadsOperator(SinglePattern... singlePatterns) {
         this.singlePatterns = singlePatterns;
-        this.operandPatterns = new Pattern[0];
+        this.operandPatterns = new MultipleReadsOperator[0];
         useSinglePatterns = true;
     }
+
+    @Override
+    public MatchingResult match(MultiNSequenceWithQuality input) {
+        // if ranges array not provided, match in the whole sequences
+        return this.match(input, IntStream.range(0, input.numberOfSequences())
+                .mapToObj(i -> new Range(0, input.get(i).getSequence().size())).toArray(Range[]::new));
+    }
+
+    public MatchingResult match(MultiNSequenceWithQuality input, boolean... reverseComplements) {
+        if (input.numberOfSequences() != reverseComplements.length)
+            throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
+                    + ") and reverse complement flags (" + reverseComplements.length + ")!");
+        // for reverse complement reads automatically inverse generated ranges
+        return this.match(input, IntStream.range(0, input.numberOfSequences())
+                .mapToObj(i -> new Range(0, input.get(i).getSequence().size(),
+                        reverseComplements[i])).toArray(Range[]::new), reverseComplements);
+    }
+
+    public MatchingResult match(MultiNSequenceWithQuality input, Range... ranges) {
+        if (input.numberOfSequences() != ranges.length)
+            throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
+                    + ") and ranges (" + ranges.length + ")!");
+        // if reverseComplements array not provided, match without reverse complements only
+        boolean[] reverseComplements = new boolean[ranges.length];
+        for (int i = 0; i < ranges.length; i++)
+            reverseComplements[i] = ranges[i].isReverse();
+        return this.match(input, ranges, reverseComplements);
+    }
+
+    /**
+     * Match a group of patterns in a group of reads.
+     *
+     * @param input multiple sequences that come from multiple reads
+     * @param ranges ranges for input reads
+     * @param reverseComplements false if non-reversed match, true if reversed complement;
+     *                           one array element for one read in input
+     * @return matching result
+     */
+    public abstract MatchingResult match(MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements);
 
     @Override
     public boolean areGroupsInside() {
@@ -29,7 +72,7 @@ public abstract class MultipleReadsOperator implements Pattern {
             for (SinglePattern singlePattern : singlePatterns)
                 if (singlePattern.areGroupsInside()) return true;
         else
-            for (Pattern pattern : operandPatterns)
+            for (MultipleReadsOperator pattern : operandPatterns)
                 if (pattern.areGroupsInside()) return true;
         return false;
     }

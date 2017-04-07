@@ -1,15 +1,16 @@
 package com.milaboratory.mist.pattern;
 
+import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 
 public class AndOperator extends MultipleReadsOperator {
-    public AndOperator(Pattern[] operandPatterns) {
+    public AndOperator(MultipleReadsOperator... operandPatterns) {
         super(operandPatterns);
     }
 
     @Override
-    public MatchingResult match(MultiNSequenceWithQuality input) {
-        final AndOperatorMatchesSearch matchesSearch = new AndOperatorMatchesSearch(operandPatterns, input);
+    public MatchingResult match(MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements) {
+        final AndOperatorMatchesSearch matchesSearch = new AndOperatorMatchesSearch(operandPatterns, input, ranges, reverseComplements);
         final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
         final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
 
@@ -17,11 +18,15 @@ public class AndOperator extends MultipleReadsOperator {
     }
 
     private final class AndOperatorMatchesSearch extends MatchesSearchWithQuickBestMatch {
-        private final Pattern[] operandPatterns;
+        private final MultipleReadsOperator[] operandPatterns;
+        private final Range[] ranges;
+        private final boolean[] reverseComplements;
         private final MultiNSequenceWithQuality input;
 
-        public AndOperatorMatchesSearch(Pattern[] operandPatterns, MultiNSequenceWithQuality input) {
+        AndOperatorMatchesSearch(MultipleReadsOperator[] operandPatterns, MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements) {
             this.operandPatterns = operandPatterns;
+            this.ranges = ranges;
+            this.reverseComplements = reverseComplements;
             this.input = input;
         }
 
@@ -31,7 +36,7 @@ public class AndOperator extends MultipleReadsOperator {
 
             matchFound = true;
             for (int i = 0; i < operandPatterns.length; i++) {
-                matchingResults[i] = operandPatterns[i].match(input);
+                matchingResults[i] = operandPatterns[i].match(input, ranges, reverseComplements);
                 if (!matchingResults[i].isFound()) {
                     matchFound = false;
                     quickSearchPerformed = true;
@@ -58,7 +63,7 @@ public class AndOperator extends MultipleReadsOperator {
             final Match[] bestMatches = new Match[operandPatterns.length];
 
             for (int i = 0; i < operandPatterns.length; i++) {
-                MatchingResult currentResult = operandPatterns[i].match(input);
+                MatchingResult currentResult = operandPatterns[i].match(input, ranges, reverseComplements);
                 if (!quickSearchPerformed)
                     if (!currentResult.isFound()) {
                         quickSearchPerformed = true;
@@ -68,7 +73,7 @@ public class AndOperator extends MultipleReadsOperator {
                         return;
                     }
 
-                // null values are valid here because of possible NotOperator patterns
+                // null values are valid here
                 bestMatches[i] = currentResult.getBestMatch();
             }
 
