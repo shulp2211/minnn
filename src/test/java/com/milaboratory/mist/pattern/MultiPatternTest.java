@@ -216,4 +216,33 @@ public class MultiPatternTest {
         assertEquals("AG", result.getBestMatch().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "3").getValue().getSequence().toString());
         assertNull(result.getMatches().take());
     }
+
+    @Test
+    public void groupNamesTest1() throws Exception {
+        HashMap<String, Range> groups1 = new HashMap<String, Range>() {{
+            put("ABC", new Range(1, 3));
+            put("DEF", new Range(6, 7));
+            put("GH", new Range(10, 11));
+        }};
+        HashMap<String, Range> groups2 = new HashMap<String, Range>() {{
+            put("XYZ", new Range(1, 3));
+            put("GH", new Range(9, 10));
+        }};
+        PerfectMatchPattern pattern1 = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups1);
+        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups1);
+        exception.expect(IllegalStateException.class);
+        MultiPattern multiPattern = new MultiPattern(pattern1, pattern2);
+    }
+
+    @Test
+    public void groupNamesTest2() throws Exception {
+        HashMap<String, Range> groups = new HashMap<String, Range>() {{
+            put("ABC", new Range(1, 3));
+            put("DEF", new Range(6, 7));
+            put("GH", new Range(10, 11));
+        }};
+        PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups);
+        exception.expect(IllegalStateException.class);
+        MultiPattern multiPattern = new MultiPattern(pattern, pattern);
+    }
 }
