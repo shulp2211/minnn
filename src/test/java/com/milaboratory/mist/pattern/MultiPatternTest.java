@@ -229,9 +229,9 @@ public class MultiPatternTest {
             put("GH", new Range(9, 10));
         }};
         PerfectMatchPattern pattern1 = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups1);
-        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups1);
+        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups2);
         exception.expect(IllegalStateException.class);
-        MultiPattern multiPattern = new MultiPattern(pattern1, pattern2);
+        new MultiPattern(pattern1, pattern2);
     }
 
     @Test
@@ -243,6 +243,6 @@ public class MultiPatternTest {
         }};
         PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups);
         exception.expect(IllegalStateException.class);
-        MultiPattern multiPattern = new MultiPattern(pattern, pattern);
+        new MultiPattern(pattern, pattern);
     }
 }
