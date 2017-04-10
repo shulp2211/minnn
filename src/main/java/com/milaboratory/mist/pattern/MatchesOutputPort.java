@@ -56,8 +56,12 @@ public class MatchesOutputPort implements OutputPort<Match> {
         Match[] sortedMatches = matchesSearch.getAllMatches().clone();
         if (byScore)
             Arrays.sort(sortedMatches, Comparator.comparingInt(Match::getScore).reversed());
-        else
-            Arrays.sort(sortedMatches, Comparator.comparingInt(match -> match.getWholePatternMatch().getRange().getLower()));
+        else {
+            /* sorting by coordinate is only applicable for single pattern matches because
+               in multiple pattern matches getWholePatternMatch(x) can be null */
+            if (sortedMatches[0].getNumberOfPatterns() == 1)
+                Arrays.sort(sortedMatches, Comparator.comparingInt(match -> match.getWholePatternMatch().getRange().getLower()));
+        }
         queue.addAll(Arrays.asList(sortedMatches));
 
         sortingPerformed = true;
