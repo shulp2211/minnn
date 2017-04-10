@@ -1,6 +1,7 @@
 package com.milaboratory.mist.pattern;
 
 import com.milaboratory.core.Range;
+import com.milaboratory.core.motif.Motif;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
@@ -8,6 +9,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.HashMap;
+
+import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
 import static org.junit.Assert.*;
 
 public class LogicalOperatorsTest {
@@ -183,11 +187,108 @@ public class LogicalOperatorsTest {
         assertNotNull(orTrueResultR.getBestMatch());
         assertNotNull(andTrueResultR.getBestMatch());
 
+        assertEquals(0, notTrueResult.getMatchesNumber());
+        assertEquals(0, notFalseResult.getMatchesNumber());
+        assertEquals(0, orFalseResult.getMatchesNumber());
+        assertEquals(0, andFalseResult.getMatchesNumber());
+        assertEquals(1, andTrueResult.getMatchesNumber());
+        assertEquals(1, orTrueResult.getMatchesNumber());
+
         Match testMatch = andTrueResultR.getMatches().take();
         assertEquals("GTTATTACCA", testMatch.getWholePatternMatch(5).getValue().getSequence().toString());
         assertEquals("GCATAT", testMatch.getWholePatternMatch(6).getValue().getSequence().toString());
 
         exception.expect(IllegalStateException.class);
         new NotOperator(orOperatorTrue, orOperatorFalse);
+    }
+
+    @Test
+    public void groupNamesTest() throws Exception {
+        Motif<NucleotideSequence> testMotif = new NucleotideSequence("GTGGTTGTGTTGT").toMotif();
+        HashMap<String, Range> groups1 = new HashMap<String, Range>() {{
+            put("ABC", new Range(1, 3));
+            put("DEF", new Range(6, 7));
+            put("GH", new Range(10, 11));
+        }};
+        HashMap<String, Range> groups2 = new HashMap<String, Range>() {{
+            put("XYZ", new Range(1, 3));
+            put("GH", new Range(9, 10));
+        }};
+        HashMap<String, Range> groups3 = new HashMap<String, Range>() {{
+            put("123", new Range(2, 4));
+            put("456", new Range(5, 7));
+        }};
+        HashMap<String, Range> groups4 = new HashMap<String, Range>() {{
+            put("789", new Range(0, 1));
+            put("0", new Range(4, 5));
+        }};
+        PerfectMatchPattern pattern1 = new PerfectMatchPattern(testMotif, groups1);
+        PerfectMatchPattern pattern2 = new PerfectMatchPattern(testMotif, groups2);
+        PerfectMatchPattern pattern3 = new PerfectMatchPattern(testMotif, groups3);
+        PerfectMatchPattern pattern4 = new PerfectMatchPattern(testMotif, groups4);
+        MultiPattern multiPattern1 = new MultiPattern(pattern1, pattern3);
+        MultiPattern multiPattern2 = new MultiPattern(pattern2, pattern4);
+
+        exception.expect(IllegalStateException.class);
+        new OrOperator(multiPattern1, multiPattern2);
+    }
+
+    @Test
+    public void groupsInNotTest() throws Exception {
+        HashMap<String, Range> groups = new HashMap<String, Range>() {{ put("0", new Range(0, 1)); }};
+        PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("A").toMotif(), groups);
+        MultiPattern multiPattern = new MultiPattern(pattern);
+
+        exception.expect(IllegalStateException.class);
+        new NotOperator(multiPattern);
+    }
+
+    @Test
+    public void groupsTest() throws Exception {
+        HashMap<String, Range> groups1 = new HashMap<String, Range>() {{
+            put("1", new Range(0, 1));
+            put("2", new Range(1, 3));
+            put("4", new Range(4, 5));
+        }};
+        HashMap<String, Range> groups2 = new HashMap<String, Range>() {{
+            put("3", new Range(1, 3));
+            put("5", new Range(5, 6));
+        }};
+
+        PerfectMatchPattern pattern1 = new PerfectMatchPattern(new NucleotideSequence("TAGCC").toMotif(), groups1);
+        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("CAGATGCA").toMotif(), groups2);
+        PerfectMatchPattern pattern3 = new PerfectMatchPattern(new NucleotideSequence("A").toMotif());
+        MultiPattern multiPattern1 = new MultiPattern(pattern1, pattern3);
+        MultiPattern multiPattern2 = new MultiPattern(pattern3, pattern2);
+        MultiPattern multiPattern3 = new MultiPattern(pattern3, pattern3);
+        NotOperator notOperator = new NotOperator(multiPattern3);
+        OrOperator orOperator = new OrOperator(notOperator, multiPattern1, notOperator);
+        AndOperator andOperator = new AndOperator(multiPattern2, orOperator);
+
+        MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
+            @Override
+            public int numberOfSequences() {
+                return 2;
+            }
+
+            @Override
+            public NSequenceWithQuality get(int id) {
+                switch (id) {
+                    case 0:
+                        return new NSequenceWithQuality("ACAATTAGCCA");
+                    case 1:
+                        return new NSequenceWithQuality("GTGCATCTGCCA");
+                }
+                return null;
+            }
+        };
+        MatchingResult result = andOperator.match(mseq, false, true);
+        assertEquals("AG", result.getMatches(false).take().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "2").getValue().getSequence().toString());
+        assertEquals(new Range(8, 9), result.getMatches(true).take().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "5").getRange());
+        assertEquals("AG", result.getBestMatch().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "3").getValue().getSequence().toString());
+
+        for (int i = 0; i < 14; i++)
+            assertNotNull(result.getMatches().take());
+        assertNull(result.getMatches().take());
     }
 }
