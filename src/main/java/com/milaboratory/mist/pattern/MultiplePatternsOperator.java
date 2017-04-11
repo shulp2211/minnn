@@ -77,8 +77,8 @@ public abstract class MultiplePatternsOperator implements SinglePattern {
         return new Match(1, sumMatchesScore(matches), groupMatches);
     }
 
-    static int sumMatchesScore(Match... matches) {
-        int score = 0;
+    static float sumMatchesScore(Match... matches) {
+        float score = 0;
         for (Match match : matches) {
             score += match.getScore();
         }

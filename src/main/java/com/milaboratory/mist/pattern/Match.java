@@ -6,11 +6,11 @@ public final class Match {
     public static final String WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX = "WM_";
     public static final String COMMON_GROUP_NAME_PREFIX = "G_";
     private final int numberOfPatterns;
-    private final int score;
+    private final float score;
     private final CaptureGroupMatch[] wholePatternMatch;
     final Map<String, CaptureGroupMatch> groupMatches;
 
-    Match(int numberOfPatterns, int score, Map<String, CaptureGroupMatch> groupMatches) {
+    Match(int numberOfPatterns, float score, Map<String, CaptureGroupMatch> groupMatches) {
         this.numberOfPatterns = numberOfPatterns;
         this.score = score;
         this.wholePatternMatch = new CaptureGroupMatch[numberOfPatterns];
@@ -52,7 +52,7 @@ public final class Match {
         return numberOfPatterns;
     }
 
-    public int getScore() {
+    public float getScore() {
         return score;
     }
 }

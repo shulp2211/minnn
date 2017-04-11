@@ -50,7 +50,7 @@ public class AndPattern extends MultiplePatternsOperator {
 
         @Override
         protected void performSearch(boolean quickSearch) {
-            int bestScore = 0;
+            float bestScore = 0;
             int numOperands = operandPatterns.length;
 
             // initialize arrays and get matches for all operands
@@ -88,7 +88,7 @@ public class AndPattern extends MultiplePatternsOperator {
                     }
                     Match currentMatch = combineMatches(input, targetId, currentMatches);
                     if (!quickBestMatchFound) {
-                        int currentSum = sumMatchesScore(currentMatches);
+                        float currentSum = sumMatchesScore(currentMatches);
                         if (currentSum > bestScore) {
                             bestMatch = currentMatch;
                             bestScore = currentSum;

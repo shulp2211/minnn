@@ -1,7 +1,6 @@
 package com.milaboratory.mist.pattern;
 
 import com.milaboratory.core.Range;
-import com.milaboratory.core.motif.Motif;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
@@ -23,8 +22,8 @@ public class MultiPatternTest {
 
     @Test
     public void mismatchedReadsAndPatternsTest() throws Exception {
-        PerfectMatchPattern pattern1 = new PerfectMatchPattern(new NucleotideSequence("ATTAGACA").toMotif());
-        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("GCGAT").toMotif());
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("GCGAT"));
         MultiPattern multiPattern = new MultiPattern(pattern1, pattern2);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
@@ -44,7 +43,7 @@ public class MultiPatternTest {
 
     @Test
     public void mismatchedReadsAndRangesTest() throws Exception {
-        PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("ATTAGACA").toMotif());
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"));
         MultiPattern multiPattern = new MultiPattern(pattern);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
@@ -64,7 +63,7 @@ public class MultiPatternTest {
 
     @Test
     public void mismatchedReadsAndComplementsTest1() throws Exception {
-        PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("ATTAGACA").toMotif());
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"));
         MultiPattern multiPattern = new MultiPattern(pattern);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
@@ -84,7 +83,7 @@ public class MultiPatternTest {
 
     @Test
     public void mismatchedReadsAndComplementsTest2() throws Exception {
-        PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("ATTAGACA").toMotif());
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"));
         MultiPattern multiPattern = new MultiPattern(pattern);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
@@ -104,10 +103,10 @@ public class MultiPatternTest {
 
     @Test
     public void simpleTest() throws Exception {
-        PerfectMatchPattern pattern1 = new PerfectMatchPattern(new NucleotideSequence("ATTAGACA").toMotif());
-        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("GTTATTACCA").toMotif());
-        AndPattern pattern3 = new AndPattern(new PerfectMatchPattern(new NucleotideSequence("AT").toMotif()),
-                new PerfectMatchPattern(new NucleotideSequence("GCAT").toMotif()));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("GTTATTACCA"));
+        AndPattern pattern3 = new AndPattern(new FuzzyMatchPattern(new NSequenceWithQuality("AT")),
+                new FuzzyMatchPattern(new NSequenceWithQuality("GCAT")));
         MultiPattern multiPattern = new MultiPattern(pattern1, pattern2, pattern3);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
@@ -150,16 +149,17 @@ public class MultiPatternTest {
         for (int i = 0; i < its; ++i) {
             int sequencesNum = new Random().nextInt(9) + 1;
             NSequenceWithQuality[] sequences = new NSequenceWithQuality[sequencesNum];
-            PerfectMatchPattern[] patterns = new PerfectMatchPattern[sequencesNum];
+            FuzzyMatchPattern[] patterns = new FuzzyMatchPattern[sequencesNum];
             boolean isMatching = true;
             for (int s = 0; s < sequencesNum; s++) {
                 NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
                 NucleotideSequence motifSeq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 5);
-                Motif<NucleotideSequence> motif = new Motif<>(motifSeq);
-                NSequenceWithQuality currentTarget = new NSequenceWithQuality(seq, SequenceQuality
+                NSequenceWithQuality motifSeqQ = new NSequenceWithQuality(motifSeq, SequenceQuality
+                        .getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, motifSeq.getSequence().size()));
+                NSequenceWithQuality seqQ = new NSequenceWithQuality(seq, SequenceQuality
                         .getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, seq.getSequence().size()));
-                sequences[s] = currentTarget;
-                patterns[s] = new PerfectMatchPattern(motif);
+                sequences[s] = seqQ;
+                patterns[s] = new FuzzyMatchPattern(motifSeqQ);
                 isMatching = isMatching && seq.toString().contains(motifSeq.toString());
             }
             MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
@@ -190,8 +190,8 @@ public class MultiPatternTest {
             put("5", new Range(5, 6));
         }};
 
-        PerfectMatchPattern pattern1 = new PerfectMatchPattern(new NucleotideSequence("TAGCC").toMotif(), groups1);
-        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("CAGATGCA").toMotif(), groups2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("TAGCC"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("CAGATGCA"), groups2);
         MultiPattern multiPattern = new MultiPattern(pattern1, pattern2);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
@@ -228,8 +228,8 @@ public class MultiPatternTest {
             put("XYZ", new Range(1, 3));
             put("GH", new Range(9, 10));
         }};
-        PerfectMatchPattern pattern1 = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups1);
-        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups2);
         exception.expect(IllegalStateException.class);
         new MultiPattern(pattern1, pattern2);
     }
@@ -241,7 +241,7 @@ public class MultiPatternTest {
             put("DEF", new Range(6, 7));
             put("GH", new Range(10, 11));
         }};
-        PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups);
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups);
         exception.expect(IllegalStateException.class);
         new MultiPattern(pattern, pattern);
     }

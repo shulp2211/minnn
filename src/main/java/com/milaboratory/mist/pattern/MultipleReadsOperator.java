@@ -100,8 +100,8 @@ public abstract class MultipleReadsOperator implements Pattern {
         return new Match(wholeGroupIndex, sumMatchesScore(matches), groupMatches);
     }
 
-    protected int sumMatchesScore(Match... matches) {
-        int score = 0;
+    protected float sumMatchesScore(Match... matches) {
+        float score = 0;
         for (Match match : matches) {
             if (match == null)
                 if (!useSinglePatterns) {
@@ -128,7 +128,7 @@ public abstract class MultipleReadsOperator implements Pattern {
         int[] matchArraySizes;
         int[] innerArrayIndexes;
         int totalCombinationCount = 1;
-        int bestScore = 0;
+        float bestScore = 0;
         int numOperands = results.length;
 
         // initialize arrays and get matches for all operands
@@ -158,7 +158,7 @@ public abstract class MultipleReadsOperator implements Pattern {
             // null values are valid here in case of multiple pattern operators
             Match currentMatch = combineMatches(currentMatches);
             if (returnBestMatch) {
-                int currentSum = sumMatchesScore(currentMatches);
+                float currentSum = sumMatchesScore(currentMatches);
                 if (currentSum > bestScore) {
                     bestMatch = currentMatch;
                     bestScore = currentSum;

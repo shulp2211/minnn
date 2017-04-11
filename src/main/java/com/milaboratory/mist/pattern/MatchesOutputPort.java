@@ -55,7 +55,7 @@ public class MatchesOutputPort implements OutputPort<Match> {
     private void performSorting() {
         Match[] sortedMatches = matchesSearch.getAllMatches().clone();
         if (byScore)
-            Arrays.sort(sortedMatches, Comparator.comparingInt(Match::getScore).reversed());
+            Arrays.sort(sortedMatches, Comparator.comparingDouble(Match::getScore).reversed());
         else {
             /* sorting by coordinate is only applicable for single pattern matches because
                in multiple pattern matches getWholePatternMatch(x) can be null */

@@ -2,7 +2,6 @@ package com.milaboratory.mist.pattern;
 
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -93,7 +92,7 @@ public class MultiplePatternsOperatorTest {
         Match testMatch1 = new Match(1, 20, testGroups);
         Match testMatch2 = new Match(1, 10, testGroups);
         Match testMatch3 = new Match(2, 3, testGroups);
-        assertEquals(33, MultiplePatternsOperator.sumMatchesScore(testMatch1, testMatch2, testMatch3));
+        assertEquals(33, MultiplePatternsOperator.sumMatchesScore(testMatch1, testMatch2, testMatch3), 0.0001);
     }
 
     @Test
@@ -107,10 +106,10 @@ public class MultiplePatternsOperatorTest {
             put("XYZ", new Range(1, 3));
             put("GH", new Range(9, 10));
         }};
-        PerfectMatchPattern pattern1 = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups1);
-        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups1);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups2);
         exception.expect(IllegalStateException.class);
-        AndPattern andPattern = new AndPattern(pattern1, pattern2);
+        new AndPattern(pattern1, pattern2);
     }
 
     @Test
@@ -124,10 +123,10 @@ public class MultiplePatternsOperatorTest {
             put("XYZ", new Range(1, 3));
             put("GH", new Range(9, 10));
         }};
-        PerfectMatchPattern pattern1 = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups1);
-        PerfectMatchPattern pattern2 = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups1);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups2);
         exception.expect(IllegalStateException.class);
-        PlusPattern plusPattern = new PlusPattern(pattern1, pattern2);
+        new PlusPattern(pattern1, pattern2);
     }
 
     @Test
@@ -137,8 +136,8 @@ public class MultiplePatternsOperatorTest {
             put("DEF", new Range(6, 7));
             put("GH", new Range(10, 11));
         }};
-        PerfectMatchPattern pattern = new PerfectMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT").toMotif(), groups);
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups);
         exception.expect(IllegalStateException.class);
-        AndPattern andPattern = new AndPattern(pattern, pattern);
+        new AndPattern(pattern, pattern);
     }
 }
