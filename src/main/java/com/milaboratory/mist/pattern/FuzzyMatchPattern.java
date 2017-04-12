@@ -4,6 +4,7 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.alignment.Alignment;
 import com.milaboratory.core.motif.BitapMatcher;
 import com.milaboratory.core.motif.Motif;
+import com.milaboratory.core.mutations.Mutations;
 import com.milaboratory.core.sequence.*;
 
 import java.util.ArrayList;
@@ -13,7 +14,7 @@ import java.util.Map;
 import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
 import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
 
-public class FuzzyMatchPattern implements SinglePattern {
+public class FuzzyMatchPattern extends SinglePattern {
     private final NSequenceWithQuality patternSeq;
     private final Map<String, Range> groups;
     private final int maxErrors;
@@ -117,8 +118,7 @@ public class FuzzyMatchPattern implements SinglePattern {
                         foundScore = alignment.getScore();
                     } else {
                         foundRange = new Range(matchLastPosition - motif.size() + 1, matchLastPosition + 1);
-                        // TODO: create scoring rules for perfect matches
-                        foundScore = 1;
+                        foundScore = getMatchWithAligner(matchLastPosition, maxErrors).getScore();
                     }
                     CaptureGroupMatch wholePatternMatch = new CaptureGroupMatch(input, targetId, foundRange);
                     Map<String, CaptureGroupMatch> groupMatchMap = new HashMap<String, CaptureGroupMatch>() {{
@@ -151,7 +151,7 @@ public class FuzzyMatchPattern implements SinglePattern {
          * @return best found alignment
          */
         private Alignment<NucleotideSequence> getMatchWithAligner(int matchLastPosition, int maxErrors) {
-            return new Alignment<>(new NucleotideSequence(""), null,0);
+            return new Alignment<>(new NucleotideSequence(""), new Mutations<>(null),0);
         }
     }
 }

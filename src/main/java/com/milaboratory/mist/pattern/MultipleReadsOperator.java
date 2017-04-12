@@ -8,7 +8,7 @@ import java.util.stream.IntStream;
 
 import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
 
-public abstract class MultipleReadsOperator implements Pattern {
+public abstract class MultipleReadsOperator extends Pattern {
     protected final MultipleReadsOperator[] operandPatterns;
     protected final SinglePattern[] singlePatterns;
     private final boolean useSinglePatterns;
@@ -97,20 +97,7 @@ public abstract class MultipleReadsOperator implements Pattern {
                 groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + wholeGroupIndex++,
                         matches[i].getWholePatternMatch(j));
         }
-        return new Match(wholeGroupIndex, sumMatchesScore(matches), groupMatches);
-    }
-
-    protected float sumMatchesScore(Match... matches) {
-        float score = 0;
-        for (Match match : matches) {
-            if (match == null)
-                if (!useSinglePatterns) {
-                    // if we use MultiPatterns, null values are valid because of possible NotOperator patterns
-                    continue;
-                } else throw new IllegalStateException("Must not sum null matches score for single patterns!");
-            score += match.getScore();
-        }
-        return score;
+        return new Match(wholeGroupIndex, combineMatchScores(matches), groupMatches);
     }
 
     /**
@@ -158,7 +145,7 @@ public abstract class MultipleReadsOperator implements Pattern {
             // null values are valid here in case of multiple pattern operators
             Match currentMatch = combineMatches(currentMatches);
             if (returnBestMatch) {
-                float currentSum = sumMatchesScore(currentMatches);
+                float currentSum = combineMatchScores(currentMatches);
                 if (currentSum > bestScore) {
                     bestMatch = currentMatch;
                     bestScore = currentSum;

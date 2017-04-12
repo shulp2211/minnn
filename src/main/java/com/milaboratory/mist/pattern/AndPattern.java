@@ -88,7 +88,7 @@ public class AndPattern extends MultiplePatternsOperator {
                     }
                     Match currentMatch = combineMatches(input, targetId, currentMatches);
                     if (!quickBestMatchFound) {
-                        float currentSum = sumMatchesScore(currentMatches);
+                        float currentSum = combineMatchScores(currentMatches);
                         if (currentSum > bestScore) {
                             bestMatch = currentMatch;
                             bestScore = currentSum;

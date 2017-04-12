@@ -17,6 +17,16 @@ public class OrOperator extends MultipleReadsOperator {
         return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
     }
 
+    @Override
+    protected float combineMatchScores(Match... matches) {
+        float bestScore = -Float.MAX_VALUE;
+        for (Match match : matches)
+            if (match != null)
+                if (match.getScore() > bestScore)
+                    bestScore = match.getScore();
+        return bestScore;
+    }
+
     private final class OrOperatorMatchesSearch extends MatchesSearchWithQuickBestMatch {
         private final MultipleReadsOperator[] operandPatterns;
         private final Range[] ranges;
