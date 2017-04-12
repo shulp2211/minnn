@@ -52,7 +52,7 @@ public class PlusPattern extends MultiplePatternsOperator {
 
         @Override
         protected void performSearch(boolean quickSearch) {
-            float bestScore = 0;
+            float bestScore = -Float.MAX_VALUE;
             int numOperands = operandPatterns.length;
 
             // initialize arrays and get matches for all operands
