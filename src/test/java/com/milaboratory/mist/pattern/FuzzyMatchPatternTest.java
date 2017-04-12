@@ -2,6 +2,7 @@ package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
+import com.milaboratory.core.motif.BitapMatcher;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.core.sequence.SequenceQuality;
@@ -175,5 +176,22 @@ public class FuzzyMatchPatternTest {
 
         exception.expect(IllegalStateException.class);
         new FuzzyMatchPattern(new NSequenceWithQuality("GGTGTGTCAC"), groups);
+    }
+
+    @Test
+    public void masksTest() throws Exception {
+        int its = TestUtil.its(1000, 10000);
+        for (int i = 0; i < its; ++i) {
+            NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
+            NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 50, false);
+            NSequenceWithQuality motifQ = new NSequenceWithQuality(motif,
+                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, motif.getSequence().size()));
+            NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
+                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
+            FuzzyMatchPattern pattern = new FuzzyMatchPattern(motifQ, 0);
+            BitapMatcher matcher = motif.toMotif().getBitapPattern().exactMatcher(target.getSequence(), 0, target.size());
+            boolean isMatching = (matcher.findNext() != -1);
+            assertEquals(isMatching, pattern.match(targetQ).isFound());
+        }
     }
 }
