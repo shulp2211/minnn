@@ -1,7 +1,9 @@
 package com.milaboratory.mist.pattern;
 
 import com.milaboratory.core.Range;
+import com.milaboratory.core.alignment.AlignerCustom;
 import com.milaboratory.core.alignment.Alignment;
+import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
 import com.milaboratory.core.motif.BitapMatcher;
 import com.milaboratory.core.motif.Motif;
 import com.milaboratory.core.mutations.Mutations;
@@ -110,16 +112,9 @@ public class FuzzyMatchPattern extends SinglePattern {
                         return;
                     }
 
-                    Range foundRange;
-                    float foundScore;
-                    if (maxErrors > 0) {
-                        Alignment<NucleotideSequence> alignment = getMatchWithAligner(matchLastPosition, maxErrors);
-                        foundRange = alignment.getSequence1Range();
-                        foundScore = alignment.getScore();
-                    } else {
-                        foundRange = new Range(matchLastPosition - motif.size() + 1, matchLastPosition + 1);
-                        foundScore = getMatchWithAligner(matchLastPosition, maxErrors).getScore();
-                    }
+                    Alignment<NucleotideSequence> alignment = getMatchWithAligner(matchLastPosition, maxErrors);
+                    Range foundRange = alignment.getSequence2Range();
+                    float foundScore = alignment.getScore();
                     CaptureGroupMatch wholePatternMatch = new CaptureGroupMatch(input, targetId, foundRange);
                     Map<String, CaptureGroupMatch> groupMatchMap = new HashMap<String, CaptureGroupMatch>() {{
                         put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0", wholePatternMatch);
@@ -147,11 +142,16 @@ public class FuzzyMatchPattern extends SinglePattern {
         /**
          * After searching with bitap, perform alignment for precise search.
          *
-         * @param matchLastPosition match last letter position for aligner
+         * @param matchLastPosition match last letter position for aligner (inclusive)
          * @return best found alignment
          */
         private Alignment<NucleotideSequence> getMatchWithAligner(int matchLastPosition, int maxErrors) {
-            return new Alignment<>(new NucleotideSequence(""), new Mutations<>(null),0);
+            int firstPostition = matchLastPosition + 1 - patternSeq.size() - maxErrors;
+            if (firstPostition < 0) firstPostition = 0;
+            return AlignerCustom.alignLinearSemiLocalRight0(LinearGapAlignmentScoring.getNucleotideBLASTScoring(),
+                    patternSeq.getSequence(), input.getSequence(), 0, patternSeq.size(), firstPostition,
+                    matchLastPosition - firstPostition + 1, false, false,
+                    NucleotideSequence.ALPHABET, new AlignerCustom.LinearMatrixCache());
         }
     }
 }
