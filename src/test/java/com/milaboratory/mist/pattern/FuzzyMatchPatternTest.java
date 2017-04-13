@@ -194,4 +194,40 @@ public class FuzzyMatchPatternTest {
             assertEquals(isMatching, pattern.match(targetQ).isFound());
         }
     }
+
+    @Test
+    public void simpleAlignmentTest() throws Exception {
+        FuzzyMatchPattern[] patterns = {
+            new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"), 0),
+            new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"), 1),
+            new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"), 2)
+        };
+        NSequenceWithQuality[] sequences = {
+            new NSequenceWithQuality("ATTAGTTA"),
+            new NSequenceWithQuality("ATTAGAAG"),
+            new NSequenceWithQuality("ATTAGGACA"),
+            new NSequenceWithQuality("ACAGACA"),
+            new NSequenceWithQuality("ATTTAGAA")
+        };
+
+        MatchingResult[][] matchingResults = new MatchingResult[3][5];
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 5; j++)
+                matchingResults[i][j] = patterns[i].match(sequences[j]);
+
+        for (int j = 0; j < 5; j++)
+            assertNull(matchingResults[0][j].getBestMatch());
+
+        assertNull(matchingResults[1][0].getBestMatch());
+        assertEquals(new NSequenceWithQuality("ATTAGAA"), matchingResults[1][1].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ATTAGGACA"), matchingResults[1][2].getBestMatch().getWholePatternMatch().getValue());
+        assertNull(matchingResults[1][3].getBestMatch());
+        assertNull(matchingResults[1][4].getBestMatch());
+
+        assertEquals(new NSequenceWithQuality("ATTAGTTA"), matchingResults[2][0].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ATTAGA"), matchingResults[2][1].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ATTAGGACA"), matchingResults[2][2].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("AGACA"), matchingResults[2][3].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("TTAGAA"), matchingResults[2][4].getBestMatch().getWholePatternMatch().getValue());
+    }
 }
