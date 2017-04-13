@@ -292,4 +292,70 @@ public class LogicalOperatorsTest {
             assertNotNull(result.getMatches().take());
         assertNull(result.getMatches().take());
     }
+
+    @Test
+    public void alignmentTest() throws Exception {
+        FuzzyMatchPattern fuzzyPattern = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"), 2);
+
+        NSequenceWithQuality[] sequences = {
+                new NSequenceWithQuality("ATTAGTTA"),
+                new NSequenceWithQuality("ATTAGAAG"),
+                new NSequenceWithQuality("ACAGACA"),
+                new NSequenceWithQuality("ATTTAGAA"),
+                new NSequenceWithQuality("ACAGACATTTAGAA")
+        };
+
+        MatchingResult[] matchingResults = new MatchingResult[4];
+        for (int i = 0; i < 4; i++)
+            matchingResults[i] = fuzzyPattern.match(sequences[i]);
+
+        assertEquals(new NSequenceWithQuality("ATTAGTTA"), matchingResults[0].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ATTAGA"), matchingResults[1].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("AGACA"), matchingResults[2].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("TTAGAA"), matchingResults[3].getBestMatch().getWholePatternMatch().getValue());
+
+        AndPattern andPattern = new AndPattern(fuzzyPattern, fuzzyPattern);
+        PlusPattern plusPattern = new PlusPattern(fuzzyPattern, fuzzyPattern);
+
+        assertEquals(new NSequenceWithQuality("AGACATTTAGAA"), andPattern.match(sequences[4]).getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("AGACATTTAGAA"), plusPattern.match(sequences[4]).getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("AGACATTTAGAA"), andPattern.match(sequences[4]).getMatches().take().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("AGACATTTAGAA"), plusPattern.match(sequences[4]).getMatches().take().getWholePatternMatch().getValue());
+
+        MultiPattern multiPattern = new MultiPattern(fuzzyPattern, andPattern, plusPattern);
+        NotOperator notOperator = new NotOperator(multiPattern);
+        OrOperator orOperator = new OrOperator(multiPattern, notOperator, multiPattern);
+        AndOperator andOperator = new AndOperator(orOperator, multiPattern, orOperator);
+
+        MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
+            @Override
+            public int numberOfSequences() {
+                return 3;
+            }
+
+            @Override
+            public NSequenceWithQuality get(int id) {
+                switch (id) {
+                    case 0:
+                        return sequences[1];
+                    case 1:
+                    case 2:
+                        return sequences[4];
+                }
+                return null;
+            }
+
+        };
+
+        MatchingResult result = andOperator.match(mseq);
+
+        assertEquals(new NSequenceWithQuality("ATTAGA"), result.getBestMatch().getWholePatternMatch(0).getValue());
+        assertEquals(new NSequenceWithQuality("AGACATTTAGAA"), result.getBestMatch().getWholePatternMatch(1).getValue());
+        assertEquals(new NSequenceWithQuality("AGACATTTAGAA"), result.getBestMatch().getWholePatternMatch(2).getValue());
+        assertNull(result.getBestMatch().getWholePatternMatch(3));
+        assertEquals(new NSequenceWithQuality("ATTAGA"), result.getBestMatch().getWholePatternMatch(14).getValue());
+
+        exception.expect(ArrayIndexOutOfBoundsException.class);
+        result.getBestMatch().getWholePatternMatch(17);
+    }
 }
