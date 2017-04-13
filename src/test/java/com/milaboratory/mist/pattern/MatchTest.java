@@ -9,8 +9,8 @@ import org.junit.rules.ExpectedException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
 import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
+import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
 import static org.junit.Assert.*;
 
 public class MatchTest {
@@ -36,7 +36,10 @@ public class MatchTest {
         assertEquals(10, testMatch.getScore(), 0.0001);
         assertEquals(new Range(0, 9), testMatch.getWholePatternMatch(0).getRange());
         assertEquals(new Range(0, 8), testMatch.getWholePatternMatch(1).getRange());
-        assertEquals(new Range(4, 8), testMatch.groupMatches.get(COMMON_GROUP_NAME_PREFIX + "1").getRange());
+        assertEquals(new Range(4, 8), testMatch.getGroupMatches(false)
+                .get(COMMON_GROUP_NAME_PREFIX + "1").getRange());
+        assertEquals(new Range(4, 8), testMatch.getGroupMatches(true)
+                .get(COMMON_GROUP_NAME_PREFIX + "1").getRange());
         assertEquals(1, testMatch.getWholePatternMatch(0).getTargetId());
         assertEquals(1, testMatch.getWholePatternMatch(1).getTargetId());
 

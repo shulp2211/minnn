@@ -1,22 +1,28 @@
 package com.milaboratory.mist.pattern;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public final class Match {
     public static final String WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX = "WM_";
     public static final String COMMON_GROUP_NAME_PREFIX = "G_";
     private final int numberOfPatterns;
     private final float score;
+    private final Map<String, CaptureGroupMatch> groupMatches;
+    private final Map<String, CaptureGroupMatch> commonGroupMatches;
     private final CaptureGroupMatch[] wholePatternMatch;
-    final Map<String, CaptureGroupMatch> groupMatches;
+
 
     Match(int numberOfPatterns, float score, Map<String, CaptureGroupMatch> groupMatches) {
         this.numberOfPatterns = numberOfPatterns;
         this.score = score;
+        this.groupMatches = groupMatches;
         this.wholePatternMatch = new CaptureGroupMatch[numberOfPatterns];
         for (int i = 0; i < numberOfPatterns; i++)
             this.wholePatternMatch[i] = groupMatches.get(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + i);
-        this.groupMatches = groupMatches;
+        commonGroupMatches = groupMatches.entrySet().stream()
+                .filter(g -> g.getKey().contains(COMMON_GROUP_NAME_PREFIX))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     /**
@@ -28,6 +34,19 @@ public final class Match {
      */
     public CaptureGroupMatch getWholePatternMatch(int patternIndex) {
         return wholePatternMatch[patternIndex];
+    }
+
+    /**
+     * Return group matches.
+     *
+     * @param commonOnly if true, return common group matches only; if false - all, including whole pattern matches
+     * @return map of group matches
+     */
+    public Map<String, CaptureGroupMatch> getGroupMatches(boolean commonOnly) {
+        if (commonOnly)
+            return commonGroupMatches;
+        else
+            return groupMatches;
     }
 
     /**

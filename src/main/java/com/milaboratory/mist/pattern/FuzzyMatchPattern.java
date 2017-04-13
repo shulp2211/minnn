@@ -6,7 +6,6 @@ import com.milaboratory.core.alignment.Alignment;
 import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
 import com.milaboratory.core.motif.BitapMatcher;
 import com.milaboratory.core.motif.Motif;
-import com.milaboratory.core.mutations.Mutations;
 import com.milaboratory.core.sequence.*;
 
 import java.util.ArrayList;

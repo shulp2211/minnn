@@ -30,7 +30,7 @@ public abstract class MultiplePatternsOperator extends SinglePattern {
         Range[] ranges = new Range[matches.length];
 
         for (int i = 0; i < matches.length; i++) {
-            groupMatches.putAll(matches[i].groupMatches);
+            groupMatches.putAll(matches[i].getGroupMatches(true));
             ranges[i] = matches[i].getWholePatternMatch().getRange();
         }
 

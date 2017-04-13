@@ -92,7 +92,7 @@ public abstract class MultipleReadsOperator extends Pattern {
                     groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + wholeGroupIndex++, null);
                     continue;
                 } else throw new IllegalStateException("Must not combine null matches for single patterns!");
-            groupMatches.putAll(matches[i].groupMatches);
+            groupMatches.putAll(matches[i].getGroupMatches(true));
             for (int j = 0; j < matches[i].getNumberOfPatterns(); j++)
                 groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + wholeGroupIndex++,
                         matches[i].getWholePatternMatch(j));

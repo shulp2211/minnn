@@ -281,9 +281,12 @@ public class LogicalOperatorsTest {
             }
         };
         MatchingResult result = andOperator.match(mseq, false, true);
-        assertEquals("AG", result.getMatches(false).take().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "2").getValue().getSequence().toString());
-        assertEquals(new Range(8, 9), result.getMatches(true).take().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "5").getRange());
-        assertEquals("AG", result.getBestMatch().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "3").getValue().getSequence().toString());
+        assertEquals("AG", result.getMatches(false).take().getGroupMatches(true)
+                .get(COMMON_GROUP_NAME_PREFIX + "2").getValue().getSequence().toString());
+        assertEquals(new Range(8, 9), result.getMatches(true).take().getGroupMatches(true)
+                .get(COMMON_GROUP_NAME_PREFIX + "5").getRange());
+        assertEquals("AG", result.getBestMatch().getGroupMatches(true)
+                .get(COMMON_GROUP_NAME_PREFIX + "3").getValue().getSequence().toString());
 
         for (int i = 0; i < 14; i++)
             assertNotNull(result.getMatches().take());

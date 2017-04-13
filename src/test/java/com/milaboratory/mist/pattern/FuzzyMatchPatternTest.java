@@ -46,9 +46,11 @@ public class FuzzyMatchPatternTest {
             assertEquals(true, result.getBestMatch().isFound());
             assertEquals(1, result.getBestMatch().getNumberOfPatterns());
             assertEquals(result.getBestMatch(), result.getMatches().take());
-            Range rangeFromGroupMatches = result.getBestMatch().groupMatches.get(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0").getRange();
+            Range rangeFromGroupMatches = result.getBestMatch().getGroupMatches(false)
+                    .get(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0").getRange();
             assertEquals(expectedRange, rangeFromGroupMatches);
-            assertEquals(null, result.getBestMatch().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "0"));
+            assertEquals(null, result.getBestMatch().getGroupMatches(false)
+                    .get(COMMON_GROUP_NAME_PREFIX + "0"));
         }
     }
 
@@ -139,7 +141,8 @@ public class FuzzyMatchPatternTest {
         OutputPort<Match> matches = result.getMatches(false);
         assertEquals(10, matches.take().getWholePatternMatch().getRange().getLower());
         assertEquals("ATTAGACA", matches.take().getWholePatternMatch().getValue().getSequence().toString());
-        assertEquals(24, matches.take().groupMatches.get(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0").getRange().getLower());
+        assertEquals(24, matches.take().getGroupMatches(false)
+                .get(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0").getRange().getLower());
         assertEquals(46, matches.take().getWholePatternMatch(0).getRange().getUpper());
     }
 
@@ -169,9 +172,12 @@ public class FuzzyMatchPatternTest {
         FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups);
         NSequenceWithQuality nseq = new NSequenceWithQuality("GTGTTGTGGTTGTGTTGTTGTGGTTGTGTTGTGG");
         MatchingResult result = pattern.match(nseq);
-        assertEquals("G", result.getBestMatch().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "DEF").getValue().getSequence().toString());
-        assertEquals("TG", result.getMatches().take().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "ABC").getValue().getSequence().toString());
-        assertEquals(new Range(29, 30), result.getMatches().take().groupMatches.get(COMMON_GROUP_NAME_PREFIX + "GH").getRange());
+        assertEquals("G", result.getBestMatch().getGroupMatches(true)
+                .get(COMMON_GROUP_NAME_PREFIX + "DEF").getValue().getSequence().toString());
+        assertEquals("TG", result.getMatches().take().getGroupMatches(true)
+                .get(COMMON_GROUP_NAME_PREFIX + "ABC").getValue().getSequence().toString());
+        assertEquals(new Range(29, 30), result.getMatches().take().getGroupMatches(true)
+                .get(COMMON_GROUP_NAME_PREFIX + "GH").getRange());
         assertNull(result.getMatches().take());
 
         exception.expect(IllegalStateException.class);
