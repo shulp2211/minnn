@@ -1,8 +1,8 @@
 package com.milaboratory.mist.pattern;
 
 import com.milaboratory.core.Range;
-import com.milaboratory.core.alignment.AlignerCustom;
 import com.milaboratory.core.alignment.Alignment;
+import com.milaboratory.core.alignment.BandedLinearAligner;
 import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
 import com.milaboratory.core.motif.BitapMatcher;
 import com.milaboratory.core.motif.Motif;
@@ -146,11 +146,14 @@ public class FuzzyMatchPattern extends SinglePattern {
          */
         private Alignment<NucleotideSequence> getMatchWithAligner(int matchLastPosition, int maxErrors) {
             int firstPostition = matchLastPosition + 1 - patternSeq.size() - maxErrors;
-            if (firstPostition < 0) firstPostition = 0;
-            return AlignerCustom.alignLinearSemiLocalRight0(LinearGapAlignmentScoring.getNucleotideBLASTScoring(),
-                    patternSeq.getSequence(), input.getSequence(), 0, patternSeq.size(), firstPostition,
-                    matchLastPosition - firstPostition + 1, false, false,
-                    NucleotideSequence.ALPHABET, new AlignerCustom.LinearMatrixCache());
+            int addedLength = maxErrors;    // number of nucleotides added to the left in target
+            if (firstPostition < 0) {
+                firstPostition = 0;
+                addedLength = matchLastPosition - patternSeq.size() + 1;
+            }
+            return BandedLinearAligner.alignLeftAdded(LinearGapAlignmentScoring.getNucleotideBLASTScoring(),
+                    patternSeq.getSequence(), input.getSequence(), 0, patternSeq.size(), 0,
+                    firstPostition, patternSeq.size() + addedLength, addedLength * 2, maxErrors);
         }
     }
 }

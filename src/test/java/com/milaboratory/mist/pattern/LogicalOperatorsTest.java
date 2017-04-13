@@ -302,7 +302,7 @@ public class LogicalOperatorsTest {
                 new NSequenceWithQuality("ATTAGAAG"),
                 new NSequenceWithQuality("ACAGACA"),
                 new NSequenceWithQuality("ATTTAGAA"),
-                new NSequenceWithQuality("ACAGACATTTAGAA")
+                new NSequenceWithQuality("TACAGACATTTAGAA")
         };
 
         MatchingResult[] matchingResults = new MatchingResult[4];
@@ -310,17 +310,17 @@ public class LogicalOperatorsTest {
             matchingResults[i] = fuzzyPattern.match(sequences[i]);
 
         assertEquals(new NSequenceWithQuality("ATTAGTTA"), matchingResults[0].getBestMatch().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ATTAGA"), matchingResults[1].getBestMatch().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("AGACA"), matchingResults[2].getBestMatch().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("TTAGAA"), matchingResults[3].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ATTAGAA"), matchingResults[1].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACA"), matchingResults[2].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ATTTAGAA"), matchingResults[3].getBestMatch().getWholePatternMatch().getValue());
 
         AndPattern andPattern = new AndPattern(fuzzyPattern, fuzzyPattern);
         PlusPattern plusPattern = new PlusPattern(fuzzyPattern, fuzzyPattern);
 
-        assertEquals(new NSequenceWithQuality("AGACATTTAGAA"), andPattern.match(sequences[4]).getBestMatch().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("AGACATTTAGAA"), plusPattern.match(sequences[4]).getBestMatch().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("AGACATTTAGAA"), andPattern.match(sequences[4]).getMatches().take().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("AGACATTTAGAA"), plusPattern.match(sequences[4]).getMatches().take().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), andPattern.match(sequences[4]).getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), plusPattern.match(sequences[4]).getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), andPattern.match(sequences[4]).getMatches().take().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), plusPattern.match(sequences[4]).getMatches().take().getWholePatternMatch().getValue());
 
         MultiPattern multiPattern = new MultiPattern(fuzzyPattern, andPattern, plusPattern);
         NotOperator notOperator = new NotOperator(multiPattern);
@@ -349,11 +349,11 @@ public class LogicalOperatorsTest {
 
         MatchingResult result = andOperator.match(mseq);
 
-        assertEquals(new NSequenceWithQuality("ATTAGA"), result.getBestMatch().getWholePatternMatch(0).getValue());
-        assertEquals(new NSequenceWithQuality("AGACATTTAGAA"), result.getBestMatch().getWholePatternMatch(1).getValue());
-        assertEquals(new NSequenceWithQuality("AGACATTTAGAA"), result.getBestMatch().getWholePatternMatch(2).getValue());
+        assertEquals(new NSequenceWithQuality("ATTAGAA"), result.getBestMatch().getWholePatternMatch(0).getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), result.getBestMatch().getWholePatternMatch(1).getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), result.getBestMatch().getWholePatternMatch(2).getValue());
         assertNull(result.getBestMatch().getWholePatternMatch(3));
-        assertEquals(new NSequenceWithQuality("ATTAGA"), result.getBestMatch().getWholePatternMatch(14).getValue());
+        assertEquals(new NSequenceWithQuality("ATTAGAA"), result.getBestMatch().getWholePatternMatch(14).getValue());
 
         exception.expect(ArrayIndexOutOfBoundsException.class);
         result.getBestMatch().getWholePatternMatch(17);

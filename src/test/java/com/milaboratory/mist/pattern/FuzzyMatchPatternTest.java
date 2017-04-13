@@ -231,9 +231,9 @@ public class FuzzyMatchPatternTest {
         assertNull(matchingResults[1][4].getBestMatch());
 
         assertEquals(new NSequenceWithQuality("ATTAGTTA"), matchingResults[2][0].getBestMatch().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ATTAGA"), matchingResults[2][1].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ATTAGAA"), matchingResults[2][1].getBestMatch().getWholePatternMatch().getValue());
         assertEquals(new NSequenceWithQuality("ATTAGGACA"), matchingResults[2][2].getBestMatch().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("AGACA"), matchingResults[2][3].getBestMatch().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("TTAGAA"), matchingResults[2][4].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACA"), matchingResults[2][3].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ATTTAGAA"), matchingResults[2][4].getBestMatch().getWholePatternMatch().getValue());
     }
 }
