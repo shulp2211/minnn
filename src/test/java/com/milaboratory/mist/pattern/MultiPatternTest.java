@@ -22,8 +22,8 @@ public class MultiPatternTest {
 
     @Test
     public void mismatchedReadsAndPatternsTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("GCGAT"));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GCGAT"));
         MultiPattern multiPattern = new MultiPattern(pattern1, pattern2);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
@@ -43,7 +43,7 @@ public class MultiPatternTest {
 
     @Test
     public void mismatchedReadsAndRangesTest() throws Exception {
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"));
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
         MultiPattern multiPattern = new MultiPattern(pattern);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
@@ -63,7 +63,7 @@ public class MultiPatternTest {
 
     @Test
     public void mismatchedReadsAndComplementsTest1() throws Exception {
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"));
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
         MultiPattern multiPattern = new MultiPattern(pattern);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
@@ -83,7 +83,7 @@ public class MultiPatternTest {
 
     @Test
     public void mismatchedReadsAndComplementsTest2() throws Exception {
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"));
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
         MultiPattern multiPattern = new MultiPattern(pattern);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
@@ -103,10 +103,10 @@ public class MultiPatternTest {
 
     @Test
     public void simpleTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("GTTATTACCA"));
-        AndPattern pattern3 = new AndPattern(new FuzzyMatchPattern(new NSequenceWithQuality("AT")),
-                new FuzzyMatchPattern(new NSequenceWithQuality("GCAT")));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTTATTACCA"));
+        AndPattern pattern3 = new AndPattern(new FuzzyMatchPattern(new NucleotideSequence("AT")),
+                new FuzzyMatchPattern(new NucleotideSequence("GCAT")));
         MultiPattern multiPattern = new MultiPattern(pattern1, pattern2, pattern3);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
@@ -154,12 +154,10 @@ public class MultiPatternTest {
             for (int s = 0; s < sequencesNum; s++) {
                 NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
                 NucleotideSequence motifSeq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 5);
-                NSequenceWithQuality motifSeqQ = new NSequenceWithQuality(motifSeq, SequenceQuality
-                        .getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, motifSeq.getSequence().size()));
                 NSequenceWithQuality seqQ = new NSequenceWithQuality(seq, SequenceQuality
                         .getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, seq.getSequence().size()));
                 sequences[s] = seqQ;
-                patterns[s] = new FuzzyMatchPattern(motifSeqQ);
+                patterns[s] = new FuzzyMatchPattern(motifSeq);
                 isMatching = isMatching && seq.toString().contains(motifSeq.toString());
             }
             MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
@@ -190,8 +188,8 @@ public class MultiPatternTest {
             put("5", new Range(5, 6));
         }};
 
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("TAGCC"), groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("CAGATGCA"), groups2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("CAGATGCA"), groups2);
         MultiPattern multiPattern = new MultiPattern(pattern1, pattern2);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
@@ -231,8 +229,8 @@ public class MultiPatternTest {
             put("XYZ", new Range(1, 3));
             put("GH", new Range(9, 10));
         }};
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups2);
         exception.expect(IllegalStateException.class);
         new MultiPattern(pattern1, pattern2);
     }
@@ -244,7 +242,7 @@ public class MultiPatternTest {
             put("DEF", new Range(6, 7));
             put("GH", new Range(10, 11));
         }};
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups);
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups);
         exception.expect(IllegalStateException.class);
         new MultiPattern(pattern, pattern);
     }

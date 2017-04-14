@@ -3,6 +3,7 @@ package com.milaboratory.mist.pattern;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.core.sequence.NucleotideSequence;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -18,10 +19,10 @@ public class LogicalOperatorsTest {
 
     @Test
     public void logicTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("GTTATTACCA"));
-        AndPattern pattern3 = new AndPattern(new FuzzyMatchPattern(new NSequenceWithQuality("AT")),
-                new FuzzyMatchPattern(new NSequenceWithQuality("GCAT")));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTTATTACCA"));
+        AndPattern pattern3 = new AndPattern(new FuzzyMatchPattern(new NucleotideSequence("AT")),
+                new FuzzyMatchPattern(new NucleotideSequence("GCAT")));
         MultiPattern multiPattern1 = new MultiPattern(pattern1, pattern2, pattern3);
         MultiPattern multiPattern2 = new MultiPattern(pattern1, pattern3);
         MultiPattern multiPattern3 = new MultiPattern(pattern3, pattern2);
@@ -123,10 +124,10 @@ public class LogicalOperatorsTest {
 
     @Test
     public void simpleTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("GTTATTACCA"));
-        AndPattern pattern3 = new AndPattern(new FuzzyMatchPattern(new NSequenceWithQuality("AT")),
-                new FuzzyMatchPattern(new NSequenceWithQuality("GCAT")));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTTATTACCA"));
+        AndPattern pattern3 = new AndPattern(new FuzzyMatchPattern(new NucleotideSequence("AT")),
+                new FuzzyMatchPattern(new NucleotideSequence("GCAT")));
         MultiPattern multiPattern = new MultiPattern(pattern1, pattern2, pattern3);
 
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
@@ -202,7 +203,7 @@ public class LogicalOperatorsTest {
 
     @Test
     public void groupNamesTest() throws Exception {
-        NSequenceWithQuality testSeq = new NSequenceWithQuality("GTGGTTGTGTTGT");
+        NucleotideSequence testSeq = new NucleotideSequence("GTGGTTGTGTTGT");
         HashMap<String, Range> groups1 = new HashMap<String, Range>() {{
             put("ABC", new Range(1, 3));
             put("DEF", new Range(6, 7));
@@ -234,7 +235,7 @@ public class LogicalOperatorsTest {
     @Test
     public void groupsInNotTest() throws Exception {
         HashMap<String, Range> groups = new HashMap<String, Range>() {{ put("0", new Range(0, 1)); }};
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NSequenceWithQuality("A"), groups);
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("A"), groups);
         MultiPattern multiPattern = new MultiPattern(pattern);
 
         exception.expect(IllegalStateException.class);
@@ -253,9 +254,9 @@ public class LogicalOperatorsTest {
             put("5", new Range(5, 6));
         }};
 
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("TAGCC"), groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("CAGATGCA"), groups2);
-        FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(new NSequenceWithQuality("A"));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("CAGATGCA"), groups2);
+        FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(new NucleotideSequence("A"));
         MultiPattern multiPattern1 = new MultiPattern(pattern1, pattern3);
         MultiPattern multiPattern2 = new MultiPattern(pattern3, pattern2);
         MultiPattern multiPattern3 = new MultiPattern(pattern3, pattern3);
@@ -295,7 +296,7 @@ public class LogicalOperatorsTest {
 
     @Test
     public void alignmentTest() throws Exception {
-        FuzzyMatchPattern fuzzyPattern = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"), 2);
+        FuzzyMatchPattern fuzzyPattern = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"), 2);
 
         NSequenceWithQuality[] sequences = {
                 new NSequenceWithQuality("ATTAGTTA"),

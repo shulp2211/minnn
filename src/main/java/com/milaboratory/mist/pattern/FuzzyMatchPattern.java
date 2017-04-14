@@ -16,19 +16,20 @@ import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME
 import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
 
 public class FuzzyMatchPattern extends SinglePattern {
-    private final NSequenceWithQuality patternSeq;
+    private final NucleotideSequence patternSeq;
+    private final Motif<NucleotideSequence> motif;
     private final Map<String, Range> groups;
     private final int maxErrors;
 
-    public FuzzyMatchPattern(NSequenceWithQuality patternSeq) {
+    public FuzzyMatchPattern(NucleotideSequence patternSeq) {
         this(patternSeq, new HashMap<>());
     }
 
-    public FuzzyMatchPattern(NSequenceWithQuality patternSeq, Map<String, Range> groups) {
+    public FuzzyMatchPattern(NucleotideSequence patternSeq, Map<String, Range> groups) {
         this(patternSeq, groups, 0);
     }
 
-    public FuzzyMatchPattern(NSequenceWithQuality patternSeq, int maxErrors) {
+    public FuzzyMatchPattern(NucleotideSequence patternSeq, int maxErrors) {
         this(patternSeq, new HashMap<>(), maxErrors);
     }
 
@@ -39,12 +40,13 @@ public class FuzzyMatchPattern extends SinglePattern {
      * @param groups map of group names and their ranges
      * @param maxErrors maximum allowed number of substitutions, insertions and deletions
      */
-    public FuzzyMatchPattern(NSequenceWithQuality patternSeq, Map<String, Range> groups, int maxErrors) {
+    public FuzzyMatchPattern(NucleotideSequence patternSeq, Map<String, Range> groups, int maxErrors) {
         this.patternSeq = patternSeq;
+        this.motif = patternSeq.toMotif();
         this.groups = groups;
         this.maxErrors = maxErrors;
 
-        int size = patternSeq.getSequence().size();
+        int size = patternSeq.size();
 
         for (Map.Entry<String, Range> group : groups.entrySet())
             if (group.getValue().getUpper() > size)
@@ -68,7 +70,8 @@ public class FuzzyMatchPattern extends SinglePattern {
      */
     @Override
     public MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId) {
-        final FuzzyMatchesSearch matchesSearch = new FuzzyMatchesSearch(patternSeq, groups, maxErrors, input, from, to, targetId);
+        final FuzzyMatchesSearch matchesSearch = new FuzzyMatchesSearch(patternSeq, motif, groups, maxErrors,
+                input, from, to, targetId);
         final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
         final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
 
@@ -76,7 +79,8 @@ public class FuzzyMatchPattern extends SinglePattern {
     }
 
     private final static class FuzzyMatchesSearch extends MatchesSearch {
-        private final NSequenceWithQuality patternSeq;
+        private final NucleotideSequence patternSeq;
+        private final Motif<NucleotideSequence> motif;
         private final Map<String, Range> groups;
         private final int maxErrors;
         private final NSequenceWithQuality input;
@@ -84,8 +88,10 @@ public class FuzzyMatchPattern extends SinglePattern {
         private final int to;
         private final byte targetId;
 
-        FuzzyMatchesSearch(NSequenceWithQuality patternSeq, Map<String, Range> groups, int maxErrors, NSequenceWithQuality input, int from, int to, byte targetId) {
+        FuzzyMatchesSearch(NucleotideSequence patternSeq, Motif<NucleotideSequence> motif, Map<String, Range> groups,
+                           int maxErrors, NSequenceWithQuality input, int from, int to, byte targetId) {
             this.patternSeq = patternSeq;
+            this.motif = motif;
             this.groups = groups;
             this.maxErrors = maxErrors;
             this.input = input;
@@ -96,7 +102,6 @@ public class FuzzyMatchPattern extends SinglePattern {
 
         @Override
         protected void performSearch(boolean quickSearch) {
-            Motif<NucleotideSequence> motif = patternSeq.getSequence().toMotif();
             BitapMatcher matcher = motif.getBitapPattern().substitutionAndIndelMatcherLast(maxErrors, input.getSequence(), from, to);
             int matchLastPosition;
             float bestScore = Float.NEGATIVE_INFINITY;
@@ -152,7 +157,7 @@ public class FuzzyMatchPattern extends SinglePattern {
                 addedLength = matchLastPosition - patternSeq.size() + 1;
             }
             return BandedLinearAligner.alignLeftAdded(LinearGapAlignmentScoring.getNucleotideBLASTScoring(),
-                    patternSeq.getSequence(), input.getSequence(), 0, patternSeq.size(), 0,
+                    patternSeq, input.getSequence(), 0, patternSeq.size(), 0,
                     firstPostition, patternSeq.size() + addedLength, addedLength * 2, maxErrors);
         }
     }

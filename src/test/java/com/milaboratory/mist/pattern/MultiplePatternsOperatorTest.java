@@ -1,7 +1,7 @@
 package com.milaboratory.mist.pattern;
 
 import com.milaboratory.core.Range;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.core.sequence.NucleotideSequence;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -57,8 +57,8 @@ public class MultiplePatternsOperatorTest {
             put("XYZ", new Range(1, 3));
             put("GH", new Range(9, 10));
         }};
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups2);
         exception.expect(IllegalStateException.class);
         new AndPattern(pattern1, pattern2);
     }
@@ -74,8 +74,8 @@ public class MultiplePatternsOperatorTest {
             put("XYZ", new Range(1, 3));
             put("GH", new Range(9, 10));
         }};
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups2);
         exception.expect(IllegalStateException.class);
         new PlusPattern(pattern1, pattern2);
     }
@@ -87,7 +87,7 @@ public class MultiplePatternsOperatorTest {
             put("DEF", new Range(6, 7));
             put("GH", new Range(10, 11));
         }};
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NSequenceWithQuality("GTGGTTGTGTTGT"), groups);
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups);
         exception.expect(IllegalStateException.class);
         new AndPattern(pattern, pattern);
     }

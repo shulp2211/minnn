@@ -22,10 +22,10 @@ public class PlusPatternTest {
 
     @Test
     public void simpleTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("ATTAGACA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("TTAG"));
-        FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(new NSequenceWithQuality("AGTA"));
-        FuzzyMatchPattern pattern4 = new FuzzyMatchPattern(new NSequenceWithQuality("AGTAG"));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("TTAG"));
+        FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(new NucleotideSequence("AGTA"));
+        FuzzyMatchPattern pattern4 = new FuzzyMatchPattern(new NucleotideSequence("AGTAG"));
         NSequenceWithQuality nseq1 = new NSequenceWithQuality("ACTGCGATAAATTAGACAGTACGTA");
         NSequenceWithQuality nseq2 = new NSequenceWithQuality("TTAGTAGAGTATTTAGAGA");
         NSequenceWithQuality nseq3 = new NSequenceWithQuality("ATTAGACAAGTAATTAGACATTAG");
@@ -69,14 +69,10 @@ public class PlusPatternTest {
             NucleotideSequence seqMotif2 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 60);
             NucleotideSequence seqRight = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, 40);
             NucleotideSequence fullSeq = SequencesUtils.concatenate(seqLeft, seqMotif1, seqMiddle, seqMotif2, seqRight);
-            NSequenceWithQuality seqM1Q = new NSequenceWithQuality(seqMotif1,
-                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, seqMotif1.getSequence().size()));
-            NSequenceWithQuality seqM2Q = new NSequenceWithQuality(seqMotif2,
-                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, seqMotif2.getSequence().size()));
             NSequenceWithQuality target = new NSequenceWithQuality(fullSeq,
                     SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, fullSeq.getSequence().size()));
-            FuzzyMatchPattern patternMotif1 = new FuzzyMatchPattern(seqM1Q);
-            FuzzyMatchPattern patternMotif2 = new FuzzyMatchPattern(seqM2Q);
+            FuzzyMatchPattern patternMotif1 = new FuzzyMatchPattern(seqMotif1);
+            FuzzyMatchPattern patternMotif2 = new FuzzyMatchPattern(seqMotif2);
             PlusPattern plusPattern = new PlusPattern(patternMotif1, patternMotif2);
             assertEquals(true, plusPattern.match(target).isFound());
 
@@ -88,8 +84,8 @@ public class PlusPatternTest {
 
     @Test
     public void allMatchesTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("ATTA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("GACA"));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATTA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GACA"));
         NSequenceWithQuality nseq = new NSequenceWithQuality("GACATTATTATTAGACAGACATTAGACATTATTAGACAGACATTAATTA");
         PlusPattern plusPattern1 = new PlusPattern(pattern1, pattern2);
         PlusPattern plusPattern2 = new PlusPattern(pattern1, pattern1, pattern2);
@@ -113,8 +109,8 @@ public class PlusPatternTest {
 
     @Test
     public void matchesIntersectionTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("ATA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("TAT"));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("TAT"));
         PlusPattern plusPattern = new PlusPattern(pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("ATATATATTATA");
         OutputPort<Match> matches = plusPattern.match(nseq).getMatches(false);
@@ -130,8 +126,8 @@ public class PlusPatternTest {
 
     @Test
     public void quickSearchTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("ATA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("TAT"));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("TAT"));
         PlusPattern plusPattern = new PlusPattern(pattern1, pattern2);
         NSequenceWithQuality nseq1 = new NSequenceWithQuality("ATATATATTATA");
         NSequenceWithQuality nseq2 = new NSequenceWithQuality("GCGGTGCGTATAGCG");
@@ -168,8 +164,8 @@ public class PlusPatternTest {
             put("5", new Range(5, 6));
         }};
 
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NSequenceWithQuality("TAGCC"), groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NSequenceWithQuality("CAGATGCA"), groups2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("CAGATGCA"), groups2);
         PlusPattern plusPattern = new PlusPattern(pattern2, pattern1);
         NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGCC");
         MatchingResult result = plusPattern.match(nseq);
