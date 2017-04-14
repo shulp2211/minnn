@@ -75,7 +75,7 @@ public class FuzzyMatchPattern extends SinglePattern {
         return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
     }
 
-    private final class FuzzyMatchesSearch extends MatchesSearch {
+    private final static class FuzzyMatchesSearch extends MatchesSearch {
         private final NSequenceWithQuality patternSeq;
         private final Map<String, Range> groups;
         private final int maxErrors;
