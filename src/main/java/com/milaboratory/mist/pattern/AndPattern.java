@@ -50,7 +50,7 @@ public class AndPattern extends MultiplePatternsOperator {
 
         @Override
         protected void performSearch(boolean quickSearch) {
-            float bestScore = -Float.MAX_VALUE;
+            float bestScore = Float.NEGATIVE_INFINITY;
             int numOperands = operandPatterns.length;
 
             // initialize arrays and get matches for all operands

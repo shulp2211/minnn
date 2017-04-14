@@ -19,7 +19,7 @@ public class OrOperator extends MultipleReadsOperator {
 
     @Override
     protected float combineMatchScores(Match... matches) {
-        float bestScore = -Float.MAX_VALUE;
+        float bestScore = Float.NEGATIVE_INFINITY;
         for (Match match : matches)
             if (match != null)
                 if (match.getScore() > bestScore)

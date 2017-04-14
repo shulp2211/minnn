@@ -115,7 +115,7 @@ public abstract class MultipleReadsOperator extends Pattern {
         int[] matchArraySizes;
         int[] innerArrayIndexes;
         int totalCombinationCount = 1;
-        float bestScore = -Float.MAX_VALUE;
+        float bestScore = Float.NEGATIVE_INFINITY;
         int numOperands = results.length;
 
         // initialize arrays and get matches for all operands

@@ -99,7 +99,7 @@ public class FuzzyMatchPattern extends SinglePattern {
             Motif<NucleotideSequence> motif = patternSeq.getSequence().toMotif();
             BitapMatcher matcher = motif.getBitapPattern().substitutionAndIndelMatcherLast(maxErrors, input.getSequence(), from, to);
             int matchLastPosition;
-            float bestScore = -Float.MAX_VALUE;
+            float bestScore = Float.NEGATIVE_INFINITY;
 
             do {
                 matchLastPosition = matcher.findNext();
