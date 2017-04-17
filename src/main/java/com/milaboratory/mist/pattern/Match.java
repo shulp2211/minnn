@@ -13,7 +13,7 @@ public final class Match {
     private final CaptureGroupMatch[] wholePatternMatch;
 
 
-    Match(int numberOfPatterns, float score, Map<String, CaptureGroupMatch> groupMatches) {
+    public Match(int numberOfPatterns, float score, Map<String, CaptureGroupMatch> groupMatches) {
         this.numberOfPatterns = numberOfPatterns;
         this.score = score;
         this.groupMatches = groupMatches;

@@ -6,6 +6,8 @@ import com.milaboratory.core.sequence.NSequenceWithQuality;
 
 import java.util.ArrayList;
 
+import static com.milaboratory.mist.util.RangeTools.checkRangesIntersection;
+
 public class AndPattern extends MultiplePatternsOperator {
     public AndPattern(SinglePattern... operandPatterns) {
         super(operandPatterns);
