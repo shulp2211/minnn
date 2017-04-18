@@ -6,7 +6,9 @@ import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.mist.pattern.CaptureGroupMatch;
 import com.milaboratory.mist.pattern.Match;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
@@ -15,6 +17,7 @@ import static com.milaboratory.mist.util.RangeTools.combineRanges;
 public abstract class ApproximateSorter {
     protected final boolean multipleReads;
     protected final boolean combineScoresBySum;
+    protected final boolean fairSorting;
     protected final OutputPort<Match>[] inputPorts;
     protected final int numberOfPorts;
 
@@ -26,11 +29,14 @@ public abstract class ApproximateSorter {
      *                      from single read
      * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
      *                           score must be the highest of match scores
+     * @param fairSorting true if we need slow but fair sorting
      * @param inputPorts ports for input matches; we assume that they are already sorted, maybe approximately
      */
-    public ApproximateSorter(boolean multipleReads, boolean combineScoresBySum, OutputPort<Match>[] inputPorts) {
+    public ApproximateSorter(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
+                             OutputPort<Match>[] inputPorts) {
         this.multipleReads = multipleReads;
         this.combineScoresBySum = combineScoresBySum;
+        this.fairSorting = fairSorting;
         this.inputPorts = inputPorts;
         this.numberOfPorts = inputPorts.length;
     }
@@ -103,5 +109,73 @@ public abstract class ApproximateSorter {
                         resultScore = match.getScore();
         }
         return resultScore;
+    }
+
+    protected class TableOfIterations {
+        private final HashSet<ArrayList<Integer>> returnedCombinations;
+        private final int numberOfPorts;
+        private final boolean portEndReached[];
+        private final int portMatchesQuantities[];
+        private int totalCombinationsCount = -1;
+
+        TableOfIterations(int numberOfPorts) {
+            returnedCombinations = new HashSet<>();
+            this.numberOfPorts = numberOfPorts;
+            this.portEndReached = new boolean[numberOfPorts];   // boolean initialize value is false
+            this.portMatchesQuantities = new int[numberOfPorts];
+        }
+
+        boolean isPortEndReached(int portNumber) {
+            return portEndReached[portNumber];
+        }
+
+        int getNumberOfEndedPorts() {
+            int endedPorts = 0;
+            for (int i = 0; i < numberOfPorts; i++)
+                if (isPortEndReached(i)) endedPorts++;
+            return endedPorts;
+        }
+
+        int getPortMatchesQuantity(int portNumber) {
+            return portMatchesQuantities[portNumber];
+        }
+
+        void setPortEndReached(int portNumber, int matchesQuantity) {
+            portEndReached[portNumber] = true;
+            portMatchesQuantities[portNumber] = matchesQuantity;
+
+            if (getNumberOfEndedPorts() == numberOfPorts) {
+                totalCombinationsCount = 1;
+                for (int currentPortMatchesQuantity : portMatchesQuantities)
+                    totalCombinationsCount *= currentPortMatchesQuantity;
+            }
+        }
+
+        /**
+         * If all ports ended and total combinations count is calculated, returns total combinations count,
+         * otherwise -1.
+         *
+         * @return total combinations count
+         */
+        int getTotalCombinationsCount() {
+            return totalCombinationsCount;
+        }
+
+        int getNumberOfReturnedCombinations() {
+            return returnedCombinations.size();
+        }
+
+        boolean isCombinationReturned(int... indexes) {
+            if (indexes.length != numberOfPorts)
+                throw new IllegalStateException("Number of indexes: " + indexes.length + ", number of ports: "
+                    + numberOfPorts + "; they should be equal!");
+            return returnedCombinations.contains(new ArrayList<Integer>() {{ for (int i : indexes) add(i); }});
+        }
+
+        void addReturnedCombination(int... indexes) {
+            if (isCombinationReturned(indexes))
+                throw new IllegalStateException("Trying to add already returned combination!");
+            returnedCombinations.add(new ArrayList<Integer>() {{ for (int i : indexes) add(i); }});
+        }
     }
 }

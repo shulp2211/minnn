@@ -13,12 +13,13 @@ public class SorterByCoordinate extends ApproximateSorter {
      *                      from single read
      * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
      *                           score must be the highest of match scores
+     * @param fairSorting true if we need slow but fair sorting
      * @param sequentialCoordinates true if we use sequential coordinates only (Plus pattern), otherwise false
      * @param inputPorts ports for input matches; we assume that they are already sorted, maybe approximately
      */
-    public SorterByCoordinate(boolean multipleReads, boolean combineScoresBySum, boolean sequentialCoordinates,
-                              OutputPort<Match>[] inputPorts) {
-        super(multipleReads, combineScoresBySum, inputPorts);
+    public SorterByCoordinate(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
+                              boolean sequentialCoordinates, OutputPort<Match>[] inputPorts) {
+        super(multipleReads, combineScoresBySum, fairSorting, inputPorts);
         this.sequentialCoordinates = sequentialCoordinates;
     }
 
