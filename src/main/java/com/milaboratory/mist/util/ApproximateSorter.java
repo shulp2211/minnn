@@ -5,6 +5,7 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.mist.pattern.CaptureGroupMatch;
 import com.milaboratory.mist.pattern.Match;
+import com.milaboratory.mist.pattern.MatchValidationType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +19,7 @@ public abstract class ApproximateSorter {
     protected final boolean multipleReads;
     protected final boolean combineScoresBySum;
     protected final boolean fairSorting;
+    protected final MatchValidationType matchValidationType;
     protected final OutputPort<Match>[] inputPorts;
     protected final int numberOfPorts;
 
@@ -30,13 +32,15 @@ public abstract class ApproximateSorter {
      * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
+     * @param matchValidationType type of validation used to determine that current matches combination is invalid
      * @param inputPorts ports for input matches; we assume that they are already sorted, maybe approximately
      */
     public ApproximateSorter(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
-                             OutputPort<Match>[] inputPorts) {
+                             MatchValidationType matchValidationType, OutputPort<Match>[] inputPorts) {
         this.multipleReads = multipleReads;
         this.combineScoresBySum = combineScoresBySum;
         this.fairSorting = fairSorting;
+        this.matchValidationType = matchValidationType;
         this.inputPorts = inputPorts;
         this.numberOfPorts = inputPorts.length;
     }
@@ -109,6 +113,43 @@ public abstract class ApproximateSorter {
                         resultScore = match.getScore();
         }
         return resultScore;
+    }
+
+    protected boolean isCombinationValid(Match... matches) {
+        switch (matchValidationType) {
+            case ALWAYS:
+                return true;
+            case INTERSECTION:
+                Range ranges[] = new Range[matches.length];
+                boolean rangeIntersection = false;
+
+                OUTER:
+                for (int i = 0; i < matches.length; i++) {
+                    Range currentRange = matches[i].getWholePatternMatch().getRange();
+                    ranges[i] = currentRange;
+                    for (int j = 0; j < i; j++)  // Compare with all previously added matches
+                        if (ranges[j].intersectsWith(currentRange)) {
+                            rangeIntersection = true;
+                            break OUTER;
+                        }
+                }
+
+                return !rangeIntersection;
+            case ORDER:
+                Range currentRange;
+                Range previousRange;
+                boolean rangesMisplaced = false;
+                for (int i = 1; i < matches.length; i++) {
+                    currentRange = matches[i].getWholePatternMatch().getRange();
+                    previousRange = matches[i - 1].getWholePatternMatch().getRange();
+                    if (previousRange.getUpper() > currentRange.getLower()) {
+                        rangesMisplaced = true;
+                        break;
+                    }
+                }
+                return !rangesMisplaced;
+        }
+        return false;
     }
 
     protected class TableOfIterations {

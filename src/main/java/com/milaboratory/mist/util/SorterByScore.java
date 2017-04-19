@@ -2,13 +2,14 @@ package com.milaboratory.mist.util;
 
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.mist.pattern.Match;
+import com.milaboratory.mist.pattern.MatchValidationType;
 
 import java.util.ArrayList;
 
 public class SorterByScore extends ApproximateSorter {
     public SorterByScore(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
-                         OutputPort<Match>[] inputPorts) {
-        super(multipleReads, combineScoresBySum, fairSorting, inputPorts);
+                         MatchValidationType matchValidationType, OutputPort<Match>[] inputPorts) {
+        super(multipleReads, combineScoresBySum, fairSorting, matchValidationType, inputPorts);
     }
 
     @Override
@@ -50,13 +51,20 @@ public class SorterByScore extends ApproximateSorter {
                         Match takenMatch = inputPorts[currentIndexes[i]].take();
                         if (takenMatch == null) {
                             tableOfIterations.setPortEndReached(i, currentIndexes[i]);
+                            calculateNextIndexes();
                             break GET_NEXT_COMBINATION;
                         } else
                             takenMatches.get(i).add(takenMatch);
                     }
                     currentMatches[i] = takenMatches.get(i).get(currentIndexes[i]);
                 }
-                combinationFound = true;
+                if (isCombinationValid(currentMatches))
+                    combinationFound = true;
+                else {
+                    // mark invalid match as already returned in table of iterations and continue search
+                    tableOfIterations.addReturnedCombination(currentIndexes);
+                    calculateNextIndexes();
+                }
             }
             tableOfIterations.addReturnedCombination(currentIndexes);
             calculateNextIndexes();
