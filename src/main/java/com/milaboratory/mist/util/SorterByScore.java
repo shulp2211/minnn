@@ -58,11 +58,15 @@ public class SorterByScore extends ApproximateSorter {
                     }
                     currentMatches[i] = takenMatches.get(i).get(currentIndexes[i]);
                 }
-                if (isCombinationValid(currentMatches))
+
+                IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, currentIndexes);
+                if (incompatibleIndexes == null)
                     combinationFound = true;
                 else {
-                    // mark invalid match as already returned in table of iterations and continue search
+                    /* mark invalid match as already returned in table of iterations, write found
+                     incompatible indexes to table of iterations and continue search */
                     tableOfIterations.addReturnedCombination(currentIndexes);
+                    tableOfIterations.addIncompatibleIndexes(incompatibleIndexes);
                     calculateNextIndexes();
                 }
             }
@@ -75,6 +79,9 @@ public class SorterByScore extends ApproximateSorter {
             return null;
         }
 
+        /**
+         * Calculate next indexes for matches arrays: which next combination will be returned.
+         */
         private void calculateNextIndexes() {
             /* If all combinations already iterated, there is nothing to calculate */
             if (tableOfIterations.getTotalCombinationsCount() == tableOfIterations.getNumberOfReturnedCombinations())

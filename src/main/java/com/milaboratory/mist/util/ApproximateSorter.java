@@ -115,13 +115,25 @@ public abstract class ApproximateSorter {
         return resultScore;
     }
 
-    protected boolean isCombinationValid(Match... matches) {
+    /**
+     * Returns null if this match combination is valid or IncompatibleIndexes structure if it finds
+     * 2 matches that have incompatible ranges.
+     *
+     * @param matches group of matches to check
+     * @param indexes indexes of all provided matches for writing to IncompatibleIndexes structure
+     * @return IncompatibleIndexes structure
+     */
+    protected IncompatibleIndexes findIncompatibleIndexes(Match[] matches, int[] indexes) {
+        if (matches.length != indexes.length)
+            throw new IllegalStateException("matches length is " + matches.length + ", indexes length is "
+                + indexes.length + "; they must be equal!");
+
+        IncompatibleIndexes result = null;
         switch (matchValidationType) {
             case ALWAYS:
-                return true;
+                return null;
             case INTERSECTION:
                 Range ranges[] = new Range[matches.length];
-                boolean rangeIntersection = false;
 
                 OUTER:
                 for (int i = 0; i < matches.length; i++) {
@@ -129,31 +141,69 @@ public abstract class ApproximateSorter {
                     ranges[i] = currentRange;
                     for (int j = 0; j < i; j++)  // Compare with all previously added matches
                         if (ranges[j].intersectsWith(currentRange)) {
-                            rangeIntersection = true;
+                            result = new IncompatibleIndexes(j, indexes[j], i, indexes[i]);
                             break OUTER;
                         }
                 }
 
-                return !rangeIntersection;
+                return result;
             case ORDER:
                 Range currentRange;
                 Range previousRange;
-                boolean rangesMisplaced = false;
+
                 for (int i = 1; i < matches.length; i++) {
                     currentRange = matches[i].getWholePatternMatch().getRange();
                     previousRange = matches[i - 1].getWholePatternMatch().getRange();
                     if (previousRange.getUpper() > currentRange.getLower()) {
-                        rangesMisplaced = true;
+                        result = new IncompatibleIndexes(i - 1, indexes[i - 1], i, indexes[i]);
                         break;
                     }
                 }
-                return !rangesMisplaced;
+                return result;
         }
-        return false;
+        return null;
+    }
+
+    protected class IncompatibleIndexes {
+        public int port1;
+        public int index1;
+        public int port2;
+        public int index2;
+
+        public IncompatibleIndexes(int port1, int index1, int port2, int index2) {
+            this.port1 = port1;
+            this.index1 = index1;
+            this.port2 = port2;
+            this.index2 = index2;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (!(other instanceof IncompatibleIndexes))
+                return false;
+
+            IncompatibleIndexes that = (IncompatibleIndexes) other;
+
+            return (this.port1 == that.port1) && (this.port2 == that.port2)
+                    && (this.index1 == that.index1) && (this.index2 == that.index2);
+        }
+
+        @Override
+        public int hashCode() {
+            int hashCode = 1;
+
+            hashCode = hashCode * 37 + this.port1;
+            hashCode = hashCode * 37 + this.port2;
+            hashCode = hashCode * 37 + this.index1;
+            hashCode = hashCode * 37 + this.index2;
+
+            return hashCode;
+        }
     }
 
     protected class TableOfIterations {
         private final HashSet<ArrayList<Integer>> returnedCombinations;
+        private final HashSet<IncompatibleIndexes> incompatibleIndexes;
         private final int numberOfPorts;
         private final boolean portEndReached[];
         private final int portMatchesQuantities[];
@@ -161,6 +211,7 @@ public abstract class ApproximateSorter {
 
         TableOfIterations(int numberOfPorts) {
             returnedCombinations = new HashSet<>();
+            incompatibleIndexes = new HashSet<>();
             this.numberOfPorts = numberOfPorts;
             this.portEndReached = new boolean[numberOfPorts];   // boolean initialize value is false
             this.portMatchesQuantities = new int[numberOfPorts];
@@ -217,6 +268,21 @@ public abstract class ApproximateSorter {
             if (isCombinationReturned(indexes))
                 throw new IllegalStateException("Trying to add already returned combination!");
             returnedCombinations.add(new ArrayList<Integer>() {{ for (int i : indexes) add(i); }});
+        }
+
+        void addIncompatibleIndexes(IncompatibleIndexes foundIncompatibleIndexes) {
+            incompatibleIndexes.add(foundIncompatibleIndexes);
+        }
+
+        boolean isCompatible(int... indexes) {
+            for (IncompatibleIndexes currentIndexes : incompatibleIndexes)
+                if (matchValidationType == MatchValidationType.ORDER)
+                    if ((indexes[currentIndexes.port1] >= currentIndexes.index1)
+                        && (indexes[currentIndexes.port2] <= currentIndexes.index2)) return false;
+                else
+                    if ((indexes[currentIndexes.port1] == currentIndexes.index1)
+                            && (indexes[currentIndexes.port2] == currentIndexes.index2)) return false;
+            return true;
         }
     }
 }
