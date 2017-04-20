@@ -51,7 +51,7 @@ public class SorterByScore extends ApproximateSorter {
                     // if we didn't take the needed match before, take it now
                     if (currentIndexes[i] == takenMatches.get(i).size()) {
                         Match takenMatch = inputPorts[currentIndexes[i]].take();
-                        if (takenMatch == null) {
+                        if ((takenMatch == null) && !(allowOneNull && takenMatches.get(i).size() == 0)) {
                             tableOfIterations.setPortEndReached(i, currentIndexes[i]);
                             calculateNextIndexes();
                             break GET_NEXT_COMBINATION;
