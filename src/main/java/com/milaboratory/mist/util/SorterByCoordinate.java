@@ -1,10 +1,13 @@
 package com.milaboratory.mist.util;
 
 import cc.redberry.pipe.OutputPort;
+import com.milaboratory.mist.pattern.CaptureGroupMatch;
 import com.milaboratory.mist.pattern.Match;
 import com.milaboratory.mist.pattern.MatchValidationType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
 public class SorterByCoordinate extends ApproximateSorter {
     /**
@@ -12,15 +15,18 @@ public class SorterByCoordinate extends ApproximateSorter {
      *
      * @param multipleReads true if we combine matches from multiple reads; false if we combine matches
      *                      from single read
+     * @param allowOneNull If true, if operand return null from first take(), it is considered as valid value,
+     *                     otherwise null never considered as a match. High level logic operators must set this
+     *                     to true, other operators - to false.
      * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
      * @param matchValidationType type of validation used to determine that current matches combination is invalid
      * @param inputPorts ports for input matches; we assume that they are already sorted, maybe approximately
      */
-    public SorterByCoordinate(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
+    public SorterByCoordinate(boolean multipleReads, boolean allowOneNull, boolean combineScoresBySum, boolean fairSorting,
                               MatchValidationType matchValidationType, OutputPort<Match>[] inputPorts) {
-        super(multipleReads, combineScoresBySum, fairSorting, matchValidationType, inputPorts);
+        super(multipleReads, allowOneNull, combineScoresBySum, fairSorting, matchValidationType, inputPorts);
     }
 
     @Override
@@ -44,7 +50,7 @@ public class SorterByCoordinate extends ApproximateSorter {
             this.numberOfPorts = numberOfPorts;
             this.currentIndexes = new int[numberOfPorts];
             this.currentMatches = new Match[numberOfPorts];
-            this.tableOfIterations = new TableOfIterations(numberOfPorts);
+            this.tableOfIterations = new TableOfIterations(numberOfPorts, matchValidationType);
         }
 
         @Override
@@ -87,7 +93,34 @@ public class SorterByCoordinate extends ApproximateSorter {
         }
 
         private Match takeFairSorted() {
-            return null;
+            if (!sortingPerformed) {
+                fillArrayForFairSorting();
+                if (!allowOneNull)
+                    Arrays.sort(allMatchesFiltered, Comparator.comparingInt(match -> match.getWholePatternMatch().getRange().getLower()));
+                else
+                    Arrays.sort(allMatchesFiltered, Comparator.comparingInt(this::getMatchCoordinateWeight));
+                sortingPerformed = true;
+            }
+
+            if (nextFairSortedMatch >= filteredMatchesCount) return null;
+
+            return allMatchesFiltered[nextFairSortedMatch++];
+        }
+
+        /**
+         * Get weight from match to perform fair sorting for multiple pattern matches by coordinate.
+         * In multiple patterns, getWholePatternMatch() can return null values.
+         *
+         * @return weight: lower end of the range in the first non-null match
+         */
+        private int getMatchCoordinateWeight(Match match) {
+            for (int i = 0; i < match.getNumberOfPatterns(); i++) {
+                CaptureGroupMatch currentWholeMatch = match.getWholePatternMatch(i);
+                if (currentWholeMatch == null) continue;
+                return currentWholeMatch.getRange().getLower();
+            }
+
+            return 0;
         }
 
         /**

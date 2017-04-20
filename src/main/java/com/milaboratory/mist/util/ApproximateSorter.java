@@ -7,21 +7,25 @@ import com.milaboratory.mist.pattern.CaptureGroupMatch;
 import com.milaboratory.mist.pattern.Match;
 import com.milaboratory.mist.pattern.MatchValidationType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
 import static com.milaboratory.mist.util.RangeTools.combineRanges;
 
 public abstract class ApproximateSorter {
     protected final boolean multipleReads;
+    protected final boolean allowOneNull;
     protected final boolean combineScoresBySum;
     protected final boolean fairSorting;
     protected final MatchValidationType matchValidationType;
     protected final OutputPort<Match>[] inputPorts;
     protected final int numberOfPorts;
+
+    // data structures used for fair sorting
+    protected Match[] allMatchesFiltered;
+    protected int filteredMatchesCount = 0;
+    protected int nextFairSortedMatch = 0;
+    protected boolean sortingPerformed = false;
 
     /**
      * This sorter allows to get output port for approximately sorted matches by score or coordinate from
@@ -29,15 +33,19 @@ public abstract class ApproximateSorter {
      *
      * @param multipleReads true if we combine matches from multiple reads; false if we combine matches
      *                      from single read
+     * @param allowOneNull If true, if operand return null from first take(), it is considered as valid value,
+     *                     otherwise null never considered as a match. High level logic operators must set this
+     *                     to true, other operators - to false.
      * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
      * @param matchValidationType type of validation used to determine that current matches combination is invalid
      * @param inputPorts ports for input matches; we assume that they are already sorted, maybe approximately
      */
-    public ApproximateSorter(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
+    public ApproximateSorter(boolean multipleReads, boolean allowOneNull, boolean combineScoresBySum, boolean fairSorting,
                              MatchValidationType matchValidationType, OutputPort<Match>[] inputPorts) {
         this.multipleReads = multipleReads;
+        this.allowOneNull = allowOneNull;
         this.combineScoresBySum = combineScoresBySum;
         this.fairSorting = fairSorting;
         this.matchValidationType = matchValidationType;
@@ -113,6 +121,53 @@ public abstract class ApproximateSorter {
                         resultScore = match.getScore();
         }
         return resultScore;
+    }
+
+    /**
+     * Fills array for fair sorting. Array will be already filtered: match combinations that contain incompatible
+     * ranges will not be saved to array.
+     */
+    protected void fillArrayForFairSorting() {
+        ArrayList<ArrayList<Match>> allMatches = new ArrayList<>();
+        TableOfIterations tableOfIterations = new TableOfIterations(numberOfPorts, matchValidationType);
+        Match currentMatch;
+        int totalNumberOfCombinations = 1;
+
+        // get all matches from all operands
+        for (int i = 0; i < numberOfPorts; i++) {
+            allMatches.add(new ArrayList<>());
+            do {
+                currentMatch = inputPorts[i].take();
+                if ((currentMatch != null) || (allowOneNull && allMatches.get(i).size() == 0))
+                    allMatches.get(i).add(currentMatch);
+            } while (currentMatch != null);
+            totalNumberOfCombinations *= allMatches.get(i).size();
+        }
+
+        allMatchesFiltered = new Match[totalNumberOfCombinations];
+        int[] innerArrayIndexes = new int[numberOfPorts];
+        Match[] currentMatches = new Match[numberOfPorts];
+        for (int i = 0; i < totalNumberOfCombinations; i++) {
+            if (tableOfIterations.isCompatible(innerArrayIndexes)) {
+                for (int j = 0; j < numberOfPorts; j++)
+                    currentMatches[j] = allMatches.get(j).get(innerArrayIndexes[j]);
+                IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, innerArrayIndexes);
+                if (incompatibleIndexes != null)
+                    tableOfIterations.addIncompatibleIndexes(incompatibleIndexes);
+                else
+                    allMatchesFiltered[filteredMatchesCount++] = combineMatches(currentMatches);
+            }
+
+            // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
+            for (int j = 0; j < numberOfPorts; j++) {
+                if (innerArrayIndexes[j] + 1 < allMatches.get(j).size()) {
+                    innerArrayIndexes[j]++;
+                    break;
+                }
+                // we need to update next index and reset current index to zero
+                innerArrayIndexes[j] = 0;
+            }
+        }
     }
 
     /**
@@ -207,14 +262,16 @@ public abstract class ApproximateSorter {
         private final int numberOfPorts;
         private final boolean portEndReached[];
         private final int portMatchesQuantities[];
+        private final MatchValidationType matchValidationType;
         private int totalCombinationsCount = -1;
 
-        TableOfIterations(int numberOfPorts) {
+        TableOfIterations(int numberOfPorts, MatchValidationType matchValidationType) {
             returnedCombinations = new HashSet<>();
             incompatibleIndexes = new HashSet<>();
             this.numberOfPorts = numberOfPorts;
             this.portEndReached = new boolean[numberOfPorts];   // boolean initialize value is false
             this.portMatchesQuantities = new int[numberOfPorts];
+            this.matchValidationType = matchValidationType;
         }
 
         boolean isPortEndReached(int portNumber) {

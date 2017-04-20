@@ -5,11 +5,13 @@ import com.milaboratory.mist.pattern.Match;
 import com.milaboratory.mist.pattern.MatchValidationType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
 public class SorterByScore extends ApproximateSorter {
-    public SorterByScore(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
+    public SorterByScore(boolean multipleReads, boolean allowOneNull, boolean combineScoresBySum, boolean fairSorting,
                          MatchValidationType matchValidationType, OutputPort<Match>[] inputPorts) {
-        super(multipleReads, combineScoresBySum, fairSorting, matchValidationType, inputPorts);
+        super(multipleReads, allowOneNull, combineScoresBySum, fairSorting, matchValidationType, inputPorts);
     }
 
     @Override
@@ -33,7 +35,7 @@ public class SorterByScore extends ApproximateSorter {
             this.numberOfPorts = numberOfPorts;
             this.currentIndexes = new int[numberOfPorts];
             this.currentMatches = new Match[numberOfPorts];
-            this.tableOfIterations = new TableOfIterations(numberOfPorts);
+            this.tableOfIterations = new TableOfIterations(numberOfPorts, matchValidationType);
         }
 
         @Override
@@ -76,7 +78,15 @@ public class SorterByScore extends ApproximateSorter {
         }
 
         private Match takeFairSorted() {
-            return null;
+            if (!sortingPerformed) {
+                fillArrayForFairSorting();
+                Arrays.sort(allMatchesFiltered, Comparator.comparingDouble(Match::getScore).reversed());
+                sortingPerformed = true;
+            }
+
+            if (nextFairSortedMatch >= filteredMatchesCount) return null;
+
+            return allMatchesFiltered[nextFairSortedMatch++];
         }
 
         /**
@@ -140,26 +150,24 @@ public class SorterByScore extends ApproximateSorter {
             }
 
             /* Stage 3: iterate over all remaining combinations of ports */
+            int[] innerArrayIndexes = new int[numberOfPorts];
             while (true) {
-                int[] innerArrayIndexes = new int[numberOfPorts];
-                for (int i = 0; i < tableOfIterations.getTotalCombinationsCount(); i++) {
-                    if (!tableOfIterations.isCombinationReturned(innerArrayIndexes)
-                            && tableOfIterations.isCompatible(innerArrayIndexes)) {
-                        System.arraycopy(innerArrayIndexes, 0, currentIndexes, 0, numberOfPorts);
-                        return;
-                    }
+                if (!tableOfIterations.isCombinationReturned(innerArrayIndexes)
+                        && tableOfIterations.isCompatible(innerArrayIndexes)) {
+                    System.arraycopy(innerArrayIndexes, 0, currentIndexes, 0, numberOfPorts);
+                    return;
+                }
 
-                    // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
-                    for (int j = 0; j < numberOfPorts; j++) {
-                        if (innerArrayIndexes[j] + 1 < tableOfIterations.getPortMatchesQuantity(j)) {
-                            innerArrayIndexes[j]++;
-                            break;
-                        }
-                        // we need to update next index and reset current index to zero
-                        innerArrayIndexes[j] = 0;
-                        // if we looped through all combinations, stop the search
-                        if (j == numberOfPorts - 1) return;
+                // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
+                for (int i = 0; i < numberOfPorts; i++) {
+                    if (innerArrayIndexes[i] + 1 < tableOfIterations.getPortMatchesQuantity(i)) {
+                        innerArrayIndexes[i]++;
+                        break;
                     }
+                    // we need to update next index and reset current index to zero
+                    innerArrayIndexes[i] = 0;
+                    // if we looped through all combinations, stop the search
+                    if (i == numberOfPorts - 1) return;
                 }
             }
         }
