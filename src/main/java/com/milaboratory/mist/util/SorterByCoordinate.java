@@ -102,7 +102,7 @@ public class SorterByCoordinate extends ApproximateSorter {
             int[] innerArrayIndexes = new int[numberOfPorts];
             while (true) {
                 if (!tableOfIterations.isCombinationReturned(innerArrayIndexes)
-                    && tableOfIterations.isCompatible(innerArrayIndexes)) {
+                        && tableOfIterations.isCompatible(innerArrayIndexes)) {
                     System.arraycopy(innerArrayIndexes, 0, currentIndexes, 0, numberOfPorts);
                     return;
                 }
@@ -116,6 +116,8 @@ public class SorterByCoordinate extends ApproximateSorter {
                     }
                     // we need to update next index and reset current index to zero
                     innerArrayIndexes[j] = 0;
+                    // if we looped through all combinations, stop the search
+                    if (j == 0) return;
                 }
             }
         }

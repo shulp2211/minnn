@@ -253,6 +253,12 @@ public abstract class ApproximateSorter {
             return totalCombinationsCount;
         }
 
+        /**
+         * This is not a number of actually returned combinations, but number of combinations that are marked
+         * as returned. It may be higher because found invalid combinations are marked as returned.
+         *
+         * @return number of combinations that marked as returned
+         */
         int getNumberOfReturnedCombinations() {
             return returnedCombinations.size();
         }
@@ -270,19 +276,34 @@ public abstract class ApproximateSorter {
             returnedCombinations.add(new ArrayList<Integer>() {{ for (int i : indexes) add(i); }});
         }
 
-        void addIncompatibleIndexes(IncompatibleIndexes foundIncompatibleIndexes) {
-            incompatibleIndexes.add(foundIncompatibleIndexes);
-        }
-
+        /**
+         * Check if this combination of indexes contains incompatible indexes. Incompatible means that we
+         * already know that matches with that indexes have misplaced ranges. Also this function automatically
+         * marks found incompatible combinations as already returned.
+         *
+         * @param indexes indexes of matches
+         * @return true if there are no incompatible indexes found; false if they are found
+         */
         boolean isCompatible(int... indexes) {
             for (IncompatibleIndexes currentIndexes : incompatibleIndexes)
                 if (matchValidationType == MatchValidationType.ORDER)
                     if ((indexes[currentIndexes.port1] >= currentIndexes.index1)
-                        && (indexes[currentIndexes.port2] <= currentIndexes.index2)) return false;
+                            && (indexes[currentIndexes.port2] <= currentIndexes.index2)) {
+                        // if we find incompatible combination, mark it as already returned
+                        addReturnedCombination(indexes);
+                        return false;
+                    }
                 else
                     if ((indexes[currentIndexes.port1] == currentIndexes.index1)
-                            && (indexes[currentIndexes.port2] == currentIndexes.index2)) return false;
+                            && (indexes[currentIndexes.port2] == currentIndexes.index2)) {
+                        addReturnedCombination(indexes);
+                        return false;
+                    }
             return true;
+        }
+
+        void addIncompatibleIndexes(IncompatibleIndexes foundIncompatibleIndexes) {
+            incompatibleIndexes.add(foundIncompatibleIndexes);
         }
     }
 }
