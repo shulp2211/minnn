@@ -86,20 +86,24 @@ public class SorterByScore extends ApproximateSorter {
             /* If all combinations already iterated, there is nothing to calculate */
             if (tableOfIterations.getTotalCombinationsCount() == tableOfIterations.getNumberOfReturnedCombinations())
                 return;
+
             /* Stage 1: return combination of 1st values from each port, then combinations of 2nd value from
             one port and 1st values from other ports */
-            if (tableOfIterations.getNumberOfReturnedCombinations() + tableOfIterations.getNumberOfEndedPorts() <= numberOfPorts) {
+            while (tableOfIterations.getNumberOfReturnedCombinations() + tableOfIterations.getNumberOfEndedPorts() <= numberOfPorts) {
                 for (int i = 0; i < numberOfPorts; i++)
                     if (i == tableOfIterations.getNumberOfReturnedCombinations() + tableOfIterations.getNumberOfEndedPorts() - 1)
                         currentIndexes[i] = 1;
                     else
                         currentIndexes[i] = 0;
-                return;
+
+                // if we found valid combination, return it, otherwise continue search
+                if (tableOfIterations.isCompatible(currentIndexes))
+                    return;
             }
 
-            if (tableOfIterations.getNumberOfEndedPorts() < numberOfPorts) {
-                /* Stage 2: iterate over ports, trying to pick better score, based on deltas if we count total score
-                based on sum, or based on max value if we count total score based on max value */
+            /* Stage 2: iterate over ports, trying to pick better score, based on deltas if we count total score
+            based on sum, or based on max value if we count total score based on max value */
+            while (tableOfIterations.getNumberOfEndedPorts() < numberOfPorts) {
                 if (combineScoresBySum) {
                     int bestDeltaPort = 0;
                     float bestDelta = Float.NEGATIVE_INFINITY;
@@ -129,11 +133,18 @@ public class SorterByScore extends ApproximateSorter {
                     }
                     currentIndexes[bestScorePort] += 1;
                 }
-            } else {
-                /* Stage 3: iterate over all remaining combinations of ports */
+
+                // if we found valid combination, return it, otherwise continue search
+                if (tableOfIterations.isCompatible(currentIndexes))
+                    return;
+            }
+
+            /* Stage 3: iterate over all remaining combinations of ports */
+            while (true) {
                 int[] innerArrayIndexes = new int[numberOfPorts];
                 for (int i = 0; i < tableOfIterations.getTotalCombinationsCount(); i++) {
-                    if (!tableOfIterations.isCombinationReturned(innerArrayIndexes)) {
+                    if (!tableOfIterations.isCombinationReturned(innerArrayIndexes)
+                            && tableOfIterations.isCompatible(innerArrayIndexes)) {
                         System.arraycopy(innerArrayIndexes, 0, currentIndexes, 0, numberOfPorts);
                         return;
                     }
@@ -146,6 +157,8 @@ public class SorterByScore extends ApproximateSorter {
                         }
                         // we need to update next index and reset current index to zero
                         innerArrayIndexes[j] = 0;
+                        // if we looped through all combinations, stop the search
+                        if (j == numberOfPorts - 1) return;
                     }
                 }
             }
