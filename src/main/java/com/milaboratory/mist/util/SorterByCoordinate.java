@@ -22,15 +22,15 @@ public class SorterByCoordinate extends ApproximateSorter {
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
      * @param matchValidationType type of validation used to determine that current matches combination is invalid
-     * @param inputPorts ports for input matches; we assume that they are already sorted, maybe approximately
      */
     public SorterByCoordinate(boolean multipleReads, boolean allowOneNull, boolean combineScoresBySum, boolean fairSorting,
-                              MatchValidationType matchValidationType, OutputPort<Match>[] inputPorts) {
-        super(multipleReads, allowOneNull, combineScoresBySum, fairSorting, matchValidationType, inputPorts);
+                              MatchValidationType matchValidationType) {
+        super(multipleReads, allowOneNull, combineScoresBySum, fairSorting, matchValidationType);
     }
 
     @Override
-    public OutputPort<Match> getOutputPort() {
+    public OutputPort<Match> getOutputPort(OutputPort<Match>[] inputPorts) {
+        int numberOfPorts = inputPorts.length;
         return new MatchesOutputPort(inputPorts, numberOfPorts);
     }
 
@@ -42,6 +42,12 @@ public class SorterByCoordinate extends ApproximateSorter {
         private final Match[] currentMatches;
         private final TableOfIterations tableOfIterations;
 
+        // data structures used for fair sorting
+        private Match[] allMatchesFiltered;
+        private int filteredMatchesCount = 0;
+        private int nextFairSortedMatch = 0;
+        private boolean sortingPerformed = false;
+
         public MatchesOutputPort(OutputPort<Match>[] inputPorts, int numberOfPorts) {
             this.takenMatches = new ArrayList<>();
             for (int i = 0; i < numberOfPorts; i++)
@@ -50,7 +56,7 @@ public class SorterByCoordinate extends ApproximateSorter {
             this.numberOfPorts = numberOfPorts;
             this.currentIndexes = new int[numberOfPorts];
             this.currentMatches = new Match[numberOfPorts];
-            this.tableOfIterations = new TableOfIterations(numberOfPorts, matchValidationType);
+            this.tableOfIterations = new TableOfIterations(numberOfPorts);
         }
 
         @Override
@@ -65,11 +71,12 @@ public class SorterByCoordinate extends ApproximateSorter {
                 for (int i = 0; i < numberOfPorts; i++) {
                     // if we didn't take the needed match before, take it now
                     if (currentIndexes[i] == takenMatches.get(i).size()) {
-                        Match takenMatch = inputPorts[currentIndexes[i]].take();
+                        Match takenMatch = inputPorts[i].take();
                         if ((takenMatch == null) && !(allowOneNull && takenMatches.get(i).size() == 0)) {
                             tableOfIterations.setPortEndReached(i, currentIndexes[i]);
+                            currentIndexes[i]--;
                             calculateNextIndexes();
-                            break GET_NEXT_COMBINATION;
+                            continue GET_NEXT_COMBINATION;
                         } else
                             takenMatches.get(i).add(takenMatch);
                     }
@@ -94,7 +101,7 @@ public class SorterByCoordinate extends ApproximateSorter {
 
         private Match takeFairSorted() {
             if (!sortingPerformed) {
-                fillArrayForFairSorting();
+                allMatchesFiltered = fillArrayForFairSorting(inputPorts, numberOfPorts);
                 if (!allowOneNull)
                     Arrays.sort(allMatchesFiltered, Comparator.comparingInt(match -> match.getWholePatternMatch().getRange().getLower()));
                 else
@@ -135,7 +142,8 @@ public class SorterByCoordinate extends ApproximateSorter {
             int[] innerArrayIndexes = new int[numberOfPorts];
             while (true) {
                 if (!tableOfIterations.isCombinationReturned(innerArrayIndexes)
-                        && tableOfIterations.isCompatible(innerArrayIndexes)) {
+                        && tableOfIterations.isCompatible(matchValidationType == MatchValidationType.ORDER,
+                        innerArrayIndexes)) {
                     System.arraycopy(innerArrayIndexes, 0, currentIndexes, 0, numberOfPorts);
                     return;
                 }

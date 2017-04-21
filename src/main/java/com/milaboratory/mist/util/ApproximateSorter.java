@@ -18,14 +18,6 @@ public abstract class ApproximateSorter {
     protected final boolean combineScoresBySum;
     protected final boolean fairSorting;
     protected final MatchValidationType matchValidationType;
-    protected final OutputPort<Match>[] inputPorts;
-    protected final int numberOfPorts;
-
-    // data structures used for fair sorting
-    protected Match[] allMatchesFiltered;
-    protected int filteredMatchesCount = 0;
-    protected int nextFairSortedMatch = 0;
-    protected boolean sortingPerformed = false;
 
     /**
      * This sorter allows to get output port for approximately sorted matches by score or coordinate from
@@ -40,25 +32,23 @@ public abstract class ApproximateSorter {
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
      * @param matchValidationType type of validation used to determine that current matches combination is invalid
-     * @param inputPorts ports for input matches; we assume that they are already sorted, maybe approximately
      */
     public ApproximateSorter(boolean multipleReads, boolean allowOneNull, boolean combineScoresBySum, boolean fairSorting,
-                             MatchValidationType matchValidationType, OutputPort<Match>[] inputPorts) {
+                             MatchValidationType matchValidationType) {
         this.multipleReads = multipleReads;
         this.allowOneNull = allowOneNull;
         this.combineScoresBySum = combineScoresBySum;
         this.fairSorting = fairSorting;
         this.matchValidationType = matchValidationType;
-        this.inputPorts = inputPorts;
-        this.numberOfPorts = inputPorts.length;
     }
 
     /**
      * Get output port for sorted combined matches.
      *
+     * @param inputPorts ports for input matches; we assume that they are already sorted, maybe approximately
      * @return output port
      */
-    public abstract OutputPort<Match> getOutputPort();
+    public abstract OutputPort<Match> getOutputPort(OutputPort<Match>[] inputPorts);
 
     /**
      * Get combined match from a group of input matches. It uses multipleReads flag to determine how to combine matches
@@ -126,10 +116,15 @@ public abstract class ApproximateSorter {
     /**
      * Fills array for fair sorting. Array will be already filtered: match combinations that contain incompatible
      * ranges will not be saved to array.
+     *
+     * @param inputPorts ports for input matches
+     * @param numberOfPorts number of ports for input matches
+     * @return array for fair sorting
      */
-    protected void fillArrayForFairSorting() {
+    protected Match[] fillArrayForFairSorting(OutputPort<Match>[] inputPorts, int numberOfPorts) {
         ArrayList<ArrayList<Match>> allMatches = new ArrayList<>();
-        TableOfIterations tableOfIterations = new TableOfIterations(numberOfPorts, matchValidationType);
+        ArrayList<Match> allMatchesFiltered = new ArrayList<>();
+        TableOfIterations tableOfIterations = new TableOfIterations(numberOfPorts);
         Match currentMatch;
         int totalNumberOfCombinations = 1;
 
@@ -144,18 +139,17 @@ public abstract class ApproximateSorter {
             totalNumberOfCombinations *= allMatches.get(i).size();
         }
 
-        allMatchesFiltered = new Match[totalNumberOfCombinations];
         int[] innerArrayIndexes = new int[numberOfPorts];
         Match[] currentMatches = new Match[numberOfPorts];
         for (int i = 0; i < totalNumberOfCombinations; i++) {
-            if (tableOfIterations.isCompatible(innerArrayIndexes)) {
+            if (tableOfIterations.isCompatible(false, innerArrayIndexes)) {
                 for (int j = 0; j < numberOfPorts; j++)
                     currentMatches[j] = allMatches.get(j).get(innerArrayIndexes[j]);
                 IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, innerArrayIndexes);
                 if (incompatibleIndexes != null)
                     tableOfIterations.addIncompatibleIndexes(incompatibleIndexes);
                 else
-                    allMatchesFiltered[filteredMatchesCount++] = combineMatches(currentMatches);
+                    allMatchesFiltered.add(combineMatches(currentMatches));
             }
 
             // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
@@ -168,6 +162,8 @@ public abstract class ApproximateSorter {
                 innerArrayIndexes[j] = 0;
             }
         }
+
+        return allMatchesFiltered.toArray(new Match[allMatchesFiltered.size()]);
     }
 
     /**
@@ -192,6 +188,7 @@ public abstract class ApproximateSorter {
 
                 OUTER:
                 for (int i = 0; i < matches.length; i++) {
+                    if (matches[i] == null) continue;
                     Range currentRange = matches[i].getWholePatternMatch().getRange();
                     ranges[i] = currentRange;
                     for (int j = 0; j < i; j++)  // Compare with all previously added matches
@@ -207,6 +204,7 @@ public abstract class ApproximateSorter {
                 Range previousRange;
 
                 for (int i = 1; i < matches.length; i++) {
+                    if (matches[i] == null) continue;
                     currentRange = matches[i].getWholePatternMatch().getRange();
                     previousRange = matches[i - 1].getWholePatternMatch().getRange();
                     if (previousRange.getUpper() > currentRange.getLower()) {
@@ -262,16 +260,14 @@ public abstract class ApproximateSorter {
         private final int numberOfPorts;
         private final boolean portEndReached[];
         private final int portMatchesQuantities[];
-        private final MatchValidationType matchValidationType;
         private int totalCombinationsCount = -1;
 
-        TableOfIterations(int numberOfPorts, MatchValidationType matchValidationType) {
+        TableOfIterations(int numberOfPorts) {
             returnedCombinations = new HashSet<>();
             incompatibleIndexes = new HashSet<>();
             this.numberOfPorts = numberOfPorts;
             this.portEndReached = new boolean[numberOfPorts];   // boolean initialize value is false
             this.portMatchesQuantities = new int[numberOfPorts];
-            this.matchValidationType = matchValidationType;
         }
 
         boolean isPortEndReached(int portNumber) {
@@ -338,12 +334,14 @@ public abstract class ApproximateSorter {
          * already know that matches with that indexes have misplaced ranges. Also this function automatically
          * marks found incompatible combinations as already returned.
          *
+         * @param allNextIncompatible true if operand matches are sorted by coordinate and ranges must be in order
+         *                            (Plus pattern); otherwise false. In fair sorting it must be always false.
          * @param indexes indexes of matches
          * @return true if there are no incompatible indexes found; false if they are found
          */
-        boolean isCompatible(int... indexes) {
+        boolean isCompatible(boolean allNextIncompatible, int... indexes) {
             for (IncompatibleIndexes currentIndexes : incompatibleIndexes)
-                if (matchValidationType == MatchValidationType.ORDER)
+                if (allNextIncompatible)
                     if ((indexes[currentIndexes.port1] >= currentIndexes.index1)
                             && (indexes[currentIndexes.port2] <= currentIndexes.index2)) {
                         // if we find incompatible combination, mark it as already returned
