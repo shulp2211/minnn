@@ -323,6 +323,11 @@ public abstract class ApproximateSorter {
             return returnedCombinations.contains(new ArrayList<Integer>() {{ for (int i : indexes) add(i); }});
         }
 
+        /**
+         * Register combination as already returned.
+         *
+         * @param indexes indexes of matches to register as returned
+         */
         void addReturnedCombination(int... indexes) {
             if (isCombinationReturned(indexes))
                 throw new IllegalStateException("Trying to add already returned combination!");

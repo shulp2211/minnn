@@ -105,6 +105,7 @@ public class SorterByScore extends ApproximateSorter {
         private Match takeFairSorted() {
             if (!sortingPerformed) {
                 allMatchesFiltered = fillArrayForFairSorting(inputPorts, numberOfPorts);
+                filteredMatchesCount = allMatchesFiltered.length;
                 Arrays.sort(allMatchesFiltered, Comparator.comparingDouble(Match::getScore).reversed());
                 sortingPerformed = true;
             }
@@ -196,7 +197,10 @@ public class SorterByScore extends ApproximateSorter {
                     // we need to update next index and reset current index to zero
                     innerArrayIndexes[i] = 0;
                     // if we looped through all combinations, stop the search
-                    if (i == numberOfPorts - 1) return;
+                    if (i == numberOfPorts - 1) {
+                        alwaysReturnNull = true;
+                        return;
+                    }
                 }
             }
         }

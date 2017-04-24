@@ -41,6 +41,7 @@ public class SorterByCoordinate extends ApproximateSorter {
         private final int[] currentIndexes;
         private final Match[] currentMatches;
         private final TableOfIterations tableOfIterations;
+        private boolean alwaysReturnNull = false;
 
         // data structures used for fair sorting
         private Match[] allMatchesFiltered;
@@ -61,22 +62,36 @@ public class SorterByCoordinate extends ApproximateSorter {
 
         @Override
         public Match take() {
+            if (alwaysReturnNull) return null;
             if (fairSorting) return takeFairSorted();
 
             boolean combinationFound = false;
             GET_NEXT_COMBINATION:
             while (!combinationFound) {
-                if (tableOfIterations.getTotalCombinationsCount() == tableOfIterations.getNumberOfReturnedCombinations())
+                if (tableOfIterations.getTotalCombinationsCount() == tableOfIterations.getNumberOfReturnedCombinations()) {
+                    alwaysReturnNull = true;
                     return null;
+                }
+
                 for (int i = 0; i < numberOfPorts; i++) {
                     // if we didn't take the needed match before, take it now
                     if (currentIndexes[i] == takenMatches.get(i).size()) {
                         Match takenMatch = inputPorts[i].take();
-                        if ((takenMatch == null) && !(allowOneNull && takenMatches.get(i).size() == 0)) {
-                            tableOfIterations.setPortEndReached(i, currentIndexes[i]);
-                            currentIndexes[i]--;
-                            calculateNextIndexes();
-                            continue GET_NEXT_COMBINATION;
+                        if (takenMatch == null)
+                            if (takenMatches.get(i).size() == 0) {
+                                if (allowOneNull) {
+                                    takenMatches.get(i).add(null);
+                                    tableOfIterations.setPortEndReached(i, 1);
+                                    currentIndexes[i] = 0;
+                                } else {
+                                    alwaysReturnNull = true;
+                                    return null;
+                                }
+                            } else {
+                                tableOfIterations.setPortEndReached(i, currentIndexes[i]);
+                                currentIndexes[i]--;
+                                calculateNextIndexes();
+                                continue GET_NEXT_COMBINATION;
                         } else
                             takenMatches.get(i).add(takenMatch);
                     }
@@ -102,7 +117,8 @@ public class SorterByCoordinate extends ApproximateSorter {
         private Match takeFairSorted() {
             if (!sortingPerformed) {
                 allMatchesFiltered = fillArrayForFairSorting(inputPorts, numberOfPorts);
-                if (!allowOneNull)
+                filteredMatchesCount = allMatchesFiltered.length;
+                if (!multipleReads)
                     Arrays.sort(allMatchesFiltered, Comparator.comparingInt(match -> match.getWholePatternMatch().getRange().getLower()));
                 else
                     Arrays.sort(allMatchesFiltered, Comparator.comparingInt(this::getMatchCoordinateWeight));
@@ -142,25 +158,43 @@ public class SorterByCoordinate extends ApproximateSorter {
             int[] innerArrayIndexes = new int[numberOfPorts];
             while (true) {
                 if (!tableOfIterations.isCombinationReturned(innerArrayIndexes)
-                        && tableOfIterations.isCompatible(matchValidationType == MatchValidationType.ORDER,
-                        innerArrayIndexes)) {
+                        && (combinationContainsUnfinishedPort(innerArrayIndexes)
+                        || tableOfIterations.isCompatible(matchValidationType == MatchValidationType.ORDER,
+                        innerArrayIndexes))) {
                     System.arraycopy(innerArrayIndexes, 0, currentIndexes, 0, numberOfPorts);
                     return;
                 }
 
                 // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
-                for (int j = numberOfPorts - 1; j >= 0; j--) {
-                    if (!tableOfIterations.isPortEndReached(j)
-                            || (innerArrayIndexes[j] + 1 < tableOfIterations.getPortMatchesQuantity(j))) {
-                        innerArrayIndexes[j]++;
+                for (int i = numberOfPorts - 1; i >= 0; i--) {
+                    if (!tableOfIterations.isPortEndReached(i)
+                            || (innerArrayIndexes[i] + 1 < tableOfIterations.getPortMatchesQuantity(i))) {
+                        innerArrayIndexes[i]++;
                         break;
                     }
                     // we need to update next index and reset current index to zero
-                    innerArrayIndexes[j] = 0;
+                    innerArrayIndexes[i] = 0;
                     // if we looped through all combinations, stop the search
-                    if (j == 0) return;
+                    if (i == 0) {
+                        alwaysReturnNull = true;
+                        return;
+                    }
                 }
             }
+        }
+
+        /**
+         * Returns true if combination contains at least 1 port from which the needed value has not been taken.
+         *
+         * @param indexes indexes for ports
+         * @return true if there is a port for which we need to take the value
+         */
+        private boolean combinationContainsUnfinishedPort(int... indexes) {
+            for (int i = 0; i < numberOfPorts; i++) {
+                if (!tableOfIterations.isPortEndReached(i) && indexes[i] == takenMatches.get(i).size())
+                    return true;
+            }
+            return false;
         }
     }
 }
