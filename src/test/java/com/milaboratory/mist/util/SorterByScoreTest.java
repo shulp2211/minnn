@@ -1,10 +1,10 @@
 package com.milaboratory.mist.util;
 
+import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.mist.pattern.CaptureGroupMatch;
-import com.milaboratory.mist.pattern.Match;
-import com.milaboratory.mist.pattern.MatchValidationType;
+import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.mist.pattern.*;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -60,14 +60,14 @@ public class SorterByScoreTest {
         ApproximateSorter sorter4 = new SorterByScore(false, false, false,
                 false, MatchValidationType.ORDER);
 
-        assertEquals(0, countPortValues(sorter1.getOutputPort(new TestMatchesOutputPort[] {
-                testPort2.getCopy(), testPort3.getCopy()})));
-        assertEquals(0, countPortValues(sorter2.getOutputPort(new TestMatchesOutputPort[] {
-                testPort2.getCopy(), testPort3.getCopy()})));
-        assertEquals(0, countPortValues(sorter3.getOutputPort(new TestMatchesOutputPort[] {
-                testPort3.getCopy(), testPort1.getCopy()})));
-        assertEquals(0, countPortValues(sorter4.getOutputPort(new TestMatchesOutputPort[] {
-                testPort3.getCopy(), testPort1.getCopy()})));
+        assertEquals(0, countPortValues(sorter1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            add(testPort2.getCopy()); add(testPort3.getCopy()); }})));
+        assertEquals(0, countPortValues(sorter2.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            add(testPort2.getCopy()); add(testPort3.getCopy()); }})));
+        assertEquals(0, countPortValues(sorter3.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            add(testPort3.getCopy()); add(testPort1.getCopy()); }})));
+        assertEquals(0, countPortValues(sorter4.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            add(testPort3.getCopy()); add(testPort1.getCopy()); }})));
     }
 
     @Test
@@ -91,18 +91,18 @@ public class SorterByScoreTest {
         TestMatchesOutputPort testPortMulti = new TestMatchesOutputPort(testMatchMulti);
         TestMatchesOutputPort testPortEmpty = new TestMatchesOutputPort();
 
-        TestMatchesOutputPort[] testPortsSingleWithNull1 = new TestMatchesOutputPort[] {
-                testPortSingle.getCopy(), testPortEmpty};
-        TestMatchesOutputPort[] testPortsSingleWithNull2 = new TestMatchesOutputPort[] {
-                testPortEmpty, testPortSingle.getCopy()};
-        TestMatchesOutputPort[] testPortsMultiWithNull1Copy1 = new TestMatchesOutputPort[] {
-                testPortMulti.getCopy(), testPortEmpty};
-        TestMatchesOutputPort[] testPortsMultiWithNull1Copy2 = new TestMatchesOutputPort[] {
-                testPortMulti.getCopy(), testPortEmpty};
-        TestMatchesOutputPort[] testPortsMultiWithNull2Copy1 = new TestMatchesOutputPort[] {
-                testPortEmpty, testPortMulti.getCopy()};
-        TestMatchesOutputPort[] testPortsMultiWithNull2Copy2 = new TestMatchesOutputPort[] {
-                testPortEmpty, testPortMulti.getCopy()};
+        ArrayList<OutputPort<Match>> testPortsSingleWithNull1 = new ArrayList<OutputPort<Match>>() {{
+                add(testPortSingle.getCopy()); add(testPortEmpty); }};
+        ArrayList<OutputPort<Match>> testPortsSingleWithNull2 = new ArrayList<OutputPort<Match>>() {{
+                add(testPortEmpty); add(testPortSingle.getCopy()); }};
+        ArrayList<OutputPort<Match>> testPortsMultiWithNull1Copy1 = new ArrayList<OutputPort<Match>>() {{
+                add(testPortMulti.getCopy()); add(testPortEmpty); }};
+        ArrayList<OutputPort<Match>> testPortsMultiWithNull1Copy2 = new ArrayList<OutputPort<Match>>() {{
+                add(testPortMulti.getCopy()); add(testPortEmpty); }};
+        ArrayList<OutputPort<Match>> testPortsMultiWithNull2Copy1 = new ArrayList<OutputPort<Match>>() {{
+                add(testPortEmpty); add(testPortMulti.getCopy()); }};
+        ArrayList<OutputPort<Match>> testPortsMultiWithNull2Copy2 = new ArrayList<OutputPort<Match>>() {{
+                add(testPortEmpty); add(testPortMulti.getCopy()); }};
 
         ApproximateSorter sorterSingle = new SorterByScore(false, false, true,
                 false, MatchValidationType.INTERSECTION);
@@ -121,7 +121,35 @@ public class SorterByScoreTest {
 
     @Test
     public void matchesFromOperatorsTest() throws Exception {
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
+        NSequenceWithQuality seq = new NSequenceWithQuality("ACTGCGATAAATTAGACAGTACGTATTAGACATTATTATTAGACAGAGACA");
 
+        ApproximateSorter sorterUnfair1 = new SorterByScore(false, false, true,
+                false, MatchValidationType.INTERSECTION);
+        ApproximateSorter sorterUnfair2 = new SorterByScore(false, false, true,
+                false, MatchValidationType.ORDER);
+        ApproximateSorter sorterFair1 = new SorterByScore(false, false, true,
+                true, MatchValidationType.INTERSECTION);
+        ApproximateSorter sorterFair2 = new SorterByScore(false, false, true,
+                true, MatchValidationType.ORDER);
+
+        assertEquals(3, countPortValues(pattern.match(seq).getMatches()));
+        assertEquals(3, countPortValues(sorterUnfair1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            add(pattern.match(seq).getMatches()); }})));
+        assertEquals(3, countPortValues(sorterUnfair2.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            add(pattern.match(seq).getMatches()); }})));
+        assertEquals(3, countPortValues(sorterFair1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            add(pattern.match(seq).getMatches()); }})));
+        assertEquals(3, countPortValues(sorterFair2.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            add(pattern.match(seq).getMatches()); }})));
+        assertEquals(6, countPortValues(sorterUnfair1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            add(pattern.match(seq).getMatches()); add(pattern.match(seq).getMatches()); }})));
+        assertEquals(3, countPortValues(sorterUnfair2.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            add(pattern.match(seq).getMatches()); add(pattern.match(seq).getMatches()); }})));
+        assertEquals(6, countPortValues(sorterFair1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            add(pattern.match(seq).getMatches()); add(pattern.match(seq).getMatches()); }})));
+        assertEquals(3, countPortValues(sorterFair2.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            add(pattern.match(seq).getMatches()); add(pattern.match(seq).getMatches()); }})));
     }
 
     @Test
