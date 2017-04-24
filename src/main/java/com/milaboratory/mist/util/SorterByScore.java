@@ -15,14 +15,14 @@ public class SorterByScore extends ApproximateSorter {
     }
 
     @Override
-    public OutputPort<Match> getOutputPort(OutputPort<Match>[] inputPorts) {
-        int numberOfPorts = inputPorts.length;
+    public OutputPort<Match> getOutputPort(ArrayList<OutputPort<Match>> inputPorts) {
+        int numberOfPorts = inputPorts.size();
         return new MatchesOutputPort(inputPorts, numberOfPorts);
     }
 
     private class MatchesOutputPort implements OutputPort<Match> {
         private final ArrayList<ArrayList<Match>> takenMatches;
-        private final OutputPort<Match>[] inputPorts;
+        private final ArrayList<OutputPort<Match>> inputPorts;
         private final int numberOfPorts;
         private final int[] currentIndexes;
         private final Match[] currentMatches;
@@ -36,7 +36,7 @@ public class SorterByScore extends ApproximateSorter {
         private int nextFairSortedMatch = 0;
         private boolean sortingPerformed = false;
 
-        public MatchesOutputPort(OutputPort<Match>[] inputPorts, int numberOfPorts) {
+        public MatchesOutputPort(ArrayList<OutputPort<Match>> inputPorts, int numberOfPorts) {
             this.takenMatches = new ArrayList<>();
             for (int i = 0; i < numberOfPorts; i++)
                 this.takenMatches.add(new ArrayList<>());
@@ -63,7 +63,7 @@ public class SorterByScore extends ApproximateSorter {
                 for (int i = 0; i < numberOfPorts; i++) {
                     // if we didn't take the needed match before, take it now
                     if (currentIndexes[i] == takenMatches.get(i).size()) {
-                        Match takenMatch = inputPorts[i].take();
+                        Match takenMatch = inputPorts.get(i).take();
                         if (takenMatch == null)
                             if (takenMatches.get(i).size() == 0) {
                                 if (allowOneNull) {
