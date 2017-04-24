@@ -6,13 +6,13 @@ import com.milaboratory.core.sequence.NSequenceWithQuality;
 
 public abstract class SinglePattern extends Pattern {
     @Override
-    MatchingResult match(MultiNSequenceWithQuality input) {
+    public MatchingResult match(MultiNSequenceWithQuality input) {
         if (!(input instanceof NSequenceWithQuality))
             throw new IllegalArgumentException("Supports only single NSequenceWithQuality.");
         return match((NSequenceWithQuality) input);
     }
 
-    MatchingResult match(NSequenceWithQuality input, Range range) {
+    public MatchingResult match(NSequenceWithQuality input, Range range) {
         return match(input, range, (byte) 1);
     }
 
@@ -26,17 +26,17 @@ public abstract class SinglePattern extends Pattern {
      *                 0 if complex pattern uses multiple reads to match
      * @return matching result
      */
-    MatchingResult match(NSequenceWithQuality input, Range range, byte targetId) {
+    public MatchingResult match(NSequenceWithQuality input, Range range, byte targetId) {
         if (range.isReverse())
             throw new IllegalArgumentException("Doesn't support reversed ranges.");
         return match(input, range.getFrom(), range.getTo(), targetId);
     }
 
-    MatchingResult match(NSequenceWithQuality input) {
+    public MatchingResult match(NSequenceWithQuality input) {
         return match(input, 0, input.size(), (byte) 1);
     }
 
-    MatchingResult match(NSequenceWithQuality input, int from, int to) {
+    public MatchingResult match(NSequenceWithQuality input, int from, int to) {
         return match(input, from, to, (byte) 1);
     }
 
@@ -51,5 +51,5 @@ public abstract class SinglePattern extends Pattern {
      *                 0 if complex pattern uses multiple reads to match
      * @return matching result
      */
-    abstract MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId);
+    public abstract MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId);
 }

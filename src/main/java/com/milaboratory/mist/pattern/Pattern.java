@@ -11,7 +11,7 @@ public abstract class Pattern {
      * @param input nucleotide sequence(s), where the search for the pattern will be performed
      * @return matching result, lazy object that contains functions that will perform actual calculations to find matches
      */
-    abstract MatchingResult match(MultiNSequenceWithQuality input);
+    public abstract MatchingResult match(MultiNSequenceWithQuality input);
 
     /**
      * Get list of names of groups that are inside this pattern.
