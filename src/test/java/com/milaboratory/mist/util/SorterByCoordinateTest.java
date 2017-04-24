@@ -4,6 +4,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static com.milaboratory.mist.util.CommonTestTemplates.predefinedMatchesTest;
 import static org.junit.Assert.*;
 
 public class SorterByCoordinateTest {
@@ -12,7 +13,7 @@ public class SorterByCoordinateTest {
 
     @Test
     public void simplePredefinedMatchesTest() throws Exception {
-
+        predefinedMatchesTest(false, false);
     }
 
     @Test
@@ -43,7 +44,7 @@ public class SorterByCoordinateTest {
 
     @Test
     public void fairSortingSimpleTest() throws Exception {
-
+        predefinedMatchesTest(false, true);
     }
 
     @Test
