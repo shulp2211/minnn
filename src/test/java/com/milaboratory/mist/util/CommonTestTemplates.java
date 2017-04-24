@@ -15,7 +15,7 @@ import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
 import static org.junit.Assert.*;
 
 class CommonTestTemplates {
-    static void predefinedMatchesTest(boolean sortByScore, boolean fairSorting) throws Exception {
+    static void predefinedMatchesApproximateSorterTest(boolean sortByScore, boolean fairSorting) throws Exception {
         NSequenceWithQuality seqSingle = new NSequenceWithQuality("AATTAAGGCAAA");
         NSequenceWithQuality seqMulti1 = new NSequenceWithQuality("AATTAAGGCAAA");
         NSequenceWithQuality seqMulti2 = new NSequenceWithQuality("ATTAGACA");
