@@ -1,9 +1,7 @@
 package com.milaboratory.mist.util;
 
 import cc.redberry.pipe.OutputPort;
-import com.milaboratory.mist.pattern.CaptureGroupMatch;
-import com.milaboratory.mist.pattern.Match;
-import com.milaboratory.mist.pattern.MatchValidationType;
+import com.milaboratory.mist.pattern.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -119,7 +117,7 @@ public class SorterByCoordinate extends ApproximateSorter {
                 allMatchesFiltered = fillArrayForFairSorting(inputPorts, numberOfPorts);
                 filteredMatchesCount = allMatchesFiltered.length;
                 if (!multipleReads)
-                    Arrays.sort(allMatchesFiltered, Comparator.comparingInt(match -> match.getWholePatternMatch().getRange().getLower()));
+                    Arrays.sort(allMatchesFiltered, Comparator.comparingInt(match -> match.getRange().getLower()));
                 else
                     Arrays.sort(allMatchesFiltered, Comparator.comparingInt(this::getMatchCoordinateWeight));
                 sortingPerformed = true;
@@ -138,9 +136,9 @@ public class SorterByCoordinate extends ApproximateSorter {
          */
         private int getMatchCoordinateWeight(Match match) {
             for (int i = 0; i < match.getNumberOfPatterns(); i++) {
-                CaptureGroupMatch currentWholeMatch = match.getWholePatternMatch(i);
-                if (currentWholeMatch == null) continue;
-                return currentWholeMatch.getRange().getLower();
+                MatchedRange currentMatch = match.getMatchedRange(i);
+                if (NullMatchedRange.class.isAssignableFrom(currentMatch.getClass())) continue;
+                return currentMatch.getRange().getLower();
             }
 
             return 0;

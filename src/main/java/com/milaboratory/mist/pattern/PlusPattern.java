@@ -83,7 +83,7 @@ public class PlusPattern extends MultiplePatternsOperator {
                     if (innerArrayIndexes[j] == matches.get(j).size())
                         matches.get(j).add(matchOutputPorts.get(j).take());
                     currentMatches[j] = matches.get(j).get(innerArrayIndexes[j]);
-                    currentRanges[j] = currentMatches[j].getWholePatternMatch().getRange();
+                    currentRanges[j] = currentMatches[j].getRange();
                     // check for misplaced ranges
                     if (j > 0)
                         if (currentRanges[j - 1].getUpper() > currentRanges[j].getLower()) {
@@ -155,8 +155,8 @@ public class PlusPattern extends MultiplePatternsOperator {
             for (int patternNumber = 0; patternNumber < operandPatterns.length; patternNumber++) {
                 bestMatches[patternNumber] = operandPatterns[patternNumber].match(input, from, to, targetId).getBestMatch();
                 if (patternNumber > 0) {
-                    int previousRangeUpper = bestMatches[patternNumber - 1].getWholePatternMatch().getRange().getUpper();
-                    int currentRangeLower = bestMatches[patternNumber].getWholePatternMatch().getRange().getLower();
+                    int previousRangeUpper = bestMatches[patternNumber - 1].getRange().getUpper();
+                    int currentRangeLower = bestMatches[patternNumber].getRange().getLower();
                     if (previousRangeUpper > currentRangeLower) {
                         rangeMisplaced = true;
                         break;

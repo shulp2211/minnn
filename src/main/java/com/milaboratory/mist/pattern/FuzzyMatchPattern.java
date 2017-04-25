@@ -12,21 +12,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
-import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
-
 public class FuzzyMatchPattern extends SinglePattern {
     private final NucleotideSequence patternSeq;
     private final Motif<NucleotideSequence> motif;
-    private final Map<String, Range> groups;
+    private final Map<GroupEdge, Integer> groupEdges;
     private final int maxErrors;
 
     public FuzzyMatchPattern(NucleotideSequence patternSeq) {
         this(patternSeq, new HashMap<>());
     }
 
-    public FuzzyMatchPattern(NucleotideSequence patternSeq, Map<String, Range> groups) {
-        this(patternSeq, groups, 0);
+    public FuzzyMatchPattern(NucleotideSequence patternSeq, Map<GroupEdge, Integer> groupEdges) {
+        this(patternSeq, groupEdges, 0);
     }
 
     public FuzzyMatchPattern(NucleotideSequence patternSeq, int maxErrors) {
@@ -37,26 +34,26 @@ public class FuzzyMatchPattern extends SinglePattern {
      * Find match with possible insertions and deletions using bitap and aligner.
      *
      * @param patternSeq sequence to find in the target
-     * @param groups map of group names and their ranges
+     * @param groupEdges map of group edges and their positions
      * @param maxErrors maximum allowed number of substitutions, insertions and deletions
      */
-    public FuzzyMatchPattern(NucleotideSequence patternSeq, Map<String, Range> groups, int maxErrors) {
+    public FuzzyMatchPattern(NucleotideSequence patternSeq, Map<GroupEdge, Integer> groupEdges, int maxErrors) {
         this.patternSeq = patternSeq;
         this.motif = patternSeq.toMotif();
-        this.groups = groups;
+        this.groupEdges = groupEdges;
         this.maxErrors = maxErrors;
 
         int size = patternSeq.size();
 
-        for (Map.Entry<String, Range> group : groups.entrySet())
-            if (group.getValue().getUpper() > size)
-                throw new IllegalStateException("Group " + group.getKey() + " (" + group.getValue()
-                        + ") doesn't fit into motif length " + size);
+        for (Map.Entry<GroupEdge, Integer> groupEdge : groupEdges.entrySet())
+            if (groupEdge.getValue() > size)
+                throw new IllegalStateException("Group edge " + groupEdge.getKey() + " (" + groupEdge.getValue()
+                        + ") is outside of motif (motif size: " + size + ")");
     }
 
     @Override
-    public ArrayList<String> getGroupNames() {
-        return new ArrayList<>(groups.keySet());
+    public ArrayList<GroupEdge> getGroupEdges() {
+        return new ArrayList<>(groupEdges.keySet());
     }
 
     /**
@@ -70,7 +67,7 @@ public class FuzzyMatchPattern extends SinglePattern {
      */
     @Override
     public MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId) {
-        final FuzzyMatchesSearch matchesSearch = new FuzzyMatchesSearch(patternSeq, motif, groups, maxErrors,
+        final FuzzyMatchesSearch matchesSearch = new FuzzyMatchesSearch(patternSeq, motif, groupEdges, maxErrors,
                 input, from, to, targetId);
         final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
         final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
@@ -81,18 +78,18 @@ public class FuzzyMatchPattern extends SinglePattern {
     private final static class FuzzyMatchesSearch extends MatchesSearch {
         private final NucleotideSequence patternSeq;
         private final Motif<NucleotideSequence> motif;
-        private final Map<String, Range> groups;
+        private final Map<GroupEdge, Integer> groupEdges;
         private final int maxErrors;
         private final NSequenceWithQuality input;
         private final int from;
         private final int to;
         private final byte targetId;
 
-        FuzzyMatchesSearch(NucleotideSequence patternSeq, Motif<NucleotideSequence> motif, Map<String, Range> groups,
+        FuzzyMatchesSearch(NucleotideSequence patternSeq, Motif<NucleotideSequence> motif, Map<GroupEdge, Integer> groupEdges,
                            int maxErrors, NSequenceWithQuality input, int from, int to, byte targetId) {
             this.patternSeq = patternSeq;
             this.motif = motif;
-            this.groups = groups;
+            this.groupEdges = groupEdges;
             this.maxErrors = maxErrors;
             this.input = input;
             this.from = from;
@@ -119,18 +116,16 @@ public class FuzzyMatchPattern extends SinglePattern {
                     Alignment<NucleotideSequence> alignment = getMatchWithAligner(matchLastPosition, maxErrors);
                     Range foundRange = alignment.getSequence2Range();
                     float foundScore = alignment.getScore();
-                    CaptureGroupMatch wholePatternMatch = new CaptureGroupMatch(input, targetId, foundRange);
-                    Map<String, CaptureGroupMatch> groupMatchMap = new HashMap<String, CaptureGroupMatch>() {{
-                        put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0", wholePatternMatch);
-                    }};
+                    MatchedRange matchedRange = new MatchedRange(input, targetId, 0, foundRange);
+                    ArrayList<MatchedItem> matchedItems = new ArrayList<MatchedItem>() {{ add(matchedRange); }};
 
-                    for (Map.Entry<String, Range> group : groups.entrySet()) {
-                        CaptureGroupMatch currentGroupMatch = new CaptureGroupMatch(input, targetId,
-                                group.getValue().move(foundRange.getLower()));
-                        groupMatchMap.put(COMMON_GROUP_NAME_PREFIX + group.getKey(), currentGroupMatch);
+                    for (Map.Entry<GroupEdge, Integer> groupEdge : groupEdges.entrySet()) {
+                        MatchedGroupEdge matchedGroupEdge = new MatchedGroupEdge(input, targetId, groupEdge.getKey(),
+                                groupEdge.getValue() + foundRange.getLower());
+                        matchedItems.add(matchedGroupEdge);
                     }
 
-                    Match currentMatch = new Match(1, foundScore, groupMatchMap);
+                    Match currentMatch = new Match(1, foundScore, matchedItems);
                     allMatches.add(currentMatch);
                     if (foundScore > bestScore) {
                         bestMatch = currentMatch;

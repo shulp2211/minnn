@@ -79,7 +79,7 @@ public class AndPattern extends MultiplePatternsOperator {
                     if (innerArrayIndexes[j] == matches.get(j).size())
                         matches.get(j).add(matchOutputPorts.get(j).take());
                     currentMatches[j] = matches.get(j).get(innerArrayIndexes[j]);
-                    currentRanges[j] = currentMatches[j].getWholePatternMatch().getRange();
+                    currentRanges[j] = currentMatches[j].getRange();
                 }
                 if (!checkRangesIntersection(currentRanges)) {
                     matchFound = true;
@@ -124,7 +124,7 @@ public class AndPattern extends MultiplePatternsOperator {
             OUTER:
             for (int patternNumber = 0; patternNumber < operandPatterns.length; patternNumber++) {
                 bestMatches[patternNumber] = operandPatterns[patternNumber].match(input, from, to, targetId).getBestMatch();
-                Range currentRange = bestMatches[patternNumber].getWholePatternMatch().getRange();
+                Range currentRange = bestMatches[patternNumber].getRange();
                 bestMatchRanges[patternNumber] = currentRange;
                 for (int i = 0; i < patternNumber; i++)  // Compare with all previously added matches
                     if (bestMatchRanges[i].intersectsWith(currentRange)) {

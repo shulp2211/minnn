@@ -58,7 +58,7 @@ public class MatchesOutputPort implements OutputPort<Match> {
             Arrays.sort(sortedMatches, Comparator.comparingDouble(Match::getScore).reversed());
         else {
             if (sortedMatches[0].getNumberOfPatterns() == 1)
-                Arrays.sort(sortedMatches, Comparator.comparingInt(match -> match.getWholePatternMatch().getRange().getLower()));
+                Arrays.sort(sortedMatches, Comparator.comparingInt(match -> match.getRange().getLower()));
             else
                 Arrays.sort(sortedMatches, Comparator.comparingInt(this::getMatchCoordinateWeight));
         }
@@ -69,15 +69,15 @@ public class MatchesOutputPort implements OutputPort<Match> {
 
     /**
      * Get weight from match to sort multiple pattern matches by coordinate.
-     * In multiple patterns, getWholePatternMatch() can return null values.
+     * In multiple patterns, getMatchedRange() can return NullMatchedRange objects.
      *
      * @return weight: lower end of the range in the first non-null match
      */
     private int getMatchCoordinateWeight(Match match) {
         for (int i = 0; i < match.getNumberOfPatterns(); i++) {
-            CaptureGroupMatch currentWholeMatch = match.getWholePatternMatch(i);
-            if (currentWholeMatch == null) continue;
-            return currentWholeMatch.getRange().getLower();
+            MatchedRange currentMatch = match.getMatchedRange(i);
+            if (NullMatchedRange.class.isAssignableFrom(currentMatch.getClass())) continue;
+            return currentMatch.getRange().getLower();
         }
 
         return 0;

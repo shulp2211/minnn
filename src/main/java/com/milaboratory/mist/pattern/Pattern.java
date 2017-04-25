@@ -14,11 +14,11 @@ public abstract class Pattern {
     public abstract MatchingResult match(MultiNSequenceWithQuality input);
 
     /**
-     * Get list of names of groups that are inside this pattern.
+     * Get list of group edges that are inside this pattern.
      *
-     * @return list of group names
+     * @return list of group edges
      */
-    abstract ArrayList<String> getGroupNames();
+    abstract ArrayList<GroupEdge> getGroupEdges();
 
     /**
      * Pattern-specific procedure for combining match scores. Default implementation is for And pattern.

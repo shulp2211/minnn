@@ -5,38 +5,36 @@ import com.milaboratory.core.sequence.NSequenceWithQuality;
 
 import java.util.*;
 
-import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
 import static com.milaboratory.mist.util.RangeTools.combineRanges;
 
 public abstract class MultiplePatternsOperator extends SinglePattern {
     protected final SinglePattern[] operandPatterns;
-    protected final ArrayList<String> groupNames;
+    protected final ArrayList<GroupEdge> groupEdges;
 
     MultiplePatternsOperator(SinglePattern... operandPatterns) {
         this.operandPatterns = operandPatterns;
-        this.groupNames = new ArrayList<>();
+        this.groupEdges = new ArrayList<>();
         for (SinglePattern pattern : operandPatterns)
-            groupNames.addAll(pattern.getGroupNames());
-        if (groupNames.size() != new HashSet<>(groupNames).size())
-            throw new IllegalStateException("Operands contain groups with equal names!");
+            groupEdges.addAll(pattern.getGroupEdges());
+        if (groupEdges.size() != new HashSet<>(groupEdges).size())
+            throw new IllegalStateException("Operands contain equal group edges!");
     }
 
     @Override
-    public ArrayList<String> getGroupNames() {
-        return groupNames;
+    public ArrayList<GroupEdge> getGroupEdges() {
+        return groupEdges;
     }
 
     protected Match combineMatches(NSequenceWithQuality target, byte targetId, Match... matches) {
-        Map<String, CaptureGroupMatch> groupMatches = new HashMap<>();
+        ArrayList<MatchedItem> matchedItems = new ArrayList<>();
         Range[] ranges = new Range[matches.length];
 
         for (int i = 0; i < matches.length; i++) {
-            groupMatches.putAll(matches[i].getGroupMatches(true));
-            ranges[i] = matches[i].getWholePatternMatch().getRange();
+            matchedItems.addAll(matches[i].getMatchedGroupEdges());
+            ranges[i] = matches[i].getRange();
         }
 
-        CaptureGroupMatch wholePatternMatch = new CaptureGroupMatch(target, targetId, combineRanges(ranges));
-        groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + 0, wholePatternMatch);
-        return new Match(1, combineMatchScores(matches), groupMatches);
+        matchedItems.add(new MatchedRange(target, targetId, 0, combineRanges(ranges)));
+        return new Match(1, combineMatchScores(matches), matchedItems);
     }
 }

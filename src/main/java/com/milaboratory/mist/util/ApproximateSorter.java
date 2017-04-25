@@ -3,13 +3,10 @@ package com.milaboratory.mist.util;
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.mist.pattern.CaptureGroupMatch;
-import com.milaboratory.mist.pattern.Match;
-import com.milaboratory.mist.pattern.MatchValidationType;
+import com.milaboratory.mist.pattern.*;
 
 import java.util.*;
 
-import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
 import static com.milaboratory.mist.util.RangeTools.combineRanges;
 
 public abstract class ApproximateSorter {
@@ -52,40 +49,44 @@ public abstract class ApproximateSorter {
 
     /**
      * Get combined match from a group of input matches. It uses multipleReads flag to determine how to combine matches
-     * (by combining ranges for single read or by numbering the whole group matches for multiple reads).
+     * (by combining ranges for single read or by numbering the matched ranges for multiple reads).
      *
      * @param matches input matches
      * @return combined match
      */
     protected Match combineMatches(Match... matches) {
-        Map<String, CaptureGroupMatch> groupMatches = new HashMap<>();
+        ArrayList<MatchedItem> matchedItems = new ArrayList<>();
 
         if (multipleReads) {
-            int wholeGroupIndex = 0;
+            int matchedRangeIndex = 0;
             for (Match match : matches) {
                 if (match == null) {
-                    groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + wholeGroupIndex++, null);
+                    matchedItems.add(new NullMatchedRange(matchedRangeIndex++));
                     continue;
                 }
-                groupMatches.putAll(match.getGroupMatches(true));
-                for (int i = 0; i < match.getNumberOfPatterns(); i++)
-                    groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + wholeGroupIndex++,
-                            match.getWholePatternMatch(i));
+                matchedItems.addAll(match.getMatchedGroupEdges());
+                for (int i = 0; i < match.getNumberOfPatterns(); i++) {
+                    MatchedRange currentMatchedRange = match.getMatchedRange(i);
+                    if (NullMatchedRange.class.isAssignableFrom(currentMatchedRange.getClass()))
+                        matchedItems.add(new NullMatchedRange(matchedRangeIndex++));
+                    else
+                        matchedItems.add(new MatchedRange(currentMatchedRange.getTarget(), currentMatchedRange.getTargetId(),
+                            matchedRangeIndex++, currentMatchedRange.getRange()));
+                }
             }
-            return new Match(wholeGroupIndex, combineMatchScores(matches), groupMatches);
+            return new Match(matchedRangeIndex, combineMatchScores(matches), matchedItems);
         } else {
-            NSequenceWithQuality target = matches[0].getWholePatternMatch().getTarget();
-            byte targetId = matches[0].getWholePatternMatch().getTargetId();
+            NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
+            byte targetId = matches[0].getMatchedRange().getTargetId();
             Range[] ranges = new Range[matches.length];
 
             for (int i = 0; i < matches.length; i++) {
-                groupMatches.putAll(matches[i].getGroupMatches(true));
-                ranges[i] = matches[i].getWholePatternMatch().getRange();
+                matchedItems.addAll(matches[i].getMatchedGroupEdges());
+                ranges[i] = matches[i].getRange();
             }
 
-            CaptureGroupMatch wholePatternMatch = new CaptureGroupMatch(target, targetId, combineRanges(ranges));
-            groupMatches.put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + 0, wholePatternMatch);
-            return new Match(1, combineMatchScores(matches), groupMatches);
+            matchedItems.add(new MatchedRange(target, targetId, 0, combineRanges(ranges)));
+            return new Match(1, combineMatchScores(matches), matchedItems);
         }
     }
 
@@ -189,7 +190,7 @@ public abstract class ApproximateSorter {
                 OUTER:
                 for (int i = 0; i < matches.length; i++) {
                     if (matches[i] == null) continue;
-                    Range currentRange = matches[i].getWholePatternMatch().getRange();
+                    Range currentRange = matches[i].getRange();
                     ranges[i] = currentRange;
                     for (int j = 0; j < i; j++)  // Compare with all previously added matches
                         if (ranges[j].intersectsWith(currentRange)) {
@@ -205,8 +206,8 @@ public abstract class ApproximateSorter {
 
                 for (int i = 1; i < matches.length; i++) {
                     if (matches[i] == null) continue;
-                    currentRange = matches[i].getWholePatternMatch().getRange();
-                    previousRange = matches[i - 1].getWholePatternMatch().getRange();
+                    currentRange = matches[i].getRange();
+                    previousRange = matches[i - 1].getRange();
                     if (previousRange.getUpper() > currentRange.getLower()) {
                         result = new IncompatibleIndexes(i - 1, indexes[i - 1], i, indexes[i]);
                         break;

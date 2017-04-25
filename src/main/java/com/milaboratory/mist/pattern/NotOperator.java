@@ -8,8 +8,8 @@ public class NotOperator extends MultipleReadsOperator {
         super(operandPatterns);
         if (operandPatterns.length != 1)
             throw new IllegalStateException("Not operator must take exactly 1 argument!");
-        if (groupNames.size() > 0)
-            throw new IllegalStateException("Not operator must not contain groups inside!");
+        if (groupEdges.size() > 0)
+            throw new IllegalStateException("Not operator must not contain group edges inside!");
     }
 
     @Override

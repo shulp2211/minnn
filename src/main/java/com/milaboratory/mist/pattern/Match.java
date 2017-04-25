@@ -1,70 +1,108 @@
 package com.milaboratory.mist.pattern;
 
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.milaboratory.core.Range;
+
+import java.util.ArrayList;
 
 public final class Match {
-    public static final String WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX = "WM_";
-    public static final String COMMON_GROUP_NAME_PREFIX = "G_";
     private final int numberOfPatterns;
     private final float score;
-    private final Map<String, CaptureGroupMatch> groupMatches;
-    private final Map<String, CaptureGroupMatch> commonGroupMatches;
-    private final CaptureGroupMatch[] wholePatternMatch;
 
+    /**
+     * This list contains both matched ranges and matched group edges.
+     */
+    private final ArrayList<MatchedItem> matchedItems;
 
-    public Match(int numberOfPatterns, float score, Map<String, CaptureGroupMatch> groupMatches) {
+    public Match(int numberOfPatterns, float score, ArrayList<MatchedItem> matchedItems) {
         this.numberOfPatterns = numberOfPatterns;
         this.score = score;
-        this.groupMatches = groupMatches;
-        this.wholePatternMatch = new CaptureGroupMatch[numberOfPatterns];
-        for (int i = 0; i < numberOfPatterns; i++)
-            this.wholePatternMatch[i] = groupMatches.get(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + i);
-        commonGroupMatches = groupMatches.entrySet().stream()
-                .filter(g -> g.getKey().contains(COMMON_GROUP_NAME_PREFIX))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        this.matchedItems = matchedItems;
     }
 
     /**
-     * Return capturing group for the whole i-th pattern.
+     * Return MatchedRange by pattern index.
      *
-     * @param patternIndex pattern index for multi-pattern matchers (e.g. paired-end read matchers), 0 - for single
-     *                     target matchers
-     * @return capturing group for the whole i-th pattern
+     * @param patternIndex pattern index for multi-pattern matchers (number of patterns may be bigger than number of
+     *                     targets in case of high level logic patterns); 0 - for single target matchers
+     * @return MatchedRange for specified pattern
      */
-    public CaptureGroupMatch getWholePatternMatch(int patternIndex) {
-        return wholePatternMatch[patternIndex];
-    }
-
-    /**
-     * Return group matches.
-     *
-     * @param commonOnly if true, return common group matches only; if false - all, including whole pattern matches
-     * @return map of group matches
-     */
-    public Map<String, CaptureGroupMatch> getGroupMatches(boolean commonOnly) {
-        if (commonOnly)
-            return commonGroupMatches;
+    public MatchedRange getMatchedRange(int patternIndex) {
+        for (MatchedItem item : matchedItems)
+            if (MatchedRange.class.isAssignableFrom(item.getClass())
+                    && (((MatchedRange)item).getPatternIndex() == patternIndex))
+                return (MatchedRange)item;
+        if (patternIndex >= numberOfPatterns)
+            throw new IllegalStateException("Trying to get pattern index " + patternIndex + ", maximum allowed is "
+                + (numberOfPatterns - 1));
         else
-            return groupMatches;
+            throw new IllegalStateException("matchedItems doesn't contain item with index " + patternIndex
+                + "; numberOfPatterns is " + numberOfPatterns);
     }
 
     /**
-     * Return capturing group for the whole pattern. Applicable only to single pattern matchers.
+     * Return MatchedRange. Applicable only to single target matchers.
      *
-     * @return capturing group for the whole pattern; single pattern matchers only
+     * @return MatchedRange with patternIndex 0
      */
-    public CaptureGroupMatch getWholePatternMatch() {
+    public MatchedRange getMatchedRange() {
         if (numberOfPatterns != 1)
-            throw new IllegalStateException("Multiple pattern. Use getWholePatternMatch(int) instead.");
-        return getWholePatternMatch(0);
+            throw new IllegalStateException("Multiple pattern. Use getMatchedRange(int) instead.");
+        return getMatchedRange(0);
     }
 
-    public boolean isFound() {
-        for (CaptureGroupMatch captureGroupMatch : wholePatternMatch)
-            if (!captureGroupMatch.isFound())
-                return false;
-        return true;
+    public Range getRange() {
+        return getMatchedRange().getRange();
+    }
+
+    /**
+     * Return MatchedGroupEdge by name and isStart flag.
+     *
+     * @param groupName group name
+     * @param isStart flag, true if it must be group start, false if must be group end
+     * @return MatchedRange for specified pattern
+     */
+    public MatchedGroupEdge getMatchedGroupEdge(String groupName, boolean isStart) {
+        for (MatchedItem item : matchedItems)
+            if (MatchedGroupEdge.class.isAssignableFrom(item.getClass())
+                    && (((MatchedGroupEdge)item).getGroupName().equals(groupName))
+                    && (((MatchedGroupEdge)item).isStart() == isStart))
+                return (MatchedGroupEdge)item;
+        return null;
+    }
+
+    /**
+     * Get all matched items.
+     *
+     * @return ArrayList with all matched items.
+     */
+    public ArrayList<MatchedItem> getMatchedItems() {
+        return matchedItems;
+    }
+
+    /**
+     * Get all matched ranges.
+     *
+     * @return ArrayList with all matched ranges.
+     */
+    public ArrayList<MatchedRange> getMatchedRanges() {
+        ArrayList<MatchedRange> matchedRanges = new ArrayList<>();
+        for (MatchedItem item : matchedItems)
+            if (MatchedRange.class.isAssignableFrom(item.getClass()))
+                matchedRanges.add((MatchedRange)item);
+        return matchedRanges;
+    }
+
+    /**
+     * Get all matched group edges.
+     *
+     * @return ArrayList with all matched group edges.
+     */
+    public ArrayList<MatchedGroupEdge> getMatchedGroupEdges() {
+        ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
+        for (MatchedItem item : matchedItems)
+            if (MatchedGroupEdge.class.isAssignableFrom(item.getClass()))
+                matchedGroupEdges.add((MatchedGroupEdge)item);
+        return matchedGroupEdges;
     }
 
     public int getNumberOfPatterns() {
