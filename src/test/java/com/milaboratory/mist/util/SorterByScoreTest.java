@@ -13,8 +13,7 @@ import java.util.*;
 
 import static com.milaboratory.mist.pattern.Match.WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX;
 import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
-import static com.milaboratory.mist.util.CommonTestTemplates.countPortValues;
-import static com.milaboratory.mist.util.CommonTestTemplates.predefinedMatchesApproximateSorterTest;
+import static com.milaboratory.mist.util.CommonTestTemplates.*;
 import static org.junit.Assert.*;
 
 public class SorterByScoreTest {
@@ -154,12 +153,12 @@ public class SorterByScoreTest {
 
     @Test
     public void randomGeneratedMatchesTest() throws Exception {
-
+        randomMatchesApproximateSorterTest(true, false);
     }
 
     @Test
     public void randomMatchesFromOperatorsTest() throws Exception {
-
+        randomMatchesFromOperatorsApproximateSorterTest(true);
     }
 
     @Test
@@ -169,6 +168,6 @@ public class SorterByScoreTest {
 
     @Test
     public void fairSortingRandomTest() throws Exception {
-
+        randomMatchesApproximateSorterTest(true, true);
     }
 }

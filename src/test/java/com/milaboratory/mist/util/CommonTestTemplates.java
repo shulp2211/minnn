@@ -3,9 +3,13 @@ package com.milaboratory.mist.util;
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.SequencesUtils;
 import com.milaboratory.mist.pattern.CaptureGroupMatch;
+import com.milaboratory.mist.pattern.FuzzyMatchPattern;
 import com.milaboratory.mist.pattern.Match;
 import com.milaboratory.mist.pattern.MatchValidationType;
+import com.milaboratory.test.TestUtil;
 
 import java.util.*;
 
@@ -208,6 +212,74 @@ class CommonTestTemplates {
         }
         System.out.println();
         assertNull(testPort2.take());
+    }
+
+    static void randomMatchesApproximateSorterTest(boolean sortByScore, boolean fairSorting) throws Exception {
+        ApproximateSorter sorter;
+        Random randomGenerator = new Random();
+        int its = TestUtil.its(30, 100);
+        for (int i = 0; i < its; ++i) {
+            int numberOfMatches = randomGenerator.nextInt(10) + 1;
+            Match[] matches = new Match[numberOfMatches];
+            ArrayList<Map<String, CaptureGroupMatch>> testGroups = new ArrayList<>();
+            if (sortByScore)
+                sorter = new SorterByScore(false, randomGenerator.nextBoolean(),
+                        randomGenerator.nextBoolean(), fairSorting, MatchValidationType.INTERSECTION);
+            else
+                sorter = new SorterByCoordinate(false, randomGenerator.nextBoolean(),
+                        randomGenerator.nextBoolean(), randomGenerator.nextBoolean(), MatchValidationType.INTERSECTION);
+
+            NSequenceWithQuality target = new NSequenceWithQuality(TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    numberOfMatches, numberOfMatches + randomGenerator.nextInt(100)).toString());
+            for (int j = 0; j < numberOfMatches; j++) {
+                final int currentRangeLeft = j;
+                testGroups.add(new HashMap<String, CaptureGroupMatch>() {{
+                    put(WHOLE_PATTERN_MATCH_GROUP_NAME_PREFIX + "0", new CaptureGroupMatch(target,
+                            (byte)randomGenerator.nextInt(200), new Range(currentRangeLeft, currentRangeLeft + 1)));
+                }});
+                matches[j] = new Match(1, randomGenerator.nextFloat() * 1000 - 500, testGroups.get(j));
+            }
+
+            TestMatchesOutputPort testPort = new TestMatchesOutputPort(matches);
+            int expectedMatchesNum = numberOfMatches * (numberOfMatches - 1);
+
+            assertEquals(expectedMatchesNum, countPortValues(sorter.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+                add(testPort.getCopy()); add(testPort.getCopy()); }})));
+        }
+    }
+
+    static void randomMatchesFromOperatorsApproximateSorterTest(boolean sortByScore) throws Exception {
+        ApproximateSorter sorter;
+        Random randomGenerator = new Random();
+        int its = TestUtil.its(30, 100);
+        for (int i = 0; i < its; ++i) {
+            int numberOfFragments = randomGenerator.nextInt(3) + 4;
+            int expectedMatchesNum = numberOfFragments * (numberOfFragments - 1) * (numberOfFragments - 2) * (numberOfFragments - 3);
+            int spaceLength = randomGenerator.nextInt(3);
+            if (sortByScore)
+                sorter = new SorterByScore(false, randomGenerator.nextBoolean(),
+                        randomGenerator.nextBoolean(), randomGenerator.nextBoolean(), MatchValidationType.INTERSECTION);
+            else
+                sorter = new SorterByCoordinate(false, randomGenerator.nextBoolean(),
+                        randomGenerator.nextBoolean(), randomGenerator.nextBoolean(), MatchValidationType.INTERSECTION);
+
+            NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, spaceLength);
+            NucleotideSequence fragment = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 50, 63);
+            for (int j = 0; j < numberOfFragments; j++) {
+                NucleotideSequence space = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, spaceLength);
+                target = SequencesUtils.concatenate(target, fragment, space);
+            }
+
+            final NSequenceWithQuality finalTarget = new NSequenceWithQuality(target.toString());
+
+            FuzzyMatchPattern pattern = new FuzzyMatchPattern(fragment);
+
+            OutputPort<Match> testPort = sorter.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+                add(pattern.match(finalTarget).getMatches()); add(pattern.match(finalTarget).getMatches());
+                add(pattern.match(finalTarget).getMatches()); add(pattern.match(finalTarget).getMatches()); }});
+
+            assertEquals(expectedMatchesNum, countPortValues(testPort));
+        }
     }
 
     static int countPortValues(OutputPort<Match> port) {
