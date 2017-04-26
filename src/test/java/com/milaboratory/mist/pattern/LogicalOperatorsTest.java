@@ -10,7 +10,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.HashMap;
 
-import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
 import static org.junit.Assert.*;
 
 public class LogicalOperatorsTest {
@@ -194,8 +193,8 @@ public class LogicalOperatorsTest {
         assertEquals(1, orTrueResult.getMatchesNumber());
 
         Match testMatch = andTrueResultR.getMatches().take();
-        assertEquals("GTTATTACCA", testMatch.getWholePatternMatch(5).getValue().getSequence().toString());
-        assertEquals("GCATAT", testMatch.getWholePatternMatch(6).getValue().getSequence().toString());
+        assertEquals("GTTATTACCA", testMatch.getMatchedRange(5).getValue().getSequence().toString());
+        assertEquals("GCATAT", testMatch.getMatchedRange(6).getValue().getSequence().toString());
 
         exception.expect(IllegalStateException.class);
         new NotOperator(orOperatorTrue, orOperatorFalse);
@@ -204,23 +203,31 @@ public class LogicalOperatorsTest {
     @Test
     public void groupNamesTest() throws Exception {
         NucleotideSequence testSeq = new NucleotideSequence("GTGGTTGTGTTGT");
-        HashMap<String, Range> groups1 = new HashMap<String, Range>() {{
-            put("ABC", new Range(1, 3));
-            put("DEF", new Range(6, 7));
-            put("GH", new Range(10, 11));
+        HashMap<GroupEdge, Integer> groups1 = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("ABC", true), 1);
+            put(new GroupEdge("ABC", false), 3);
+            put(new GroupEdge("DEF", true), 6);
+            put(new GroupEdge("DEF", false), 7);
+            put(new GroupEdge("GH", true), 10);
+            put(new GroupEdge("GH", false), 11);
         }};
-        HashMap<String, Range> groups2 = new HashMap<String, Range>() {{
-            put("XYZ", new Range(1, 3));
-            put("GH", new Range(9, 10));
+        HashMap<GroupEdge, Integer> groups2 = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("XYZ", true), 1);
+            put(new GroupEdge("XYZ", false), 3);
+            put(new GroupEdge("GH", false), 10);
         }};
-        HashMap<String, Range> groups3 = new HashMap<String, Range>() {{
-            put("123", new Range(2, 4));
-            put("456", new Range(5, 7));
+        HashMap<GroupEdge, Integer> groups3 = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("123", true), 2);
+            put(new GroupEdge("123", false), 4);
+            put(new GroupEdge("456", true), 5);
+            put(new GroupEdge("456", false), 7);
         }};
-        HashMap<String, Range> groups4 = new HashMap<String, Range>() {{
-            put("789", new Range(0, 1));
-            put("0", new Range(4, 5));
+        HashMap<GroupEdge, Integer> groups4 = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("789", true), 0);
+            put(new GroupEdge("0", true), 4);
+            put(new GroupEdge("0", false), 5);
         }};
+
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(testSeq, groups1);
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(testSeq, groups2);
         FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(testSeq, groups3);
@@ -234,7 +241,8 @@ public class LogicalOperatorsTest {
 
     @Test
     public void groupsInNotTest() throws Exception {
-        HashMap<String, Range> groups = new HashMap<String, Range>() {{ put("0", new Range(0, 1)); }};
+        HashMap<GroupEdge, Integer> groups = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("0", true), 0); }};
         FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("A"), groups);
         MultiPattern multiPattern = new MultiPattern(pattern);
 
@@ -244,14 +252,19 @@ public class LogicalOperatorsTest {
 
     @Test
     public void groupsTest() throws Exception {
-        HashMap<String, Range> groups1 = new HashMap<String, Range>() {{
-            put("1", new Range(0, 1));
-            put("2", new Range(1, 3));
-            put("4", new Range(4, 5));
+        HashMap<GroupEdge, Integer> groups1 = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("1", true), 0);
+            put(new GroupEdge("1", false), 1);
+            put(new GroupEdge("2", true), 1);
+            put(new GroupEdge("2", false), 3);
+            put(new GroupEdge("4", true), 4);
+            put(new GroupEdge("4", false), 5);
         }};
-        HashMap<String, Range> groups2 = new HashMap<String, Range>() {{
-            put("3", new Range(1, 3));
-            put("5", new Range(5, 6));
+        HashMap<GroupEdge, Integer> groups2 = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("3", true), 1);
+            put(new GroupEdge("3", false), 3);
+            put(new GroupEdge("5", true), 5);
+            put(new GroupEdge("5", false), 6);
         }};
 
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groups1);
@@ -282,12 +295,12 @@ public class LogicalOperatorsTest {
             }
         };
         MatchingResult result = andOperator.match(mseq, false, true);
-        assertEquals("AG", result.getMatches(false).take().getGroupMatches(true)
-                .get(COMMON_GROUP_NAME_PREFIX + "2").getValue().getSequence().toString());
-        assertEquals(new Range(8, 9), result.getMatches(true).take().getGroupMatches(true)
-                .get(COMMON_GROUP_NAME_PREFIX + "5").getRange());
-        assertEquals("AG", result.getBestMatch().getGroupMatches(true)
-                .get(COMMON_GROUP_NAME_PREFIX + "3").getValue().getSequence().toString());
+
+        assertEquals("1", result.getBestMatch().getMatchedGroupEdge("1", false).getGroupName());
+        assertEquals(3, result.getBestMatch().getMatchedGroupEdge("3", false).getPosition());
+        assertEquals(5, result.getBestMatch().getMatchedGroupEdge("4", true).getPosition());
+        assertTrue(result.getBestMatch().getMatchedGroupEdge("5", true).isStart());
+        assertFalse(result.getBestMatch().getMatchedGroupEdge("5", false).isStart());
 
         for (int i = 0; i < 14; i++)
             assertNotNull(result.getMatches().take());
@@ -310,18 +323,18 @@ public class LogicalOperatorsTest {
         for (int i = 0; i < 4; i++)
             matchingResults[i] = fuzzyPattern.match(sequences[i]);
 
-        assertEquals(new NSequenceWithQuality("ATTAGTTA"), matchingResults[0].getBestMatch().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ATTAGAA"), matchingResults[1].getBestMatch().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACA"), matchingResults[2].getBestMatch().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ATTTAGAA"), matchingResults[3].getBestMatch().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ATTAGTTA"), matchingResults[0].getBestMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ATTAGAA"), matchingResults[1].getBestMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACA"), matchingResults[2].getBestMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ATTTAGAA"), matchingResults[3].getBestMatch().getValue());
 
         AndPattern andPattern = new AndPattern(fuzzyPattern, fuzzyPattern);
         PlusPattern plusPattern = new PlusPattern(fuzzyPattern, fuzzyPattern);
 
-        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), andPattern.match(sequences[4]).getBestMatch().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), plusPattern.match(sequences[4]).getBestMatch().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), andPattern.match(sequences[4]).getMatches().take().getWholePatternMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), plusPattern.match(sequences[4]).getMatches().take().getWholePatternMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), andPattern.match(sequences[4]).getBestMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), plusPattern.match(sequences[4]).getBestMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), andPattern.match(sequences[4]).getMatches().take().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), plusPattern.match(sequences[4]).getMatches().take().getValue());
 
         MultiPattern multiPattern = new MultiPattern(fuzzyPattern, andPattern, plusPattern);
         NotOperator notOperator = new NotOperator(multiPattern);
@@ -350,13 +363,13 @@ public class LogicalOperatorsTest {
 
         MatchingResult result = andOperator.match(mseq);
 
-        assertEquals(new NSequenceWithQuality("ATTAGAA"), result.getBestMatch().getWholePatternMatch(0).getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), result.getBestMatch().getWholePatternMatch(1).getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), result.getBestMatch().getWholePatternMatch(2).getValue());
-        assertNull(result.getBestMatch().getWholePatternMatch(3));
-        assertEquals(new NSequenceWithQuality("ATTAGAA"), result.getBestMatch().getWholePatternMatch(14).getValue());
+        assertEquals(new NSequenceWithQuality("ATTAGAA"), result.getBestMatch().getMatchedRange(0).getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), result.getBestMatch().getMatchedRange(1).getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), result.getBestMatch().getMatchedRange(2).getValue());
+        assertNull(result.getBestMatch().getMatchedRange(3));
+        assertEquals(new NSequenceWithQuality("ATTAGAA"), result.getBestMatch().getMatchedRange(14).getValue());
 
         exception.expect(ArrayIndexOutOfBoundsException.class);
-        result.getBestMatch().getWholePatternMatch(17);
+        result.getBestMatch().getMatchedRange(17);
     }
 }

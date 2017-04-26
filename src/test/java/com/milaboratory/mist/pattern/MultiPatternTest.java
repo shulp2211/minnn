@@ -13,7 +13,6 @@ import org.junit.rules.ExpectedException;
 import java.util.HashMap;
 import java.util.Random;
 
-import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
 import static org.junit.Assert.*;
 
 public class MultiPatternTest {
@@ -136,7 +135,7 @@ public class MultiPatternTest {
                 new boolean[]{false, true, true}).isFound());
         assertFalse(multiPattern.match(mseq, false, true, false).isFound());
         assertEquals("GCATAT", multiPattern.match(mseq, false, true, true)
-                .getMatches().take().getWholePatternMatch(2).getValue().getSequence().toString());
+                .getMatches().take().getMatchedRange(2).getValue().getSequence().toString());
         assertNull(multiPattern.match(mseq).getBestMatch());
         assertNotNull(multiPattern.match(mseq, false, true, true).getBestMatch());
         assertTrue(multiPattern.match(mseq, new Range[]{new Range(0, 11),
@@ -178,14 +177,17 @@ public class MultiPatternTest {
 
     @Test
     public void groupsTest() throws Exception {
-        HashMap<String, Range> groups1 = new HashMap<String, Range>() {{
-            put("1", new Range(0, 1));
-            put("2", new Range(1, 3));
-            put("4", new Range(4, 5));
+        HashMap<GroupEdge, Integer> groups1 = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("ABC", true), 1);
+            put(new GroupEdge("ABC", false), 3);
+            put(new GroupEdge("DEF", true), 6);
+            put(new GroupEdge("DEF", false), 7);
+            put(new GroupEdge("GH", true), 10);
+            put(new GroupEdge("GH", false), 11);
         }};
-        HashMap<String, Range> groups2 = new HashMap<String, Range>() {{
-            put("3", new Range(1, 3));
-            put("5", new Range(5, 6));
+        HashMap<GroupEdge, Integer> groups2 = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("XYZ", true), 1);
+            put(new GroupEdge("XYZ", false), 3);
         }};
 
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groups1);
@@ -209,25 +211,26 @@ public class MultiPatternTest {
             }
         };
         MatchingResult result = multiPattern.match(mseq, false, true);
-        assertEquals("AG", result.getMatches(false).take().getGroupMatches(true)
-                .get(COMMON_GROUP_NAME_PREFIX + "2").getValue().getSequence().toString());
-        assertEquals(new Range(8, 9), result.getMatches(true).take().getGroupMatches(true)
-                .get(COMMON_GROUP_NAME_PREFIX + "5").getRange());
-        assertEquals("AG", result.getBestMatch().getGroupMatches(true)
-                .get(COMMON_GROUP_NAME_PREFIX + "3").getValue().getSequence().toString());
+        assertEquals("ABC", result.getBestMatch().getMatchedGroupEdge("ABC", false).getGroupName());
+        assertEquals(11, result.getBestMatch().getMatchedGroupEdge("GH", false).getPosition());
+        assertEquals(1, result.getBestMatch().getMatchedGroupEdge("XYZ", true).getPosition());
         assertNull(result.getMatches().take());
     }
 
     @Test
     public void groupNamesTest1() throws Exception {
-        HashMap<String, Range> groups1 = new HashMap<String, Range>() {{
-            put("ABC", new Range(1, 3));
-            put("DEF", new Range(6, 7));
-            put("GH", new Range(10, 11));
+        HashMap<GroupEdge, Integer> groups1 = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("ABC", true), 1);
+            put(new GroupEdge("ABC", false), 3);
+            put(new GroupEdge("DEF", true), 6);
+            put(new GroupEdge("DEF", false), 7);
+            put(new GroupEdge("GH", true), 9);
+            put(new GroupEdge("GH", false), 10);
         }};
-        HashMap<String, Range> groups2 = new HashMap<String, Range>() {{
-            put("XYZ", new Range(1, 3));
-            put("GH", new Range(9, 10));
+        HashMap<GroupEdge, Integer> groups2 = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("GH", false), 11);
+            put(new GroupEdge("XYZ", true), 1);
+            put(new GroupEdge("XYZ", false), 3);
         }};
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups1);
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups2);
@@ -237,10 +240,13 @@ public class MultiPatternTest {
 
     @Test
     public void groupNamesTest2() throws Exception {
-        HashMap<String, Range> groups = new HashMap<String, Range>() {{
-            put("ABC", new Range(1, 3));
-            put("DEF", new Range(6, 7));
-            put("GH", new Range(10, 11));
+        HashMap<GroupEdge, Integer> groups = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("ABC", true), 1);
+            put(new GroupEdge("ABC", false), 3);
+            put(new GroupEdge("DEF", true), 6);
+            put(new GroupEdge("DEF", false), 7);
+            put(new GroupEdge("GH", true), 10);
+            put(new GroupEdge("GH", false), 11);
         }};
         FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups);
         exception.expect(IllegalStateException.class);

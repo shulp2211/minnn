@@ -13,7 +13,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.HashMap;
 
-import static com.milaboratory.mist.pattern.Match.COMMON_GROUP_NAME_PREFIX;
 import static org.junit.Assert.*;
 
 public class PlusPatternTest {
@@ -51,8 +50,8 @@ public class PlusPatternTest {
         assertEquals(true, plusPattern6.match(nseq1).isFound());
         assertEquals(false, plusPattern2.match(nseq1, new Range(12, 21)).isFound());
 
-        assertEquals(new Range(0, 17), plusPattern7.match(nseq3, new Range(0, 24), (byte)-1).getBestMatch().getWholePatternMatch().getRange());
-        assertEquals(new Range(11, 21), plusPattern2.match(nseq1, new Range(1, 21)).getBestMatch().getWholePatternMatch().getRange());
+        assertEquals(new Range(0, 17), plusPattern7.match(nseq3, new Range(0, 24), (byte)-1).getBestMatch().getRange());
+        assertEquals(new Range(11, 21), plusPattern2.match(nseq1, new Range(1, 21)).getBestMatch().getRange());
         assertEquals(null, plusPattern2.match(nseq1, new Range(11, 20)).getBestMatch());
 
         exception.expect(IllegalStateException.class);
@@ -76,7 +75,7 @@ public class PlusPatternTest {
             PlusPattern plusPattern = new PlusPattern(patternMotif1, patternMotif2);
             assertEquals(true, plusPattern.match(target).isFound());
 
-            NSequenceWithQuality foundSequence = plusPattern.match(target).getBestMatch().getWholePatternMatch().getValue();
+            NSequenceWithQuality foundSequence = plusPattern.match(target).getBestMatch().getValue();
             assertEquals(true, patternMotif1.match(foundSequence).isFound());
             assertEquals(true, patternMotif2.match(foundSequence).isFound());
         }
@@ -97,11 +96,11 @@ public class PlusPatternTest {
             OutputPort<Match> matchesPattern1 = plusPattern1.match(nseq).getMatches(byScore);
             OutputPort<Match> matchesPattern2 = plusPattern2.match(nseq).getMatches(byScore);
             for (int i = 0; i < 22; i++) {
-                assertNotNull(matchesPattern1.take().getWholePatternMatch().getValue());
+                assertNotNull(matchesPattern1.take().getValue());
             }
             assertNull(matchesPattern1.take());
             for (int i = 0; i < 30; i++) {
-                assertNotNull(matchesPattern2.take().getWholePatternMatch().getValue());
+                assertNotNull(matchesPattern2.take().getValue());
             }
             assertNull(matchesPattern2.take());
         }
@@ -117,8 +116,8 @@ public class PlusPatternTest {
         while (true) {
             Match match = matches.take();
             if (match == null) break;
-            String seq = match.getWholePatternMatch().getValue().getSequence().toString();
-            Range range = match.getWholePatternMatch().getRange();
+            String seq = match.getValue().getSequence().toString();
+            Range range = match.getRange();
             System.out.println(seq + " " + range.getLower() + " " + range.getUpper());
         }
         assertEquals(6, plusPattern.match(nseq).getMatchesNumber());
@@ -154,27 +153,33 @@ public class PlusPatternTest {
 
     @Test
     public void groupsTest() throws Exception {
-        HashMap<String, Range> groups1 = new HashMap<String, Range>() {{
-            put("1", new Range(0, 1));
-            put("2", new Range(1, 3));
-            put("4", new Range(4, 5));
-        }};
-        HashMap<String, Range> groups2 = new HashMap<String, Range>() {{
-            put("3", new Range(1, 3));
-            put("5", new Range(5, 6));
+        HashMap<GroupEdge, Integer> groupEdges1 = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("1", true), 0);
+            put(new GroupEdge("1", false), 1);
+            put(new GroupEdge("2", true), 1);
+            put(new GroupEdge("2", false), 3);
+            put(new GroupEdge("4", false), 5);
         }};
 
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("CAGATGCA"), groups2);
+        HashMap<GroupEdge, Integer> groupEdges2 = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("3", true), 1);
+            put(new GroupEdge("3", false), 3);
+            put(new GroupEdge("4", true), 4);
+            put(new GroupEdge("5", true), 5);
+            put(new GroupEdge("5", false), 6);
+        }};
+
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groupEdges1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("CAGATGCA"), groupEdges2);
         PlusPattern plusPattern = new PlusPattern(pattern2, pattern1);
         NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGCC");
         MatchingResult result = plusPattern.match(nseq);
-        assertEquals("AG", result.getMatches(false).take().getGroupMatches(true)
-                .get(COMMON_GROUP_NAME_PREFIX + "2").getValue().getSequence().toString());
-        assertEquals(new Range(8, 9), result.getMatches(true).take().getGroupMatches(true)
-                .get(COMMON_GROUP_NAME_PREFIX + "5").getRange());
-        assertEquals("AG", result.getBestMatch().getGroupMatches(true)
-                .get(COMMON_GROUP_NAME_PREFIX + "3").getValue().getSequence().toString());
+        assertEquals(15, result.getMatches(false).take().getMatchedGroupEdge("2", true)
+                .getPosition());
+        assertEquals(8, result.getMatches(false).take().getMatchedGroupEdge("4", false)
+                .getPosition());
+        assertEquals("3", result.getMatches(false).take().getMatchedGroupEdge("3", true)
+                .getGroupName());
         assertNull(result.getMatches().take());
     }
 }
