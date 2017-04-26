@@ -1,6 +1,7 @@
 package com.milaboratory.mist.pattern;
 
 import com.milaboratory.core.Range;
+import com.milaboratory.core.sequence.NSequenceWithQuality;
 
 import java.util.ArrayList;
 
@@ -54,6 +55,10 @@ public final class Match {
         return getMatchedRange().getRange();
     }
 
+    public NSequenceWithQuality getValue() {
+        return getMatchedRange().getValue();
+    }
+
     /**
      * Return MatchedGroupEdge by name and isStart flag.
      *
@@ -67,7 +72,8 @@ public final class Match {
                     && (((MatchedGroupEdge)item).getGroupName().equals(groupName))
                     && (((MatchedGroupEdge)item).isStart() == isStart))
                 return (MatchedGroupEdge)item;
-        return null;
+        throw new IllegalStateException("Trying to get group " + (isStart ? "start" : "end") + " with name "
+                + groupName + " and it doesn't exist");
     }
 
     /**

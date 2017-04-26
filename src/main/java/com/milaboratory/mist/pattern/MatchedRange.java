@@ -20,4 +20,8 @@ public class MatchedRange extends MatchedItem {
     public Range getRange() {
         return range;
     }
+
+    public NSequenceWithQuality getValue() {
+        return target.getRange(range);
+    }
 }
