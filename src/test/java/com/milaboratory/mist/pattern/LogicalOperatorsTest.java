@@ -297,12 +297,12 @@ public class LogicalOperatorsTest {
         MatchingResult result = andOperator.match(mseq, false, true);
 
         assertEquals("1", result.getBestMatch().getMatchedGroupEdge("1", false).getGroupName());
-        assertEquals(3, result.getBestMatch().getMatchedGroupEdge("3", false).getPosition());
-        assertEquals(5, result.getBestMatch().getMatchedGroupEdge("4", true).getPosition());
+        assertEquals(6, result.getBestMatch().getMatchedGroupEdge("3", false).getPosition());
+        assertEquals(9, result.getBestMatch().getMatchedGroupEdge("4", true).getPosition());
         assertTrue(result.getBestMatch().getMatchedGroupEdge("5", true).isStart());
         assertFalse(result.getBestMatch().getMatchedGroupEdge("5", false).isStart());
 
-        for (int i = 0; i < 14; i++)
+        for (int i = 0; i < 15; i++)
             assertNotNull(result.getMatches().take());
         assertNull(result.getMatches().take());
     }

@@ -174,12 +174,13 @@ public class PlusPatternTest {
         PlusPattern plusPattern = new PlusPattern(pattern2, pattern1);
         NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGCC");
         MatchingResult result = plusPattern.match(nseq);
-        assertEquals(15, result.getMatches(false).take().getMatchedGroupEdge("2", true)
+        Match match = result.getMatches(false).take();
+        assertEquals(16, match.getMatchedGroupEdge("2", true)
                 .getPosition());
-        assertEquals(8, result.getMatches(false).take().getMatchedGroupEdge("4", false)
+        assertEquals(20, match.getMatchedGroupEdge("4", false)
                 .getPosition());
-        assertEquals("3", result.getMatches(false).take().getMatchedGroupEdge("3", true)
+        assertEquals("3", match.getMatchedGroupEdge("3", true)
                 .getGroupName());
-        assertNull(result.getMatches().take());
+        assertNull(result.getMatches(false).take());
     }
 }

@@ -47,7 +47,8 @@ public class FuzzyMatchPattern extends SinglePattern {
 
         for (Map.Entry<GroupEdge, Integer> groupEdge : groupEdges.entrySet())
             if (groupEdge.getValue() > size)
-                throw new IllegalStateException("Group edge " + groupEdge.getKey() + " (" + groupEdge.getValue()
+                throw new IllegalStateException("Group edge " + groupEdge.getKey().getGroupName()
+                        + (groupEdge.getKey().isStart() ? " start" : " end") + " (" + groupEdge.getValue()
                         + ") is outside of motif (motif size: " + size + ")");
     }
 

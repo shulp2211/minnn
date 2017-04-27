@@ -165,13 +165,27 @@ public class FuzzyMatchPatternTest {
         FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups);
         NSequenceWithQuality nseq = new NSequenceWithQuality("GTGTTGTGGTTGTGTTGTTGTGGTTGTGTTGTGG");
         MatchingResult result = pattern.match(nseq);
-        assertEquals("GH", result.getBestMatch().getMatchedGroupEdges().get(5).getGroupName());
-        assertEquals(10, result.getBestMatch().getMatchedGroupEdges().get(4).getPosition());
-        assertEquals(7, result.getBestMatch().getMatchedGroupEdge("DEF", false).getPosition());
+        assertEquals("GH", result.getMatches().take().getMatchedGroupEdges().get(5).getGroupName());
+        assertEquals(15, result.getBestMatch().getMatchedGroupEdges().get(4).getPosition());
+        assertEquals(26, result.getMatches().take().getMatchedGroupEdge("DEF", false).getPosition());
         assertNull(result.getMatches().take());
 
         exception.expect(IllegalStateException.class);
         new FuzzyMatchPattern(new NucleotideSequence("GGTGTGTCAC"), groups);
+    }
+
+    @Test
+    public void groupEdgeOutsideOfMotifTest() throws Exception {
+        HashMap<GroupEdge, Integer> groups = new HashMap<GroupEdge, Integer>() {{
+            put(new GroupEdge("ABC", true), 1);
+            put(new GroupEdge("ABC", false), 3);
+            put(new GroupEdge("DEF", true), 6);
+            put(new GroupEdge("DEF", false), 7);
+            put(new GroupEdge("GH", true), 10);
+            put(new GroupEdge("GH", false), 11);
+        }};
+        exception.expect(IllegalStateException.class);
+        new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groups);
     }
 
     @Test

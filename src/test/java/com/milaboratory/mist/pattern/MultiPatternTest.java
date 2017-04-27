@@ -190,8 +190,8 @@ public class MultiPatternTest {
             put(new GroupEdge("XYZ", false), 3);
         }};
 
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("CAGATGCA"), groups2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATAGGAGGGTAGCC"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("TTTTCAATGCATTAG").getReverseComplement(), groups2);
         MultiPattern multiPattern = new MultiPattern(pattern1, pattern2);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
@@ -203,9 +203,9 @@ public class MultiPatternTest {
             public NSequenceWithQuality get(int id) {
                 switch (id) {
                     case 0:
-                        return new NSequenceWithQuality("ACAATTAGCCA");
+                        return new NSequenceWithQuality("ATAGGAGGGTAGCCACAATTAGCCA");
                     case 1:
-                        return new NSequenceWithQuality("GTGCATCTGCCA");
+                        return new NSequenceWithQuality("GTGCATCTGCCATTTTCAATGCATTAG");
                 }
                 return null;
             }
@@ -213,7 +213,7 @@ public class MultiPatternTest {
         MatchingResult result = multiPattern.match(mseq, false, true);
         assertEquals("ABC", result.getBestMatch().getMatchedGroupEdge("ABC", false).getGroupName());
         assertEquals(11, result.getBestMatch().getMatchedGroupEdge("GH", false).getPosition());
-        assertEquals(1, result.getBestMatch().getMatchedGroupEdge("XYZ", true).getPosition());
+        assertEquals(1, result.getMatches().take().getMatchedGroupEdge("XYZ", true).getPosition());
         assertNull(result.getMatches().take());
     }
 
