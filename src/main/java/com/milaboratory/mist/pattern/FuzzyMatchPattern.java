@@ -121,8 +121,8 @@ public class FuzzyMatchPattern extends SinglePattern {
                     ArrayList<MatchedItem> matchedItems = new ArrayList<MatchedItem>() {{ add(matchedRange); }};
 
                     for (Map.Entry<GroupEdge, Integer> groupEdge : groupEdges.entrySet()) {
-                        MatchedGroupEdge matchedGroupEdge = new MatchedGroupEdge(input, targetId, groupEdge.getKey(),
-                                groupEdge.getValue() + foundRange.getLower());
+                        MatchedGroupEdge matchedGroupEdge = new MatchedGroupEdge(input, targetId, 0,
+                                groupEdge.getKey(), groupEdge.getValue() + foundRange.getLower());
                         matchedItems.add(matchedGroupEdge);
                     }
 

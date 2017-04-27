@@ -18,7 +18,7 @@ public abstract class Pattern {
      *
      * @return list of group edges
      */
-    abstract ArrayList<GroupEdge> getGroupEdges();
+    public abstract ArrayList<GroupEdge> getGroupEdges();
 
     /**
      * Pattern-specific procedure for combining match scores. Default implementation is for And pattern.

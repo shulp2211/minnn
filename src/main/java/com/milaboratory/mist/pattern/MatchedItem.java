@@ -13,10 +13,12 @@ public abstract class MatchedItem {
      * 0 used only in NullMatchedRange (when there is actually no match)
      */
     protected final byte targetId;
+    protected final int patternIndex;
 
-    public MatchedItem(NSequenceWithQuality target, byte targetId) {
+    public MatchedItem(NSequenceWithQuality target, byte targetId, int patternIndex) {
         this.target = target;
         this.targetId = targetId;
+        this.patternIndex = patternIndex;
     }
 
     public NSequenceWithQuality getTarget() {
@@ -25,5 +27,9 @@ public abstract class MatchedItem {
 
     public byte getTargetId() {
         return targetId;
+    }
+
+    public int getPatternIndex() {
+        return patternIndex;
     }
 }
