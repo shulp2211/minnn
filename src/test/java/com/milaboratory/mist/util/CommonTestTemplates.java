@@ -20,18 +20,18 @@ class CommonTestTemplates {
 
         ArrayList<MatchedItem> testMatchedItemsSingle1 = new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seqSingle, (byte)1, 0, new Range(6, 9)));
-            add(new MatchedGroupEdge(seqSingle, (byte)1, new GroupEdge("0", true), 6));
-            add(new MatchedGroupEdge(seqSingle, (byte)1, new GroupEdge("0", false), 7));
-            add(new MatchedGroupEdge(seqSingle, (byte)1, new GroupEdge("1", true), 7));
-            add(new MatchedGroupEdge(seqSingle, (byte)1, new GroupEdge("1", false), 9));
+            add(new MatchedGroupEdge(seqSingle, (byte)1, 0, new GroupEdge("0", true), 6));
+            add(new MatchedGroupEdge(seqSingle, (byte)1, 0, new GroupEdge("0", false), 7));
+            add(new MatchedGroupEdge(seqSingle, (byte)1, 0, new GroupEdge("1", true), 7));
+            add(new MatchedGroupEdge(seqSingle, (byte)1, 0, new GroupEdge("1", false), 9));
         }};
 
         ArrayList<MatchedItem> testMatchedItemsSingle2 = new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seqSingle, (byte)1, 0, new Range(0, 8)));
-            add(new MatchedGroupEdge(seqSingle, (byte)1, new GroupEdge("2", true), 0));
-            add(new MatchedGroupEdge(seqSingle, (byte)1, new GroupEdge("2", false), 4));
-            add(new MatchedGroupEdge(seqSingle, (byte)1, new GroupEdge("3", true), 5));
-            add(new MatchedGroupEdge(seqSingle, (byte)1, new GroupEdge("3", false), 8));
+            add(new MatchedGroupEdge(seqSingle, (byte)1, 0, new GroupEdge("2", true), 0));
+            add(new MatchedGroupEdge(seqSingle, (byte)1, 0, new GroupEdge("2", false), 4));
+            add(new MatchedGroupEdge(seqSingle, (byte)1, 0, new GroupEdge("3", true), 5));
+            add(new MatchedGroupEdge(seqSingle, (byte)1, 0, new GroupEdge("3", false), 8));
         }};
 
         ArrayList<MatchedItem> testMatchedItemsSingle3 = new ArrayList<MatchedItem>() {{
@@ -44,15 +44,15 @@ class CommonTestTemplates {
 
         ArrayList<MatchedItem> testMatchedItemsMulti1 = new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seqMulti1, (byte)1, 0, new Range(0, 9)));
-            add(new MatchedGroupEdge(seqMulti1, (byte)1, new GroupEdge("0", true), 1));
-            add(new MatchedGroupEdge(seqMulti1, (byte)1, new GroupEdge("0", false), 4));
-            add(new MatchedGroupEdge(seqMulti1, (byte)1, new GroupEdge("1", true), 4));
-            add(new MatchedGroupEdge(seqMulti1, (byte)1, new GroupEdge("1", false), 8));
+            add(new MatchedGroupEdge(seqMulti1, (byte)1, 0, new GroupEdge("0", true), 1));
+            add(new MatchedGroupEdge(seqMulti1, (byte)1, 0, new GroupEdge("0", false), 4));
+            add(new MatchedGroupEdge(seqMulti1, (byte)1, 0, new GroupEdge("1", true), 4));
+            add(new MatchedGroupEdge(seqMulti1, (byte)1, 0, new GroupEdge("1", false), 8));
             add(new MatchedRange(seqMulti2, (byte)1, 1, new Range(0, 8)));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, new GroupEdge("2", true), 0));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, new GroupEdge("2", false), 4));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, new GroupEdge("3", true), 5));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, new GroupEdge("3", false), 8));
+            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("2", true), 0));
+            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("2", false), 4));
+            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("3", true), 5));
+            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("3", false), 8));
         }};
 
         ArrayList<MatchedItem> testMatchedItemsMulti2 = new ArrayList<MatchedItem>() {{
@@ -62,13 +62,13 @@ class CommonTestTemplates {
 
         ArrayList<MatchedItem> testMatchedItemsMulti3 = new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seqMulti1, (byte)1, 0, new Range(4, 6)));
-            add(new MatchedGroupEdge(seqMulti1, (byte)1, new GroupEdge("0", true), 4));
-            add(new MatchedGroupEdge(seqMulti1, (byte)1, new GroupEdge("0", false), 6));
+            add(new MatchedGroupEdge(seqMulti1, (byte)1, 0, new GroupEdge("0", true), 4));
+            add(new MatchedGroupEdge(seqMulti1, (byte)1, 0, new GroupEdge("0", false), 6));
             add(new MatchedRange(seqMulti2, (byte)1, 1, new Range(1, 8)));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, new GroupEdge("2", true), 1));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, new GroupEdge("2", false), 4));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, new GroupEdge("3", true), 5));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, new GroupEdge("3", false), 8));
+            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("2", true), 1));
+            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("2", false), 4));
+            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("3", true), 5));
+            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("3", false), 8));
         }};
 
         Match testMatchSingle1 = new Match(1, 10, testMatchedItemsSingle1);

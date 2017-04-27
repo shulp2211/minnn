@@ -21,21 +21,21 @@ public class MatchTest {
 
         ArrayList<MatchedItem> testMatchedItems1 = new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seq0, (byte)1, 0, new Range(0, 9)));
-            add(new MatchedGroupEdge(seq0, (byte)1, new GroupEdge("0", true), 1));
-            add(new MatchedGroupEdge(seq0, (byte)1, new GroupEdge("0", false), 4));
+            add(new MatchedGroupEdge(seq0, (byte)1, 0, new GroupEdge("0", true), 1));
+            add(new MatchedGroupEdge(seq0, (byte)1, 0, new GroupEdge("0", false), 4));
         }};
 
         ArrayList<MatchedItem> testMatchedItems2 = new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seq0, (byte)1, 0, new Range(0, 9)));
-            add(new MatchedGroupEdge(seq0, (byte)1, new GroupEdge("0", true), 1));
-            add(new MatchedGroupEdge(seq0, (byte)1, new GroupEdge("0", false), 4));
-            add(new MatchedGroupEdge(seq1, (byte)1, new GroupEdge("1", true), 4));
-            add(new MatchedGroupEdge(seq1, (byte)1, new GroupEdge("1", false), 8));
+            add(new MatchedGroupEdge(seq0, (byte)1, 0, new GroupEdge("0", true), 1));
+            add(new MatchedGroupEdge(seq0, (byte)1, 0, new GroupEdge("0", false), 4));
+            add(new MatchedGroupEdge(seq1, (byte)1, 1, new GroupEdge("1", true), 4));
+            add(new MatchedGroupEdge(seq1, (byte)1, 1, new GroupEdge("1", false), 8));
             add(new MatchedRange(seq1, (byte)1, 1, new Range(0, 8)));
-            add(new MatchedGroupEdge(seq1, (byte)1, new GroupEdge("2", true), 0));
-            add(new MatchedGroupEdge(seq1, (byte)1, new GroupEdge("2", false), 4));
-            add(new MatchedGroupEdge(seq1, (byte)1, new GroupEdge("3", true), 5));
-            add(new MatchedGroupEdge(seq1, (byte)1, new GroupEdge("3", false), 8));
+            add(new MatchedGroupEdge(seq1, (byte)1, 1, new GroupEdge("2", true), 0));
+            add(new MatchedGroupEdge(seq1, (byte)1, 1, new GroupEdge("2", false), 4));
+            add(new MatchedGroupEdge(seq1, (byte)1, 1, new GroupEdge("3", true), 5));
+            add(new MatchedGroupEdge(seq1, (byte)1, 1, new GroupEdge("3", false), 8));
         }};
 
         Match testMatch1 = new Match(1, 5, testMatchedItems1);
@@ -59,6 +59,8 @@ public class MatchTest {
         assertEquals(8, testMatch2.getMatchedGroupEdges().size());
         assertEquals(MatchedGroupEdge.class, testMatch1.getMatchedGroupEdges().get(1).getClass());
         assertEquals(MatchedGroupEdge.class, testMatch2.getMatchedGroupEdges().get(7).getClass());
+        assertTrue(MatchedItem.class.isAssignableFrom(testMatch1.getMatchedItems().get(2).getClass()));
+        assertTrue(MatchedItem.class.isAssignableFrom(testMatch2.getMatchedItems().get(9).getClass()));
         assertTrue(testMatch1.getMatchedGroupEdge("0", true).isStart());
         assertFalse(testMatch1.getMatchedGroupEdge("0", false).isStart());
         assertTrue(testMatch2.getMatchedGroupEdge("1", true).isStart());
@@ -71,6 +73,13 @@ public class MatchTest {
         assertEquals(seq1, testMatch2.getMatchedRange(1).getTarget());
         assertEquals(1, testMatch1.getMatchedRange().getTargetId());
         assertEquals(1, testMatch2.getMatchedRange(1).getTargetId());
+        assertEquals(0, testMatch1.getMatchedGroupEdge("0", true).getPatternIndex());
+        assertEquals(0, testMatch1.getMatchedGroupEdge("0", false).getPatternIndex());
+        assertEquals(0, testMatch2.getMatchedGroupEdge("0", true).getPatternIndex());
+        assertEquals(1, testMatch2.getMatchedGroupEdge("1", true).getPatternIndex());
+        assertEquals(1, testMatch2.getMatchedGroupEdge("1", false).getPatternIndex());
+        assertEquals(1, testMatch2.getMatchedGroupEdge("2", true).getPatternIndex());
+        assertEquals(1, testMatch2.getMatchedGroupEdge("3", true).getPatternIndex());
 
         exception.expect(IllegalStateException.class);
         testMatch2.getMatchedRange();

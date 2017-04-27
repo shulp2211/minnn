@@ -64,16 +64,16 @@ public class SorterByScoreTest {
         NSequenceWithQuality seq = new NSequenceWithQuality("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
         ArrayList<MatchedItem> testMatchedItemsSingle = new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seq, (byte)1, 0, new Range(0, 40)));
-            add(new MatchedGroupEdge(seq, (byte)1, new GroupEdge("0", true), 0));
-            add(new MatchedGroupEdge(seq, (byte)1, new GroupEdge("0", false), 40));
+            add(new MatchedGroupEdge(seq, (byte)1, 0, new GroupEdge("0", true), 0));
+            add(new MatchedGroupEdge(seq, (byte)1, 0, new GroupEdge("0", false), 40));
         }};
         ArrayList<MatchedItem> testMatchedItemsMulti = new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seq, (byte)1, 0, new Range(0, 40)));
-            add(new MatchedGroupEdge(seq, (byte)1, new GroupEdge("0", true), 0));
-            add(new MatchedGroupEdge(seq, (byte)1, new GroupEdge("0", false), 40));
+            add(new MatchedGroupEdge(seq, (byte)1, 0, new GroupEdge("0", true), 0));
+            add(new MatchedGroupEdge(seq, (byte)1, 0, new GroupEdge("0", false), 40));
             add(new MatchedRange(seq, (byte)1, 1, new Range(0, 40)));
-            add(new MatchedGroupEdge(seq, (byte)1, new GroupEdge("1", true), 0));
-            add(new MatchedGroupEdge(seq, (byte)1, new GroupEdge("1", false), 40));
+            add(new MatchedGroupEdge(seq, (byte)1, 1, new GroupEdge("1", true), 0));
+            add(new MatchedGroupEdge(seq, (byte)1, 1, new GroupEdge("1", false), 40));
         }};
 
         Match testMatchSingle = new Match(1, 0, testMatchedItemsSingle);
