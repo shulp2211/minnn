@@ -77,6 +77,21 @@ public final class Match {
     }
 
     /**
+     * Return ArrayList of matched group edges with specified pattern index.
+     *
+     * @param patternIndex pattern index; group edges with this index will be searched
+     * @return ArrayList of matched group edges with specified pattern index
+     */
+    public ArrayList<MatchedGroupEdge> getMatchedGroupEdgesByPattern(int patternIndex) {
+        ArrayList<MatchedGroupEdge> foundGroupEdges = new ArrayList<>();
+        for (MatchedItem item : matchedItems)
+            if (MatchedGroupEdge.class.isAssignableFrom(item.getClass())
+                    && (item.getPatternIndex() == patternIndex))
+                foundGroupEdges.add((MatchedGroupEdge)item);
+        return foundGroupEdges;
+    }
+
+    /**
      * Get all matched items.
      *
      * @return ArrayList with all matched items.

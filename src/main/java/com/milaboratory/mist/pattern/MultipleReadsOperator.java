@@ -79,23 +79,30 @@ public abstract class MultipleReadsOperator extends Pattern {
     protected Match combineMatches(Match... matches) {
         ArrayList<MatchedItem> matchedItems = new ArrayList<>();
 
-        int matchedRangeIndex = 0;
+        int patternIndex = 0;
         for (Match match : matches) {
             if (match == null) {
-                matchedItems.add(new NullMatchedRange(matchedRangeIndex++));
+                matchedItems.add(new NullMatchedRange(patternIndex++));
                 continue;
             }
-            matchedItems.addAll(match.getMatchedGroupEdges());
             for (int i = 0; i < match.getNumberOfPatterns(); i++) {
                 MatchedRange currentMatchedRange = match.getMatchedRange(i);
-                if (NullMatchedRange.class.isAssignableFrom(currentMatchedRange.getClass()))
-                    matchedItems.add(new NullMatchedRange(matchedRangeIndex++));
-                else
+                if (NullMatchedRange.class.isAssignableFrom(currentMatchedRange.getClass())) {
+                    if (match.getMatchedGroupEdgesByPattern(i).size() > 0)
+                        throw new IllegalStateException("Null pattern contains "
+                                + match.getMatchedGroupEdgesByPattern(i).size() + " group edges");
+                    matchedItems.add(new NullMatchedRange(patternIndex++));
+                } else {
                     matchedItems.add(new MatchedRange(currentMatchedRange.getTarget(), currentMatchedRange.getTargetId(),
-                            matchedRangeIndex++, currentMatchedRange.getRange()));
+                            patternIndex, currentMatchedRange.getRange()));
+                    for (MatchedGroupEdge matchedGroupEdge : match.getMatchedGroupEdgesByPattern(i))
+                        matchedItems.add(new MatchedGroupEdge(matchedGroupEdge.getTarget(), matchedGroupEdge.getTargetId(),
+                                patternIndex, matchedGroupEdge.getGroupEdge(), matchedGroupEdge.getPosition()));
+                    patternIndex++;
+                }
             }
         }
-        return new Match(matchedRangeIndex, combineMatchScores(matches), matchedItems);
+        return new Match(patternIndex, combineMatchScores(matches), matchedItems);
     }
 
     /**
