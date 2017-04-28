@@ -10,6 +10,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.HashMap;
 
+import static com.milaboratory.mist.pattern.GroupUtils.getGroupsFromMatch;
 import static org.junit.Assert.*;
 
 public class LogicalOperatorsTest {
@@ -301,6 +302,29 @@ public class LogicalOperatorsTest {
         assertEquals(9, result.getBestMatch().getMatchedGroupEdge("4", true).getPosition());
         assertTrue(result.getBestMatch().getMatchedGroupEdge("5", true).isStart());
         assertFalse(result.getBestMatch().getMatchedGroupEdge("5", false).isStart());
+
+        assertEquals(5, getGroupsFromMatch(result.getBestMatch()).size());
+        for (MatchedGroup group : getGroupsFromMatch(result.getBestMatch())) {
+            switch (group.getGroupName()) {
+                case "1":
+                    assertEquals(new Range(5, 6), group.getRange());
+                    break;
+                case "2":
+                    assertEquals(new Range(6, 8), group.getRange());
+                    break;
+                case "3":
+                    assertEquals(new Range(4, 6), group.getRange());
+                    break;
+                case "4":
+                    assertEquals(new Range(9, 10), group.getRange());
+                    break;
+                case "5":
+                    assertEquals(new Range(8, 9), group.getRange());
+                    break;
+                default:
+                    throw new IllegalStateException("Must not be here!");
+            }
+        }
 
         for (int i = 0; i < 15; i++)
             assertNotNull(result.getMatches().take());

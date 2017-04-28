@@ -80,6 +80,9 @@ public class MatchTest {
         assertEquals(1, testMatch2.getMatchedGroupEdge("1", false).getPatternIndex());
         assertEquals(1, testMatch2.getMatchedGroupEdge("2", true).getPatternIndex());
         assertEquals(1, testMatch2.getMatchedGroupEdge("3", true).getPatternIndex());
+        assertEquals(2, testMatch1.getMatchedGroupEdgesByPattern(0).size());
+        assertEquals(6, testMatch2.getMatchedGroupEdgesByPattern(1).size());
+        assertEquals("0", testMatch2.getMatchedGroupEdgesByPattern(0).get(0).getGroupName());
 
         exception.expect(IllegalStateException.class);
         testMatch2.getMatchedRange();
