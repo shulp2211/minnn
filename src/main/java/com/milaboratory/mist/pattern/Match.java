@@ -30,10 +30,10 @@ public final class Match {
     public MatchedRange getMatchedRange(int patternIndex) {
         for (MatchedItem item : matchedItems)
             if (MatchedRange.class.isAssignableFrom(item.getClass())
-                    && (((MatchedRange)item).getPatternIndex() == patternIndex))
+                    && (item.getPatternIndex() == patternIndex))
                 return (MatchedRange)item;
-        if (patternIndex >= numberOfPatterns)
-            throw new IllegalArgumentException("Trying to get pattern index " + patternIndex + ", maximum allowed is "
+        if ((patternIndex >= numberOfPatterns) || (patternIndex < 0))
+            throw new IndexOutOfBoundsException("Trying to get pattern index " + patternIndex + ", maximum allowed is "
                 + (numberOfPatterns - 1));
         else
             throw new IllegalStateException("matchedItems doesn't contain item with index " + patternIndex
