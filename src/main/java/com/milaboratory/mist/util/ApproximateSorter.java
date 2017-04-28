@@ -184,7 +184,7 @@ public abstract class ApproximateSorter {
      */
     protected IncompatibleIndexes findIncompatibleIndexes(Match[] matches, int[] indexes) {
         if (matches.length != indexes.length)
-            throw new IllegalStateException("matches length is " + matches.length + ", indexes length is "
+            throw new IllegalArgumentException("matches length is " + matches.length + ", indexes length is "
                 + indexes.length + "; they must be equal!");
 
         IncompatibleIndexes result = null;
@@ -326,7 +326,7 @@ public abstract class ApproximateSorter {
 
         boolean isCombinationReturned(int... indexes) {
             if (indexes.length != numberOfPorts)
-                throw new IllegalStateException("Number of indexes: " + indexes.length + ", number of ports: "
+                throw new IllegalArgumentException("Number of indexes: " + indexes.length + ", number of ports: "
                     + numberOfPorts + "; they should be equal!");
             return returnedCombinations.contains(new ArrayList<Integer>() {{ for (int i : indexes) add(i); }});
         }

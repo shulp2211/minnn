@@ -52,7 +52,7 @@ public class AndPatternTest {
         assertEquals(new Range(11, 21), andPattern2.match(nseq1, new Range(1, 21)).getBestMatch().getRange());
         assertEquals(null, andPattern2.match(nseq1, new Range(11, 20)).getBestMatch());
 
-        exception.expect(IllegalStateException.class);
+        exception.expect(IllegalArgumentException.class);
         andPattern5.match(nseq1).getBestMatch();
     }
 

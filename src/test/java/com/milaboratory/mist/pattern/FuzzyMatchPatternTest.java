@@ -170,7 +170,7 @@ public class FuzzyMatchPatternTest {
         assertEquals(26, result.getMatches().take().getMatchedGroupEdge("DEF", false).getPosition());
         assertNull(result.getMatches().take());
 
-        exception.expect(IllegalStateException.class);
+        exception.expect(IllegalArgumentException.class);
         new FuzzyMatchPattern(new NucleotideSequence("GGTGTGTCAC"), groups);
     }
 
@@ -184,7 +184,7 @@ public class FuzzyMatchPatternTest {
             put(new GroupEdge("GH", true), 10);
             put(new GroupEdge("GH", false), 11);
         }};
-        exception.expect(IllegalStateException.class);
+        exception.expect(IllegalArgumentException.class);
         new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groups);
     }
 

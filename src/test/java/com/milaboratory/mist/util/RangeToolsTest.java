@@ -42,7 +42,7 @@ public class RangeToolsTest {
         assertEquals(new Range(2, 13), combineRanges(new Range(2, 13)));
         assertEquals(new Range(3, 10), combineRanges(new Range(5, 10), new Range(8, 10), new Range(3, 6)));
         assertEquals(new Range(0, 20), combineRanges(new Range(0, 2), new Range(17, 20), new Range(10, 14), new Range(6, 11)));
-        exception.expect(IllegalStateException.class);
+        exception.expect(IllegalArgumentException.class);
         combineRanges();
     }
 }

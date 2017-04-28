@@ -197,7 +197,7 @@ public class LogicalOperatorsTest {
         assertEquals("GTTATTACCA", testMatch.getMatchedRange(5).getValue().getSequence().toString());
         assertEquals("GCATAT", testMatch.getMatchedRange(6).getValue().getSequence().toString());
 
-        exception.expect(IllegalStateException.class);
+        exception.expect(IllegalArgumentException.class);
         new NotOperator(orOperatorTrue, orOperatorFalse);
     }
 

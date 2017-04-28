@@ -12,13 +12,13 @@ public class MultiPattern extends MultipleReadsOperator {
         final MatchingResult[] allResults = new MatchingResult[singlePatterns.length];
 
         if (input.numberOfSequences() != ranges.length)
-            throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
+            throw new IllegalArgumentException("Mismatched number of reads (" + input.numberOfSequences()
                     + ") and ranges (" + ranges.length + ")!");
         if (input.numberOfSequences() != reverseComplements.length)
-            throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
+            throw new IllegalArgumentException("Mismatched number of reads (" + input.numberOfSequences()
                     + ") and reverse complement flags (" + reverseComplements.length + ")!");
         if (input.numberOfSequences() != singlePatterns.length)
-            throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
+            throw new IllegalArgumentException("Mismatched number of reads (" + input.numberOfSequences()
                     + ") and patterns (" + singlePatterns.length + ")!");
 
         // fill allResults array, and if at least 1 pattern didn't match, return no results

@@ -34,7 +34,7 @@ public abstract class MultipleReadsOperator extends Pattern {
 
     public MatchingResult match(MultiNSequenceWithQuality input, boolean... reverseComplements) {
         if (input.numberOfSequences() != reverseComplements.length)
-            throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
+            throw new IllegalArgumentException("Mismatched number of reads (" + input.numberOfSequences()
                     + ") and reverse complement flags (" + reverseComplements.length + ")!");
         // for reverse complement reads automatically inverse generated ranges
         return this.match(input, IntStream.range(0, input.numberOfSequences())
@@ -44,7 +44,7 @@ public abstract class MultipleReadsOperator extends Pattern {
 
     public MatchingResult match(MultiNSequenceWithQuality input, Range... ranges) {
         if (input.numberOfSequences() != ranges.length)
-            throw new IllegalStateException("Mismatched number of reads (" + input.numberOfSequences()
+            throw new IllegalArgumentException("Mismatched number of reads (" + input.numberOfSequences()
                     + ") and ranges (" + ranges.length + ")!");
         // if reverseComplements array not provided, match without reverse complements only
         boolean[] reverseComplements = new boolean[ranges.length];

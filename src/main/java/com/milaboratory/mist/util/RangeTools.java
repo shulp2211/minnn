@@ -27,7 +27,7 @@ public class RangeTools {
 
     public static Range combineRanges(Range... ranges) {
         if (ranges.length == 0)
-            throw new IllegalStateException("Cannot combine 0 ranges.");
+            throw new IllegalArgumentException("Cannot combine 0 ranges.");
 
         int lower = ranges[0].getLower();
         int upper = ranges[0].getUpper();

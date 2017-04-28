@@ -33,7 +33,7 @@ public final class Match {
                     && (((MatchedRange)item).getPatternIndex() == patternIndex))
                 return (MatchedRange)item;
         if (patternIndex >= numberOfPatterns)
-            throw new IllegalStateException("Trying to get pattern index " + patternIndex + ", maximum allowed is "
+            throw new IllegalArgumentException("Trying to get pattern index " + patternIndex + ", maximum allowed is "
                 + (numberOfPatterns - 1));
         else
             throw new IllegalStateException("matchedItems doesn't contain item with index " + patternIndex

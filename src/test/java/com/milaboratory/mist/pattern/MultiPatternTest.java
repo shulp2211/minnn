@@ -36,7 +36,7 @@ public class MultiPatternTest {
             }
         };
 
-        exception.expect(IllegalStateException.class);
+        exception.expect(IllegalArgumentException.class);
         multiPattern.match(mseq);
     }
 
@@ -56,7 +56,7 @@ public class MultiPatternTest {
             }
         };
 
-        exception.expect(IllegalStateException.class);
+        exception.expect(IllegalArgumentException.class);
         multiPattern.match(mseq, new Range(0, 2), new Range(2, 3));
     }
 
@@ -76,7 +76,7 @@ public class MultiPatternTest {
             }
         };
 
-        exception.expect(IllegalStateException.class);
+        exception.expect(IllegalArgumentException.class);
         multiPattern.match(mseq, new Range[]{new Range(0, 2)}, new boolean[]{false, false});
     }
 
@@ -96,7 +96,7 @@ public class MultiPatternTest {
             }
         };
 
-        exception.expect(IllegalStateException.class);
+        exception.expect(IllegalArgumentException.class);
         multiPattern.match(mseq, false, false);
     }
 

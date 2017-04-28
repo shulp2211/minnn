@@ -7,7 +7,7 @@ public class NotOperator extends MultipleReadsOperator {
     public NotOperator(MultipleReadsOperator... operandPatterns) {
         super(operandPatterns);
         if (operandPatterns.length != 1)
-            throw new IllegalStateException("Not operator must take exactly 1 argument!");
+            throw new IllegalArgumentException("Not operator must take exactly 1 argument!");
         if (groupEdges.size() > 0)
             throw new IllegalStateException("Not operator must not contain group edges inside!");
     }
