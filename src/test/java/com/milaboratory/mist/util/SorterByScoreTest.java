@@ -5,9 +5,7 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.mist.pattern.*;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.*;
 
@@ -15,9 +13,6 @@ import static com.milaboratory.mist.util.CommonTestTemplates.*;
 import static org.junit.Assert.*;
 
 public class SorterByScoreTest {
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
     @Test
     public void simplePredefinedMatchesTest() throws Exception {
         predefinedMatchesApproximateSorterTest(true, false);
