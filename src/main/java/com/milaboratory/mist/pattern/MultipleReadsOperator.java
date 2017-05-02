@@ -26,43 +26,43 @@ public abstract class MultipleReadsOperator extends Pattern {
     }
 
     @Override
-    public MatchingResult match(MultiNSequenceWithQuality input) {
+    public MatchingResult match(MultiNSequenceWithQuality target) {
         // if ranges array not provided, match in the whole sequences
-        return this.match(input, IntStream.range(0, input.numberOfSequences())
-                .mapToObj(i -> new Range(0, input.get(i).getSequence().size())).toArray(Range[]::new));
+        return this.match(target, IntStream.range(0, target.numberOfSequences())
+                .mapToObj(i -> new Range(0, target.get(i).getSequence().size())).toArray(Range[]::new));
     }
 
-    public MatchingResult match(MultiNSequenceWithQuality input, boolean... reverseComplements) {
-        if (input.numberOfSequences() != reverseComplements.length)
-            throw new IllegalArgumentException("Mismatched number of reads (" + input.numberOfSequences()
+    public MatchingResult match(MultiNSequenceWithQuality target, boolean... reverseComplements) {
+        if (target.numberOfSequences() != reverseComplements.length)
+            throw new IllegalArgumentException("Mismatched number of reads (" + target.numberOfSequences()
                     + ") and reverse complement flags (" + reverseComplements.length + ")!");
         // for reverse complement reads automatically inverse generated ranges
-        return this.match(input, IntStream.range(0, input.numberOfSequences())
-                .mapToObj(i -> new Range(0, input.get(i).getSequence().size(),
+        return this.match(target, IntStream.range(0, target.numberOfSequences())
+                .mapToObj(i -> new Range(0, target.get(i).getSequence().size(),
                         reverseComplements[i])).toArray(Range[]::new), reverseComplements);
     }
 
-    public MatchingResult match(MultiNSequenceWithQuality input, Range... ranges) {
-        if (input.numberOfSequences() != ranges.length)
-            throw new IllegalArgumentException("Mismatched number of reads (" + input.numberOfSequences()
+    public MatchingResult match(MultiNSequenceWithQuality target, Range... ranges) {
+        if (target.numberOfSequences() != ranges.length)
+            throw new IllegalArgumentException("Mismatched number of reads (" + target.numberOfSequences()
                     + ") and ranges (" + ranges.length + ")!");
         // if reverseComplements array not provided, match without reverse complements only
         boolean[] reverseComplements = new boolean[ranges.length];
         for (int i = 0; i < ranges.length; i++)
             reverseComplements[i] = ranges[i].isReverse();
-        return this.match(input, ranges, reverseComplements);
+        return this.match(target, ranges, reverseComplements);
     }
 
     /**
      * Match a group of patterns in a group of reads.
      *
-     * @param input multiple sequences that come from multiple reads
-     * @param ranges ranges for input reads
+     * @param target multiple sequences that come from multiple reads
+     * @param ranges ranges for target reads
      * @param reverseComplements false if non-reversed match, true if reversed complement;
-     *                           one array element for one read in input
+     *                           one array element for one read in target
      * @return matching result
      */
-    public abstract MatchingResult match(MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements);
+    public abstract MatchingResult match(MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements);
 
     @Override
     public ArrayList<GroupEdge> getGroupEdges() {
@@ -74,101 +74,5 @@ public abstract class MultipleReadsOperator extends Pattern {
             groupEdges.addAll(pattern.getGroupEdges());
         if (groupEdges.size() != new HashSet<>(groupEdges).size())
             throw new IllegalStateException("Operands contain equal group edges!");
-    }
-
-    protected Match combineMatches(Match... matches) {
-        ArrayList<MatchedItem> matchedItems = new ArrayList<>();
-
-        int patternIndex = 0;
-        for (Match match : matches) {
-            if (match == null) {
-                matchedItems.add(new NullMatchedRange(patternIndex++));
-                continue;
-            }
-            for (int i = 0; i < match.getNumberOfPatterns(); i++) {
-                MatchedRange currentMatchedRange = match.getMatchedRange(i);
-                if (NullMatchedRange.class.isAssignableFrom(currentMatchedRange.getClass())) {
-                    if (match.getMatchedGroupEdgesByPattern(i).size() > 0)
-                        throw new IllegalStateException("Null pattern contains "
-                                + match.getMatchedGroupEdgesByPattern(i).size() + " group edges");
-                    matchedItems.add(new NullMatchedRange(patternIndex++));
-                } else {
-                    matchedItems.add(new MatchedRange(currentMatchedRange.getTarget(), currentMatchedRange.getTargetId(),
-                            patternIndex, currentMatchedRange.getRange()));
-                    for (MatchedGroupEdge matchedGroupEdge : match.getMatchedGroupEdgesByPattern(i))
-                        matchedItems.add(new MatchedGroupEdge(matchedGroupEdge.getTarget(), matchedGroupEdge.getTargetId(),
-                                patternIndex, matchedGroupEdge.getGroupEdge(), matchedGroupEdge.getPosition()));
-                    patternIndex++;
-                }
-            }
-        }
-        return new Match(patternIndex, combineMatchScores(matches), matchedItems);
-    }
-
-    /**
-     * Get all matches from results, combine them in all combinations and put to allMatches;
-     * and also calculate bestMatch.
-     *
-     * @param results matching results that came from function operands
-     * @param allMatches to this list all generated combinations of matches will be added
-     * @param returnBestMatch true if we need to find and return best match or false if we don't need to search for it
-     * @return best match if found, otherwise null
-     */
-    protected Match findAllMatchesFromMatchingResults(final MatchingResult[] results, ArrayList<Match> allMatches, boolean returnBestMatch) {
-        Match bestMatch = null;
-        ArrayList<ArrayList<Match>> matches = new ArrayList<>();
-        int[] matchArraySizes;
-        int[] innerArrayIndexes;
-        int totalCombinationCount = 1;
-        float bestScore = Float.NEGATIVE_INFINITY;
-        int numOperands = results.length;
-
-        // initialize arrays and get matches for all operands
-        matchArraySizes = new int[numOperands];
-        innerArrayIndexes = new int[numOperands];
-        for (int i = 0; i < numOperands; i++) {
-            matches.add(new ArrayList<>());
-            matchArraySizes[i] = Math.toIntExact(results[i].getMatchesNumber());
-            /* Quick search must be already performed; use 1 "null" match instead of 0 matches;
-               this can appear in "Or" operator or because of "Not" result as operand */
-            if (matchArraySizes[i] == 0) matchArraySizes[i] = 1;
-            totalCombinationCount *= matchArraySizes[i];
-        }
-
-        /* Loop through all combinations, fill allMatches and find bestMatch,
-           or leave bestMatch unchanged if nothing found. */
-        for (int i = 0; i < totalCombinationCount; i++) {
-            Match[] currentMatches = new Match[numOperands];
-            for (int j = 0; j < numOperands; j++) {
-                /* If current array element doesn't exist, we didn't take that match, so let's take it now;
-                   null values are valid here in case of multiple pattern operators */
-                if (innerArrayIndexes[j] == matches.get(j).size())
-                    matches.get(j).add(results[j].getMatches().take());
-                currentMatches[j] = matches.get(j).get(innerArrayIndexes[j]);
-            }
-
-            // null values are valid here in case of multiple pattern operators
-            Match currentMatch = combineMatches(currentMatches);
-            if (returnBestMatch) {
-                float currentSum = combineMatchScores(currentMatches);
-                if (currentSum > bestScore) {
-                    bestMatch = currentMatch;
-                    bestScore = currentSum;
-                }
-            }
-            allMatches.add(currentMatch);
-        }
-
-        // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
-        for (int j = 0; j < numOperands; j++) {
-            if (innerArrayIndexes[j] + 1 < matchArraySizes[j]) {
-                innerArrayIndexes[j]++;
-                break;
-            }
-            // we need to update next index and reset current index to zero
-            innerArrayIndexes[j] = 0;
-        }
-
-        return bestMatch;
     }
 }

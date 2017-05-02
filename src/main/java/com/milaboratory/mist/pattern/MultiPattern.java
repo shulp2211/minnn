@@ -1,78 +1,76 @@
 package com.milaboratory.mist.pattern;
 
+import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
+import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.mist.util.ApproximateSorter;
+import com.milaboratory.mist.util.SorterByCoordinate;
+import com.milaboratory.mist.util.SorterByScore;
+
+import java.util.ArrayList;
 
 public class MultiPattern extends MultipleReadsOperator {
     public MultiPattern(SinglePattern... singlePatterns) {
         super(singlePatterns);
     }
 
-    public MatchingResult match(MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements) {
-        final MatchingResult[] allResults = new MatchingResult[singlePatterns.length];
-
-        if (input.numberOfSequences() != ranges.length)
-            throw new IllegalArgumentException("Mismatched number of reads (" + input.numberOfSequences()
+    @Override
+    public MatchingResult match(MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
+        if (target.numberOfSequences() != ranges.length)
+            throw new IllegalArgumentException("Mismatched number of reads (" + target.numberOfSequences()
                     + ") and ranges (" + ranges.length + ")!");
-        if (input.numberOfSequences() != reverseComplements.length)
-            throw new IllegalArgumentException("Mismatched number of reads (" + input.numberOfSequences()
+        if (target.numberOfSequences() != reverseComplements.length)
+            throw new IllegalArgumentException("Mismatched number of reads (" + target.numberOfSequences()
                     + ") and reverse complement flags (" + reverseComplements.length + ")!");
-        if (input.numberOfSequences() != singlePatterns.length)
-            throw new IllegalArgumentException("Mismatched number of reads (" + input.numberOfSequences()
+        if (target.numberOfSequences() != singlePatterns.length)
+            throw new IllegalArgumentException("Mismatched number of reads (" + target.numberOfSequences()
                     + ") and patterns (" + singlePatterns.length + ")!");
 
-        // fill allResults array, and if at least 1 pattern didn't match, return no results
-        for (int i = 0; i < singlePatterns.length; i++) {
-            MatchingResult currentResult;
-            if (!reverseComplements[i])
-                currentResult = singlePatterns[i].match(input.get(i), ranges[i], (byte) (i + 1));
-            else
-                currentResult = singlePatterns[i].match(input.get(i).getReverseComplement(), ranges[i].inverse(), (byte) (-i - 1));
-            if (!currentResult.isFound())
-                return new SimpleMatchingResult();
-            allResults[i] = currentResult;
-        }
-
-        final MultiPatternMatchesSearch matchesSearch = new MultiPatternMatchesSearch(allResults);
-        final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
-        final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
-
-        return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
+        return new MultiPatternMatchingResult(singlePatterns, target, ranges, reverseComplements);
     }
 
-    private final class MultiPatternMatchesSearch extends MatchesSearchWithQuickBestMatch {
-        private final MatchingResult[] matchingResults;
+    private static class MultiPatternMatchingResult extends MatchingResult {
+        private final SinglePattern[] singlePatterns;
+        private final MultiNSequenceWithQuality target;
+        private final Range[] ranges;
+        private final boolean[] reverseComplements;
 
-        MultiPatternMatchesSearch(MatchingResult... matchingResults) {
-            this.matchingResults = matchingResults;
-            // if there are no matches, we should already return empty MatchingResult
-            quickSearchPerformed = true;
-            matchFound = true;
+        MultiPatternMatchingResult(SinglePattern[] singlePatterns,
+                                  MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
+            this.singlePatterns = singlePatterns;
+            this.target = target;
+            this.ranges = ranges;
+            this.reverseComplements = reverseComplements;
         }
 
         @Override
-        protected void performSearch(boolean quickSearch) {
-            /* Search for all matches and for best match if not already searched;
-               found matches will be added to allMatches list */
-            Match returnedBestMatch = findAllMatchesFromMatchingResults(matchingResults, allMatches, !quickBestMatchSearchPerformed);
-            if (!quickBestMatchSearchPerformed) bestMatch = returnedBestMatch;
+        public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
+            ArrayList<OutputPort<Match>> operandPorts = new ArrayList<>();
+            NSequenceWithQuality currentTarget;
+            byte currentTargetId;
+            ApproximateSorter sorter;
 
-            quickBestMatchFound = true;
-            quickBestMatchSearchPerformed = true;
-            fullSearchPerformed = true;
-        }
+            for (int patternIndex = 0; patternIndex < singlePatterns.length; patternIndex++) {
+                if (reverseComplements[patternIndex]) {
+                    currentTarget = target.get(patternIndex).getReverseComplement();
+                    currentTargetId = (byte) (-patternIndex - 1);
+                } else {
+                    currentTarget = target.get(patternIndex);
+                    currentTargetId = (byte) (patternIndex + 1);
+                }
+                operandPorts.add(singlePatterns[patternIndex].match(currentTarget, ranges[patternIndex], currentTargetId)
+                        .getMatches(byScore, fairSorting));
+            }
 
-        @Override
-        protected void performQuickBestMatchSearch() {
-            final Match[] bestMatches = new Match[singlePatterns.length];
+            if (byScore)
+                sorter = new SorterByScore(true, false, true,
+                        fairSorting, MatchValidationType.ALWAYS);
+            else
+                sorter = new SorterByCoordinate(true, false, true,
+                        fairSorting, MatchValidationType.ALWAYS);
 
-            for (int i = 0; i < singlePatterns.length; i++)
-                bestMatches[i] = matchingResults[i].getBestMatch();
-
-            bestMatch = combineMatches(bestMatches);
-
-            quickBestMatchFound = true;
-            quickBestMatchSearchPerformed = true;
+            return sorter.getOutputPort(operandPorts);
         }
     }
 }

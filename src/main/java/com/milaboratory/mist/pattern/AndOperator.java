@@ -1,7 +1,13 @@
 package com.milaboratory.mist.pattern;
 
+import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
+import com.milaboratory.mist.util.ApproximateSorter;
+import com.milaboratory.mist.util.SorterByCoordinate;
+import com.milaboratory.mist.util.SorterByScore;
+
+import java.util.ArrayList;
 
 public class AndOperator extends MultipleReadsOperator {
     public AndOperator(MultipleReadsOperator... operandPatterns) {
@@ -9,80 +15,40 @@ public class AndOperator extends MultipleReadsOperator {
     }
 
     @Override
-    public MatchingResult match(MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements) {
-        final AndOperatorMatchesSearch matchesSearch = new AndOperatorMatchesSearch(operandPatterns, input, ranges, reverseComplements);
-        final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
-        final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
-
-        return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
+    public MatchingResult match(MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
+        return new AndOperatorMatchingResult(operandPatterns, target, ranges, reverseComplements);
     }
 
-    private final class AndOperatorMatchesSearch extends MatchesSearchWithQuickBestMatch {
+    private static class AndOperatorMatchingResult extends MatchingResult {
         private final MultipleReadsOperator[] operandPatterns;
+        private final MultiNSequenceWithQuality target;
         private final Range[] ranges;
         private final boolean[] reverseComplements;
-        private final MultiNSequenceWithQuality input;
 
-        AndOperatorMatchesSearch(MultipleReadsOperator[] operandPatterns, MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements) {
+        AndOperatorMatchingResult(MultipleReadsOperator[] operandPatterns,
+                                  MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
             this.operandPatterns = operandPatterns;
+            this.target = target;
             this.ranges = ranges;
             this.reverseComplements = reverseComplements;
-            this.input = input;
         }
 
         @Override
-        protected void performSearch(boolean quickSearch) {
-            MatchingResult[] matchingResults = new MatchingResult[operandPatterns.length];
+        public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
+            ArrayList<OutputPort<Match>> operandPorts = new ArrayList<>();
+            ApproximateSorter sorter;
 
-            matchFound = true;
-            for (int i = 0; i < operandPatterns.length; i++) {
-                matchingResults[i] = operandPatterns[i].match(input, ranges, reverseComplements);
-                if (!matchingResults[i].isFound()) {
-                    matchFound = false;
-                    quickSearchPerformed = true;
-                    return;
-                }
-            }
+            for (MultipleReadsOperator operandPattern : operandPatterns)
+                operandPorts.add(operandPattern.match(target, ranges, reverseComplements).getMatches(byScore, fairSorting));
 
-            quickSearchPerformed = true;
-            matchFound = true;
-            if (quickSearch) return;
+            if (byScore)
+                sorter = new SorterByScore(true, true, true,
+                        fairSorting, MatchValidationType.ALWAYS);
+            else
+                sorter = new SorterByCoordinate(true, true, true,
+                        fairSorting, MatchValidationType.ALWAYS);
 
-            /* Search for all matches and for best match if not already searched;
-               found matches will be added to allMatches list */
-            Match returnedBestMatch = findAllMatchesFromMatchingResults(matchingResults, allMatches, !quickBestMatchSearchPerformed);
-            if (!quickBestMatchSearchPerformed) bestMatch = returnedBestMatch;
-
-            quickBestMatchSearchPerformed = true;
-            fullSearchPerformed = true;
-            quickBestMatchFound = (bestMatch != null);
-        }
-
-        @Override
-        protected void performQuickBestMatchSearch() {
-            final Match[] bestMatches = new Match[operandPatterns.length];
-
-            for (int i = 0; i < operandPatterns.length; i++) {
-                MatchingResult currentResult = operandPatterns[i].match(input, ranges, reverseComplements);
-                if (!quickSearchPerformed)
-                    if (!currentResult.isFound()) {
-                        quickSearchPerformed = true;
-                        quickBestMatchSearchPerformed = true;
-                        matchFound = false;
-                        quickBestMatchFound = false;
-                        return;
-                    }
-
-                // null values are valid here
-                bestMatches[i] = currentResult.getBestMatch();
-            }
-
-            bestMatch = combineMatches(bestMatches);
-
-            quickSearchPerformed = true;
-            quickBestMatchSearchPerformed = true;
-            matchFound = true;
-            quickBestMatchFound = (bestMatch != null);
+            return sorter.getOutputPort(operandPorts);
         }
     }
 }

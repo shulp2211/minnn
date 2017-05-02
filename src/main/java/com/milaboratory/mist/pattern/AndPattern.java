@@ -1,12 +1,12 @@
 package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
-import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.mist.util.ApproximateSorter;
+import com.milaboratory.mist.util.SorterByCoordinate;
+import com.milaboratory.mist.util.SorterByScore;
 
 import java.util.ArrayList;
-
-import static com.milaboratory.mist.util.RangeTools.checkRangesIntersection;
 
 public class AndPattern extends MultiplePatternsOperator {
     public AndPattern(SinglePattern... operandPatterns) {
@@ -14,133 +14,41 @@ public class AndPattern extends MultiplePatternsOperator {
     }
 
     @Override
-    public MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId) {
-        final AndMatchesSearch matchesSearch = new AndMatchesSearch(operandPatterns, input, from, to, targetId);
-        final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
-        final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
-
-        // If one pattern doesn't match, AndPattern doesn't match
-        for (SinglePattern operandPattern : operandPatterns) {
-            MatchingResult result = operandPattern.match(input, from, to, targetId);
-            if (!result.isFound())
-                return new SimpleMatchingResult();
-        }
-
-        return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
+    public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
+        return new AndPatternMatchingResult(operandPatterns, target, from, to, targetId);
     }
 
-    private final class AndMatchesSearch extends MatchesSearchWithQuickBestMatch {
+    private static class AndPatternMatchingResult extends MatchingResult {
         private final SinglePattern[] operandPatterns;
-        private final NSequenceWithQuality input;
+        private final NSequenceWithQuality target;
         private final int from;
         private final int to;
         private final byte targetId;
-        private ArrayList<ArrayList<Match>> matches = new ArrayList<>();
-        private ArrayList<OutputPort<Match>> matchOutputPorts = new ArrayList<>();
-        private MatchingResult[] matchingResults;
-        private int[] matchArraySizes;
-        private int[] innerArrayIndexes;
-        private int totalCombinationCount = 1;
 
-        AndMatchesSearch(SinglePattern[] operandPatterns, NSequenceWithQuality input, int from, int to, byte targetId) {
+        AndPatternMatchingResult(SinglePattern[] operandPatterns, NSequenceWithQuality target, int from, int to, byte targetId) {
             this.operandPatterns = operandPatterns;
-            this.input = input;
+            this.target = target;
             this.from = from;
             this.to = to;
             this.targetId = targetId;
         }
 
         @Override
-        protected void performSearch(boolean quickSearch) {
-            float bestScore = Float.NEGATIVE_INFINITY;
-            int numOperands = operandPatterns.length;
+        public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
+            ArrayList<OutputPort<Match>> operandPorts = new ArrayList<>();
+            ApproximateSorter sorter;
 
-            // initialize arrays and get matches for all operands
-            if (!quickSearchPerformed) {
-                matchingResults = new MatchingResult[numOperands];
-                matchArraySizes = new int[numOperands];
-                innerArrayIndexes = new int[numOperands];
-                for (int i = 0; i < numOperands; i++) {
-                    matches.add(new ArrayList<>());
-                    matchingResults[i] = operandPatterns[i].match(input, from, to, targetId);
-                    matchArraySizes[i] = Math.toIntExact(matchingResults[i].getMatchesNumber());
-                    matchOutputPorts.add(matchingResults[i].getMatches());
-                    totalCombinationCount *= matchArraySizes[i];
-                }
-            }
+            for (SinglePattern operandPattern : operandPatterns)
+                operandPorts.add(operandPattern.match(target, from, to, targetId).getMatches(byScore, fairSorting));
 
-            /* Loop through all combinations, fill allMatches and find bestMatch,
-               or leave bestMatch = null if nothing found */
-            for (int i = 0; i < totalCombinationCount; i++) {
-                Match[] currentMatches = new Match[numOperands];
-                Range[] currentRanges = new Range[numOperands];
-                for (int j = 0; j < numOperands; j++) {
-                    // if current array element doesn't exist, we didn't take that match, so let's take it now
-                    if (innerArrayIndexes[j] == matches.get(j).size())
-                        matches.get(j).add(matchOutputPorts.get(j).take());
-                    currentMatches[j] = matches.get(j).get(innerArrayIndexes[j]);
-                    currentRanges[j] = currentMatches[j].getRange();
-                }
-                if (!checkRangesIntersection(currentRanges)) {
-                    matchFound = true;
-                    // for quick search stop on first found valid match
-                    if (quickSearch) {
-                        quickSearchPerformed = true;
-                        return;
-                    }
-                    Match currentMatch = combineMatches(input, targetId, currentMatches);
-                    if (!quickBestMatchFound) {
-                        float currentSum = combineMatchScores(currentMatches);
-                        if (currentSum > bestScore) {
-                            bestMatch = currentMatch;
-                            bestScore = currentSum;
-                        }
-                    }
-                    allMatches.add(currentMatch);
-                }
+            if (byScore)
+                sorter = new SorterByScore(false, false, true,
+                        fairSorting, MatchValidationType.INTERSECTION);
+            else
+                sorter = new SorterByCoordinate(false, false, true,
+                        fairSorting, MatchValidationType.INTERSECTION);
 
-                // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
-                for (int j = 0; j < numOperands; j++) {
-                    if (innerArrayIndexes[j] + 1 < matchArraySizes[j]) {
-                        innerArrayIndexes[j]++;
-                        break;
-                    }
-                    // we need to update next index and reset current index to zero
-                    innerArrayIndexes[j] = 0;
-                }
-            }
-
-            quickSearchPerformed = true;
-            quickBestMatchSearchPerformed = true;
-            fullSearchPerformed = true;
-        }
-
-        @Override
-        protected void performQuickBestMatchSearch() {
-            final Match[] bestMatches = new Match[operandPatterns.length];
-            final Range[] bestMatchRanges = new Range[operandPatterns.length];
-            boolean rangeIntersection = false;
-
-            OUTER:
-            for (int patternNumber = 0; patternNumber < operandPatterns.length; patternNumber++) {
-                bestMatches[patternNumber] = operandPatterns[patternNumber].match(input, from, to, targetId).getBestMatch();
-                Range currentRange = bestMatches[patternNumber].getRange();
-                bestMatchRanges[patternNumber] = currentRange;
-                for (int i = 0; i < patternNumber; i++)  // Compare with all previously added matches
-                    if (bestMatchRanges[i].intersectsWith(currentRange)) {
-                        rangeIntersection = true;
-                        break OUTER;
-                    }
-            }
-
-            if (!rangeIntersection) {
-                quickBestMatchFound = true;
-                quickSearchPerformed = true;
-                matchFound = true;
-                bestMatch = combineMatches(input, targetId, bestMatches);
-            }
-
-            quickBestMatchSearchPerformed = true;
+            return sorter.getOutputPort(operandPorts);
         }
     }
 }

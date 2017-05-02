@@ -1,16 +1,17 @@
 package com.milaboratory.mist.pattern;
 
+import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.alignment.Alignment;
 import com.milaboratory.core.alignment.BandedLinearAligner;
 import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
 import com.milaboratory.core.motif.BitapMatcher;
+import com.milaboratory.core.motif.BitapPattern;
 import com.milaboratory.core.motif.Motif;
-import com.milaboratory.core.sequence.*;
+import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.core.sequence.NucleotideSequence;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class FuzzyMatchPattern extends SinglePattern {
     private final NucleotideSequence patternSeq;
@@ -57,104 +58,310 @@ public class FuzzyMatchPattern extends SinglePattern {
         return new ArrayList<>(groupEdges.keySet());
     }
 
-    /**
-     * Get matching result.
-     *
-     * @param input    target sequence
-     * @param from     starting point in target sequence (inclusive)
-     * @param to       ending point in target sequence (exclusive)
-     * @param targetId number of read where sequence is matched
-     * @return matching result
-     */
     @Override
-    public MatchingResult match(NSequenceWithQuality input, int from, int to, byte targetId) {
-        final FuzzyMatchesSearch matchesSearch = new FuzzyMatchesSearch(patternSeq, motif, groupEdges, maxErrors,
-                input, from, to, targetId);
-        final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
-        final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
-
-        return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
+    public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
+        return new FuzzyMatchingResult(patternSeq, motif, groupEdges, maxErrors, target, from, to, targetId);
     }
 
-    private final static class FuzzyMatchesSearch extends MatchesSearch {
+    private static class FuzzyMatchingResult extends MatchingResult {
         private final NucleotideSequence patternSeq;
         private final Motif<NucleotideSequence> motif;
         private final Map<GroupEdge, Integer> groupEdges;
         private final int maxErrors;
-        private final NSequenceWithQuality input;
+        private final NSequenceWithQuality target;
         private final int from;
         private final int to;
         private final byte targetId;
 
-        FuzzyMatchesSearch(NucleotideSequence patternSeq, Motif<NucleotideSequence> motif, Map<GroupEdge, Integer> groupEdges,
-                           int maxErrors, NSequenceWithQuality input, int from, int to, byte targetId) {
+        FuzzyMatchingResult(NucleotideSequence patternSeq, Motif<NucleotideSequence> motif,
+                            Map<GroupEdge, Integer> groupEdges, int maxErrors,
+                            NSequenceWithQuality target, int from, int to, byte targetId) {
             this.patternSeq = patternSeq;
             this.motif = motif;
             this.groupEdges = groupEdges;
             this.maxErrors = maxErrors;
-            this.input = input;
+            this.target = target;
             this.from = from;
             this.to = to;
             this.targetId = targetId;
         }
 
         @Override
-        protected void performSearch(boolean quickSearch) {
-            BitapMatcher matcher = motif.getBitapPattern().substitutionAndIndelMatcherLast(maxErrors, input.getSequence(), from, to);
-            int matchLastPosition;
-            float bestScore = Float.NEGATIVE_INFINITY;
-
-            do {
-                matchLastPosition = matcher.findNext();
-                if (matchLastPosition != -1) {
-                    matchFound = true;
-                    // for quick search stop on first found valid match
-                    if (quickSearch) {
-                        quickSearchPerformed = true;
-                        return;
-                    }
-
-                    Alignment<NucleotideSequence> alignment = getMatchWithAligner(matchLastPosition, maxErrors);
-                    Range foundRange = alignment.getSequence2Range();
-                    float foundScore = alignment.getScore();
-                    MatchedRange matchedRange = new MatchedRange(input, targetId, 0, foundRange);
-                    ArrayList<MatchedItem> matchedItems = new ArrayList<MatchedItem>() {{ add(matchedRange); }};
-
-                    for (Map.Entry<GroupEdge, Integer> groupEdge : groupEdges.entrySet()) {
-                        MatchedGroupEdge matchedGroupEdge = new MatchedGroupEdge(input, targetId, 0,
-                                groupEdge.getKey(), groupEdge.getValue() + foundRange.getLower());
-                        matchedItems.add(matchedGroupEdge);
-                    }
-
-                    Match currentMatch = new Match(1, foundScore, matchedItems);
-                    allMatches.add(currentMatch);
-                    if (foundScore > bestScore) {
-                        bestMatch = currentMatch;
-                        bestScore = foundScore;
-                    }
-                }
-            } while (matchLastPosition != -1);
-
-            quickSearchPerformed = true;
-            fullSearchPerformed = true;
+        public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
+            return new FuzzyMatchOutputPort(patternSeq, motif, groupEdges, maxErrors, target, from, to, targetId,
+                    byScore, fairSorting);
         }
 
-        /**
-         * After searching with bitap, perform alignment for precise search.
-         *
-         * @param matchLastPosition match last letter position for aligner (inclusive)
-         * @return best found alignment
-         */
-        private Alignment<NucleotideSequence> getMatchWithAligner(int matchLastPosition, int maxErrors) {
-            int firstPostition = matchLastPosition + 1 - patternSeq.size() - maxErrors;
-            int addedLength = maxErrors;    // number of nucleotides added to the left in target
-            if (firstPostition < 0) {
-                firstPostition = 0;
-                addedLength = matchLastPosition - patternSeq.size() + 1;
+        private static class FuzzyMatchOutputPort implements OutputPort<Match> {
+            private final NucleotideSequence patternSeq;
+            private final Map<GroupEdge, Integer> groupEdges;
+            private final int maxErrors;
+            private final NSequenceWithQuality target;
+            private final int from;
+            private final int to;
+            private final byte targetId;
+            private final boolean byScore;
+            private final boolean fairSorting;
+            private final BitapPattern bitapPattern;
+            private final BitapMatcher[] bitapMatchers;
+
+            /**
+             * Data structures used only for fair sorting.
+             */
+            private Match[] allMatches;
+            private HashSet<Range> uniqueRanges;
+            private boolean sortingPerformed = false;
+            private int takenValues = 0;
+
+            /**
+             * Used only for unfair sorting. Saved last found position, so the next position must be bigger than this.
+             */
+            private int lastFoundPosition = 0;
+
+            /**
+             * Used only in takeUnfairByScore(). Current number of bitap errors get matches with this number of errors.
+             */
+            private int currentNumBitapErrors = 0;
+
+            /**
+             * Used only in takeUnfairByScore(). Already returned positions saved to skip them when searching with
+             * bigger number of errors.
+             */
+            private HashSet<Integer> alreadyReturnedPositions;
+
+            FuzzyMatchOutputPort(NucleotideSequence patternSeq, Motif<NucleotideSequence> motif,
+                                 Map<GroupEdge, Integer> groupEdges, int maxErrors,
+                                 NSequenceWithQuality target, int from, int to, byte targetId,
+                                 boolean byScore, boolean fairSorting) {
+                this.patternSeq = patternSeq;
+                this.groupEdges = groupEdges;
+                this.maxErrors = maxErrors;
+                this.target = target;
+                this.from = from;
+                this.to = to;
+                this.targetId = targetId;
+                this.byScore = byScore;
+                this.fairSorting = fairSorting;
+                this.bitapPattern = motif.getBitapPattern();
+                this.bitapMatchers = new BitapMatcher[maxErrors + 1];
+                for (int bitapMaxErrors = 0; bitapMaxErrors <= maxErrors; bitapMaxErrors++)
+                    resetBitapMatcher(bitapMaxErrors);
+                if (fairSorting)
+                    uniqueRanges = new HashSet<>();
+                else if (byScore)
+                    alreadyReturnedPositions = new HashSet<>();
             }
-            return BandedLinearAligner.alignLeftAdded(LinearGapAlignmentScoring.getNucleotideBLASTScoring(),
-                    patternSeq, input.getSequence(), 0, patternSeq.size(), 0,
-                    firstPostition, patternSeq.size() + addedLength, addedLength * 2, maxErrors);
+
+            @Override
+            public Match take() {
+                Match match;
+                if (fairSorting)
+                    if (byScore) match = takeFairByScore();
+                    else match = takeFairByCoordinate();
+                else
+                    if (byScore) match = takeUnfairByScore();
+                    else match = takeUnfairByCoordinate();
+
+                return match;
+            }
+
+            private Match takeUnfairByScore() {
+                int position;
+
+                do {
+                    position = bitapMatchers[currentNumBitapErrors].findNext();
+                    if (position == -1) {
+                        if (currentNumBitapErrors == maxErrors)
+                            return null;
+                        resetBitapMatcher(currentNumBitapErrors);
+                        currentNumBitapErrors++;
+                        lastFoundPosition = 0;
+                        continue;
+                    }
+                    if (isBadMatch(position)) {
+                        if (lastFoundPosition < position) lastFoundPosition = position;
+                        continue;
+                    }
+
+                    position = bitapMatchWithFewestErrors(position);
+
+                    if (alreadyReturnedPositions.contains(position)) {
+                        // this will also prevent the loop from exiting, so it will search for the next match
+                        if (lastFoundPosition < position)
+                            lastFoundPosition = position;
+                    } else
+                        alreadyReturnedPositions.add(position);
+                } while (position <= lastFoundPosition);
+                lastFoundPosition = position;
+
+                return generateMatch(getAlignment(position));
+            }
+
+            private Match takeUnfairByCoordinate() {
+                int position;
+
+                do {
+                    position = bitapMatchers[maxErrors].findNext();
+                    if (position == -1)
+                        return null;
+                    if (isBadMatch(position)) {
+                        if (lastFoundPosition < position) lastFoundPosition = position;
+                        continue;
+                    }
+                    position = bitapMatchWithFewestErrors(position);
+                } while (position <= lastFoundPosition);
+                lastFoundPosition = position;
+
+                return generateMatch(getAlignment(position));
+            }
+
+            private Match takeFairByScore() {
+                if (!sortingPerformed) {
+                    fillAllMatchesForFairSorting();
+                    Arrays.sort(allMatches, Comparator.comparingDouble(Match::getScore).reversed());
+                    sortingPerformed = true;
+                }
+
+                if (takenValues == allMatches.length) return null;
+                return allMatches[takenValues++];
+            }
+
+            private Match takeFairByCoordinate() {
+                if (!sortingPerformed) {
+                    fillAllMatchesForFairSorting();
+                    Arrays.sort(allMatches, Comparator.comparingInt(match -> match.getRange().getLower()));
+                    sortingPerformed = true;
+                }
+
+                if (takenValues == allMatches.length) return null;
+                return allMatches[takenValues++];
+            }
+
+            /**
+             * Find match with lowest number of errors from a group of consequent bitap matches.
+             *
+             * @param foundPosition first found position, which treated as worst match in a group of consequent
+             *                      matches where error for next match must be smaller than for previous
+             * @return position of best match in this group of consequent matches
+             */
+            private int bitapMatchWithFewestErrors(int foundPosition) {
+                int currentPosition = foundPosition;
+
+                while (true) {
+                    currentPosition++;
+                    if (getNumberOfErrorsForPosition(currentPosition) >= getNumberOfErrorsForPosition(currentPosition - 1))
+                        return currentPosition - 1;
+                }
+            }
+
+            /**
+             * Returns true if match in found position has more errors than in previous position; otherwise false.
+             *
+             * @param position position of the match to test
+             * @return true if this match is bad and should be skipped
+             */
+            private boolean isBadMatch(int position) {
+                return (position != 0)
+                        && (getNumberOfErrorsForPosition(position) - getNumberOfErrorsForPosition(position - 1) > 0);
+            }
+
+            /**
+             * Returns minimal number of errors for specified position when bitap still finds this position.
+             * If this number of errors is bigger than maxErrors, it returns Integer.MAX_VALUE.
+             *
+             * @param position position to test for number of errors
+             * @return minimal number of errors for specified position when bitap still finds this position
+             */
+            private int getNumberOfErrorsForPosition(int position) {
+                int currentPosition;
+
+                for (int bitapMaxErrors = 0; bitapMaxErrors <= maxErrors; bitapMaxErrors++)
+                    while (true) {
+                        currentPosition = bitapMatchers[bitapMaxErrors].findNext();
+                        if ((currentPosition == -1) || (currentPosition > position)) {
+                            resetBitapMatcher(bitapMaxErrors);
+                            break;
+                        }
+                        if (currentPosition == position) {
+                            resetBitapMatcher(bitapMaxErrors);
+                            return bitapMaxErrors;
+                        }
+                    }
+
+                return Integer.MAX_VALUE;
+            }
+
+            /**
+             * (Re)initialize bitap matcher for specified number of errors.
+             *
+             * @param bitapMaxErrors maximum number of errors for this matcher
+             */
+            private void resetBitapMatcher(int bitapMaxErrors) {
+                bitapMatchers[bitapMaxErrors] = bitapPattern.substitutionAndIndelMatcherLast(bitapMaxErrors,
+                        target.getSequence(), from, to);
+            }
+
+            /**
+             * After searching with bitap, perform alignment for precise search.
+             *
+             * @param matchLastPosition match last letter position for aligner (inclusive)
+             * @return best found alignment
+             */
+            private Alignment<NucleotideSequence> getAlignment(int matchLastPosition) {
+                int firstPostition = matchLastPosition + 1 - patternSeq.size() - maxErrors;
+                int addedLength = maxErrors;    // number of nucleotides added to the left in target
+                if (firstPostition < 0) {
+                    firstPostition = 0;
+                    addedLength = matchLastPosition - patternSeq.size() + 1;
+                }
+                return BandedLinearAligner.alignLeftAdded(LinearGapAlignmentScoring.getNucleotideBLASTScoring(),
+                        patternSeq, target.getSequence(), 0, patternSeq.size(), 0,
+                        firstPostition, patternSeq.size() + addedLength, addedLength * 2, maxErrors);
+            }
+
+            /**
+             * Generate match from alignment.
+             *
+             * @param alignment alignment returned from getAlignment function
+             * @return generated match
+             */
+            private Match generateMatch(Alignment<NucleotideSequence> alignment) {
+                Range foundRange = alignment.getSequence2Range();
+                float foundScore = alignment.getScore();
+                MatchedRange matchedRange = new MatchedRange(target, targetId, 0, foundRange);
+                ArrayList<MatchedItem> matchedItems = new ArrayList<MatchedItem>() {{ add(matchedRange); }};
+
+                for (Map.Entry<GroupEdge, Integer> groupEdge : groupEdges.entrySet()) {
+                    MatchedGroupEdge matchedGroupEdge = new MatchedGroupEdge(target, targetId, 0,
+                            groupEdge.getKey(), groupEdge.getValue() + foundRange.getLower());
+                    matchedItems.add(matchedGroupEdge);
+                }
+
+                return new Match(1, foundScore, matchedItems);
+            }
+
+            /**
+             * Fill allMatches array with all existing matches for fair sorting.
+             */
+            private void fillAllMatchesForFairSorting() {
+                ArrayList<Match> allMatchesList = new ArrayList<>();
+                Alignment<NucleotideSequence> alignment;
+                int matchLastPosition;
+
+                do {
+                    matchLastPosition = bitapMatchers[maxErrors].findNext();
+                    if (matchLastPosition != -1) {
+                        alignment = getAlignment(matchLastPosition);
+                        if (!uniqueRanges.contains(alignment.getSequence2Range())) {
+                            uniqueRanges.add(alignment.getSequence2Range());
+                            allMatchesList.add(generateMatch(alignment));
+                        }
+                    }
+                } while (matchLastPosition != -1);
+
+                allMatches = new Match[allMatchesList.size()];
+                allMatchesList.toArray(allMatches);
+            }
         }
     }
 }

@@ -1,9 +1,14 @@
 package com.milaboratory.mist.pattern;
 
+import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 
+import java.util.ArrayList;
+
 public class NotOperator extends MultipleReadsOperator {
+    public static final float NOT_RESULT_SCORE = 0;
+
     public NotOperator(MultipleReadsOperator... operandPatterns) {
         super(operandPatterns);
         if (operandPatterns.length != 1)
@@ -13,32 +18,50 @@ public class NotOperator extends MultipleReadsOperator {
     }
 
     @Override
-    public MatchingResult match(MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements) {
-        final NotOperatorMatchesSearch matchesSearch = new NotOperatorMatchesSearch(operandPatterns, input, ranges, reverseComplements);
-        final MatchesOutputPort allMatchesByScore = new MatchesOutputPort(matchesSearch, true);
-        final MatchesOutputPort allMatchesByCoordinate = new MatchesOutputPort(matchesSearch, false);
-
-        return new SimpleMatchingResult(allMatchesByScore, allMatchesByCoordinate);
+    public MatchingResult match(MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
+        return new NotOperatorMatchingResult(operandPatterns[0], target, ranges, reverseComplements);
     }
 
-    private final class NotOperatorMatchesSearch extends MatchesSearch {
-        private final MultipleReadsOperator[] operandPatterns;
+    private static class NotOperatorMatchingResult extends MatchingResult {
+        private final MultipleReadsOperator operandPattern;
+        private final MultiNSequenceWithQuality target;
         private final Range[] ranges;
         private final boolean[] reverseComplements;
-        private final MultiNSequenceWithQuality input;
 
-        NotOperatorMatchesSearch(MultipleReadsOperator[] operandPatterns, MultiNSequenceWithQuality input, Range[] ranges, boolean[] reverseComplements) {
-            this.operandPatterns = operandPatterns;
+        NotOperatorMatchingResult(MultipleReadsOperator operandPattern,
+                                 MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
+            this.operandPattern = operandPattern;
+            this.target = target;
             this.ranges = ranges;
             this.reverseComplements = reverseComplements;
-            this.input = input;
         }
 
         @Override
-        protected void performSearch(boolean quickSearch) {
-            matchFound = !operandPatterns[0].match(input, ranges, reverseComplements).isFound();
-            quickSearchPerformed = true;
-            fullSearchPerformed = true;
+        public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
+            return new NotOperatorOutputPort(operandPattern.match(target, ranges, reverseComplements).getMatches(byScore, fairSorting));
+        }
+
+        private static class NotOperatorOutputPort implements OutputPort<Match> {
+            private final OutputPort<Match> operandPort;
+            private boolean operandChecked = false;
+            private boolean operandIsMatching;
+
+            NotOperatorOutputPort(OutputPort<Match> operandPort) {
+                this.operandPort = operandPort;
+            }
+
+            @Override
+            public Match take() {
+                if (!operandChecked) {
+                    operandIsMatching = (operandPort.take() != null);
+                    operandChecked = true;
+                }
+                if (operandIsMatching)
+                    return null;
+                else
+                    return new Match(1, NOT_RESULT_SCORE, new ArrayList<MatchedItem>() {{
+                        add(new NullMatchedRange(0)); }});
+            }
         }
     }
 }

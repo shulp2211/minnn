@@ -1,11 +1,7 @@
 package com.milaboratory.mist.pattern;
 
-import com.milaboratory.core.Range;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-
-import java.util.*;
-
-import static com.milaboratory.mist.util.RangeTools.combineRanges;
+import java.util.ArrayList;
+import java.util.HashSet;
 
 public abstract class MultiplePatternsOperator extends SinglePattern {
     protected final SinglePattern[] operandPatterns;
@@ -23,18 +19,5 @@ public abstract class MultiplePatternsOperator extends SinglePattern {
     @Override
     public ArrayList<GroupEdge> getGroupEdges() {
         return groupEdges;
-    }
-
-    protected Match combineMatches(NSequenceWithQuality target, byte targetId, Match... matches) {
-        ArrayList<MatchedItem> matchedItems = new ArrayList<>();
-        Range[] ranges = new Range[matches.length];
-
-        for (int i = 0; i < matches.length; i++) {
-            matchedItems.addAll(matches[i].getMatchedGroupEdges());
-            ranges[i] = matches[i].getRange();
-        }
-
-        matchedItems.add(new MatchedRange(target, targetId, 0, combineRanges(ranges)));
-        return new Match(1, combineMatchScores(matches), matchedItems);
     }
 }
