@@ -15,8 +15,10 @@ import static org.junit.Assert.*;
 class CommonTestTemplates {
     static void predefinedMatchesApproximateSorterTest(boolean sortByScore, boolean fairSorting) throws Exception {
         NSequenceWithQuality seqSingle = new NSequenceWithQuality("AATTAAGGCAAA");
-        NSequenceWithQuality seqMulti1 = new NSequenceWithQuality("AATTAAGGCAAA");
-        NSequenceWithQuality seqMulti2 = new NSequenceWithQuality("ATTAGACA");
+        NSequenceWithQuality seqMulti1_1 = new NSequenceWithQuality("AATTAAGGCAAA");
+        NSequenceWithQuality seqMulti1_2 = new NSequenceWithQuality("ATTAGACA");
+        NSequenceWithQuality seqMulti2_1 = new NSequenceWithQuality("ACAATTAGCCA");
+        NSequenceWithQuality seqMulti2_2 = new NSequenceWithQuality("TGGCAGATGCAC");
 
         ArrayList<MatchedItem> testMatchedItemsSingle1 = new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seqSingle, (byte)1, 0, new Range(6, 9)));
@@ -43,32 +45,42 @@ class CommonTestTemplates {
         }};
 
         ArrayList<MatchedItem> testMatchedItemsMulti1 = new ArrayList<MatchedItem>() {{
-            add(new MatchedRange(seqMulti1, (byte)1, 0, new Range(0, 9)));
-            add(new MatchedGroupEdge(seqMulti1, (byte)1, 0, new GroupEdge("0", true), 1));
-            add(new MatchedGroupEdge(seqMulti1, (byte)1, 0, new GroupEdge("0", false), 4));
-            add(new MatchedGroupEdge(seqMulti1, (byte)1, 0, new GroupEdge("1", true), 4));
-            add(new MatchedGroupEdge(seqMulti1, (byte)1, 0, new GroupEdge("1", false), 8));
-            add(new MatchedRange(seqMulti2, (byte)1, 1, new Range(0, 8)));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("2", true), 0));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("2", false), 4));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("3", true), 5));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("3", false), 8));
+            add(new MatchedRange(seqMulti1_1, (byte)1, 0, new Range(0, 9)));
+            add(new MatchedGroupEdge(seqMulti1_1, (byte)1, 0, new GroupEdge("0", true), 1));
+            add(new MatchedGroupEdge(seqMulti1_1, (byte)1, 0, new GroupEdge("0", false), 4));
+            add(new MatchedGroupEdge(seqMulti1_1, (byte)1, 0, new GroupEdge("1", true), 4));
+            add(new MatchedGroupEdge(seqMulti1_1, (byte)1, 0, new GroupEdge("1", false), 8));
+            add(new MatchedRange(seqMulti1_2, (byte)1, 1, new Range(0, 8)));
+            add(new MatchedGroupEdge(seqMulti1_2, (byte)1, 1, new GroupEdge("2", true), 0));
+            add(new MatchedGroupEdge(seqMulti1_2, (byte)1, 1, new GroupEdge("2", false), 4));
+            add(new MatchedGroupEdge(seqMulti1_2, (byte)1, 1, new GroupEdge("3", true), 5));
+            add(new MatchedGroupEdge(seqMulti1_2, (byte)1, 1, new GroupEdge("3", false), 8));
         }};
 
         ArrayList<MatchedItem> testMatchedItemsMulti2 = new ArrayList<MatchedItem>() {{
-            add(new MatchedRange(seqMulti1, (byte)1, 0, new Range(1, 5)));
-            add(new MatchedRange(seqMulti2, (byte)1, 1, new Range(2, 4)));
+            add(new MatchedRange(seqMulti1_1, (byte)1, 0, new Range(1, 5)));
+            add(new MatchedRange(seqMulti1_2, (byte)1, 1, new Range(2, 4)));
         }};
 
         ArrayList<MatchedItem> testMatchedItemsMulti3 = new ArrayList<MatchedItem>() {{
-            add(new MatchedRange(seqMulti1, (byte)1, 0, new Range(4, 6)));
-            add(new MatchedGroupEdge(seqMulti1, (byte)1, 0, new GroupEdge("0", true), 4));
-            add(new MatchedGroupEdge(seqMulti1, (byte)1, 0, new GroupEdge("0", false), 6));
-            add(new MatchedRange(seqMulti2, (byte)1, 1, new Range(1, 8)));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("2", true), 1));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("2", false), 4));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("3", true), 5));
-            add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("3", false), 8));
+            add(new MatchedRange(seqMulti1_1, (byte)1, 0, new Range(4, 6)));
+            add(new MatchedGroupEdge(seqMulti1_1, (byte)1, 0, new GroupEdge("0", true), 4));
+            add(new MatchedGroupEdge(seqMulti1_1, (byte)1, 0, new GroupEdge("0", false), 6));
+            add(new MatchedRange(seqMulti1_2, (byte)1, 1, new Range(1, 8)));
+            add(new MatchedGroupEdge(seqMulti1_2, (byte)1, 1, new GroupEdge("2", true), 1));
+            add(new MatchedGroupEdge(seqMulti1_2, (byte)1, 1, new GroupEdge("2", false), 4));
+            add(new MatchedGroupEdge(seqMulti1_2, (byte)1, 1, new GroupEdge("3", true), 5));
+            add(new MatchedGroupEdge(seqMulti1_2, (byte)1, 1, new GroupEdge("3", false), 8));
+        }};
+
+        ArrayList<MatchedItem> testMatchedItemsMulti4 = new ArrayList<MatchedItem>() {{
+            add(new MatchedRange(seqMulti2_1, (byte)1, 0, new Range(0, 1)));
+            add(new MatchedRange(seqMulti2_2, (byte)-2, 1, new Range(3, 11)));
+        }};
+
+        ArrayList<MatchedItem> testMatchedItemsMulti5 = new ArrayList<MatchedItem>() {{
+            add(new MatchedRange(seqMulti2_1, (byte)1, 0, new Range(2, 3)));
+            add(new MatchedRange(seqMulti2_2, (byte)-2, 1, new Range(3, 11)));
         }};
 
         Match testMatchSingle1 = new Match(1, 10, testMatchedItemsSingle1);
@@ -78,6 +90,8 @@ class CommonTestTemplates {
         Match testMatchMulti1 = new Match(2, 4.0f, testMatchedItemsMulti1);
         Match testMatchMulti2 = new Match(2, 3.9f, testMatchedItemsMulti2);
         Match testMatchMulti3 = new Match(2, 4.0f, testMatchedItemsMulti3);
+        Match testMatchMulti4 = new Match(2, 5.0f, testMatchedItemsMulti4);
+        Match testMatchMulti5 = new Match(2, 5.0f, testMatchedItemsMulti5);
 
         ApproximateSorter sorterSingle1, sorterSingle2, sorterSingle3, sorterSingle4, sorterSingle5;
         ApproximateSorter sorterMulti1, sorterMulti2, sorterMulti3;
@@ -128,6 +142,7 @@ class CommonTestTemplates {
         TestMatchesOutputPort testPortMulti1 = new TestMatchesOutputPort(testMatchMulti1);
         TestMatchesOutputPort testPortMulti2 = new TestMatchesOutputPort(testMatchMulti2, testMatchMulti3, testMatchMulti2);
         TestMatchesOutputPort testPortMulti3 = new TestMatchesOutputPort(testMatchMulti3, testMatchMulti2, testMatchMulti1);
+        TestMatchesOutputPort testPortMulti4 = new TestMatchesOutputPort(testMatchMulti4, testMatchMulti5, testMatchMulti4);
         TestMatchesOutputPort testPortEmpty = new TestMatchesOutputPort();
 
         assertEquals(3, countPortValues(sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
@@ -158,6 +173,8 @@ class CommonTestTemplates {
                 add(testPortMulti1.getCopy()); add(testPortMulti2.getCopy()); }})));
         assertEquals(9, countPortValues(sorterMulti3.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                 add(testPortMulti1.getCopy()); add(testPortMulti2.getCopy()); add(testPortMulti3.getCopy()); }})));
+        assertEquals(3, countPortValues(sorterMulti3.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+                add(testPortMulti4.getCopy()); }})));
 
         if (sortByScore) {
             assertEquals(7, sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{

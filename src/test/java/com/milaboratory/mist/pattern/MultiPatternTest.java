@@ -1,5 +1,6 @@
 package com.milaboratory.mist.pattern;
 
+import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
@@ -138,8 +139,8 @@ public class MultiPatternTest {
                 .getMatches().take().getMatchedRange(2).getValue().getSequence().toString());
         assertNull(multiPattern.match(mseq).getBestMatch());
         assertNotNull(multiPattern.match(mseq, false, true, true).getBestMatch());
-        assertTrue(multiPattern.match(mseq, new Range[]{new Range(0, 11),
-                new Range(0, 10, true), new Range(0, 11, true)}).isFound());
+        assertTrue(multiPattern.match(mseq, new Range(0, 11), new Range(0, 10, true),
+                new Range(0, 11, true)).isFound());
     }
 
     @Test
@@ -211,10 +212,11 @@ public class MultiPatternTest {
             }
         };
         MatchingResult result = multiPattern.match(mseq, false, true);
+        OutputPort<Match> matchOutputPort = result.getMatches();
         assertEquals("ABC", result.getBestMatch().getMatchedGroupEdge("ABC", false).getGroupName());
         assertEquals(11, result.getBestMatch().getMatchedGroupEdge("GH", false).getPosition());
-        assertEquals(1, result.getMatches().take().getMatchedGroupEdge("XYZ", true).getPosition());
-        assertNull(result.getMatches().take());
+        assertEquals(1, matchOutputPort.take().getMatchedGroupEdge("XYZ", true).getPosition());
+        assertNull(matchOutputPort.take());
     }
 
     @Test

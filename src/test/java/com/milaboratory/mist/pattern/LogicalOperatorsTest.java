@@ -1,5 +1,6 @@
 package com.milaboratory.mist.pattern;
 
+import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
@@ -11,6 +12,7 @@ import org.junit.rules.ExpectedException;
 import java.util.HashMap;
 
 import static com.milaboratory.mist.pattern.GroupUtils.getGroupsFromMatch;
+import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
 import static org.junit.Assert.*;
 
 public class LogicalOperatorsTest {
@@ -186,12 +188,12 @@ public class LogicalOperatorsTest {
         assertNotNull(orTrueResultR.getBestMatch());
         assertNotNull(andTrueResultR.getBestMatch());
 
-        assertEquals(0, notTrueResult.getMatchesNumber());
-        assertEquals(0, notFalseResult.getMatchesNumber());
-        assertEquals(0, orFalseResult.getMatchesNumber());
-        assertEquals(0, andFalseResult.getMatchesNumber());
-        assertEquals(1, andTrueResult.getMatchesNumber());
-        assertEquals(1, orTrueResult.getMatchesNumber());
+        assertEquals(0, countMatches(notTrueResult, true));
+        assertEquals(0, countMatches(notFalseResult, true));
+        assertEquals(0, countMatches(orFalseResult, true));
+        assertEquals(0, countMatches(andFalseResult, true));
+        assertEquals(1, countMatches(andTrueResult, true));
+        assertEquals(1, countMatches(orTrueResult, true));
 
         Match testMatch = andTrueResultR.getMatches().take();
         assertEquals("GTTATTACCA", testMatch.getMatchedRange(5).getValue().getSequence().toString());
@@ -326,9 +328,12 @@ public class LogicalOperatorsTest {
             }
         }
 
+        OutputPort<Match> matchOutputPort = result.getMatches();
         for (int i = 0; i < 15; i++)
+            assertNotNull(matchOutputPort.take());
+        assertNull(matchOutputPort.take());
+        for (int i = 0; i < 16; i++)
             assertNotNull(result.getMatches().take());
-        assertNull(result.getMatches().take());
     }
 
     @Test

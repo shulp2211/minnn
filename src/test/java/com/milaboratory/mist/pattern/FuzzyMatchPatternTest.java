@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
 import static org.junit.Assert.*;
 
 public class FuzzyMatchPatternTest {
@@ -40,9 +41,8 @@ public class FuzzyMatchPatternTest {
             assertEquals(new NSequenceWithQuality("ATTAGACA"), result.getBestMatch().getValue());
             assertEquals(nseq, result.getBestMatch().getMatchedRange().getTarget());
             assertEquals(true, result.isFound());
-            assertEquals(1, result.getMatchesNumber());
+            assertEquals(1, countMatches(result, true));
             assertEquals(1, result.getBestMatch().getNumberOfPatterns());
-            assertEquals(result.getBestMatch(), result.getMatches().take());
             assertEquals(1, result.getBestMatch().getMatchedRanges().size());
             assertEquals(0, result.getBestMatch().getMatchedGroupEdges().size());
         }
@@ -62,7 +62,7 @@ public class FuzzyMatchPatternTest {
             assertEquals(null, result.getBestMatch());
             assertEquals(null, result.getMatches().take());
             assertEquals(false, result.isFound());
-            assertEquals(0, result.getMatchesNumber());
+            assertEquals(0, countMatches(result, true));
         }
     }
 
@@ -79,7 +79,7 @@ public class FuzzyMatchPatternTest {
         pattern = new FuzzyMatchPattern(new NucleotideSequence("ATTTTACA"));
         result = pattern.match(nseq, 1, 19, (byte)0);
         assertEquals(false, result.isFound());
-        assertEquals(0, result.getMatchesNumber());
+        assertEquals(0, countMatches(result, true));
     }
 
     @Test
@@ -117,18 +117,18 @@ public class FuzzyMatchPatternTest {
         NSequenceWithQuality nseq = new NSequenceWithQuality("ACTGCGATAAATTAGACATTAGACATTAGACAGTACGTATTAGACA");
         MatchingResult result = pattern.match(nseq);
         Match bestMatch1 = result.getBestMatch();
-        Match firstMatchByScore = result.getMatches(true).take();
+        Match firstMatchByScore = result.getMatches(true, true).take();
         Match bestMatch2 = result.getBestMatch();
-        Match firstMatchByCoordinate = result.getMatches(false).take();
+        Match firstMatchByCoordinate = result.getMatches(false, true).take();
         Match bestMatch3 = result.getBestMatch();
-        assertEquals(bestMatch1, bestMatch2);
-        assertEquals(bestMatch1, bestMatch3);
-        assertEquals(bestMatch1, firstMatchByScore);
-        assertEquals(bestMatch1, firstMatchByCoordinate);
+        assertEquals(bestMatch1.getRange(), bestMatch2.getRange());
+        assertEquals(bestMatch1.getRange(), bestMatch3.getRange());
+        assertEquals(bestMatch1.getRange(), firstMatchByScore.getRange());
+        assertEquals(bestMatch1.getRange(), firstMatchByCoordinate.getRange());
         assertEquals(true, result.isFound());
-        assertEquals(4, result.getMatchesNumber());
+        assertEquals(4, countMatches(result, true));
         result = pattern.match(nseq);
-        OutputPort<Match> matches = result.getMatches(false);
+        OutputPort<Match> matches = result.getMatches(false, true);
         assertEquals(10, matches.take().getRange().getLower());
         assertEquals("ATTAGACA", matches.take().getValue().getSequence().toString());
         assertEquals(24, matches.take().getMatchedRanges().get(0).getRange().getLower());
@@ -165,10 +165,11 @@ public class FuzzyMatchPatternTest {
         FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups);
         NSequenceWithQuality nseq = new NSequenceWithQuality("GTGTTGTGGTTGTGTTGTTGTGGTTGTGTTGTGG");
         MatchingResult result = pattern.match(nseq);
-        assertEquals("GH", result.getMatches().take().getMatchedGroupEdges().get(5).getGroupName());
+        OutputPort<Match> matches = result.getMatches(false, false);
+        assertEquals("GH", matches.take().getMatchedGroupEdges().get(5).getGroupName());
         assertEquals(15, result.getBestMatch().getMatchedGroupEdges().get(4).getPosition());
-        assertEquals(26, result.getMatches().take().getMatchedGroupEdge("DEF", false).getPosition());
-        assertNull(result.getMatches().take());
+        assertEquals(26, matches.take().getMatchedGroupEdge("DEF", false).getPosition());
+        assertNull(matches.take());
 
         exception.expect(IllegalArgumentException.class);
         new FuzzyMatchPattern(new NucleotideSequence("GGTGTGTCAC"), groups);
