@@ -29,6 +29,8 @@ public class SorterByCoordinate extends ApproximateSorter {
     @Override
     public OutputPort<Match> getOutputPort(ArrayList<OutputPort<Match>> inputPorts) {
         int numberOfPorts = inputPorts.size();
+        if (numberOfPorts == 0)
+            throw new IllegalArgumentException("List of input ports is empty!");
         return new MatchesOutputPort(inputPorts, numberOfPorts);
     }
 
