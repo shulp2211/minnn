@@ -103,7 +103,12 @@ public class FuzzyMatchPattern extends SinglePattern {
             private final boolean byScore;
             private final boolean fairSorting;
             private final BitapPattern bitapPattern;
-            private final BitapMatcher[] bitapMatchers;
+            private final BitapMatcher[] bitapMatchersMain;
+
+            /**
+             * Secondary matcher is used in getNumberOfErrorsForPosition() function to avoid resetting main matchers.
+             */
+            private final BitapMatcher[] bitapMatchersSecondary;
 
             /**
              * Data structures used only for fair sorting.
@@ -116,7 +121,7 @@ public class FuzzyMatchPattern extends SinglePattern {
             /**
              * Used only for unfair sorting. Saved last found position, so the next position must be bigger than this.
              */
-            private int lastFoundPosition = 0;
+            private int lastFoundPosition = Integer.MIN_VALUE;
 
             /**
              * Used only in takeUnfairByScore(). Current number of bitap errors get matches with this number of errors.
@@ -143,9 +148,12 @@ public class FuzzyMatchPattern extends SinglePattern {
                 this.byScore = byScore;
                 this.fairSorting = fairSorting;
                 this.bitapPattern = motif.getBitapPattern();
-                this.bitapMatchers = new BitapMatcher[maxErrors + 1];
-                for (int bitapMaxErrors = 0; bitapMaxErrors <= maxErrors; bitapMaxErrors++)
-                    resetBitapMatcher(bitapMaxErrors);
+                this.bitapMatchersMain = new BitapMatcher[maxErrors + 1];
+                this.bitapMatchersSecondary = new BitapMatcher[maxErrors + 1];
+                for (int bitapMaxErrors = 0; bitapMaxErrors <= maxErrors; bitapMaxErrors++) {
+                    resetBitapMatcher(bitapMaxErrors, true);
+                    resetBitapMatcher(bitapMaxErrors, false);
+                }
                 if (fairSorting)
                     uniqueRanges = new HashSet<>();
                 else if (byScore)
@@ -169,13 +177,12 @@ public class FuzzyMatchPattern extends SinglePattern {
                 int position;
 
                 do {
-                    position = bitapMatchers[currentNumBitapErrors].findNext();
+                    position = bitapMatchersMain[currentNumBitapErrors].findNext();
                     if (position == -1) {
                         if (currentNumBitapErrors == maxErrors)
                             return null;
-                        resetBitapMatcher(currentNumBitapErrors);
                         currentNumBitapErrors++;
-                        lastFoundPosition = 0;
+                        lastFoundPosition = Integer.MIN_VALUE;
                         continue;
                     }
                     if (isBadMatch(position)) {
@@ -191,7 +198,7 @@ public class FuzzyMatchPattern extends SinglePattern {
                             lastFoundPosition = position;
                     } else
                         alreadyReturnedPositions.add(position);
-                } while (position <= lastFoundPosition);
+                } while ((position <= lastFoundPosition) || (position == -1));
                 lastFoundPosition = position;
 
                 return generateMatch(getAlignment(position));
@@ -201,7 +208,7 @@ public class FuzzyMatchPattern extends SinglePattern {
                 int position;
 
                 do {
-                    position = bitapMatchers[maxErrors].findNext();
+                    position = bitapMatchersMain[maxErrors].findNext();
                     if (position == -1)
                         return null;
                     if (isBadMatch(position)) {
@@ -277,13 +284,13 @@ public class FuzzyMatchPattern extends SinglePattern {
 
                 for (int bitapMaxErrors = 0; bitapMaxErrors <= maxErrors; bitapMaxErrors++)
                     while (true) {
-                        currentPosition = bitapMatchers[bitapMaxErrors].findNext();
+                        currentPosition = bitapMatchersSecondary[bitapMaxErrors].findNext();
                         if ((currentPosition == -1) || (currentPosition > position)) {
-                            resetBitapMatcher(bitapMaxErrors);
+                            resetBitapMatcher(bitapMaxErrors, false);
                             break;
                         }
                         if (currentPosition == position) {
-                            resetBitapMatcher(bitapMaxErrors);
+                            resetBitapMatcher(bitapMaxErrors, false);
                             return bitapMaxErrors;
                         }
                     }
@@ -295,10 +302,15 @@ public class FuzzyMatchPattern extends SinglePattern {
              * (Re)initialize bitap matcher for specified number of errors.
              *
              * @param bitapMaxErrors maximum number of errors for this matcher
+             * @param main true to reinitialize main matcher, false for secondary matcher
              */
-            private void resetBitapMatcher(int bitapMaxErrors) {
-                bitapMatchers[bitapMaxErrors] = bitapPattern.substitutionAndIndelMatcherLast(bitapMaxErrors,
-                        target.getSequence(), from, to);
+            private void resetBitapMatcher(int bitapMaxErrors, boolean main) {
+                if (main)
+                    bitapMatchersMain[bitapMaxErrors] = bitapPattern.substitutionAndIndelMatcherLast(bitapMaxErrors,
+                            target.getSequence(), from, to);
+                else
+                    bitapMatchersSecondary[bitapMaxErrors] = bitapPattern.substitutionAndIndelMatcherLast(bitapMaxErrors,
+                            target.getSequence(), from, to);
             }
 
             /**
@@ -349,7 +361,7 @@ public class FuzzyMatchPattern extends SinglePattern {
                 int matchLastPosition;
 
                 do {
-                    matchLastPosition = bitapMatchers[maxErrors].findNext();
+                    matchLastPosition = bitapMatchersMain[maxErrors].findNext();
                     if (matchLastPosition != -1) {
                         alignment = getAlignment(matchLastPosition);
                         if (!uniqueRanges.contains(alignment.getSequence2Range())) {
