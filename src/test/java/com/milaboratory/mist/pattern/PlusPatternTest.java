@@ -74,15 +74,21 @@ public class PlusPatternTest {
             FuzzyMatchPattern patternMotif1 = new FuzzyMatchPattern(seqMotif1);
             FuzzyMatchPattern patternMotif2 = new FuzzyMatchPattern(seqMotif2);
             PlusPattern plusPattern = new PlusPattern(patternMotif1, patternMotif2);
-            assertEquals(true, plusPattern.match(target).isFound());
+            assertTrue(plusPattern.match(target).isFound());
+            assertNotNull(plusPattern.match(target).getBestMatch(false));
+            assertNotNull(plusPattern.match(target).getMatches(true, false).take());
+            assertNotNull(plusPattern.match(target).getMatches(false, false).take());
+            assertNotNull(plusPattern.match(target).getBestMatch(true));
+            assertNotNull(plusPattern.match(target).getMatches(true, true).take());
+            assertNotNull(plusPattern.match(target).getMatches(false, true).take());
 
             NSequenceWithQuality foundSequence = plusPattern.match(target).getBestMatch(true).getValue();
-            assertEquals(true, patternMotif1.match(foundSequence).isFound());
-            assertEquals(true, patternMotif2.match(foundSequence).isFound());
+            assertTrue(patternMotif1.match(foundSequence).isFound());
+            assertTrue(patternMotif2.match(foundSequence).isFound());
 
             foundSequence = plusPattern.match(target).getBestMatch(false).getValue();
-            assertEquals(true, patternMotif1.match(foundSequence).isFound());
-            assertEquals(true, patternMotif2.match(foundSequence).isFound());
+            assertTrue(patternMotif1.match(foundSequence).isFound());
+            assertTrue(patternMotif2.match(foundSequence).isFound());
         }
     }
 

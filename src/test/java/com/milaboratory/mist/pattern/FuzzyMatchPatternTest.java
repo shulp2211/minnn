@@ -93,7 +93,13 @@ public class FuzzyMatchPatternTest {
             NSequenceWithQuality target = new NSequenceWithQuality(fullSeq,
                     SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, fullSeq.getSequence().size()));
             FuzzyMatchPattern pattern = new FuzzyMatchPattern(seqM);
-            assertEquals(true, pattern.match(target).isFound());
+            assertTrue(pattern.match(target).isFound());
+            assertNotNull(pattern.match(target).getBestMatch(false));
+            assertNotNull(pattern.match(target).getMatches(true, false).take());
+            assertNotNull(pattern.match(target).getMatches(false, false).take());
+            assertNotNull(pattern.match(target).getBestMatch(true));
+            assertNotNull(pattern.match(target).getMatches(true, true).take());
+            assertNotNull(pattern.match(target).getMatches(false, true).take());
         }
     }
 
@@ -108,6 +114,12 @@ public class FuzzyMatchPatternTest {
             FuzzyMatchPattern pattern = new FuzzyMatchPattern(motif);
             boolean isMatching = target.toString().contains(motif.toString());
             assertEquals(isMatching, pattern.match(targetQ).isFound());
+            assertEquals(isMatching, pattern.match(targetQ).getBestMatch(false) != null);
+            assertEquals(isMatching, pattern.match(targetQ).getMatches(true, false).take() != null);
+            assertEquals(isMatching, pattern.match(targetQ).getMatches(false, false).take() != null);
+            assertEquals(isMatching, pattern.match(targetQ).getBestMatch(true) != null);
+            assertEquals(isMatching, pattern.match(targetQ).getMatches(true, true).take() != null);
+            assertEquals(isMatching, pattern.match(targetQ).getMatches(false, true).take() != null);
         }
     }
 

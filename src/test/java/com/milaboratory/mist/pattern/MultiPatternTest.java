@@ -173,6 +173,12 @@ public class MultiPatternTest {
             };
             MultiPattern multiPattern = new MultiPattern(patterns);
             assertEquals(isMatching, multiPattern.match(mseq).isFound());
+            assertEquals(isMatching, multiPattern.match(mseq).getBestMatch() != null);
+            assertEquals(isMatching, multiPattern.match(mseq).getMatches(true, false).take() != null);
+            assertEquals(isMatching, multiPattern.match(mseq).getMatches(false, false).take() != null);
+            // this test is slow, do it only 3 times
+            if (i < 3)
+                assertEquals(isMatching, multiPattern.match(mseq).getBestMatch(true) != null);
         }
     }
 
