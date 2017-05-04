@@ -67,11 +67,11 @@ public class MultiPattern extends MultipleReadsOperator {
             }
 
             if (byScore)
-                sorter = new SorterByScore(true, false, true,
-                        fairSorting, MatchValidationType.ALWAYS);
+                sorter = new SorterByScore(true, true, fairSorting,
+                        MatchValidationType.NOT_NULL);
             else
-                sorter = new SorterByCoordinate(true, false, true,
-                        fairSorting, MatchValidationType.ALWAYS);
+                sorter = new SorterByCoordinate(true, true, fairSorting,
+                        MatchValidationType.NOT_NULL);
 
             return sorter.getOutputPort(operandPorts);
         }

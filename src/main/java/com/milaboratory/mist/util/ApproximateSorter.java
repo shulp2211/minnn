@@ -11,7 +11,6 @@ import static com.milaboratory.mist.util.RangeTools.combineRanges;
 
 public abstract class ApproximateSorter {
     protected final boolean multipleReads;
-    protected final boolean allowOneNull;
     protected final boolean combineScoresBySum;
     protected final boolean fairSorting;
     protected final MatchValidationType matchValidationType;
@@ -22,18 +21,14 @@ public abstract class ApproximateSorter {
      *
      * @param multipleReads true if we combine matches from multiple reads; false if we combine matches
      *                      from single read
-     * @param allowOneNull If true, if operand return null from first take(), it is considered as valid value,
-     *                     otherwise null never considered as a match. High level logic operators must set this
-     *                     to true, other operators - to false.
      * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
      * @param matchValidationType type of validation used to determine that current matches combination is invalid
      */
-    public ApproximateSorter(boolean multipleReads, boolean allowOneNull, boolean combineScoresBySum, boolean fairSorting,
+    public ApproximateSorter(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
                              MatchValidationType matchValidationType) {
         this.multipleReads = multipleReads;
-        this.allowOneNull = allowOneNull;
         this.combineScoresBySum = combineScoresBySum;
         this.fairSorting = fairSorting;
         this.matchValidationType = matchValidationType;
@@ -141,7 +136,8 @@ public abstract class ApproximateSorter {
             allMatches.add(new ArrayList<>());
             do {
                 currentMatch = inputPorts.get(i).take();
-                if ((currentMatch != null) || (allowOneNull && allMatches.get(i).size() == 0))
+                if ((currentMatch != null)
+                        || (matchValidationType == MatchValidationType.ALWAYS && allMatches.get(i).size() == 0))
                     allMatches.get(i).add(currentMatch);
             } while (currentMatch != null);
             totalNumberOfCombinations *= allMatches.get(i).size();
@@ -190,6 +186,7 @@ public abstract class ApproximateSorter {
         IncompatibleIndexes result = null;
         switch (matchValidationType) {
             case ALWAYS:
+            case NOT_NULL:
                 return null;
             case INTERSECTION:
                 Range ranges[] = new Range[matches.length];

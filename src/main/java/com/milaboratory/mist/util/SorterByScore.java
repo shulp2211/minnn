@@ -9,9 +9,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class SorterByScore extends ApproximateSorter {
-    public SorterByScore(boolean multipleReads, boolean allowOneNull, boolean combineScoresBySum, boolean fairSorting,
+    public SorterByScore(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
                          MatchValidationType matchValidationType) {
-        super(multipleReads, allowOneNull, combineScoresBySum, fairSorting, matchValidationType);
+        super(multipleReads, combineScoresBySum, fairSorting, matchValidationType);
     }
 
     @Override
@@ -68,7 +68,7 @@ public class SorterByScore extends ApproximateSorter {
                         Match takenMatch = inputPorts.get(i).take();
                         if (takenMatch == null)
                             if (takenMatches.get(i).size() == 0) {
-                                if (allowOneNull) {
+                                if (matchValidationType == MatchValidationType.ALWAYS) {
                                     takenMatches.get(i).add(null);
                                     tableOfIterations.setPortEndReached(i, 1);
                                     currentIndexes[i] = 0;
@@ -130,7 +130,7 @@ public class SorterByScore extends ApproximateSorter {
             while (tableOfIterations.getNumberOfReturnedCombinations() + numberOfSkippedIterations <= numberOfPorts) {
                 for (int i = 0; i < numberOfPorts; i++)
                     if (i == tableOfIterations.getNumberOfReturnedCombinations() + numberOfSkippedIterations - 1)
-                        if (allowOneNull && takenMatches.get(i).get(0) == null) {
+                        if (matchValidationType == MatchValidationType.ALWAYS && takenMatches.get(i).get(0) == null) {
                             numberOfSkippedIterations++;
                             currentIndexes[i] = 0;
                         } else
@@ -139,7 +139,8 @@ public class SorterByScore extends ApproximateSorter {
                         currentIndexes[i] = 0;
 
                 // if we found valid combination, return it, otherwise continue search
-                if (tableOfIterations.isCompatible(false, currentIndexes))
+                if (tableOfIterations.isCompatible(false, currentIndexes)
+                        && !tableOfIterations.isCombinationReturned(currentIndexes))
                     return;
             }
 
@@ -177,7 +178,8 @@ public class SorterByScore extends ApproximateSorter {
                 }
 
                 // if we found valid combination, return it, otherwise continue search
-                if (tableOfIterations.isCompatible(false, currentIndexes))
+                if (tableOfIterations.isCompatible(false, currentIndexes)
+                        && !tableOfIterations.isCombinationReturned(currentIndexes))
                     return;
             }
 

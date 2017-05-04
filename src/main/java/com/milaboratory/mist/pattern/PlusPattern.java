@@ -42,11 +42,11 @@ public class PlusPattern extends MultiplePatternsOperator {
                 operandPorts.add(operandPattern.match(target, from, to, targetId).getMatches(byScore, fairSorting));
 
             if (byScore)
-                sorter = new SorterByScore(false, false, true,
-                        fairSorting, MatchValidationType.ORDER);
+                sorter = new SorterByScore(false, true, fairSorting,
+                        MatchValidationType.ORDER);
             else
-                sorter = new SorterByCoordinate(false, false, true,
-                        fairSorting, MatchValidationType.ORDER);
+                sorter = new SorterByCoordinate(false, true, fairSorting,
+                        MatchValidationType.ORDER);
 
             return sorter.getOutputPort(operandPorts);
         }

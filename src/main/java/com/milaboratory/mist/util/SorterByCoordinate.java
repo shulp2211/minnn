@@ -13,17 +13,14 @@ public class SorterByCoordinate extends ApproximateSorter {
      *
      * @param multipleReads true if we combine matches from multiple reads; false if we combine matches
      *                      from single read
-     * @param allowOneNull If true, if operand return null from first take(), it is considered as valid value,
-     *                     otherwise null never considered as a match. High level logic operators must set this
-     *                     to true, other operators - to false.
      * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
      * @param matchValidationType type of validation used to determine that current matches combination is invalid
      */
-    public SorterByCoordinate(boolean multipleReads, boolean allowOneNull, boolean combineScoresBySum, boolean fairSorting,
+    public SorterByCoordinate(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
                               MatchValidationType matchValidationType) {
-        super(multipleReads, allowOneNull, combineScoresBySum, fairSorting, matchValidationType);
+        super(multipleReads, combineScoresBySum, fairSorting, matchValidationType);
     }
 
     @Override
@@ -79,7 +76,7 @@ public class SorterByCoordinate extends ApproximateSorter {
                         Match takenMatch = inputPorts.get(i).take();
                         if (takenMatch == null)
                             if (takenMatches.get(i).size() == 0) {
-                                if (allowOneNull) {
+                                if (matchValidationType == MatchValidationType.ALWAYS) {
                                     takenMatches.get(i).add(null);
                                     tableOfIterations.setPortEndReached(i, 1);
                                     currentIndexes[i] = 0;

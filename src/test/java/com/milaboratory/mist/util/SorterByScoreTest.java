@@ -35,14 +35,14 @@ public class SorterByScoreTest {
         TestMatchesOutputPort testPort2 = new TestMatchesOutputPort(testMatch3, testMatch3, testMatch3, testMatch3, testMatch3);
         TestMatchesOutputPort testPort3 = new TestMatchesOutputPort(testMatch4, testMatch4, testMatch4, testMatch4, testMatch4);
 
-        ApproximateSorter sorter1 = new SorterByScore(false, false, true,
-                false, MatchValidationType.INTERSECTION);
+        ApproximateSorter sorter1 = new SorterByScore(false, true, false,
+                MatchValidationType.INTERSECTION);
         ApproximateSorter sorter2 = new SorterByScore(false, false, false,
-                false, MatchValidationType.INTERSECTION);
-        ApproximateSorter sorter3 = new SorterByScore(false, false, true,
-                false, MatchValidationType.ORDER);
+                MatchValidationType.INTERSECTION);
+        ApproximateSorter sorter3 = new SorterByScore(false, true, false,
+                MatchValidationType.ORDER);
         ApproximateSorter sorter4 = new SorterByScore(false, false, false,
-                false, MatchValidationType.ORDER);
+                MatchValidationType.ORDER);
 
         assertEquals(0, countPortValues(sorter1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
             add(testPort2.getCopy()); add(testPort3.getCopy()); }})));
@@ -91,12 +91,12 @@ public class SorterByScoreTest {
         ArrayList<OutputPort<Match>> testPortsMultiWithNull2Copy2 = new ArrayList<OutputPort<Match>>() {{
             add(testPortEmpty); add(testPortMulti.getCopy()); }};
 
-        ApproximateSorter sorterSingle = new SorterByScore(false, false, true,
-                false, MatchValidationType.INTERSECTION);
-        ApproximateSorter sorterMulti1 = new SorterByScore(true, false, true,
-                false, MatchValidationType.ALWAYS);
-        ApproximateSorter sorterMulti2 = new SorterByScore(true, true, true,
-                false, MatchValidationType.ALWAYS);
+        ApproximateSorter sorterSingle = new SorterByScore(false, true, false,
+                MatchValidationType.INTERSECTION);
+        ApproximateSorter sorterMulti1 = new SorterByScore(true, true, false,
+                MatchValidationType.NOT_NULL);
+        ApproximateSorter sorterMulti2 = new SorterByScore(true, true, false,
+                MatchValidationType.ALWAYS);
 
         assertEquals(0, countPortValues(sorterSingle.getOutputPort(testPortsSingleWithNull1)));
         assertEquals(0, countPortValues(sorterSingle.getOutputPort(testPortsSingleWithNull2)));
@@ -111,14 +111,14 @@ public class SorterByScoreTest {
         FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
         NSequenceWithQuality seq = new NSequenceWithQuality("ACTGCGATAAATTAGACAGTACGTATTAGACATTATTATTAGACAGAGACA");
 
-        ApproximateSorter sorterUnfair1 = new SorterByScore(false, false, true,
-                false, MatchValidationType.INTERSECTION);
-        ApproximateSorter sorterUnfair2 = new SorterByScore(false, false, true,
-                false, MatchValidationType.ORDER);
-        ApproximateSorter sorterFair1 = new SorterByScore(false, false, true,
-                true, MatchValidationType.INTERSECTION);
-        ApproximateSorter sorterFair2 = new SorterByScore(false, false, true,
-                true, MatchValidationType.ORDER);
+        ApproximateSorter sorterUnfair1 = new SorterByScore(false, true, false,
+                MatchValidationType.INTERSECTION);
+        ApproximateSorter sorterUnfair2 = new SorterByScore(false, true, false,
+                MatchValidationType.ORDER);
+        ApproximateSorter sorterFair1 = new SorterByScore(false, true, true,
+                MatchValidationType.INTERSECTION);
+        ApproximateSorter sorterFair2 = new SorterByScore(false, true, true,
+                MatchValidationType.ORDER);
 
         assertEquals(3, countPortValues(pattern.match(seq).getMatches()));
         assertEquals(3, countPortValues(sorterUnfair1.getOutputPort(new ArrayList<OutputPort<Match>>() {{

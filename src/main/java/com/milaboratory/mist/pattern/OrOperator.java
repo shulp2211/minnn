@@ -42,11 +42,11 @@ public class OrOperator extends MultipleReadsOperator {
                 operandPorts.add(operandPattern.match(target, ranges, reverseComplements).getMatches(byScore, fairSorting));
 
             if (byScore)
-                sorter = new SorterByScore(true, true, false,
-                        fairSorting, MatchValidationType.ALWAYS);
+                sorter = new SorterByScore(true, false, fairSorting,
+                        MatchValidationType.ALWAYS);
             else
-                sorter = new SorterByCoordinate(true, true, false,
-                        fairSorting, MatchValidationType.ALWAYS);
+                sorter = new SorterByCoordinate(true, false, fairSorting,
+                        MatchValidationType.ALWAYS);
 
             return sorter.getOutputPort(operandPorts);
         }

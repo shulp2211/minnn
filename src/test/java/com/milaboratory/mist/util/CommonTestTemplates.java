@@ -96,39 +96,39 @@ class CommonTestTemplates {
         ApproximateSorter sorterSingle1, sorterSingle2, sorterSingle3, sorterSingle4, sorterSingle5;
         ApproximateSorter sorterMulti1, sorterMulti2, sorterMulti3;
         if (sortByScore) {
-            sorterSingle1 = new SorterByScore(false, false, true,
-                    fairSorting, MatchValidationType.INTERSECTION);
-            sorterSingle2 = new SorterByScore(false, false, false,
-                    fairSorting, MatchValidationType.INTERSECTION);
-            sorterSingle3 = new SorterByScore(false, false, true,
-                    fairSorting, MatchValidationType.ORDER);
-            sorterSingle4 = new SorterByScore(false, false, false,
-                    fairSorting, MatchValidationType.ORDER);
-            sorterSingle5 = new SorterByScore(false, false, true,
-                    fairSorting, MatchValidationType.ALWAYS);
-            sorterMulti1 = new SorterByScore(true, true, true,
-                    fairSorting, MatchValidationType.ALWAYS);
-            sorterMulti2 = new SorterByScore(true, true, false,
-                    fairSorting, MatchValidationType.ALWAYS);
-            sorterMulti3 = new SorterByScore(true, false, true,
-                    fairSorting, MatchValidationType.ALWAYS);
+            sorterSingle1 = new SorterByScore(false, true, fairSorting,
+                    MatchValidationType.INTERSECTION);
+            sorterSingle2 = new SorterByScore(false, false, fairSorting,
+                    MatchValidationType.INTERSECTION);
+            sorterSingle3 = new SorterByScore(false, true, fairSorting,
+                    MatchValidationType.ORDER);
+            sorterSingle4 = new SorterByScore(false, false, fairSorting,
+                    MatchValidationType.ORDER);
+            sorterSingle5 = new SorterByScore(false, true, fairSorting,
+                    MatchValidationType.NOT_NULL);
+            sorterMulti1 = new SorterByScore(true, true, fairSorting,
+                    MatchValidationType.ALWAYS);
+            sorterMulti2 = new SorterByScore(true, false, fairSorting,
+                    MatchValidationType.ALWAYS);
+            sorterMulti3 = new SorterByScore(true, true, fairSorting,
+                    MatchValidationType.NOT_NULL);
         } else {
-            sorterSingle1 = new SorterByCoordinate(false, false, true,
-                    fairSorting, MatchValidationType.INTERSECTION);
-            sorterSingle2 = new SorterByCoordinate(false, false, false,
-                    fairSorting, MatchValidationType.INTERSECTION);
-            sorterSingle3 = new SorterByCoordinate(false, false, true,
-                    fairSorting, MatchValidationType.ORDER);
-            sorterSingle4 = new SorterByCoordinate(false, false, false,
-                    fairSorting, MatchValidationType.ORDER);
-            sorterSingle5 = new SorterByCoordinate(false, false, true,
-                    fairSorting, MatchValidationType.ALWAYS);
-            sorterMulti1 = new SorterByCoordinate(true, true, true,
-                    fairSorting, MatchValidationType.ALWAYS);
-            sorterMulti2 = new SorterByCoordinate(true, true, false,
-                    fairSorting, MatchValidationType.ALWAYS);
-            sorterMulti3 = new SorterByCoordinate(true, false, true,
-                    fairSorting, MatchValidationType.ALWAYS);
+            sorterSingle1 = new SorterByCoordinate(false, true, fairSorting,
+                    MatchValidationType.INTERSECTION);
+            sorterSingle2 = new SorterByCoordinate(false, false, fairSorting,
+                    MatchValidationType.INTERSECTION);
+            sorterSingle3 = new SorterByCoordinate(false, true, fairSorting,
+                    MatchValidationType.ORDER);
+            sorterSingle4 = new SorterByCoordinate(false, false, fairSorting,
+                    MatchValidationType.ORDER);
+            sorterSingle5 = new SorterByCoordinate(false, true, fairSorting,
+                    MatchValidationType.NOT_NULL);
+            sorterMulti1 = new SorterByCoordinate(true, true, fairSorting,
+                    MatchValidationType.ALWAYS);
+            sorterMulti2 = new SorterByCoordinate(true, false, fairSorting,
+                    MatchValidationType.ALWAYS);
+            sorterMulti3 = new SorterByCoordinate(true, true, fairSorting,
+                    MatchValidationType.NOT_NULL);
         }
 
         TestMatchesOutputPort testPortSingle1 = new TestMatchesOutputPort(testMatchSingle1, testMatchSingle2, testMatchSingle2);
@@ -241,11 +241,11 @@ class CommonTestTemplates {
             int numberOfMatches = randomGenerator.nextInt(10) + 1;
             Match[] matches = new Match[numberOfMatches];
             if (sortByScore)
-                sorter = new SorterByScore(false, randomGenerator.nextBoolean(),
-                        randomGenerator.nextBoolean(), fairSorting, MatchValidationType.INTERSECTION);
+                sorter = new SorterByScore(false, randomGenerator.nextBoolean(), fairSorting,
+                        MatchValidationType.INTERSECTION);
             else
-                sorter = new SorterByCoordinate(false, randomGenerator.nextBoolean(),
-                        randomGenerator.nextBoolean(), randomGenerator.nextBoolean(), MatchValidationType.INTERSECTION);
+                sorter = new SorterByCoordinate(false, randomGenerator.nextBoolean(), fairSorting,
+                        MatchValidationType.INTERSECTION);
 
             NSequenceWithQuality target = new NSequenceWithQuality(TestUtil.randomSequence(NucleotideSequence.ALPHABET,
                     numberOfMatches, numberOfMatches + randomGenerator.nextInt(100)).toString());
@@ -274,11 +274,11 @@ class CommonTestTemplates {
             int expectedMatchesNum = numberOfFragments * (numberOfFragments - 1) * (numberOfFragments - 2) * (numberOfFragments - 3);
             int spaceLength = randomGenerator.nextInt(3);
             if (sortByScore)
-                sorter = new SorterByScore(false, randomGenerator.nextBoolean(),
-                        randomGenerator.nextBoolean(), randomGenerator.nextBoolean(), MatchValidationType.INTERSECTION);
+                sorter = new SorterByScore(false, randomGenerator.nextBoolean(), randomGenerator.nextBoolean(),
+                        MatchValidationType.INTERSECTION);
             else
-                sorter = new SorterByCoordinate(false, randomGenerator.nextBoolean(),
-                        randomGenerator.nextBoolean(), randomGenerator.nextBoolean(), MatchValidationType.INTERSECTION);
+                sorter = new SorterByCoordinate(false, randomGenerator.nextBoolean(), randomGenerator.nextBoolean(),
+                        MatchValidationType.INTERSECTION);
 
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, spaceLength);
             NucleotideSequence fragment = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 50, 63);
