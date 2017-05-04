@@ -158,6 +158,8 @@ public class LogicalOperatorsTest {
         AndOperator andOperatorFalse = new AndOperator(multiPattern, andOperatorTrue, orOperatorTrue, notOperatorFalse);
         OrOperator orOperatorFalse = new OrOperator(notOperatorFalse, notOperatorFalse, andOperatorFalse);
         NotOperator notOperatorTrue = new NotOperator(orOperatorFalse);
+        AndOperator andOperatorSingleFalse = new AndOperator(orOperatorFalse);
+        OrOperator orOperatorSingleFalse = new OrOperator(andOperatorSingleFalse);
 
         Range ranges[] = {new Range(1, 11, true), new Range(0, 10), new Range(2, 11)};
         boolean reversed[] = {true, false, false};
@@ -168,12 +170,16 @@ public class LogicalOperatorsTest {
         MatchingResult notTrueResult = notOperatorTrue.match(mseq, reversed);
         MatchingResult orTrueResult = orOperatorTrue.match(mseq, reversed);
         MatchingResult andTrueResult = andOperatorTrue.match(mseq, reversed);
+        MatchingResult andSingleFalseResult = andOperatorSingleFalse.match(mseq, reversed);
+        MatchingResult orSingleFalseResult = orOperatorSingleFalse.match(mseq, reversed);
         MatchingResult notFalseResultR = notOperatorFalse.match(mseq, ranges, reversed);
         MatchingResult orFalseResultR = orOperatorFalse.match(mseq, ranges, reversed);
         MatchingResult andFalseResultR = andOperatorFalse.match(mseq, ranges, reversed);
         MatchingResult notTrueResultR = notOperatorTrue.match(mseq, ranges, reversed);
         MatchingResult orTrueResultR = orOperatorTrue.match(mseq, ranges, reversed);
         MatchingResult andTrueResultR = andOperatorTrue.match(mseq, ranges, reversed);
+        MatchingResult andSingleFalseResultR = andOperatorSingleFalse.match(mseq, ranges, reversed);
+        MatchingResult orSingleFalseResultR = orOperatorSingleFalse.match(mseq, ranges, reversed);
 
         assertNull(notFalseResult.getBestMatch());
         assertNull(orFalseResult.getBestMatch());
@@ -181,19 +187,35 @@ public class LogicalOperatorsTest {
         assertNull(notFalseResultR.getBestMatch());
         assertNull(orFalseResultR.getBestMatch());
         assertNull(andFalseResultR.getBestMatch());
-        assertNull(notTrueResult.getBestMatch());
+        assertNotNull(notTrueResult.getBestMatch());
+        assertEquals(NullMatchedRange.class, notTrueResult.getBestMatch().getMatchedRange().getClass());
         assertNotNull(orTrueResult.getBestMatch());
         assertNotNull(andTrueResult.getBestMatch());
-        assertNull(notTrueResultR.getBestMatch());
+        assertNotNull(notTrueResultR.getBestMatch());
+        assertEquals(NullMatchedRange.class, notTrueResultR.getBestMatch().getMatchedRange().getClass());
         assertNotNull(orTrueResultR.getBestMatch());
         assertNotNull(andTrueResultR.getBestMatch());
+        assertNull(andSingleFalseResult.getBestMatch());
+        assertNull(orSingleFalseResult.getBestMatch());
+        assertNull(andSingleFalseResultR.getBestMatch());
+        assertNull(orSingleFalseResultR.getBestMatch());
 
-        assertEquals(0, countMatches(notTrueResult, true));
+        assertEquals(1, countMatches(notTrueResult, false));
+        assertEquals(0, countMatches(notFalseResult, false));
+        assertEquals(0, countMatches(orFalseResult, false));
+        assertEquals(0, countMatches(andFalseResult, false));
+        assertEquals(1, countMatches(andTrueResult, false));
+        assertEquals(1, countMatches(orTrueResult, false));
+        assertEquals(0, countMatches(andSingleFalseResult, false));
+        assertEquals(0, countMatches(orSingleFalseResult, false));
+        assertEquals(1, countMatches(notTrueResult, true));
         assertEquals(0, countMatches(notFalseResult, true));
         assertEquals(0, countMatches(orFalseResult, true));
         assertEquals(0, countMatches(andFalseResult, true));
         assertEquals(1, countMatches(andTrueResult, true));
         assertEquals(1, countMatches(orTrueResult, true));
+        assertEquals(0, countMatches(andSingleFalseResult, true));
+        assertEquals(0, countMatches(orSingleFalseResult, true));
 
         Match testMatch = andTrueResultR.getMatches().take();
         assertEquals("GTTATTACCA", testMatch.getMatchedRange(5).getValue().getSequence().toString());

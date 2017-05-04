@@ -43,7 +43,7 @@ public class NotOperator extends MultipleReadsOperator {
 
         private static class NotOperatorOutputPort implements OutputPort<Match> {
             private final OutputPort<Match> operandPort;
-            private boolean operandChecked = false;
+            private boolean firstCall = true;
             private boolean operandIsMatching;
 
             NotOperatorOutputPort(OutputPort<Match> operandPort) {
@@ -52,10 +52,9 @@ public class NotOperator extends MultipleReadsOperator {
 
             @Override
             public Match take() {
-                if (!operandChecked) {
-                    operandIsMatching = (operandPort.take() != null);
-                    operandChecked = true;
-                }
+                if (!firstCall) return null;
+                operandIsMatching = (operandPort.take() != null);
+                firstCall = false;
                 if (operandIsMatching)
                     return null;
                 else

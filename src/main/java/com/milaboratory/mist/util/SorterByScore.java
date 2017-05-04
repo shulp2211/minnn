@@ -68,7 +68,7 @@ public class SorterByScore extends ApproximateSorter {
                         Match takenMatch = inputPorts.get(i).take();
                         if (takenMatch == null)
                             if (takenMatches.get(i).size() == 0) {
-                                if (matchValidationType == MatchValidationType.ALWAYS) {
+                                if (matchValidationType == MatchValidationType.LOGICAL_OR) {
                                     takenMatches.get(i).add(null);
                                     tableOfIterations.setPortEndReached(i, 1);
                                     currentIndexes[i] = 0;
@@ -130,7 +130,7 @@ public class SorterByScore extends ApproximateSorter {
             while (tableOfIterations.getNumberOfReturnedCombinations() + numberOfSkippedIterations <= numberOfPorts) {
                 for (int i = 0; i < numberOfPorts; i++)
                     if (i == tableOfIterations.getNumberOfReturnedCombinations() + numberOfSkippedIterations - 1)
-                        if (matchValidationType == MatchValidationType.ALWAYS && takenMatches.get(i).get(0) == null) {
+                        if (matchValidationType == MatchValidationType.LOGICAL_OR && takenMatches.get(i).get(0) == null) {
                             numberOfSkippedIterations++;
                             currentIndexes[i] = 0;
                         } else

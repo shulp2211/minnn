@@ -94,9 +94,9 @@ public class SorterByScoreTest {
         ApproximateSorter sorterSingle = new SorterByScore(false, true, false,
                 MatchValidationType.INTERSECTION);
         ApproximateSorter sorterMulti1 = new SorterByScore(true, true, false,
-                MatchValidationType.NOT_NULL);
+                MatchValidationType.LOGICAL_AND);
         ApproximateSorter sorterMulti2 = new SorterByScore(true, true, false,
-                MatchValidationType.ALWAYS);
+                MatchValidationType.LOGICAL_OR);
 
         assertEquals(0, countPortValues(sorterSingle.getOutputPort(testPortsSingleWithNull1)));
         assertEquals(0, countPortValues(sorterSingle.getOutputPort(testPortsSingleWithNull2)));

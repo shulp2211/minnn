@@ -54,11 +54,14 @@ public abstract class ApproximateSorter {
 
         if (multipleReads) {
             int patternIndex = 0;
+            boolean allMatchesAreNull = true;
             for (Match match : matches) {
                 if (match == null) {
-                    matchedItems.add(new NullMatchedRange(patternIndex++));
-                    continue;
-                }
+                    if (matchValidationType == MatchValidationType.LOGICAL_OR) {
+                        matchedItems.add(new NullMatchedRange(patternIndex++));
+                        continue;
+                    } else throw new IllegalStateException("Found null match when MatchValidationType doesn't allow them");
+                } else allMatchesAreNull = false;
                 for (int i = 0; i < match.getNumberOfPatterns(); i++) {
                     MatchedRange currentMatchedRange = match.getMatchedRange(i);
                     if (NullMatchedRange.class.isAssignableFrom(currentMatchedRange.getClass())) {
@@ -76,6 +79,7 @@ public abstract class ApproximateSorter {
                     }
                 }
             }
+            if (allMatchesAreNull) return null;
             return new Match(patternIndex, combineMatchScores(matches), matchedItems);
         } else {
             NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
@@ -137,7 +141,7 @@ public abstract class ApproximateSorter {
             do {
                 currentMatch = inputPorts.get(i).take();
                 if ((currentMatch != null)
-                        || (matchValidationType == MatchValidationType.ALWAYS && allMatches.get(i).size() == 0))
+                        || (matchValidationType == MatchValidationType.LOGICAL_OR && allMatches.get(i).size() == 0))
                     allMatches.get(i).add(currentMatch);
             } while (currentMatch != null);
             totalNumberOfCombinations *= allMatches.get(i).size();
@@ -185,8 +189,8 @@ public abstract class ApproximateSorter {
 
         IncompatibleIndexes result = null;
         switch (matchValidationType) {
-            case ALWAYS:
-            case NOT_NULL:
+            case LOGICAL_OR:
+            case LOGICAL_AND:
                 return null;
             case INTERSECTION:
                 Range ranges[] = new Range[matches.length];

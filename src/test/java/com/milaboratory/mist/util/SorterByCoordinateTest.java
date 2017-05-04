@@ -92,8 +92,8 @@ public class SorterByCoordinateTest {
             add(testPortEmpty); add(testPortMulti.getCopy()); }};
 
         ApproximateSorter sorterSingle = new SorterByCoordinate(false, true, false, MatchValidationType.INTERSECTION);
-        ApproximateSorter sorterMulti1 = new SorterByCoordinate(true, true, false, MatchValidationType.NOT_NULL);
-        ApproximateSorter sorterMulti2 = new SorterByCoordinate(true, true, false, MatchValidationType.ALWAYS);
+        ApproximateSorter sorterMulti1 = new SorterByCoordinate(true, true, false, MatchValidationType.LOGICAL_AND);
+        ApproximateSorter sorterMulti2 = new SorterByCoordinate(true, true, false, MatchValidationType.LOGICAL_OR);
 
         assertEquals(0, countPortValues(sorterSingle.getOutputPort(testPortsSingleWithNull1)));
         assertEquals(0, countPortValues(sorterSingle.getOutputPort(testPortsSingleWithNull2)));

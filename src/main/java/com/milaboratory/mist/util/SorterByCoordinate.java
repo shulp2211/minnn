@@ -76,7 +76,7 @@ public class SorterByCoordinate extends ApproximateSorter {
                         Match takenMatch = inputPorts.get(i).take();
                         if (takenMatch == null)
                             if (takenMatches.get(i).size() == 0) {
-                                if (matchValidationType == MatchValidationType.ALWAYS) {
+                                if (matchValidationType == MatchValidationType.LOGICAL_OR) {
                                     takenMatches.get(i).add(null);
                                     tableOfIterations.setPortEndReached(i, 1);
                                     currentIndexes[i] = 0;

@@ -43,10 +43,10 @@ public class OrOperator extends MultipleReadsOperator {
 
             if (byScore)
                 sorter = new SorterByScore(true, false, fairSorting,
-                        MatchValidationType.ALWAYS);
+                        MatchValidationType.LOGICAL_OR);
             else
                 sorter = new SorterByCoordinate(true, false, fairSorting,
-                        MatchValidationType.ALWAYS);
+                        MatchValidationType.LOGICAL_OR);
 
             return sorter.getOutputPort(operandPorts);
         }

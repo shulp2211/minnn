@@ -105,13 +105,13 @@ class CommonTestTemplates {
             sorterSingle4 = new SorterByScore(false, false, fairSorting,
                     MatchValidationType.ORDER);
             sorterSingle5 = new SorterByScore(false, true, fairSorting,
-                    MatchValidationType.NOT_NULL);
+                    MatchValidationType.LOGICAL_AND);
             sorterMulti1 = new SorterByScore(true, true, fairSorting,
-                    MatchValidationType.ALWAYS);
+                    MatchValidationType.LOGICAL_OR);
             sorterMulti2 = new SorterByScore(true, false, fairSorting,
-                    MatchValidationType.ALWAYS);
+                    MatchValidationType.LOGICAL_OR);
             sorterMulti3 = new SorterByScore(true, true, fairSorting,
-                    MatchValidationType.NOT_NULL);
+                    MatchValidationType.LOGICAL_AND);
         } else {
             sorterSingle1 = new SorterByCoordinate(false, true, fairSorting,
                     MatchValidationType.INTERSECTION);
@@ -122,13 +122,13 @@ class CommonTestTemplates {
             sorterSingle4 = new SorterByCoordinate(false, false, fairSorting,
                     MatchValidationType.ORDER);
             sorterSingle5 = new SorterByCoordinate(false, true, fairSorting,
-                    MatchValidationType.NOT_NULL);
+                    MatchValidationType.LOGICAL_AND);
             sorterMulti1 = new SorterByCoordinate(true, true, fairSorting,
-                    MatchValidationType.ALWAYS);
+                    MatchValidationType.LOGICAL_OR);
             sorterMulti2 = new SorterByCoordinate(true, false, fairSorting,
-                    MatchValidationType.ALWAYS);
+                    MatchValidationType.LOGICAL_OR);
             sorterMulti3 = new SorterByCoordinate(true, true, fairSorting,
-                    MatchValidationType.NOT_NULL);
+                    MatchValidationType.LOGICAL_AND);
         }
 
         TestMatchesOutputPort testPortSingle1 = new TestMatchesOutputPort(testMatchSingle1, testMatchSingle2, testMatchSingle2);
