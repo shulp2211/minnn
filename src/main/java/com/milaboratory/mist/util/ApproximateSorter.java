@@ -8,11 +8,14 @@ import com.milaboratory.mist.pattern.*;
 import java.util.*;
 
 import static com.milaboratory.mist.util.RangeTools.combineRanges;
+import static com.milaboratory.mist.util.RangeTools.getIntersectionLength;
 
 public abstract class ApproximateSorter {
     protected final boolean multipleReads;
     protected final boolean combineScoresBySum;
     protected final boolean fairSorting;
+    protected final int maxErrors;
+    protected final float errorScorePenalty;
     protected final MatchValidationType matchValidationType;
 
     /**
@@ -24,13 +27,17 @@ public abstract class ApproximateSorter {
      * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
+     * @param maxErrors maximum enabled number of errors for combining ranges
+     * @param errorScorePenalty score penalty for 1 intersected letter when combining ranges; negative value
      * @param matchValidationType type of validation used to determine that current matches combination is invalid
      */
     public ApproximateSorter(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
-                             MatchValidationType matchValidationType) {
+                             int maxErrors, float errorScorePenalty, MatchValidationType matchValidationType) {
         this.multipleReads = multipleReads;
         this.combineScoresBySum = combineScoresBySum;
         this.fairSorting = fairSorting;
+        this.maxErrors = maxErrors;
+        this.errorScorePenalty = errorScorePenalty;
         this.matchValidationType = matchValidationType;
     }
 
@@ -91,8 +98,9 @@ public abstract class ApproximateSorter {
                 ranges[i] = matches[i].getRange();
             }
 
-            matchedItems.add(new MatchedRange(target, targetId, 0, combineRanges(ranges)));
-            return new Match(1, combineMatchScores(matches), matchedItems);
+            HashMap.SimpleEntry<Range, Float> combineRangesResult = combineRanges(errorScorePenalty, ranges);
+            matchedItems.add(new MatchedRange(target, targetId, 0, combineRangesResult.getKey()));
+            return new Match(1, combineMatchScores(matches) + combineRangesResult.getValue(), matchedItems);
         }
     }
 
@@ -201,7 +209,7 @@ public abstract class ApproximateSorter {
                     Range currentRange = matches[i].getRange();
                     ranges[i] = currentRange;
                     for (int j = 0; j < i; j++)  // Compare with all previously added matches
-                        if (ranges[j].intersectsWith(currentRange)) {
+                        if (getIntersectionLength(ranges[i], ranges[j]) > maxErrors) {
                             result = new IncompatibleIndexes(j, indexes[j], i, indexes[i]);
                             break OUTER;
                         }
@@ -216,7 +224,8 @@ public abstract class ApproximateSorter {
                     if (matches[i] == null) continue;
                     currentRange = matches[i].getRange();
                     previousRange = matches[i - 1].getRange();
-                    if (previousRange.getUpper() > currentRange.getLower()) {
+                    if ((previousRange.getUpper() > currentRange.getLower() + maxErrors)
+                            || (previousRange.getLower() >= currentRange.getLower())) {
                         result = new IncompatibleIndexes(i - 1, indexes[i - 1], i, indexes[i]);
                         break;
                     }

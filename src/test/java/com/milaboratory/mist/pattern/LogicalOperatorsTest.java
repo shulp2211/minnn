@@ -23,7 +23,7 @@ public class LogicalOperatorsTest {
     public void logicTest() throws Exception {
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTTATTACCA"));
-        AndPattern pattern3 = new AndPattern(new FuzzyMatchPattern(new NucleotideSequence("AT")),
+        AndPattern pattern3 = new AndPattern(0, -1, new FuzzyMatchPattern(new NucleotideSequence("AT")),
                 new FuzzyMatchPattern(new NucleotideSequence("GCAT")));
         MultiPattern multiPattern1 = new MultiPattern(pattern1, pattern2, pattern3);
         MultiPattern multiPattern2 = new MultiPattern(pattern1, pattern3);
@@ -128,7 +128,7 @@ public class LogicalOperatorsTest {
     public void simpleTest() throws Exception {
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTTATTACCA"));
-        AndPattern pattern3 = new AndPattern(new FuzzyMatchPattern(new NucleotideSequence("AT")),
+        AndPattern pattern3 = new AndPattern(0, -1, new FuzzyMatchPattern(new NucleotideSequence("AT")),
                 new FuzzyMatchPattern(new NucleotideSequence("GCAT")));
         MultiPattern multiPattern = new MultiPattern(pattern1, pattern2, pattern3);
 
@@ -370,17 +370,18 @@ public class LogicalOperatorsTest {
                 new NSequenceWithQuality("TACAGACATTTAGAA")
         };
 
-        MatchingResult[] matchingResults = new MatchingResult[4];
-        for (int i = 0; i < 4; i++)
+        MatchingResult[] matchingResults = new MatchingResult[5];
+        for (int i = 0; i < 5; i++)
             matchingResults[i] = fuzzyPattern.match(sequences[i]);
 
         assertEquals(new NSequenceWithQuality("ATTAGTTA"), matchingResults[0].getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ATTAGAA"), matchingResults[1].getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ACAGACA"), matchingResults[2].getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ATTTAGAA"), matchingResults[3].getBestMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACA"), matchingResults[4].getBestMatch().getValue());
 
-        AndPattern andPattern = new AndPattern(fuzzyPattern, fuzzyPattern);
-        PlusPattern plusPattern = new PlusPattern(fuzzyPattern, fuzzyPattern);
+        AndPattern andPattern = new AndPattern(2, -1, fuzzyPattern, fuzzyPattern);
+        PlusPattern plusPattern = new PlusPattern(2, -1, fuzzyPattern, fuzzyPattern);
 
         assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), andPattern.match(sequences[4]).getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), plusPattern.match(sequences[4]).getBestMatch().getValue());
@@ -417,10 +418,10 @@ public class LogicalOperatorsTest {
         assertEquals(new NSequenceWithQuality("ATTAGAA"), result.getBestMatch().getMatchedRange(0).getValue());
         assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), result.getBestMatch().getMatchedRange(1).getValue());
         assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), result.getBestMatch().getMatchedRange(2).getValue());
-        assertNull(result.getBestMatch().getMatchedRange(3));
+        assertEquals(NullMatchedRange.class, result.getBestMatch().getMatchedRange(3).getClass());
         assertEquals(new NSequenceWithQuality("ATTAGAA"), result.getBestMatch().getMatchedRange(14).getValue());
 
-        exception.expect(ArrayIndexOutOfBoundsException.class);
+        exception.expect(IndexOutOfBoundsException.class);
         result.getBestMatch().getMatchedRange(17);
     }
 }

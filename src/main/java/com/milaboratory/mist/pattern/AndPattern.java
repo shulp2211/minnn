@@ -9,23 +9,28 @@ import com.milaboratory.mist.util.SorterByScore;
 import java.util.ArrayList;
 
 public class AndPattern extends MultiplePatternsOperator {
-    public AndPattern(SinglePattern... operandPatterns) {
-        super(operandPatterns);
+    public AndPattern(int maxErrors, float errorScorePenalty, SinglePattern... operandPatterns) {
+        super(maxErrors, errorScorePenalty, operandPatterns);
     }
 
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
-        return new AndPatternMatchingResult(operandPatterns, target, from, to, targetId);
+        return new AndPatternMatchingResult(maxErrors, errorScorePenalty, operandPatterns, target, from, to, targetId);
     }
 
     private static class AndPatternMatchingResult extends MatchingResult {
+        private final int maxErrors;
+        private final float errorScorePenalty;
         private final SinglePattern[] operandPatterns;
         private final NSequenceWithQuality target;
         private final int from;
         private final int to;
         private final byte targetId;
 
-        AndPatternMatchingResult(SinglePattern[] operandPatterns, NSequenceWithQuality target, int from, int to, byte targetId) {
+        AndPatternMatchingResult(int maxErrors, float errorScorePenalty, SinglePattern[] operandPatterns,
+                                 NSequenceWithQuality target, int from, int to, byte targetId) {
+            this.maxErrors = maxErrors;
+            this.errorScorePenalty = errorScorePenalty;
             this.operandPatterns = operandPatterns;
             this.target = target;
             this.from = from;
@@ -43,10 +48,10 @@ public class AndPattern extends MultiplePatternsOperator {
 
             if (byScore)
                 sorter = new SorterByScore(false, true, fairSorting,
-                        MatchValidationType.INTERSECTION);
+                        maxErrors, errorScorePenalty, MatchValidationType.INTERSECTION);
             else
                 sorter = new SorterByCoordinate(false, true, fairSorting,
-                        MatchValidationType.INTERSECTION);
+                        maxErrors, errorScorePenalty, MatchValidationType.INTERSECTION);
 
             return sorter.getOutputPort(operandPorts);
         }

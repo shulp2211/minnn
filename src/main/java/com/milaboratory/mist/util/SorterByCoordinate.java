@@ -16,11 +16,13 @@ public class SorterByCoordinate extends ApproximateSorter {
      * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
+     * @param maxErrors maximum enabled number of errors for combining ranges
+     * @param errorScorePenalty score penalty for 1 intersected letter when combining ranges; negative value
      * @param matchValidationType type of validation used to determine that current matches combination is invalid
      */
     public SorterByCoordinate(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
-                              MatchValidationType matchValidationType) {
-        super(multipleReads, combineScoresBySum, fairSorting, matchValidationType);
+                              int maxErrors, float errorScorePenalty, MatchValidationType matchValidationType) {
+        super(multipleReads, combineScoresBySum, fairSorting, maxErrors, errorScorePenalty, matchValidationType);
     }
 
     @Override

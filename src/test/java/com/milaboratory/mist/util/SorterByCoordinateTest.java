@@ -36,13 +36,13 @@ public class SorterByCoordinateTest {
         TestMatchesOutputPort testPort3 = new TestMatchesOutputPort(testMatch4, testMatch4, testMatch4, testMatch4, testMatch4);
 
         ApproximateSorter sorter1 = new SorterByCoordinate(false, true, false,
-                MatchValidationType.INTERSECTION);
+                0, -1, MatchValidationType.INTERSECTION);
         ApproximateSorter sorter2 = new SorterByCoordinate(false, false, false,
-                MatchValidationType.INTERSECTION);
+                0, -1, MatchValidationType.INTERSECTION);
         ApproximateSorter sorter3 = new SorterByCoordinate(false, true, false,
-                MatchValidationType.ORDER);
+                0, -1, MatchValidationType.ORDER);
         ApproximateSorter sorter4 = new SorterByCoordinate(false, false, false,
-                MatchValidationType.ORDER);
+                0, -1, MatchValidationType.ORDER);
 
         assertEquals(0, countPortValues(sorter1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
             add(testPort2.getCopy()); add(testPort3.getCopy()); }})));
@@ -91,9 +91,12 @@ public class SorterByCoordinateTest {
         ArrayList<OutputPort<Match>> testPortsMultiWithNull2Copy2 = new ArrayList<OutputPort<Match>>() {{
             add(testPortEmpty); add(testPortMulti.getCopy()); }};
 
-        ApproximateSorter sorterSingle = new SorterByCoordinate(false, true, false, MatchValidationType.INTERSECTION);
-        ApproximateSorter sorterMulti1 = new SorterByCoordinate(true, true, false, MatchValidationType.LOGICAL_AND);
-        ApproximateSorter sorterMulti2 = new SorterByCoordinate(true, true, false, MatchValidationType.LOGICAL_OR);
+        ApproximateSorter sorterSingle = new SorterByCoordinate(false, true, false,
+                0, -1, MatchValidationType.INTERSECTION);
+        ApproximateSorter sorterMulti1 = new SorterByCoordinate(true, true, false,
+                0, 0, MatchValidationType.LOGICAL_AND);
+        ApproximateSorter sorterMulti2 = new SorterByCoordinate(true, true, false,
+                0, 0, MatchValidationType.LOGICAL_OR);
 
         assertEquals(0, countPortValues(sorterSingle.getOutputPort(testPortsSingleWithNull1)));
         assertEquals(0, countPortValues(sorterSingle.getOutputPort(testPortsSingleWithNull2)));
@@ -109,13 +112,13 @@ public class SorterByCoordinateTest {
         NSequenceWithQuality seq = new NSequenceWithQuality("ACTGCGATAAATTAGACAGTACGTATTAGACATTATTATTAGACAGAGACA");
 
         ApproximateSorter sorterUnfair1 = new SorterByCoordinate(false, true, false,
-                MatchValidationType.INTERSECTION);
+                0, -1, MatchValidationType.INTERSECTION);
         ApproximateSorter sorterUnfair2 = new SorterByCoordinate(false, true, false,
-                MatchValidationType.ORDER);
+                0, -1, MatchValidationType.ORDER);
         ApproximateSorter sorterFair1 = new SorterByCoordinate(false, true, true,
-                MatchValidationType.INTERSECTION);
+                0, -1, MatchValidationType.INTERSECTION);
         ApproximateSorter sorterFair2 = new SorterByCoordinate(false, true, true,
-                MatchValidationType.ORDER);
+                0, -1, MatchValidationType.ORDER);
 
         assertEquals(3, countPortValues(pattern.match(seq).getMatches()));
         assertEquals(3, countPortValues(sorterUnfair1.getOutputPort(new ArrayList<OutputPort<Match>>() {{

@@ -10,8 +10,8 @@ import java.util.Comparator;
 
 public class SorterByScore extends ApproximateSorter {
     public SorterByScore(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
-                         MatchValidationType matchValidationType) {
-        super(multipleReads, combineScoresBySum, fairSorting, matchValidationType);
+                         int maxErrors, float errorScorePenalty, MatchValidationType matchValidationType) {
+        super(multipleReads, combineScoresBySum, fairSorting, maxErrors, errorScorePenalty, matchValidationType);
     }
 
     @Override

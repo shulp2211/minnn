@@ -31,7 +31,7 @@ public class MultiplePatternsOperatorTest {
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups1);
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups2);
         exception.expect(IllegalStateException.class);
-        new AndPattern(pattern1, pattern2);
+        new AndPattern(0, -1, pattern1, pattern2);
     }
 
     @Test
@@ -52,7 +52,7 @@ public class MultiplePatternsOperatorTest {
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups1);
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups2);
         exception.expect(IllegalStateException.class);
-        new PlusPattern(pattern1, pattern2);
+        new PlusPattern(0, -1, pattern1, pattern2);
     }
 
     @Test
@@ -67,6 +67,6 @@ public class MultiplePatternsOperatorTest {
         }};
         FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups);
         exception.expect(IllegalStateException.class);
-        new AndPattern(pattern, pattern);
+        new AndPattern(0, -1, pattern, pattern);
     }
 }

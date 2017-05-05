@@ -105,7 +105,7 @@ public class MultiPatternTest {
     public void simpleTest() throws Exception {
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTTATTACCA"));
-        AndPattern pattern3 = new AndPattern(new FuzzyMatchPattern(new NucleotideSequence("AT")),
+        AndPattern pattern3 = new AndPattern(0, -1, new FuzzyMatchPattern(new NucleotideSequence("AT")),
                 new FuzzyMatchPattern(new NucleotideSequence("GCAT")));
         MultiPattern multiPattern = new MultiPattern(pattern1, pattern2, pattern3);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {

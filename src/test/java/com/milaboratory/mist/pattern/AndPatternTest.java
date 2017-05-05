@@ -29,12 +29,12 @@ public class AndPatternTest {
         NSequenceWithQuality nseq1 = new NSequenceWithQuality("ACTGCGATAAATTAGACAGTACGTA");
         NSequenceWithQuality nseq2 = new NSequenceWithQuality("TTAGTAGAGTATTTAGAGA");
         NSequenceWithQuality nseq3 = new NSequenceWithQuality("ATTAGACAAGTAATTAGACATTAG");
-        AndPattern andPattern1 = new AndPattern(pattern1, pattern3);
-        AndPattern andPattern2 = new AndPattern(pattern2, pattern3);
-        AndPattern andPattern3 = new AndPattern(pattern2, pattern1, pattern3);
-        AndPattern andPattern4 = new AndPattern(pattern4);
-        AndPattern andPattern5 = new AndPattern();
-        AndPattern andPattern6 = new AndPattern(pattern1);
+        AndPattern andPattern1 = new AndPattern(0, -1, pattern1, pattern3);
+        AndPattern andPattern2 = new AndPattern(0, -1, pattern2, pattern3);
+        AndPattern andPattern3 = new AndPattern(0, -1, pattern2, pattern1, pattern3);
+        AndPattern andPattern4 = new AndPattern(0, -1, pattern4);
+        AndPattern andPattern5 = new AndPattern(0, -1);
+        AndPattern andPattern6 = new AndPattern(0, -1, pattern1);
 
         assertEquals(false, andPattern1.match(nseq1).isFound());
         assertEquals(false, andPattern1.match(nseq1, 0, 25, (byte)1).isFound());
@@ -71,8 +71,8 @@ public class AndPatternTest {
                     SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, fullSeq.getSequence().size()));
             FuzzyMatchPattern patternMotif1 = new FuzzyMatchPattern(seqMotif1);
             FuzzyMatchPattern patternMotif2 = new FuzzyMatchPattern(seqMotif2);
-            AndPattern andPattern1 = new AndPattern(patternMotif1, patternMotif2);
-            AndPattern andPattern2 = new AndPattern(patternMotif2, patternMotif1);
+            AndPattern andPattern1 = new AndPattern(0, -1, patternMotif1, patternMotif2);
+            AndPattern andPattern2 = new AndPattern(0, -1, patternMotif2, patternMotif1);
             assertTrue(andPattern1.match(target).isFound());
             assertTrue(andPattern2.match(target).isFound());
             assertNotNull(andPattern1.match(target).getBestMatch(false));
@@ -97,8 +97,8 @@ public class AndPatternTest {
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATTA"));
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GACA"));
         NSequenceWithQuality nseq = new NSequenceWithQuality("GACATTATTATTAGACAGACATTAGACATTATTAGACAGACATTAATTA");
-        AndPattern andPattern1 = new AndPattern(pattern1, pattern2);
-        AndPattern andPattern2 = new AndPattern(pattern1, pattern1, pattern2);
+        AndPattern andPattern1 = new AndPattern(0, -1, pattern1, pattern2);
+        AndPattern andPattern2 = new AndPattern(0, -1, pattern1, pattern1, pattern2);
         assertNotNull(andPattern1.match(nseq).getBestMatch());
         assertNotNull(andPattern2.match(nseq).getBestMatch());
         assertEquals(44, countMatches(andPattern1.match(nseq), true));
@@ -121,7 +121,7 @@ public class AndPatternTest {
     public void matchesIntersectionTest() throws Exception {
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATA"));
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("TAT"));
-        AndPattern andPattern = new AndPattern(pattern1, pattern2);
+        AndPattern andPattern = new AndPattern(0, -1, pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("ATATATATTATA");
         OutputPort<Match> matches = andPattern.match(nseq).getMatches(false, true);
         while (true) {
@@ -138,7 +138,7 @@ public class AndPatternTest {
     public void quickSearchTest() throws Exception {
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATA"));
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("TAT"));
-        AndPattern andPattern = new AndPattern(pattern1, pattern2);
+        AndPattern andPattern = new AndPattern(0, -1, pattern1, pattern2);
         NSequenceWithQuality nseq1 = new NSequenceWithQuality("ATATATATTATA");
         NSequenceWithQuality nseq2 = new NSequenceWithQuality("GCGGTGCGTATAGCG");
         MatchingResult match1 = andPattern.match(nseq1);
@@ -182,7 +182,7 @@ public class AndPatternTest {
 
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groupEdges1);
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("CAGATGCA"), groupEdges2);
-        AndPattern andPattern = new AndPattern(pattern1, pattern2);
+        AndPattern andPattern = new AndPattern(0, -1, pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGCC");
         MatchingResult result = andPattern.match(nseq);
         OutputPort<Match> matchOutputPort = result.getMatches(false, true);

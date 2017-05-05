@@ -43,10 +43,10 @@ public class AndOperator extends MultipleReadsOperator {
 
             if (byScore)
                 sorter = new SorterByScore(true, true, fairSorting,
-                        MatchValidationType.LOGICAL_AND);
+                        0, 0, MatchValidationType.LOGICAL_AND);
             else
                 sorter = new SorterByCoordinate(true, true, fairSorting,
-                        MatchValidationType.LOGICAL_AND);
+                        0, 0, MatchValidationType.LOGICAL_AND);
 
             return sorter.getOutputPort(operandPorts);
         }
