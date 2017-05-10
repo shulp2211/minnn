@@ -321,14 +321,10 @@ public class FuzzyMatchPattern extends SinglePattern {
              */
             private Alignment<NucleotideSequence> getAlignment(int matchLastPosition) {
                 int firstPostition = matchLastPosition + 1 - patternSeq.size() - maxErrors;
-                int addedLength = maxErrors;    // number of nucleotides added to the left in target
-                if (firstPostition < 0) {
-                    firstPostition = 0;
-                    addedLength = matchLastPosition - patternSeq.size() + 1;
-                }
+                if (firstPostition < 0) firstPostition = 0;
                 return BandedLinearAligner.alignLeftAdded(LinearGapAlignmentScoring.getNucleotideBLASTScoring(),
                         patternSeq, target.getSequence(), 0, patternSeq.size(), 0,
-                        firstPostition, patternSeq.size() + addedLength, addedLength * 2, maxErrors);
+                        firstPostition, matchLastPosition - firstPostition + 1, maxErrors, maxErrors);
             }
 
             /**
