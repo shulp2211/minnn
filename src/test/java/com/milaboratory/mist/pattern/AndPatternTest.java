@@ -12,8 +12,12 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.HashMap;
+import java.util.Random;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
+import static com.milaboratory.mist.util.CommonTestUtils.getRandomSubsequence;
+import static com.milaboratory.mist.util.CommonTestUtils.makeRandomErrors;
+import static com.milaboratory.mist.util.RangeTools.getIntersectionLength;
 import static org.junit.Assert.*;
 
 public class AndPatternTest {
@@ -194,5 +198,63 @@ public class AndPatternTest {
         assertEquals("3", match.getMatchedGroupEdge("3", true)
                 .getGroupName());
         assertNull(matchOutputPort.take());
+    }
+
+    @Test
+    public void maxErrorsRandomTest() throws Exception {
+        int its = TestUtil.its(1000, 2000);
+        Random randomGenerator = new Random();
+        for (int i = 0; i < its; ++i) {
+            int targetLength = randomGenerator.nextInt(63) + 1;
+            NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, targetLength, targetLength);
+            NucleotideSequence motif1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 50);
+            NucleotideSequence motif2 = getRandomSubsequence(target);
+            NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
+                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
+            int maxErrors = randomGenerator.nextInt(10);
+            NucleotideSequence motif1WithErrors = makeRandomErrors(motif1, maxErrors);
+            NucleotideSequence motif2WithErrors = makeRandomErrors(motif2, maxErrors);
+            FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(motif1WithErrors, maxErrors);
+            FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(motif2WithErrors, maxErrors);
+            boolean targetContainsPattern1 = target.toString().contains(motif1.toString());
+            boolean isMatchingPattern1 = pattern1.match(targetQ).isFound();
+
+            if (targetContainsPattern1) {
+                assertTrue(pattern1.match(targetQ).isFound());
+                assertTrue(pattern1.match(targetQ).getBestMatch(false) != null);
+                assertTrue(pattern1.match(targetQ).getMatches(true, false).take() != null);
+                assertTrue(pattern1.match(targetQ).getMatches(false, false).take() != null);
+                assertTrue(pattern1.match(targetQ).getBestMatch(true) != null);
+                assertTrue(pattern1.match(targetQ).getMatches(true, true).take() != null);
+                assertTrue(pattern1.match(targetQ).getMatches(false, true).take() != null);
+            }
+
+            assertTrue(pattern2.match(targetQ).isFound());
+            assertTrue(pattern2.match(targetQ).getBestMatch(false) != null);
+            assertTrue(pattern2.match(targetQ).getMatches(true, false).take() != null);
+            assertTrue(pattern2.match(targetQ).getMatches(false, false).take() != null);
+            assertTrue(pattern2.match(targetQ).getBestMatch(true) != null);
+            assertTrue(pattern2.match(targetQ).getMatches(true, true).take() != null);
+            assertTrue(pattern2.match(targetQ).getMatches(false, true).take() != null);
+
+            int andMaxErrors;
+            if (isMatchingPattern1)
+                andMaxErrors = maxErrors * 2 + getIntersectionLength(pattern1.match(targetQ).getBestMatch(false)
+                                .getRange(), pattern2.match(targetQ).getBestMatch(false).getRange());
+            else {
+                andMaxErrors = maxErrors;
+                if ((targetLength <= maxErrors) || (motif1WithErrors.size() <= maxErrors))
+                    andMaxErrors = 0;
+            }
+            AndPattern andPattern = new AndPattern(andMaxErrors, -1, pattern1, pattern2);
+
+            assertEquals(isMatchingPattern1, andPattern.match(targetQ).isFound());
+            assertEquals(isMatchingPattern1, andPattern.match(targetQ).getBestMatch(false) != null);
+            assertEquals(isMatchingPattern1, andPattern.match(targetQ).getMatches(true, false).take() != null);
+            assertEquals(isMatchingPattern1, andPattern.match(targetQ).getMatches(false, false).take() != null);
+            assertEquals(isMatchingPattern1, andPattern.match(targetQ).getBestMatch(true) != null);
+            assertEquals(isMatchingPattern1, andPattern.match(targetQ).getMatches(true, true).take() != null);
+            assertEquals(isMatchingPattern1, andPattern.match(targetQ).getMatches(false, true).take() != null);
+        }
     }
 }
