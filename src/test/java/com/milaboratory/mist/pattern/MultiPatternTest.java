@@ -147,12 +147,12 @@ public class MultiPatternTest {
     public void randomTest() throws Exception {
         int its = TestUtil.its(500, 1000);
         for (int i = 0; i < its; ++i) {
-            int sequencesNum = new Random().nextInt(9) + 1;
+            int sequencesNum = new Random().nextInt(7) + 1;
             NSequenceWithQuality[] sequences = new NSequenceWithQuality[sequencesNum];
             FuzzyMatchPattern[] patterns = new FuzzyMatchPattern[sequencesNum];
             boolean isMatching = true;
             for (int s = 0; s < sequencesNum; s++) {
-                NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
+                NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 300);
                 NucleotideSequence motifSeq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 5);
                 NSequenceWithQuality seqQ = new NSequenceWithQuality(seq, SequenceQuality
                         .getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, seq.getSequence().size()));
