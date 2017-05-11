@@ -10,6 +10,7 @@ import com.milaboratory.test.TestUtil;
 
 import java.util.*;
 
+import static com.milaboratory.mist.util.CommonTestUtils.countPortValues;
 import static org.junit.Assert.*;
 
 class CommonTestTemplates {
@@ -297,12 +298,5 @@ class CommonTestTemplates {
 
             assertEquals(expectedMatchesNum, countPortValues(testPort));
         }
-    }
-
-    static int countPortValues(OutputPort<Match> port) {
-        int counter = 0;
-        while (port.take() != null)
-            counter++;
-        return counter;
     }
 }

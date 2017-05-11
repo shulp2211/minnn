@@ -410,7 +410,6 @@ public class LogicalOperatorsTest {
                 }
                 return null;
             }
-
         };
 
         MatchingResult result = andOperator.match(mseq);

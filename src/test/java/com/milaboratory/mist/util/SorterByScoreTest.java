@@ -10,6 +10,7 @@ import org.junit.Test;
 import java.util.*;
 
 import static com.milaboratory.mist.util.CommonTestTemplates.*;
+import static com.milaboratory.mist.util.CommonTestUtils.countPortValues;
 import static org.junit.Assert.*;
 
 public class SorterByScoreTest {
