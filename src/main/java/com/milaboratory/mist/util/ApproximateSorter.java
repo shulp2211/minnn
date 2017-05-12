@@ -39,6 +39,12 @@ public abstract class ApproximateSorter {
         this.maxErrors = maxErrors;
         this.errorScorePenalty = errorScorePenalty;
         this.matchValidationType = matchValidationType;
+        if ((multipleReads && ((matchValidationType == MatchValidationType.INTERSECTION)
+                || (matchValidationType == MatchValidationType.ORDER)
+                || (matchValidationType == MatchValidationType.FIRST))) || (!multipleReads
+                && ((matchValidationType == MatchValidationType.LOGICAL_AND)
+                || (matchValidationType == MatchValidationType.LOGICAL_OR))))
+            throw new IllegalArgumentException("Invalid combination of multipleReads and matchValidationType flags!");
     }
 
     /**
@@ -53,10 +59,12 @@ public abstract class ApproximateSorter {
      * Get combined match from a group of input matches. It uses multipleReads flag to determine how to combine matches
      * (by combining ranges for single read or by numbering the matched ranges for multiple reads).
      *
+     * @param sortingByScore true if we use sorting by score, false if we use sorting by coordinate;
+     *                       it really used only for matchValidationType == MatchValidationType.FIRST
      * @param matches input matches
      * @return combined match
      */
-    protected Match combineMatches(Match... matches) {
+    protected Match combineMatches(boolean sortingByScore, Match... matches) {
         ArrayList<MatchedItem> matchedItems = new ArrayList<>();
 
         if (multipleReads) {
@@ -88,20 +96,39 @@ public abstract class ApproximateSorter {
             }
             if (allMatchesAreNull) return null;
             return new Match(patternIndex, combineMatchScores(matches), matchedItems);
-        } else {
-            NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
-            byte targetId = matches[0].getMatchedRange().getTargetId();
-            Range[] ranges = new Range[matches.length];
+        } else
+            if (matchValidationType == MatchValidationType.FIRST) {
+                boolean matchExist = false;
+                int bestMatchPort = 0;
+                int bestCoordinate = Integer.MAX_VALUE;
+                float bestScore = Float.NEGATIVE_INFINITY;
+                for (int i = 0; i < matches.length; i++)
+                    if ((matches[i] != null)
+                        && ((sortingByScore && (matches[i].getScore() > bestScore))
+                        || (!sortingByScore && (matches[i].getRange().getLower() < bestCoordinate)))) {
+                        matchExist = true;
+                        if (sortingByScore) bestScore = matches[i].getScore();
+                        else bestCoordinate = matches[i].getRange().getLower();
+                        bestMatchPort = i;
+                    }
+                if (matchExist)
+                    return matches[bestMatchPort];
+                else
+                    return null;
+            } else {
+                NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
+                byte targetId = matches[0].getMatchedRange().getTargetId();
+                Range[] ranges = new Range[matches.length];
 
-            for (int i = 0; i < matches.length; i++) {
-                matchedItems.addAll(matches[i].getMatchedGroupEdges());
-                ranges[i] = matches[i].getRange();
+                for (int i = 0; i < matches.length; i++) {
+                    matchedItems.addAll(matches[i].getMatchedGroupEdges());
+                    ranges[i] = matches[i].getRange();
+                }
+
+                HashMap.SimpleEntry<Range, Float> combineRangesResult = combineRanges(errorScorePenalty, ranges);
+                matchedItems.add(new MatchedRange(target, targetId, 0, combineRangesResult.getKey()));
+                return new Match(1, combineMatchScores(matches) + combineRangesResult.getValue(), matchedItems);
             }
-
-            HashMap.SimpleEntry<Range, Float> combineRangesResult = combineRanges(errorScorePenalty, ranges);
-            matchedItems.add(new MatchedRange(target, targetId, 0, combineRangesResult.getKey()));
-            return new Match(1, combineMatchScores(matches) + combineRangesResult.getValue(), matchedItems);
-        }
     }
 
     /**
@@ -129,14 +156,25 @@ public abstract class ApproximateSorter {
     }
 
     /**
+     * Returns true if null match taken from operand does not guarantee that all operator will not match.
+     *
+     * @return true if null matches taken from operands must not automatically discard the current combination
+     */
+    protected boolean areNullMatchesAllowed() {
+        return ((matchValidationType == MatchValidationType.LOGICAL_OR) || (matchValidationType == MatchValidationType.FIRST));
+    }
+
+    /**
      * Fills array for fair sorting. Array will be already filtered: match combinations that contain incompatible
      * ranges will not be saved to array.
      *
      * @param inputPorts ports for input matches
      * @param numberOfPorts number of ports for input matches
+     * @param sortingByScore true if we use sorting by score, false if we use sorting by coordinate;
+     *                       it used as argument for combineMatches
      * @return array for fair sorting
      */
-    protected Match[] fillArrayForFairSorting(ArrayList<OutputPort<Match>> inputPorts, int numberOfPorts) {
+    protected Match[] fillArrayForFairSorting(ArrayList<OutputPort<Match>> inputPorts, int numberOfPorts, boolean sortingByScore) {
         ArrayList<ArrayList<Match>> allMatches = new ArrayList<>();
         ArrayList<Match> allMatchesFiltered = new ArrayList<>();
         TableOfIterations tableOfIterations = new TableOfIterations(numberOfPorts);
@@ -148,8 +186,7 @@ public abstract class ApproximateSorter {
             allMatches.add(new ArrayList<>());
             do {
                 currentMatch = inputPorts.get(i).take();
-                if ((currentMatch != null)
-                        || (matchValidationType == MatchValidationType.LOGICAL_OR && allMatches.get(i).size() == 0))
+                if ((currentMatch != null) || (areNullMatchesAllowed() && (allMatches.get(i).size() == 0)))
                     allMatches.get(i).add(currentMatch);
             } while (currentMatch != null);
             totalNumberOfCombinations *= allMatches.get(i).size();
@@ -165,7 +202,7 @@ public abstract class ApproximateSorter {
                 if (incompatibleIndexes != null)
                     tableOfIterations.addIncompatibleIndexes(incompatibleIndexes);
                 else
-                    allMatchesFiltered.add(combineMatches(currentMatches));
+                    allMatchesFiltered.add(combineMatches(sortingByScore, currentMatches));
             }
 
             // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
@@ -199,6 +236,7 @@ public abstract class ApproximateSorter {
         switch (matchValidationType) {
             case LOGICAL_OR:
             case LOGICAL_AND:
+            case FIRST:
                 return null;
             case INTERSECTION:
                 Range ranges[] = new Range[matches.length];

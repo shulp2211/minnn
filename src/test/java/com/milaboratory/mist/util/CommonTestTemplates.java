@@ -105,8 +105,8 @@ class CommonTestTemplates {
                     0, -1, MatchValidationType.ORDER);
             sorterSingle4 = new SorterByScore(false, false, fairSorting,
                     0, -1, MatchValidationType.ORDER);
-            sorterSingle5 = new SorterByScore(false, true, fairSorting,
-                    0, 0, MatchValidationType.LOGICAL_AND);
+            sorterSingle5 = new SorterByScore(false, false, fairSorting,
+                    0, 0, MatchValidationType.FIRST);
             sorterMulti1 = new SorterByScore(true, true, fairSorting,
                     0, 0, MatchValidationType.LOGICAL_OR);
             sorterMulti2 = new SorterByScore(true, false, fairSorting,
@@ -122,8 +122,8 @@ class CommonTestTemplates {
                     0, -1, MatchValidationType.ORDER);
             sorterSingle4 = new SorterByCoordinate(false, false, fairSorting,
                     0, -1, MatchValidationType.ORDER);
-            sorterSingle5 = new SorterByCoordinate(false, true, fairSorting,
-                    0, 0, MatchValidationType.LOGICAL_AND);
+            sorterSingle5 = new SorterByCoordinate(false, false, fairSorting,
+                    0, 0, MatchValidationType.FIRST);
             sorterMulti1 = new SorterByCoordinate(true, true, fairSorting,
                     0, 0, MatchValidationType.LOGICAL_OR);
             sorterMulti2 = new SorterByCoordinate(true, false, fairSorting,
@@ -160,7 +160,7 @@ class CommonTestTemplates {
                 add(testPortSingle4.getCopy()); add(testPortSingle1.getCopy()); }})));
         assertEquals(1, countPortValues(sorterSingle5.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                 add(testPortSingle4.getCopy()); add(testPortSingle4.getCopy()); }})));
-        assertEquals(0, countPortValues(sorterSingle5.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+        assertEquals(3, countPortValues(sorterSingle5.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                 add(testPortSingle1.getCopy()); add(testPortEmpty); add(testPortSingle4.getCopy()); }})));
         assertEquals(3, countPortValues(sorterMulti1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                 add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }})));

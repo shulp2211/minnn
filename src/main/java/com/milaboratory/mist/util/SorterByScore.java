@@ -68,7 +68,7 @@ public class SorterByScore extends ApproximateSorter {
                         Match takenMatch = inputPorts.get(i).take();
                         if (takenMatch == null)
                             if (takenMatches.get(i).size() == 0) {
-                                if (matchValidationType == MatchValidationType.LOGICAL_OR) {
+                                if (areNullMatchesAllowed()) {
                                     takenMatches.get(i).add(null);
                                     tableOfIterations.setPortEndReached(i, 1);
                                     currentIndexes[i] = 0;
@@ -101,12 +101,12 @@ public class SorterByScore extends ApproximateSorter {
             }
             tableOfIterations.addReturnedCombination(currentIndexes);
             calculateNextIndexes();
-            return combineMatches(currentMatches);
+            return combineMatches(true, currentMatches);
         }
 
         private Match takeFairSorted() {
             if (!sortingPerformed) {
-                allMatchesFiltered = fillArrayForFairSorting(inputPorts, numberOfPorts);
+                allMatchesFiltered = fillArrayForFairSorting(inputPorts, numberOfPorts, true);
                 filteredMatchesCount = allMatchesFiltered.length;
                 Arrays.sort(allMatchesFiltered, Comparator.comparingDouble(Match::getScore).reversed());
                 sortingPerformed = true;
@@ -130,7 +130,7 @@ public class SorterByScore extends ApproximateSorter {
             while (tableOfIterations.getNumberOfReturnedCombinations() + numberOfSkippedIterations <= numberOfPorts) {
                 for (int i = 0; i < numberOfPorts; i++)
                     if (i == tableOfIterations.getNumberOfReturnedCombinations() + numberOfSkippedIterations - 1)
-                        if (matchValidationType == MatchValidationType.LOGICAL_OR && takenMatches.get(i).get(0) == null) {
+                        if (areNullMatchesAllowed() && (takenMatches.get(i).get(0) == null)) {
                             numberOfSkippedIterations++;
                             currentIndexes[i] = 0;
                         } else

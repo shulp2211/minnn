@@ -78,7 +78,7 @@ public class SorterByCoordinate extends ApproximateSorter {
                         Match takenMatch = inputPorts.get(i).take();
                         if (takenMatch == null)
                             if (takenMatches.get(i).size() == 0) {
-                                if (matchValidationType == MatchValidationType.LOGICAL_OR) {
+                                if (areNullMatchesAllowed()) {
                                     takenMatches.get(i).add(null);
                                     tableOfIterations.setPortEndReached(i, 1);
                                     currentIndexes[i] = 0;
@@ -110,12 +110,12 @@ public class SorterByCoordinate extends ApproximateSorter {
             }
             tableOfIterations.addReturnedCombination(currentIndexes);
             calculateNextIndexes();
-            return combineMatches(currentMatches);
+            return combineMatches(false, currentMatches);
         }
 
         private Match takeFairSorted() {
             if (!sortingPerformed) {
-                allMatchesFiltered = fillArrayForFairSorting(inputPorts, numberOfPorts);
+                allMatchesFiltered = fillArrayForFairSorting(inputPorts, numberOfPorts, false);
                 filteredMatchesCount = allMatchesFiltered.length;
                 if (!multipleReads)
                     Arrays.sort(allMatchesFiltered, Comparator.comparingInt(match -> match.getRange().getLower()));
