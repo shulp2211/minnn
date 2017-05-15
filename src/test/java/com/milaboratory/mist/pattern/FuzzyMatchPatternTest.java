@@ -254,4 +254,42 @@ public class FuzzyMatchPatternTest {
         assertEquals(new NSequenceWithQuality("ATTTAGAA"), matchingResults[2][4].getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ACAGACA"), matchingResults[2][5].getBestMatch().getValue());
     }
+
+    @Test
+    public void scoringTest() throws Exception {
+        FuzzyMatchPattern[] patterns = {
+                new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"), 0),
+                new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"), 1),
+                new FuzzyMatchPattern(new NucleotideSequence("TA"), 0)
+        };
+        NSequenceWithQuality[] sequences = {
+                new NSequenceWithQuality("TTAGACTTACCAGGAGCAGTTATTAGACAAGA"),
+                new NSequenceWithQuality("AGACTTAGACCATAGACAGACATTAGACAGACA"),
+                new NSequenceWithQuality("ATTAGGACA")
+        };
+
+        MatchingResult[][] matchingResults = new MatchingResult[3][3];
+        OutputPort<Match> currentPort;
+        Match currentMatch;
+        Match previousMatch;
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++) {
+                matchingResults[i][j] = patterns[i].match(sequences[j]);
+                previousMatch = null;
+                for (currentPort = matchingResults[i][j].getMatches(true, true); (currentMatch = currentPort.take()) != null;) {
+                    if (previousMatch != null)
+                        assertTrue(currentMatch.getScore() <= previousMatch.getScore());
+                    previousMatch = currentMatch;
+                }
+            }
+
+        assertEquals(40, matchingResults[0][0].getBestMatch(true).getScore(), 0.0001);
+        assertEquals(40, matchingResults[1][0].getBestMatch(true).getScore(), 0.0001);
+        assertEquals(10, matchingResults[2][0].getBestMatch(true).getScore(), 0.0001);
+        assertEquals(40, matchingResults[0][0].getBestMatch(false).getScore(), 0.0001);
+        assertEquals(40, matchingResults[1][0].getBestMatch(false).getScore(), 0.0001);
+        assertEquals(10, matchingResults[2][0].getBestMatch(false).getScore(), 0.0001);
+        assertEquals(40, matchingResults[1][1].getBestMatch().getScore(), 0.0001);
+        assertEquals(35, matchingResults[1][2].getBestMatch().getScore(), 0.0001);
+    }
 }

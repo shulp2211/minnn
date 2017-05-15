@@ -232,4 +232,25 @@ public class OrPatternTest {
             assertEquals(orMustBeMatching, orPattern.match(targetQ).getMatches(false, true).take() != null);
         }
     }
+
+    @Test
+    public void scoringRandomTest() throws Exception {
+        int its = TestUtil.its(100, 200);
+        for (int i = 0; i < its; ++i) {
+            NucleotideSequence motif1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
+            NucleotideSequence motif2 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
+            NucleotideSequence target = SequencesUtils.concatenate(motif1, motif2);
+            NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
+                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
+            FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(motif1, 0);
+            FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(motif2, 0);
+            OrPattern orPattern1 = new OrPattern(pattern1, pattern2);
+            OrPattern orPattern2 = new OrPattern(pattern2, pattern1);
+            assertEquals(Math.max(pattern1.match(targetQ).getBestMatch().getScore(),
+                    pattern2.match(targetQ).getBestMatch().getScore()),
+                    orPattern1.match(targetQ).getBestMatch().getScore(), 0.0001);
+            assertEquals(orPattern1.match(targetQ).getBestMatch().getScore(),
+                    orPattern2.match(targetQ).getBestMatch().getScore(), 0.0001);
+        }
+    }
 }

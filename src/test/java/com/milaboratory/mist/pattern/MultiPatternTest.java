@@ -2,10 +2,7 @@ package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
-import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
-import com.milaboratory.core.sequence.SequenceQuality;
+import com.milaboratory.core.sequence.*;
 import com.milaboratory.test.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
@@ -265,5 +262,36 @@ public class MultiPatternTest {
         FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups);
         exception.expect(IllegalStateException.class);
         new MultiPattern(pattern, pattern);
+    }
+
+    @Test
+    public void scoringRandomTest() throws Exception {
+        int its = TestUtil.its(100, 200);
+        for (int i = 0; i < its; ++i) {
+            NucleotideSequence motifs[] = new NucleotideSequence[2];
+            motifs[0] = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
+            motifs[1] = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
+            MultiNSequenceWithQuality target = new MultiNSequenceWithQuality() {
+                @Override
+                public int numberOfSequences() {
+                    return 2;
+                }
+
+                @Override
+                public NSequenceWithQuality get(int id) {
+                    return new NSequenceWithQuality(motifs[id], SequenceQuality.getUniformQuality(
+                            SequenceQuality.GOOD_QUALITY_VALUE, motifs[id].getSequence().size()));
+                }
+            };
+            FuzzyMatchPattern pattern0 = new FuzzyMatchPattern(motifs[0], 0);
+            FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(motifs[1], 0);
+            MultiPattern multiPattern0 = new MultiPattern(pattern0, pattern1);
+            MultiPattern multiPattern1 = new MultiPattern(pattern1, pattern0);
+            assertEquals(pattern0.match(target.get(0)).getBestMatch().getScore()
+                    + pattern1.match(target.get(1)).getBestMatch().getScore(),
+                    multiPattern0.match(target).getBestMatch().getScore(), 0.0001);
+            if (!motifs[0].toString().equals(motifs[1].toString()))
+                assertNull(multiPattern1.match(target).getBestMatch());
+        }
     }
 }

@@ -257,4 +257,34 @@ public class AndPatternTest {
             assertEquals(isMatchingPattern1, andPattern.match(targetQ).getMatches(false, true).take() != null);
         }
     }
+
+    @Test
+    public void scoringRandomTest() throws Exception {
+        int its = TestUtil.its(100, 200);
+        Random randomGenerator = new Random();
+        for (int i = 0; i < its; ++i) {
+            float errorScorePenalty = randomGenerator.nextFloat() * 1000 - 500;
+            NucleotideSequence leftPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
+            NucleotideSequence middleLetter = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1);
+            NucleotideSequence rightPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
+            NucleotideSequence motif1 = SequencesUtils.concatenate(leftPart, middleLetter);
+            NucleotideSequence motif2 = SequencesUtils.concatenate(middleLetter, rightPart);
+            NucleotideSequence target = SequencesUtils.concatenate(leftPart, middleLetter, rightPart);
+            NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
+                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
+            FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(motif1, 0);
+            FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(motif2, 0);
+            AndPattern andPattern1 = new AndPattern(0, errorScorePenalty, pattern1, pattern2);
+            AndPattern andPattern2 = new AndPattern(0, errorScorePenalty, pattern2, pattern1);
+            AndPattern andPattern3 = new AndPattern(1, errorScorePenalty, pattern1, pattern2);
+            AndPattern andPattern4 = new AndPattern(1, errorScorePenalty, pattern2, pattern1);
+            assertNull(andPattern1.match(targetQ).getBestMatch());
+            assertNull(andPattern2.match(targetQ).getBestMatch());
+            assertEquals(pattern1.match(targetQ).getBestMatch().getScore()
+                    + pattern2.match(targetQ).getBestMatch().getScore() + errorScorePenalty,
+                    andPattern3.match(targetQ).getBestMatch().getScore(), 0.0001);
+            assertEquals(andPattern3.match(targetQ).getBestMatch().getScore(),
+                    andPattern4.match(targetQ).getBestMatch().getScore(), 0.0001);
+        }
+    }
 }

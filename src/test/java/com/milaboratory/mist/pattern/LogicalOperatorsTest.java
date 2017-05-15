@@ -2,9 +2,8 @@ package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
-import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.*;
+import com.milaboratory.test.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -13,6 +12,7 @@ import java.util.HashMap;
 
 import static com.milaboratory.mist.pattern.GroupUtils.getGroupsFromMatch;
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
+import static com.milaboratory.mist.pattern.NotOperator.NOT_RESULT_SCORE;
 import static org.junit.Assert.*;
 
 public class LogicalOperatorsTest {
@@ -422,5 +422,61 @@ public class LogicalOperatorsTest {
 
         exception.expect(IndexOutOfBoundsException.class);
         result.getBestMatch().getMatchedRange(17);
+    }
+
+    @Test
+    public void scoringRandomTest() throws Exception {
+        int its = TestUtil.its(1000, 2000);
+        for (int i = 0; i < its; ++i) {
+            NucleotideSequence motifs[] = new NucleotideSequence[4];
+            FuzzyMatchPattern fuzzyPatterns[] = new FuzzyMatchPattern[4];
+            for (int j = 0; j < 4; ++j) {
+                motifs[j] = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 10);
+                fuzzyPatterns[j] = new FuzzyMatchPattern(motifs[j], 0);
+            }
+            MultiNSequenceWithQuality targets[] = new MultiNSequenceWithQuality[2];
+            MultiPattern multiPatterns[] = new MultiPattern[2];
+            for (int j = 0; j < 2; ++j) {
+                final int counter = j;
+                targets[j] = new MultiNSequenceWithQuality() {
+                    @Override
+                    public int numberOfSequences() {
+                        return 2;
+                    }
+
+                    @Override
+                    public NSequenceWithQuality get(int id) {
+                        return new NSequenceWithQuality(motifs[id + counter * 2], SequenceQuality.getUniformQuality(
+                                SequenceQuality.GOOD_QUALITY_VALUE, motifs[id + counter * 2].getSequence().size()));
+                    }
+                };
+                multiPatterns[j] = new MultiPattern(fuzzyPatterns[j * 2], fuzzyPatterns[j * 2 + 1]);
+            }
+
+            NotOperator notOperator = new NotOperator(multiPatterns[0]);
+            AndOperator andOperator0 = new AndOperator(multiPatterns[0], multiPatterns[0]);
+            AndOperator andOperator1 = new AndOperator(multiPatterns[0], multiPatterns[1]);
+            OrOperator orOperator0 = new OrOperator(multiPatterns[0], multiPatterns[0]);
+            OrOperator orOperator1 = new OrOperator(multiPatterns[0], multiPatterns[1]);
+
+            if (!multiPatterns[0].match(targets[1]).isFound())
+                assertEquals(NOT_RESULT_SCORE, notOperator.match(targets[1]).getBestMatch().getScore(), 0.0001);
+            else
+                assertNull(notOperator.match(targets[1]).getBestMatch());
+
+            if (!(fuzzyPatterns[2].match(targets[0].get(0)).isFound() && fuzzyPatterns[3].match(targets[0].get(1)).isFound()))
+                assertNull(andOperator1.match(targets[0]).getBestMatch());
+            if (!(fuzzyPatterns[0].match(targets[1].get(0)).isFound() && fuzzyPatterns[1].match(targets[1].get(1)).isFound()))
+                assertNull(andOperator1.match(targets[1]).getBestMatch());
+
+            assertEquals(multiPatterns[0].match(targets[0]).getBestMatch().getScore() * 2,
+                    andOperator0.match(targets[0]).getBestMatch().getScore(), 0.0001);
+            assertEquals(multiPatterns[0].match(targets[0]).getBestMatch().getScore(),
+                    orOperator0.match(targets[0]).getBestMatch().getScore(), 0.0001);
+            assertEquals(multiPatterns[0].match(targets[0]).getBestMatch().getScore(),
+                    orOperator1.match(targets[0]).getBestMatch().getScore(), 0.0001);
+            assertEquals(multiPatterns[1].match(targets[1]).getBestMatch().getScore(),
+                    orOperator1.match(targets[1]).getBestMatch().getScore(), 0.0001);
+        }
     }
 }
