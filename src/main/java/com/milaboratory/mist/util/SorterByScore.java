@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class SorterByScore extends ApproximateSorter {
+public final class SorterByScore extends ApproximateSorter {
     public SorterByScore(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
                          int maxErrors, float errorScorePenalty, MatchValidationType matchValidationType) {
         super(multipleReads, combineScoresBySum, fairSorting, maxErrors, errorScorePenalty, matchValidationType);

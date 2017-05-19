@@ -10,7 +10,7 @@ import com.milaboratory.mist.util.SorterByScore;
 
 import java.util.ArrayList;
 
-public class MultiPattern extends MultipleReadsOperator {
+public final class MultiPattern extends MultipleReadsOperator {
     public MultiPattern(SinglePattern... singlePatterns) {
         super(singlePatterns);
     }

@@ -6,19 +6,19 @@ import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import java.util.*;
 import java.util.stream.IntStream;
 
-public abstract class MultipleReadsOperator extends Pattern {
+abstract class MultipleReadsOperator extends Pattern {
     protected final MultipleReadsOperator[] operandPatterns;
     protected final SinglePattern[] singlePatterns;
     protected final ArrayList<GroupEdge> groupEdges;
 
-    public MultipleReadsOperator(MultipleReadsOperator... operandPatterns) {
+    MultipleReadsOperator(MultipleReadsOperator... operandPatterns) {
         this.operandPatterns = operandPatterns;
         this.singlePatterns = new SinglePattern[0];
         this.groupEdges = new ArrayList<>();
         getGroupEdgesFromOperands(operandPatterns);
     }
 
-    public MultipleReadsOperator(SinglePattern... singlePatterns) {
+    MultipleReadsOperator(SinglePattern... singlePatterns) {
         this.singlePatterns = singlePatterns;
         this.operandPatterns = new MultipleReadsOperator[0];
         this.groupEdges = new ArrayList<>();

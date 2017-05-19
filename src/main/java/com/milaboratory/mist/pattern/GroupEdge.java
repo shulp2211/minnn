@@ -1,6 +1,6 @@
 package com.milaboratory.mist.pattern;
 
-public class GroupEdge {
+public final class GroupEdge {
     private final String groupName;
     /**
      * true if this is group start, false if this is group end

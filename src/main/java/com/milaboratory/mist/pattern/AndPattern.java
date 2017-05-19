@@ -8,7 +8,7 @@ import com.milaboratory.mist.util.SorterByScore;
 
 import java.util.ArrayList;
 
-public class AndPattern extends MultiplePatternsOperator {
+public final class AndPattern extends MultiplePatternsOperator {
     public AndPattern(int maxErrors, float errorScorePenalty, SinglePattern... operandPatterns) {
         super(maxErrors, errorScorePenalty, operandPatterns);
     }

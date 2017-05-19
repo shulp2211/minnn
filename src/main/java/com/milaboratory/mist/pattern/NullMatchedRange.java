@@ -3,7 +3,7 @@ package com.milaboratory.mist.pattern;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 
-public class NullMatchedRange extends MatchedRange {
+public final class NullMatchedRange extends MatchedRange {
     public NullMatchedRange(int patternIndex) {
         super(null, (byte)0, patternIndex, null);
     }

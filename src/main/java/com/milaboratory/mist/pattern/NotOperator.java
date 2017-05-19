@@ -6,7 +6,7 @@ import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 
 import java.util.ArrayList;
 
-public class NotOperator extends MultipleReadsOperator {
+public final class NotOperator extends MultipleReadsOperator {
     public static final float NOT_RESULT_SCORE = 0;
 
     public NotOperator(MultipleReadsOperator... operandPatterns) {

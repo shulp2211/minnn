@@ -13,7 +13,7 @@ import com.milaboratory.core.sequence.NucleotideSequence;
 
 import java.util.*;
 
-public class FuzzyMatchPattern extends SinglePattern {
+public final class FuzzyMatchPattern extends SinglePattern {
     private final NucleotideSequence patternSeq;
     private final Motif<NucleotideSequence> motif;
     private final Map<GroupEdge, Integer> groupEdges;

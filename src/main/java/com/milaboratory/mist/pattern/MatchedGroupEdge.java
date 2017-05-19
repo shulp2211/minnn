@@ -2,7 +2,7 @@ package com.milaboratory.mist.pattern;
 
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 
-public class MatchedGroupEdge extends MatchedItem {
+public final class MatchedGroupEdge extends MatchedItem {
     private final GroupEdge groupEdge;
     private final int position;
 

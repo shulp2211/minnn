@@ -12,7 +12,7 @@ import java.util.ArrayList;
  * This pattern takes multiple SinglePattern arguments and matches best of them that is found, or not matches
  * if all arguments didn't match.
  */
-public class OrPattern extends MultiplePatternsOperator {
+public final class OrPattern extends MultiplePatternsOperator {
     public OrPattern(SinglePattern... operandPatterns) {
         super(false, operandPatterns);
     }

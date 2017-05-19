@@ -4,7 +4,7 @@ import com.milaboratory.core.Range;
 
 import java.util.ArrayList;
 
-public class GroupUtils {
+public final class GroupUtils {
     public static ArrayList<MatchedGroup> getGroupsFromMatch(Match match) {
         ArrayList<MatchedGroup> matchedGroups = new ArrayList<>();
         ArrayList<MatchedGroupEdge> matchedGroupEdges = match.getMatchedGroupEdges();

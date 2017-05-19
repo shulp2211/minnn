@@ -9,7 +9,7 @@ import com.milaboratory.mist.util.SorterByScore;
 
 import java.util.ArrayList;
 
-public class OrOperator extends MultipleReadsOperator {
+public final class OrOperator extends MultipleReadsOperator {
     public OrOperator(MultipleReadsOperator... operandPatterns) {
         super(operandPatterns);
     }

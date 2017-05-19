@@ -7,5 +7,5 @@ public interface Filter {
      * @param match match to check
      * @return the same match, or null if the match was filtered out
      */
-    public Match checkMatch(Match match);
+    Match checkMatch(Match match);
 }

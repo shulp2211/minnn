@@ -2,7 +2,7 @@ package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
 
-public class MatchUtils {
+public final class MatchUtils {
     public static long countMatches(MatchingResult matchingResult) {
         return countMatches(matchingResult, false);
     }

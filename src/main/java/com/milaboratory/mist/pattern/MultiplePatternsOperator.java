@@ -3,7 +3,7 @@ package com.milaboratory.mist.pattern;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-public abstract class MultiplePatternsOperator extends SinglePattern {
+abstract class MultiplePatternsOperator extends SinglePattern {
     protected final int maxErrors;
     protected final float errorScorePenalty;
     protected final SinglePattern[] operandPatterns;

@@ -3,7 +3,7 @@ package com.milaboratory.mist.pattern;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 
-public class BorderFilter implements Filter {
+public final class BorderFilter implements Filter {
     private final boolean leftSide;
     private final NucleotideSequence seq;
     private final int minNucleotides;

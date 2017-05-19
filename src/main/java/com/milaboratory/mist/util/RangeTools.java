@@ -4,7 +4,7 @@ import com.milaboratory.core.Range;
 
 import java.util.HashMap;
 
-public class RangeTools {
+public final class RangeTools {
     /**
      * Check if there are any intersections between ranges.
      *

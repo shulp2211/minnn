@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class SorterByCoordinate extends ApproximateSorter {
+public final class SorterByCoordinate extends ApproximateSorter {
     /**
      * Sorter by coordinate.
      *
