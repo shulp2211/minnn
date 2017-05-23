@@ -6,12 +6,12 @@ import com.milaboratory.core.sequence.NucleotideSequence;
 
 public interface PatternAligner {
     /**
-     * Returned alignment will have maximal score equal zero.
+     * Returned alignment will have maximal score equals zero.
      *
      * @param pattern
      * @param target
      * @param rightMatchPosition inclusive
-     * @return alignment with score less or equal than zero
+     * @return alignment with score less or equals than zero
      */
     Alignment<NucleotideSequence> align(NucleotideSequence pattern, NSequenceWithQuality target, int rightMatchPosition);
 
@@ -39,7 +39,7 @@ public interface PatternAligner {
     boolean compatible(PatternAligner otherAligner);
 
     /**
-     * Return new patter with more strict threshold.
+     * Return new pattern with more strict threshold.
      *
      * @return
      */
