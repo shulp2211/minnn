@@ -11,7 +11,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Random;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
@@ -154,17 +154,17 @@ public class OrPatternTest {
 
     @Test
     public void groupsTest() throws Exception {
-        HashMap<GroupEdge, Integer> groupEdges = new HashMap<GroupEdge, Integer>() {{
-            put(new GroupEdge("1", true), 0);
-            put(new GroupEdge("1", false), 1);
-            put(new GroupEdge("2", true), 1);
-            put(new GroupEdge("2", false), 3);
-            put(new GroupEdge("4", true), 4);
-            put(new GroupEdge("4", false), 5);
+        ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<GroupEdgePosition>() {{
+            add(new GroupEdgePosition(new GroupEdge("1", true), 0));
+            add(new GroupEdgePosition(new GroupEdge("1", false), 1));
+            add(new GroupEdgePosition(new GroupEdge("2", true), 1));
+            add(new GroupEdgePosition(new GroupEdge("2", false), 3));
+            add(new GroupEdgePosition(new GroupEdge("4", true), 4));
+            add(new GroupEdgePosition(new GroupEdge("4", false), 5));
         }};
 
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groupEdges);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("CAGATGCA"), groupEdges);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groupEdgePositions);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("CAGATGCA"), groupEdgePositions);
         OrPattern orPattern = new OrPattern(pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGCC");
         MatchingResult result = orPattern.match(nseq);

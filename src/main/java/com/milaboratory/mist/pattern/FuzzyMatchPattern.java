@@ -16,57 +16,60 @@ import java.util.*;
 public final class FuzzyMatchPattern extends SinglePattern {
     private final NucleotideSequence patternSeq;
     private final Motif<NucleotideSequence> motif;
-    private final Map<GroupEdge, Integer> groupEdges;
+    private final ArrayList<GroupEdgePosition> groupEdgePositions;
     private final int maxErrors;
 
     public FuzzyMatchPattern(NucleotideSequence patternSeq) {
-        this(patternSeq, new HashMap<>());
+        this(patternSeq, new ArrayList<>());
     }
 
-    public FuzzyMatchPattern(NucleotideSequence patternSeq, Map<GroupEdge, Integer> groupEdges) {
+    public FuzzyMatchPattern(NucleotideSequence patternSeq, ArrayList<GroupEdgePosition> groupEdges) {
         this(patternSeq, groupEdges, 0);
     }
 
     public FuzzyMatchPattern(NucleotideSequence patternSeq, int maxErrors) {
-        this(patternSeq, new HashMap<>(), maxErrors);
+        this(patternSeq, new ArrayList<>(), maxErrors);
     }
 
     /**
      * Find match with possible insertions and deletions using bitap and aligner.
      *
      * @param patternSeq sequence to find in the target
-     * @param groupEdges map of group edges and their positions
+     * @param groupEdgePositions list of group edges and their positions
      * @param maxErrors maximum allowed number of substitutions, insertions and deletions
      */
-    public FuzzyMatchPattern(NucleotideSequence patternSeq, Map<GroupEdge, Integer> groupEdges, int maxErrors) {
+    public FuzzyMatchPattern(NucleotideSequence patternSeq, ArrayList<GroupEdgePosition> groupEdgePositions, int maxErrors) {
         this.patternSeq = patternSeq;
         this.motif = patternSeq.toMotif();
-        this.groupEdges = groupEdges;
+        this.groupEdgePositions = groupEdgePositions;
         this.maxErrors = maxErrors;
 
         int size = patternSeq.size();
 
-        for (Map.Entry<GroupEdge, Integer> groupEdge : groupEdges.entrySet())
-            if (groupEdge.getValue() > size)
-                throw new IllegalArgumentException("Group edge " + groupEdge.getKey().getGroupName()
-                        + (groupEdge.getKey().isStart() ? " start" : " end") + " (" + groupEdge.getValue()
-                        + ") is outside of motif (motif size: " + size + ")");
+        for (GroupEdgePosition groupEdgePosition : groupEdgePositions)
+            if (groupEdgePosition.getPosition() > size)
+                throw new IllegalArgumentException("Group edge " + groupEdgePosition.getGroupEdge().getGroupName()
+                        + (groupEdgePosition.getGroupEdge().isStart() ? " start" : " end") + " ("
+                        + groupEdgePosition.getPosition() + ") is outside of motif (motif size: " + size + ")");
     }
 
     @Override
     public ArrayList<GroupEdge> getGroupEdges() {
-        return new ArrayList<>(groupEdges.keySet());
+        ArrayList<GroupEdge> groupEdges = new ArrayList<>();
+        for (GroupEdgePosition groupEdgePosition : groupEdgePositions)
+            groupEdges.add(groupEdgePosition.getGroupEdge());
+        return groupEdges;
     }
 
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
-        return new FuzzyMatchingResult(patternSeq, motif, groupEdges, maxErrors, target, from, to, targetId);
+        return new FuzzyMatchingResult(patternSeq, motif, groupEdgePositions, maxErrors, target, from, to, targetId);
     }
 
     private static class FuzzyMatchingResult extends MatchingResult {
         private final NucleotideSequence patternSeq;
         private final Motif<NucleotideSequence> motif;
-        private final Map<GroupEdge, Integer> groupEdges;
+        private final ArrayList<GroupEdgePosition> groupEdgePositions;
         private final int maxErrors;
         private final NSequenceWithQuality target;
         private final int from;
@@ -74,11 +77,11 @@ public final class FuzzyMatchPattern extends SinglePattern {
         private final byte targetId;
 
         FuzzyMatchingResult(NucleotideSequence patternSeq, Motif<NucleotideSequence> motif,
-                            Map<GroupEdge, Integer> groupEdges, int maxErrors,
+                            ArrayList<GroupEdgePosition> groupEdgePositions, int maxErrors,
                             NSequenceWithQuality target, int from, int to, byte targetId) {
             this.patternSeq = patternSeq;
             this.motif = motif;
-            this.groupEdges = groupEdges;
+            this.groupEdgePositions = groupEdgePositions;
             this.maxErrors = maxErrors;
             this.target = target;
             this.from = from;
@@ -88,13 +91,13 @@ public final class FuzzyMatchPattern extends SinglePattern {
 
         @Override
         public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
-            return new FuzzyMatchOutputPort(patternSeq, motif, groupEdges, maxErrors, target, from, to, targetId,
+            return new FuzzyMatchOutputPort(patternSeq, motif, groupEdgePositions, maxErrors, target, from, to, targetId,
                     byScore, fairSorting);
         }
 
         private static class FuzzyMatchOutputPort implements OutputPort<Match> {
             private final NucleotideSequence patternSeq;
-            private final Map<GroupEdge, Integer> groupEdges;
+            private final ArrayList<GroupEdgePosition> groupEdgePositions;
             private final int maxErrors;
             private final NSequenceWithQuality target;
             private final int from;
@@ -135,11 +138,11 @@ public final class FuzzyMatchPattern extends SinglePattern {
             private HashSet<Integer> alreadyReturnedPositions;
 
             FuzzyMatchOutputPort(NucleotideSequence patternSeq, Motif<NucleotideSequence> motif,
-                                 Map<GroupEdge, Integer> groupEdges, int maxErrors,
+                                 ArrayList<GroupEdgePosition> groupEdgePositions, int maxErrors,
                                  NSequenceWithQuality target, int from, int to, byte targetId,
                                  boolean byScore, boolean fairSorting) {
                 this.patternSeq = patternSeq;
-                this.groupEdges = groupEdges;
+                this.groupEdgePositions = groupEdgePositions;
                 this.maxErrors = maxErrors;
                 this.target = target;
                 this.from = from;
@@ -340,9 +343,9 @@ public final class FuzzyMatchPattern extends SinglePattern {
                 ArrayList<MatchedItem> matchedItems = new ArrayList<>();
                 matchedItems.add(matchedRange);
 
-                for (Map.Entry<GroupEdge, Integer> groupEdge : groupEdges.entrySet()) {
+                for (GroupEdgePosition groupEdgePosition : groupEdgePositions) {
                     MatchedGroupEdge matchedGroupEdge = new MatchedGroupEdge(target, targetId, 0,
-                            groupEdge.getKey(), groupEdge.getValue() + foundRange.getLower());
+                            groupEdgePosition.getGroupEdge(), groupEdgePosition.getPosition() + foundRange.getLower());
                     matchedItems.add(matchedGroupEdge);
                 }
 

@@ -8,7 +8,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Random;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
@@ -187,17 +187,18 @@ public class MultiPatternTest {
 
     @Test
     public void groupsTest() throws Exception {
-        HashMap<GroupEdge, Integer> groups1 = new HashMap<GroupEdge, Integer>() {{
-            put(new GroupEdge("ABC", true), 1);
-            put(new GroupEdge("ABC", false), 3);
-            put(new GroupEdge("DEF", true), 6);
-            put(new GroupEdge("DEF", false), 7);
-            put(new GroupEdge("GH", true), 10);
-            put(new GroupEdge("GH", false), 11);
+        ArrayList<GroupEdgePosition> groups1 = new ArrayList<GroupEdgePosition>() {{
+            add(new GroupEdgePosition(new GroupEdge("ABC", true), 1));
+            add(new GroupEdgePosition(new GroupEdge("ABC", false), 3));
+            add(new GroupEdgePosition(new GroupEdge("DEF", true), 6));
+            add(new GroupEdgePosition(new GroupEdge("DEF", false), 7));
+            add(new GroupEdgePosition(new GroupEdge("GH", true), 10));
+            add(new GroupEdgePosition(new GroupEdge("GH", false), 11));
         }};
-        HashMap<GroupEdge, Integer> groups2 = new HashMap<GroupEdge, Integer>() {{
-            put(new GroupEdge("XYZ", true), 1);
-            put(new GroupEdge("XYZ", false), 3);
+
+        ArrayList<GroupEdgePosition> groups2 = new ArrayList<GroupEdgePosition>() {{
+            add(new GroupEdgePosition(new GroupEdge("XYZ", true), 1));
+            add(new GroupEdgePosition(new GroupEdge("XYZ", false), 3));
         }};
 
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATAGGAGGGTAGCC"), groups1);
@@ -230,19 +231,21 @@ public class MultiPatternTest {
 
     @Test
     public void groupNamesTest1() throws Exception {
-        HashMap<GroupEdge, Integer> groups1 = new HashMap<GroupEdge, Integer>() {{
-            put(new GroupEdge("ABC", true), 1);
-            put(new GroupEdge("ABC", false), 3);
-            put(new GroupEdge("DEF", true), 6);
-            put(new GroupEdge("DEF", false), 7);
-            put(new GroupEdge("GH", true), 9);
-            put(new GroupEdge("GH", false), 10);
+        ArrayList<GroupEdgePosition> groups1 = new ArrayList<GroupEdgePosition>() {{
+            add(new GroupEdgePosition(new GroupEdge("ABC", true), 1));
+            add(new GroupEdgePosition(new GroupEdge("ABC", false), 3));
+            add(new GroupEdgePosition(new GroupEdge("DEF", true), 6));
+            add(new GroupEdgePosition(new GroupEdge("DEF", false), 7));
+            add(new GroupEdgePosition(new GroupEdge("GH", true), 9));
+            add(new GroupEdgePosition(new GroupEdge("GH", false), 10));
         }};
-        HashMap<GroupEdge, Integer> groups2 = new HashMap<GroupEdge, Integer>() {{
-            put(new GroupEdge("GH", false), 11);
-            put(new GroupEdge("XYZ", true), 1);
-            put(new GroupEdge("XYZ", false), 3);
+
+        ArrayList<GroupEdgePosition> groups2 = new ArrayList<GroupEdgePosition>() {{
+            add(new GroupEdgePosition(new GroupEdge("GH", false), 11));
+            add(new GroupEdgePosition(new GroupEdge("XYZ", true), 1));
+            add(new GroupEdgePosition(new GroupEdge("XYZ", false), 3));
         }};
+
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups1);
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups2);
         exception.expect(IllegalStateException.class);
@@ -251,14 +254,15 @@ public class MultiPatternTest {
 
     @Test
     public void groupNamesTest2() throws Exception {
-        HashMap<GroupEdge, Integer> groups = new HashMap<GroupEdge, Integer>() {{
-            put(new GroupEdge("ABC", true), 1);
-            put(new GroupEdge("ABC", false), 3);
-            put(new GroupEdge("DEF", true), 6);
-            put(new GroupEdge("DEF", false), 7);
-            put(new GroupEdge("GH", true), 10);
-            put(new GroupEdge("GH", false), 11);
+        ArrayList<GroupEdgePosition> groups = new ArrayList<GroupEdgePosition>() {{
+            add(new GroupEdgePosition(new GroupEdge("ABC", true), 1));
+            add(new GroupEdgePosition(new GroupEdge("ABC", false), 3));
+            add(new GroupEdgePosition(new GroupEdge("DEF", true), 6));
+            add(new GroupEdgePosition(new GroupEdge("DEF", false), 7));
+            add(new GroupEdgePosition(new GroupEdge("GH", true), 10));
+            add(new GroupEdgePosition(new GroupEdge("GH", false), 11));
         }};
+
         FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups);
         exception.expect(IllegalStateException.class);
         new MultiPattern(pattern, pattern);

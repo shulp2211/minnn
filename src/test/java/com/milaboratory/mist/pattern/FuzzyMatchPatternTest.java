@@ -14,7 +14,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
 import static org.junit.Assert.*;
@@ -165,15 +164,15 @@ public class FuzzyMatchPatternTest {
 
     @Test
     public void groupsTest() throws Exception {
-        HashMap<GroupEdge, Integer> groups = new HashMap<GroupEdge, Integer>() {{
-            put(new GroupEdge("ABC", true), 1);
-            put(new GroupEdge("ABC", false), 3);
-            put(new GroupEdge("DEF", true), 6);
-            put(new GroupEdge("DEF", false), 7);
-            put(new GroupEdge("GH", true), 10);
-            put(new GroupEdge("GH", false), 11);
-
+        ArrayList<GroupEdgePosition> groups = new ArrayList<GroupEdgePosition>() {{
+            add(new GroupEdgePosition(new GroupEdge("ABC", true), 1));
+            add(new GroupEdgePosition(new GroupEdge("ABC", false), 3));
+            add(new GroupEdgePosition(new GroupEdge("DEF", true), 6));
+            add(new GroupEdgePosition(new GroupEdge("DEF", false), 7));
+            add(new GroupEdgePosition(new GroupEdge("GH", true), 10));
+            add(new GroupEdgePosition(new GroupEdge("GH", false), 11));
         }};
+
         FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups);
         NSequenceWithQuality nseq = new NSequenceWithQuality("GTGTTGTGGTTGTGTTGTTGTGGTTGTGTTGTGG");
         MatchingResult result = pattern.match(nseq);
@@ -189,14 +188,15 @@ public class FuzzyMatchPatternTest {
 
     @Test
     public void groupEdgeOutsideOfMotifTest() throws Exception {
-        HashMap<GroupEdge, Integer> groups = new HashMap<GroupEdge, Integer>() {{
-            put(new GroupEdge("ABC", true), 1);
-            put(new GroupEdge("ABC", false), 3);
-            put(new GroupEdge("DEF", true), 6);
-            put(new GroupEdge("DEF", false), 7);
-            put(new GroupEdge("GH", true), 10);
-            put(new GroupEdge("GH", false), 11);
+        ArrayList<GroupEdgePosition> groups = new ArrayList<GroupEdgePosition>() {{
+            add(new GroupEdgePosition(new GroupEdge("ABC", true), 1));
+            add(new GroupEdgePosition(new GroupEdge("ABC", false), 3));
+            add(new GroupEdgePosition(new GroupEdge("DEF", true), 6));
+            add(new GroupEdgePosition(new GroupEdge("DEF", false), 7));
+            add(new GroupEdgePosition(new GroupEdge("GH", true), 10));
+            add(new GroupEdgePosition(new GroupEdge("GH", false), 11));
         }};
+
         exception.expect(IllegalArgumentException.class);
         new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groups);
     }

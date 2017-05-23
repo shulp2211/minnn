@@ -11,7 +11,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Random;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
@@ -168,24 +168,24 @@ public class AndPatternTest {
 
     @Test
     public void groupsTest() throws Exception {
-        HashMap<GroupEdge, Integer> groupEdges1 = new HashMap<GroupEdge, Integer>() {{
-            put(new GroupEdge("1", true), 0);
-            put(new GroupEdge("1", false), 1);
-            put(new GroupEdge("2", true), 1);
-            put(new GroupEdge("2", false), 3);
-            put(new GroupEdge("4", true), 4);
-            put(new GroupEdge("4", false), 5);
+        ArrayList<GroupEdgePosition> groupEdgePositions1 = new ArrayList<GroupEdgePosition>() {{
+            add(new GroupEdgePosition(new GroupEdge("1", true), 0));
+            add(new GroupEdgePosition(new GroupEdge("1", false), 1));
+            add(new GroupEdgePosition(new GroupEdge("2", true), 1));
+            add(new GroupEdgePosition(new GroupEdge("2", false), 3));
+            add(new GroupEdgePosition(new GroupEdge("4", true), 4));
+            add(new GroupEdgePosition(new GroupEdge("4", false), 5));
         }};
 
-        HashMap<GroupEdge, Integer> groupEdges2 = new HashMap<GroupEdge, Integer>() {{
-            put(new GroupEdge("3", true), 1);
-            put(new GroupEdge("3", false), 3);
-            put(new GroupEdge("5", true), 5);
-            put(new GroupEdge("5", false), 6);
+        ArrayList<GroupEdgePosition> groupEdgePositions2 = new ArrayList<GroupEdgePosition>() {{
+            add(new GroupEdgePosition(new GroupEdge("3", true), 1));
+            add(new GroupEdgePosition(new GroupEdge("3", false), 3));
+            add(new GroupEdgePosition(new GroupEdge("5", true), 5));
+            add(new GroupEdgePosition(new GroupEdge("5", false), 6));
         }};
 
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groupEdges1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("CAGATGCA"), groupEdges2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("TAGCC"), groupEdgePositions1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("CAGATGCA"), groupEdgePositions2);
         AndPattern andPattern = new AndPattern(0, -1, pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGCC");
         MatchingResult result = andPattern.match(nseq);
