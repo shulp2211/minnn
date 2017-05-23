@@ -57,9 +57,11 @@ public final class NotOperator extends MultipleReadsOperator {
                 firstCall = false;
                 if (operandIsMatching)
                     return null;
-                else
-                    return new Match(1, NOT_RESULT_SCORE, new ArrayList<MatchedItem>() {{
-                        add(new NullMatchedRange(0)); }});
+                else {
+                    ArrayList<MatchedItem> matchedItems = new ArrayList<>();
+                    matchedItems.add(new NullMatchedRange(0));
+                    return new Match(1, NOT_RESULT_SCORE, matchedItems);
+                }
             }
         }
     }

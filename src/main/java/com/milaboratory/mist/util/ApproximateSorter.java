@@ -376,7 +376,10 @@ public abstract class ApproximateSorter {
             if (indexes.length != numberOfPorts)
                 throw new IllegalArgumentException("Number of indexes: " + indexes.length + ", number of ports: "
                     + numberOfPorts + "; they should be equal!");
-            return returnedCombinations.contains(new ArrayList<Integer>() {{ for (int i : indexes) add(i); }});
+            ArrayList<Integer> indexesCombination = new ArrayList<>();
+            for (int i : indexes)
+                indexesCombination.add(i);
+            return returnedCombinations.contains(indexesCombination);
         }
 
         /**
@@ -387,7 +390,10 @@ public abstract class ApproximateSorter {
         void addReturnedCombination(int... indexes) {
             if (isCombinationReturned(indexes))
                 throw new IllegalStateException("Trying to add already returned combination!");
-            returnedCombinations.add(new ArrayList<Integer>() {{ for (int i : indexes) add(i); }});
+            ArrayList<Integer> indexesCombination = new ArrayList<>();
+            for (int i : indexes)
+                indexesCombination.add(i);
+            returnedCombinations.add(indexesCombination);
         }
 
         /**

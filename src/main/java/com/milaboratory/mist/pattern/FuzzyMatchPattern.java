@@ -337,7 +337,8 @@ public final class FuzzyMatchPattern extends SinglePattern {
                 Range foundRange = alignment.getSequence2Range();
                 float foundScore = alignment.getScore();
                 MatchedRange matchedRange = new MatchedRange(target, targetId, 0, foundRange);
-                ArrayList<MatchedItem> matchedItems = new ArrayList<MatchedItem>() {{ add(matchedRange); }};
+                ArrayList<MatchedItem> matchedItems = new ArrayList<>();
+                matchedItems.add(matchedRange);
 
                 for (Map.Entry<GroupEdge, Integer> groupEdge : groupEdges.entrySet()) {
                     MatchedGroupEdge matchedGroupEdge = new MatchedGroupEdge(target, targetId, 0,
