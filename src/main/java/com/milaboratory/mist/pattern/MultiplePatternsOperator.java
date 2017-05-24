@@ -4,30 +4,23 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 abstract class MultiplePatternsOperator extends SinglePattern {
-    protected final int maxErrors;
-    protected final float errorScorePenalty;
     protected final SinglePattern[] operandPatterns;
     protected final ArrayList<GroupEdge> groupEdges;
 
-    MultiplePatternsOperator(boolean checkGroupEdges, SinglePattern... operandPatterns) {
-        this(0, 0, checkGroupEdges, operandPatterns);
-    }
-
-    MultiplePatternsOperator(int maxErrors, float errorScorePenalty, SinglePattern... operandPatterns) {
-        this(maxErrors, errorScorePenalty, true, operandPatterns);
+    MultiplePatternsOperator(PatternAligner patternAligner, SinglePattern... operandPatterns) {
+        this(patternAligner, true, operandPatterns);
     }
 
     /**
      * Common constructor for multiple patterns operator.
      *
-     * @param maxErrors maximum enabled number of errors for combining ranges
-     * @param errorScorePenalty score penalty for 1 intersected letter when combining ranges; negative value
+     * @param patternAligner pattern aligner; it also provides information about scoring and pattern overlap limits
      * @param checkGroupEdges true if check that operands contain equal group edges must be performed
      * @param operandPatterns patterns that come as operands for the operator
      */
-    MultiplePatternsOperator(int maxErrors, float errorScorePenalty, boolean checkGroupEdges, SinglePattern... operandPatterns) {
-        this.maxErrors = maxErrors;
-        this.errorScorePenalty = errorScorePenalty;
+    MultiplePatternsOperator(PatternAligner patternAligner, boolean checkGroupEdges, SinglePattern... operandPatterns) {
+        super(patternAligner);
+        testAlignersCompatibility(operandPatterns);
         this.operandPatterns = operandPatterns;
         this.groupEdges = new ArrayList<>();
         for (SinglePattern pattern : operandPatterns)

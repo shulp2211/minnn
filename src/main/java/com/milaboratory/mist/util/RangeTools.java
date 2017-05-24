@@ -1,8 +1,8 @@
 package com.milaboratory.mist.util;
 
 import com.milaboratory.core.Range;
-
-import java.util.HashMap;
+import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.mist.pattern.PatternAligner;
 
 public final class RangeTools {
     /**
@@ -75,21 +75,27 @@ public final class RangeTools {
     }
 
     /**
-     * Combine ranges and calculate score penalty for intersections.
+     * Combine ranges in target and calculate score penalty for intersections.
      *
-     * @param errorPenalty score penalty for each letter of intersection; in most cases it must be negative value
+     * @param patternAligner pattern aligner; used to get score penalties for intersections
+     * @param target target
      * @param ranges ranges to combine
      * @return combined range and total score penalty
      */
-    public static HashMap.SimpleEntry<Range, Float> combineRanges(float errorPenalty, Range... ranges) {
+    static CombinedRange combineRanges(PatternAligner patternAligner, NSequenceWithQuality target, Range... ranges) {
         if (ranges.length == 0)
             throw new IllegalArgumentException("Cannot combine 0 ranges.");
 
         float totalPenalty = 0;
         for (int i = 0; i < ranges.length; i++)
-            for (int j = i + 1; j < ranges.length; j++)
-                totalPenalty += getIntersectionLength(ranges[i], ranges[j]) * errorPenalty;
+            for (int j = i + 1; j < ranges.length; j++) {
+                int overlapLength = getIntersectionLength(ranges[i], ranges[j]);
+                if (overlapLength > 0) {
+                    int overlapOffset = combine2Ranges(ranges[i], ranges[j]).getLower();
+                    totalPenalty += patternAligner.overlapPenalty(target, overlapOffset, overlapLength);
+                }
+            }
 
-        return new HashMap.SimpleEntry<>(combineRanges(ranges), totalPenalty);
+        return new CombinedRange(combineRanges(ranges), totalPenalty);
     }
 }

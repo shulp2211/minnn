@@ -7,37 +7,33 @@ import com.milaboratory.mist.pattern.*;
 
 import java.util.*;
 
-import static com.milaboratory.mist.util.RangeTools.combineRanges;
-import static com.milaboratory.mist.util.RangeTools.getIntersectionLength;
+import static com.milaboratory.mist.util.RangeTools.*;
 
 public abstract class ApproximateSorter {
+    protected final PatternAligner patternAligner;
     protected final boolean multipleReads;
     protected final boolean combineScoresBySum;
     protected final boolean fairSorting;
-    protected final int maxErrors;
-    protected final float errorScorePenalty;
     protected final MatchValidationType matchValidationType;
 
     /**
      * This sorter allows to get output port for approximately sorted matches by score or coordinate from
      * input ports. Specific sorters (by score, coordinate and with different rules) are extending this class.
      *
+     * @param patternAligner pattern aligner that provides information about scoring and pattern overlap limits
      * @param multipleReads true if we combine matches from multiple reads; false if we combine matches
      *                      from single read
      * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
-     * @param maxErrors maximum enabled number of errors for combining ranges
-     * @param errorScorePenalty score penalty for 1 intersected letter when combining ranges; negative value
      * @param matchValidationType type of validation used to determine that current matches combination is invalid
      */
-    public ApproximateSorter(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
-                             int maxErrors, float errorScorePenalty, MatchValidationType matchValidationType) {
+    public ApproximateSorter(PatternAligner patternAligner, boolean multipleReads, boolean combineScoresBySum,
+                             boolean fairSorting, MatchValidationType matchValidationType) {
+        this.patternAligner = patternAligner;
         this.multipleReads = multipleReads;
         this.combineScoresBySum = combineScoresBySum;
         this.fairSorting = fairSorting;
-        this.maxErrors = maxErrors;
-        this.errorScorePenalty = errorScorePenalty;
         this.matchValidationType = matchValidationType;
         if ((multipleReads && ((matchValidationType == MatchValidationType.INTERSECTION)
                 || (matchValidationType == MatchValidationType.ORDER)
@@ -125,9 +121,9 @@ public abstract class ApproximateSorter {
                     ranges[i] = matches[i].getRange();
                 }
 
-                HashMap.SimpleEntry<Range, Float> combineRangesResult = combineRanges(errorScorePenalty, ranges);
-                matchedItems.add(new MatchedRange(target, targetId, 0, combineRangesResult.getKey()));
-                return new Match(1, combineMatchScores(matches) + combineRangesResult.getValue(), matchedItems);
+                CombinedRange combinedRange = combineRanges(patternAligner, target, ranges);
+                matchedItems.add(new MatchedRange(target, targetId, 0, combinedRange.getRange()));
+                return new Match(1, combineMatchScores(matches) + combinedRange.getScorePenalty(), matchedItems);
             }
     }
 
@@ -201,8 +197,11 @@ public abstract class ApproximateSorter {
                 IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, innerArrayIndexes);
                 if (incompatibleIndexes != null)
                     tableOfIterations.addIncompatibleIndexes(incompatibleIndexes);
-                else
-                    allMatchesFiltered.add(combineMatches(sortingByScore, currentMatches));
+                else {
+                    Match combinedMatch = combineMatches(sortingByScore, currentMatches);
+                    if (combinedMatch.getScore() >= patternAligner.penaltyThreshold())
+                        allMatchesFiltered.add(combinedMatch);
+                }
             }
 
             // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
@@ -246,8 +245,8 @@ public abstract class ApproximateSorter {
                     if (matches[i] == null) continue;
                     Range currentRange = matches[i].getRange();
                     ranges[i] = currentRange;
-                    for (int j = 0; j < i; j++)  // Compare with all previously added matches
-                        if (getIntersectionLength(ranges[i], ranges[j]) > maxErrors) {
+                    for (int j = 0; j < i; j++)     // Compare with all previously added matches
+                        if (isOverlapPenaltyOverThreshold(matches[0].getMatchedRange().getTarget(), ranges[i], ranges[j])) {
                             result = new IncompatibleIndexes(j, indexes[j], i, indexes[i]);
                             break OUTER;
                         }
@@ -262,8 +261,8 @@ public abstract class ApproximateSorter {
                     if (matches[i] == null) continue;
                     currentRange = matches[i].getRange();
                     previousRange = matches[i - 1].getRange();
-                    if ((previousRange.getUpper() > currentRange.getLower() + maxErrors)
-                            || (previousRange.getLower() >= currentRange.getLower())) {
+                    if ((previousRange.getLower() >= currentRange.getLower()) || isOverlapPenaltyOverThreshold(
+                            matches[0].getMatchedRange().getTarget(), previousRange, currentRange)) {
                         result = new IncompatibleIndexes(i - 1, indexes[i - 1], i, indexes[i]);
                         break;
                     }
@@ -273,13 +272,28 @@ public abstract class ApproximateSorter {
         return null;
     }
 
-    protected class IncompatibleIndexes {
-        public int port1;
-        public int index1;
-        public int port2;
-        public int index2;
+    /**
+     * Check if overlap penalty for 2 ranges is over threshold.
+     *
+     * @return true if penalty is over threshold, otherwise false
+     */
+    private boolean isOverlapPenaltyOverThreshold(NSequenceWithQuality target, Range range0, Range range1) {
+        int overlapLength = getIntersectionLength(range0, range1);
+        if (overlapLength > 0) {
+            int overlapOffset = combine2Ranges(range0, range1).getLower();
+            if (patternAligner.overlapPenalty(target, overlapOffset, overlapLength) < patternAligner.penaltyThreshold())
+                return true;
+        }
+        return false;
+    }
 
-        public IncompatibleIndexes(int port1, int index1, int port2, int index2) {
+    protected class IncompatibleIndexes {
+        int port1;
+        int index1;
+        int port2;
+        int index2;
+
+        IncompatibleIndexes(int port1, int index1, int port2, int index2) {
             this.port1 = port1;
             this.index1 = index1;
             this.port2 = port2;

@@ -4,7 +4,11 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 
-public abstract class SinglePattern extends Pattern {
+abstract class SinglePattern extends Pattern {
+    SinglePattern(PatternAligner patternAligner) {
+        super(patternAligner);
+    }
+
     @Override
     public MatchingResult match(MultiNSequenceWithQuality target) {
         if (!(target instanceof NSequenceWithQuality))

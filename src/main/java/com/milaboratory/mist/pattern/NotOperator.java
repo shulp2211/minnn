@@ -7,29 +7,29 @@ import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import java.util.ArrayList;
 
 public final class NotOperator extends MultipleReadsOperator {
-    public static final float NOT_RESULT_SCORE = 0;
-
-    public NotOperator(MultipleReadsOperator... operandPatterns) {
-        super(operandPatterns);
+    public NotOperator(PatternAligner patternAligner, MultipleReadsOperator... operandPatterns) {
+        super(patternAligner, operandPatterns);
         if (operandPatterns.length != 1)
-            throw new IllegalArgumentException("Not operator must take exactly 1 argument!");
+            throw new IllegalArgumentException("Not operator must take exactly 1 operand!");
         if (groupEdges.size() > 0)
             throw new IllegalStateException("Not operator must not contain group edges inside!");
     }
 
     @Override
     public MatchingResult match(MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
-        return new NotOperatorMatchingResult(operandPatterns[0], target, ranges, reverseComplements);
+        return new NotOperatorMatchingResult(patternAligner, operandPatterns[0], target, ranges, reverseComplements);
     }
 
     private static class NotOperatorMatchingResult extends MatchingResult {
+        private final PatternAligner patternAligner;
         private final MultipleReadsOperator operandPattern;
         private final MultiNSequenceWithQuality target;
         private final Range[] ranges;
         private final boolean[] reverseComplements;
 
-        NotOperatorMatchingResult(MultipleReadsOperator operandPattern,
+        NotOperatorMatchingResult(PatternAligner patternAligner, MultipleReadsOperator operandPattern,
                                  MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
+            this.patternAligner = patternAligner;
             this.operandPattern = operandPattern;
             this.target = target;
             this.ranges = ranges;
@@ -38,15 +38,18 @@ public final class NotOperator extends MultipleReadsOperator {
 
         @Override
         public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
-            return new NotOperatorOutputPort(operandPattern.match(target, ranges, reverseComplements).getMatches(byScore, fairSorting));
+            return new NotOperatorOutputPort(patternAligner, operandPattern.match(target, ranges, reverseComplements)
+                    .getMatches(byScore, fairSorting));
         }
 
         private static class NotOperatorOutputPort implements OutputPort<Match> {
+            private final PatternAligner patternAligner;
             private final OutputPort<Match> operandPort;
             private boolean firstCall = true;
             private boolean operandIsMatching;
 
-            NotOperatorOutputPort(OutputPort<Match> operandPort) {
+            NotOperatorOutputPort(PatternAligner patternAligner, OutputPort<Match> operandPort) {
+                this.patternAligner = patternAligner;
                 this.operandPort = operandPort;
             }
 
@@ -60,7 +63,7 @@ public final class NotOperator extends MultipleReadsOperator {
                 else {
                     ArrayList<MatchedItem> matchedItems = new ArrayList<>();
                     matchedItems.add(new NullMatchedRange(0));
-                    return new Match(1, NOT_RESULT_SCORE, matchedItems);
+                    return new Match(1, patternAligner.notResultScore(), matchedItems);
                 }
             }
         }

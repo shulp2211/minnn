@@ -14,7 +14,9 @@ public final class FilterPattern extends SinglePattern {
     private final Filter filter;
     private final Pattern pattern;
 
-    public FilterPattern(Filter filter, Pattern pattern) {
+    public FilterPattern(PatternAligner patternAligner, Filter filter, Pattern pattern) {
+        super(patternAligner);
+        testAlignersCompatibility(pattern);
         this.filter = filter;
         this.pattern = pattern;
     }

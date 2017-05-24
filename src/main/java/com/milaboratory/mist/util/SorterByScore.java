@@ -3,15 +3,16 @@ package com.milaboratory.mist.util;
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.mist.pattern.Match;
 import com.milaboratory.mist.pattern.MatchValidationType;
+import com.milaboratory.mist.pattern.PatternAligner;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
 public final class SorterByScore extends ApproximateSorter {
-    public SorterByScore(boolean multipleReads, boolean combineScoresBySum, boolean fairSorting,
-                         int maxErrors, float errorScorePenalty, MatchValidationType matchValidationType) {
-        super(multipleReads, combineScoresBySum, fairSorting, maxErrors, errorScorePenalty, matchValidationType);
+    public SorterByScore(PatternAligner patternAligner, boolean multipleReads, boolean combineScoresBySum,
+                         boolean fairSorting, MatchValidationType matchValidationType) {
+        super(patternAligner, multipleReads, combineScoresBySum, fairSorting, matchValidationType);
     }
 
     @Override
@@ -38,7 +39,7 @@ public final class SorterByScore extends ApproximateSorter {
         private int nextFairSortedMatch = 0;
         private boolean sortingPerformed = false;
 
-        public MatchesOutputPort(ArrayList<OutputPort<Match>> inputPorts, int numberOfPorts) {
+        MatchesOutputPort(ArrayList<OutputPort<Match>> inputPorts, int numberOfPorts) {
             this.takenMatches = new ArrayList<>();
             for (int i = 0; i < numberOfPorts; i++)
                 this.takenMatches.add(new ArrayList<>());

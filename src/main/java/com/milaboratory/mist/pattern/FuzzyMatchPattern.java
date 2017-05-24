@@ -3,8 +3,6 @@ package com.milaboratory.mist.pattern;
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.alignment.Alignment;
-import com.milaboratory.core.alignment.BandedLinearAligner;
-import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
 import com.milaboratory.core.motif.BitapMatcher;
 import com.milaboratory.core.motif.BitapPattern;
 import com.milaboratory.core.motif.Motif;
@@ -17,32 +15,23 @@ public final class FuzzyMatchPattern extends SinglePattern {
     private final NucleotideSequence patternSeq;
     private final Motif<NucleotideSequence> motif;
     private final ArrayList<GroupEdgePosition> groupEdgePositions;
-    private final int maxErrors;
 
-    public FuzzyMatchPattern(NucleotideSequence patternSeq) {
-        this(patternSeq, new ArrayList<>());
-    }
-
-    public FuzzyMatchPattern(NucleotideSequence patternSeq, ArrayList<GroupEdgePosition> groupEdges) {
-        this(patternSeq, groupEdges, 0);
-    }
-
-    public FuzzyMatchPattern(NucleotideSequence patternSeq, int maxErrors) {
-        this(patternSeq, new ArrayList<>(), maxErrors);
+    public FuzzyMatchPattern(PatternAligner patternAligner, NucleotideSequence patternSeq) {
+        this(patternAligner, patternSeq, new ArrayList<>());
     }
 
     /**
      * Find match with possible insertions and deletions using bitap and aligner.
      *
+     * @param patternAligner pattern aligner; it also provides information about scoring and pattern overlap limits
      * @param patternSeq sequence to find in the target
      * @param groupEdgePositions list of group edges and their positions
-     * @param maxErrors maximum allowed number of substitutions, insertions and deletions
      */
-    public FuzzyMatchPattern(NucleotideSequence patternSeq, ArrayList<GroupEdgePosition> groupEdgePositions, int maxErrors) {
+    public FuzzyMatchPattern(PatternAligner patternAligner, NucleotideSequence patternSeq, ArrayList<GroupEdgePosition> groupEdgePositions) {
+        super(patternAligner);
         this.patternSeq = patternSeq;
         this.motif = patternSeq.toMotif();
         this.groupEdgePositions = groupEdgePositions;
-        this.maxErrors = maxErrors;
 
         int size = patternSeq.size();
 
@@ -63,26 +52,26 @@ public final class FuzzyMatchPattern extends SinglePattern {
 
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
-        return new FuzzyMatchingResult(patternSeq, motif, groupEdgePositions, maxErrors, target, from, to, targetId);
+        return new FuzzyMatchingResult(patternAligner, patternSeq, motif, groupEdgePositions, target, from, to, targetId);
     }
 
     private static class FuzzyMatchingResult extends MatchingResult {
+        private final PatternAligner patternAligner;
         private final NucleotideSequence patternSeq;
         private final Motif<NucleotideSequence> motif;
         private final ArrayList<GroupEdgePosition> groupEdgePositions;
-        private final int maxErrors;
         private final NSequenceWithQuality target;
         private final int from;
         private final int to;
         private final byte targetId;
 
-        FuzzyMatchingResult(NucleotideSequence patternSeq, Motif<NucleotideSequence> motif,
-                            ArrayList<GroupEdgePosition> groupEdgePositions, int maxErrors,
+        FuzzyMatchingResult(PatternAligner patternAligner, NucleotideSequence patternSeq,
+                            Motif<NucleotideSequence> motif, ArrayList<GroupEdgePosition> groupEdgePositions,
                             NSequenceWithQuality target, int from, int to, byte targetId) {
+            this.patternAligner = patternAligner;
             this.patternSeq = patternSeq;
             this.motif = motif;
             this.groupEdgePositions = groupEdgePositions;
-            this.maxErrors = maxErrors;
             this.target = target;
             this.from = from;
             this.to = to;
@@ -91,11 +80,12 @@ public final class FuzzyMatchPattern extends SinglePattern {
 
         @Override
         public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
-            return new FuzzyMatchOutputPort(patternSeq, motif, groupEdgePositions, maxErrors, target, from, to, targetId,
-                    byScore, fairSorting);
+            return new FuzzyMatchOutputPort(patternAligner, patternSeq, motif, groupEdgePositions,
+                    target, from, to, targetId, byScore, fairSorting);
         }
 
         private static class FuzzyMatchOutputPort implements OutputPort<Match> {
+            private final PatternAligner patternAligner;
             private final NucleotideSequence patternSeq;
             private final ArrayList<GroupEdgePosition> groupEdgePositions;
             private final int maxErrors;
@@ -137,13 +127,14 @@ public final class FuzzyMatchPattern extends SinglePattern {
              */
             private HashSet<Integer> alreadyReturnedPositions;
 
-            FuzzyMatchOutputPort(NucleotideSequence patternSeq, Motif<NucleotideSequence> motif,
-                                 ArrayList<GroupEdgePosition> groupEdgePositions, int maxErrors,
+            FuzzyMatchOutputPort(PatternAligner patternAligner, NucleotideSequence patternSeq,
+                                 Motif<NucleotideSequence> motif, ArrayList<GroupEdgePosition> groupEdgePositions,
                                  NSequenceWithQuality target, int from, int to, byte targetId,
                                  boolean byScore, boolean fairSorting) {
+                this.patternAligner = patternAligner;
                 this.patternSeq = patternSeq;
                 this.groupEdgePositions = groupEdgePositions;
-                this.maxErrors = maxErrors;
+                this.maxErrors = patternAligner.bitapMaxErrors();
                 this.target = target;
                 this.from = from;
                 this.to = to;
@@ -204,7 +195,7 @@ public final class FuzzyMatchPattern extends SinglePattern {
                 } while ((position <= lastFoundPosition) || (position == -1));
                 lastFoundPosition = position;
 
-                return generateMatch(getAlignment(position));
+                return generateMatch(patternAligner.align(patternSeq, target, position));
             }
 
             private Match takeUnfairByCoordinate() {
@@ -222,7 +213,7 @@ public final class FuzzyMatchPattern extends SinglePattern {
                 } while (position <= lastFoundPosition);
                 lastFoundPosition = position;
 
-                return generateMatch(getAlignment(position));
+                return generateMatch(patternAligner.align(patternSeq, target, position));
             }
 
             private Match takeFairByScore() {
@@ -317,20 +308,6 @@ public final class FuzzyMatchPattern extends SinglePattern {
             }
 
             /**
-             * After searching with bitap, perform alignment for precise search.
-             *
-             * @param matchLastPosition match last letter position for aligner (inclusive)
-             * @return best found alignment
-             */
-            private Alignment<NucleotideSequence> getAlignment(int matchLastPosition) {
-                int firstPostition = matchLastPosition + 1 - patternSeq.size() - maxErrors;
-                if (firstPostition < 0) firstPostition = 0;
-                return BandedLinearAligner.alignLeftAdded(LinearGapAlignmentScoring.getNucleotideBLASTScoring(),
-                        patternSeq, target.getSequence(), 0, patternSeq.size(), 0,
-                        firstPostition, matchLastPosition - firstPostition + 1, maxErrors, maxErrors);
-            }
-
-            /**
              * Generate match from alignment.
              *
              * @param alignment alignment returned from getAlignment function
@@ -363,7 +340,7 @@ public final class FuzzyMatchPattern extends SinglePattern {
                 do {
                     matchLastPosition = bitapMatchersMain[maxErrors].findNext();
                     if (matchLastPosition != -1) {
-                        alignment = getAlignment(matchLastPosition);
+                        alignment = patternAligner.align(patternSeq, target, matchLastPosition);
                         if (!uniqueRanges.contains(alignment.getSequence2Range())) {
                             uniqueRanges.add(alignment.getSequence2Range());
                             allMatchesList.add(generateMatch(alignment));

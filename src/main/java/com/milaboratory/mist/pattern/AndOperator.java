@@ -10,23 +10,25 @@ import com.milaboratory.mist.util.SorterByScore;
 import java.util.ArrayList;
 
 public final class AndOperator extends MultipleReadsOperator {
-    public AndOperator(MultipleReadsOperator... operandPatterns) {
-        super(operandPatterns);
+    public AndOperator(PatternAligner patternAligner, MultipleReadsOperator... operandPatterns) {
+        super(patternAligner, operandPatterns);
     }
 
     @Override
     public MatchingResult match(MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
-        return new AndOperatorMatchingResult(operandPatterns, target, ranges, reverseComplements);
+        return new AndOperatorMatchingResult(patternAligner, operandPatterns, target, ranges, reverseComplements);
     }
 
     private static class AndOperatorMatchingResult extends MatchingResult {
+        private final PatternAligner patternAligner;
         private final MultipleReadsOperator[] operandPatterns;
         private final MultiNSequenceWithQuality target;
         private final Range[] ranges;
         private final boolean[] reverseComplements;
 
-        AndOperatorMatchingResult(MultipleReadsOperator[] operandPatterns,
+        AndOperatorMatchingResult(PatternAligner patternAligner, MultipleReadsOperator[] operandPatterns,
                                   MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
+            this.patternAligner = patternAligner;
             this.operandPatterns = operandPatterns;
             this.target = target;
             this.ranges = ranges;
@@ -42,11 +44,11 @@ public final class AndOperator extends MultipleReadsOperator {
                 operandPorts.add(operandPattern.match(target, ranges, reverseComplements).getMatches(byScore, fairSorting));
 
             if (byScore)
-                sorter = new SorterByScore(true, true, fairSorting,
-                        0, 0, MatchValidationType.LOGICAL_AND);
+                sorter = new SorterByScore(patternAligner, true, true, fairSorting,
+                        MatchValidationType.LOGICAL_AND);
             else
-                sorter = new SorterByCoordinate(true, true, fairSorting,
-                        0, 0, MatchValidationType.LOGICAL_AND);
+                sorter = new SorterByCoordinate(patternAligner, true, true, fairSorting,
+                        MatchValidationType.LOGICAL_AND);
 
             return sorter.getOutputPort(operandPorts);
         }

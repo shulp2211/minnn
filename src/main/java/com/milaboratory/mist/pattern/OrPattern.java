@@ -13,28 +13,26 @@ import java.util.ArrayList;
  * if all arguments didn't match.
  */
 public final class OrPattern extends MultiplePatternsOperator {
-    public OrPattern(SinglePattern... operandPatterns) {
-        super(false, operandPatterns);
+    public OrPattern(PatternAligner patternAligner, SinglePattern... operandPatterns) {
+        super(patternAligner, operandPatterns);
     }
 
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
-        return new OrPatternMatchingResult(maxErrors, errorScorePenalty, operandPatterns, target, from, to, targetId);
+        return new OrPatternMatchingResult(patternAligner, operandPatterns, target, from, to, targetId);
     }
 
     private static class OrPatternMatchingResult extends MatchingResult {
-        private final int maxErrors;
-        private final float errorScorePenalty;
+        private final PatternAligner patternAligner;
         private final SinglePattern[] operandPatterns;
         private final NSequenceWithQuality target;
         private final int from;
         private final int to;
         private final byte targetId;
 
-        OrPatternMatchingResult(int maxErrors, float errorScorePenalty, SinglePattern[] operandPatterns,
+        OrPatternMatchingResult(PatternAligner patternAligner, SinglePattern[] operandPatterns,
                                        NSequenceWithQuality target, int from, int to, byte targetId) {
-            this.maxErrors = maxErrors;
-            this.errorScorePenalty = errorScorePenalty;
+            this.patternAligner = patternAligner;
             this.operandPatterns = operandPatterns;
             this.target = target;
             this.from = from;
@@ -51,11 +49,11 @@ public final class OrPattern extends MultiplePatternsOperator {
                 operandPorts.add(operandPattern.match(target, from, to, targetId).getMatches(byScore, fairSorting));
 
             if (byScore)
-                sorter = new SorterByScore(false, false, fairSorting,
-                        maxErrors, errorScorePenalty, MatchValidationType.FIRST);
+                sorter = new SorterByScore(patternAligner, false, false, fairSorting,
+                        MatchValidationType.FIRST);
             else
-                sorter = new SorterByCoordinate(false, false, fairSorting,
-                        maxErrors, errorScorePenalty, MatchValidationType.FIRST);
+                sorter = new SorterByCoordinate(patternAligner, false, false, fairSorting,
+                        MatchValidationType.FIRST);
 
             return sorter.getOutputPort(operandPorts);
         }

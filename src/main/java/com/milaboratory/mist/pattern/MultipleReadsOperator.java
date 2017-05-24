@@ -11,14 +11,18 @@ abstract class MultipleReadsOperator extends Pattern {
     protected final SinglePattern[] singlePatterns;
     protected final ArrayList<GroupEdge> groupEdges;
 
-    MultipleReadsOperator(MultipleReadsOperator... operandPatterns) {
+    MultipleReadsOperator(PatternAligner patternAligner, MultipleReadsOperator... operandPatterns) {
+        super(patternAligner);
+        testAlignersCompatibility(operandPatterns);
         this.operandPatterns = operandPatterns;
         this.singlePatterns = new SinglePattern[0];
         this.groupEdges = new ArrayList<>();
         getGroupEdgesFromOperands(operandPatterns);
     }
 
-    MultipleReadsOperator(SinglePattern... singlePatterns) {
+    MultipleReadsOperator(PatternAligner patternAligner, SinglePattern... singlePatterns) {
+        super(patternAligner);
+        testAlignersCompatibility(singlePatterns);
         this.singlePatterns = singlePatterns;
         this.operandPatterns = new MultipleReadsOperator[0];
         this.groupEdges = new ArrayList<>();

@@ -5,6 +5,12 @@ import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import java.util.ArrayList;
 
 public abstract class Pattern {
+    protected final PatternAligner patternAligner;
+
+    public Pattern(PatternAligner patternAligner) {
+        this.patternAligner = patternAligner;
+    }
+
     /**
      * Search for matches for this pattern in the input.
      *
@@ -19,4 +25,19 @@ public abstract class Pattern {
      * @return list of group edges
      */
     public abstract ArrayList<GroupEdge> getGroupEdges();
+
+    public PatternAligner getPatternAligner() {
+        return patternAligner;
+    }
+
+    /**
+     * Check if argument patterns have compatible pattern aligners.
+     *
+     * @param patterns argument patterns
+     */
+    protected void testAlignersCompatibility(Pattern... patterns) {
+        for (Pattern pattern : patterns)
+            if (!patternAligner.compatible(pattern.getPatternAligner()))
+                throw new IllegalStateException("Found incompatible PatternAligner in operand!");
+    }
 }
