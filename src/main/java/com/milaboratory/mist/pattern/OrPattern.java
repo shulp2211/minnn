@@ -14,7 +14,7 @@ import java.util.ArrayList;
  */
 public final class OrPattern extends MultiplePatternsOperator {
     public OrPattern(PatternAligner patternAligner, SinglePattern... operandPatterns) {
-        super(patternAligner, operandPatterns);
+        super(patternAligner, false, operandPatterns);
     }
 
     @Override

@@ -199,7 +199,7 @@ public abstract class ApproximateSorter {
                     tableOfIterations.addIncompatibleIndexes(incompatibleIndexes);
                 else {
                     Match combinedMatch = combineMatches(sortingByScore, currentMatches);
-                    if (combinedMatch.getScore() >= patternAligner.penaltyThreshold())
+                    if ((combinedMatch != null) && (combinedMatch.getScore() >= patternAligner.penaltyThreshold()))
                         allMatchesFiltered.add(combinedMatch);
                 }
             }
