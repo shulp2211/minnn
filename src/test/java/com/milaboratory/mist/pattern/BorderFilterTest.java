@@ -13,6 +13,7 @@ import org.junit.rules.ExpectedException;
 import java.util.Random;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
+import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
 import static org.junit.Assert.*;
 
 public class BorderFilterTest {
@@ -32,34 +33,47 @@ public class BorderFilterTest {
         NucleotideSequence edgeRightFullMotif = new NucleotideSequence("ACA");
         NucleotideSequence edgeRightPartMotif = new NucleotideSequence("ACAGAA");
 
-        BorderFilter filterLeftFullTarget = new BorderFilter(true, edgeLeftFullTarget);
-        BorderFilter filterLeftPartTarget = new BorderFilter(true, edgeLeftPartTarget, 3);
-        BorderFilter filterLeftMismatchTarget = new BorderFilter(true, edgeLeftPartTarget);
-        BorderFilter filterRightFullTarget = new BorderFilter(false, edgeRightFullTarget);
-        BorderFilter filterRightPartTarget = new BorderFilter(false, edgeRightPartTarget, 3);
-        BorderFilter filterRightMismatchTarget = new BorderFilter(false, edgeRightPartTarget);
-        BorderFilter filterLeftFullMotif = new BorderFilter(true, edgeLeftFullMotif, false);
-        BorderFilter filterLeftPartMotif = new BorderFilter(true, edgeLeftPartMotif, 3, false);
-        BorderFilter filterLeftMismatchMotif = new BorderFilter(true, edgeLeftPartMotif, false);
-        BorderFilter filterRightFullMotif = new BorderFilter(false, edgeRightFullMotif, false);
-        BorderFilter filterRightPartMotif = new BorderFilter(false, edgeRightPartMotif, 3, false);
-        BorderFilter filterRightMismatchMotif = new BorderFilter(false, edgeRightPartMotif, false);
+        BorderFilter filterLeftFullTarget = new BorderFilter(getTestPatternAligner(), true, edgeLeftFullTarget);
+        BorderFilter filterLeftPartTarget = new BorderFilter(getTestPatternAligner(), true, edgeLeftPartTarget, 3);
+        BorderFilter filterLeftMismatchTarget = new BorderFilter(getTestPatternAligner(), true, edgeLeftPartTarget);
+        BorderFilter filterRightFullTarget = new BorderFilter(getTestPatternAligner(), false, edgeRightFullTarget);
+        BorderFilter filterRightPartTarget = new BorderFilter(getTestPatternAligner(), false, edgeRightPartTarget, 3);
+        BorderFilter filterRightMismatchTarget = new BorderFilter(getTestPatternAligner(), false, edgeRightPartTarget);
+        BorderFilter filterLeftFullMotif = new BorderFilter(getTestPatternAligner(), true, edgeLeftFullMotif, false);
+        BorderFilter filterLeftPartMotif = new BorderFilter(getTestPatternAligner(), true, edgeLeftPartMotif, 3, false);
+        BorderFilter filterLeftMismatchMotif = new BorderFilter(getTestPatternAligner(), true, edgeLeftPartMotif, false);
+        BorderFilter filterRightFullMotif = new BorderFilter(getTestPatternAligner(), false, edgeRightFullMotif, false);
+        BorderFilter filterRightPartMotif = new BorderFilter(getTestPatternAligner(), false, edgeRightPartMotif, 3, false);
+        BorderFilter filterRightMismatchMotif = new BorderFilter(getTestPatternAligner(), false, edgeRightPartMotif, false);
 
-        assertTrue(new FilterPattern(filterLeftFullTarget, new FuzzyMatchPattern(motif)).match(target).isFound());
-        assertTrue(new FilterPattern(filterLeftPartTarget, new FuzzyMatchPattern(motif)).match(target).isFound());
-        assertFalse(new FilterPattern(filterLeftMismatchTarget, new FuzzyMatchPattern(motif)).match(target).isFound());
-        assertTrue(new FilterPattern(filterRightFullTarget, new FuzzyMatchPattern(motif)).match(target).isFound());
-        assertTrue(new FilterPattern(filterRightPartTarget, new FuzzyMatchPattern(motif)).match(target).isFound());
-        assertFalse(new FilterPattern(filterRightMismatchTarget, new FuzzyMatchPattern(motif)).match(target).isFound());
-        assertTrue(new FilterPattern(filterLeftFullMotif, new FuzzyMatchPattern(motif)).match(target).isFound());
-        assertTrue(new FilterPattern(filterLeftPartMotif, new FuzzyMatchPattern(motif)).match(target).isFound());
-        assertFalse(new FilterPattern(filterLeftMismatchMotif, new FuzzyMatchPattern(motif)).match(target).isFound());
-        assertTrue(new FilterPattern(filterRightFullMotif, new FuzzyMatchPattern(motif)).match(target).isFound());
-        assertTrue(new FilterPattern(filterRightPartMotif, new FuzzyMatchPattern(motif)).match(target).isFound());
-        assertFalse(new FilterPattern(filterRightMismatchMotif, new FuzzyMatchPattern(motif)).match(target).isFound());
+        assertTrue(new FilterPattern(getTestPatternAligner(), filterLeftFullTarget,
+                new FuzzyMatchPattern(getTestPatternAligner(), motif)).match(target).isFound());
+        assertTrue(new FilterPattern(getTestPatternAligner(), filterLeftPartTarget,
+                new FuzzyMatchPattern(getTestPatternAligner(), motif)).match(target).isFound());
+        assertFalse(new FilterPattern(getTestPatternAligner(), filterLeftMismatchTarget,
+                new FuzzyMatchPattern(getTestPatternAligner(), motif)).match(target).isFound());
+        assertTrue(new FilterPattern(getTestPatternAligner(), filterRightFullTarget,
+                new FuzzyMatchPattern(getTestPatternAligner(), motif)).match(target).isFound());
+        assertTrue(new FilterPattern(getTestPatternAligner(), filterRightPartTarget,
+                new FuzzyMatchPattern(getTestPatternAligner(), motif)).match(target).isFound());
+        assertFalse(new FilterPattern(getTestPatternAligner(), filterRightMismatchTarget,
+                new FuzzyMatchPattern(getTestPatternAligner(), motif)).match(target).isFound());
+        assertTrue(new FilterPattern(getTestPatternAligner(), filterLeftFullMotif,
+                new FuzzyMatchPattern(getTestPatternAligner(), motif)).match(target).isFound());
+        assertTrue(new FilterPattern(getTestPatternAligner(), filterLeftPartMotif,
+                new FuzzyMatchPattern(getTestPatternAligner(), motif)).match(target).isFound());
+        assertFalse(new FilterPattern(getTestPatternAligner(), filterLeftMismatchMotif,
+                new FuzzyMatchPattern(getTestPatternAligner(), motif)).match(target).isFound());
+        assertTrue(new FilterPattern(getTestPatternAligner(), filterRightFullMotif,
+                new FuzzyMatchPattern(getTestPatternAligner(), motif)).match(target).isFound());
+        assertTrue(new FilterPattern(getTestPatternAligner(), filterRightPartMotif,
+                new FuzzyMatchPattern(getTestPatternAligner(), motif)).match(target).isFound());
+        assertFalse(new FilterPattern(getTestPatternAligner(), filterRightMismatchMotif,
+                new FuzzyMatchPattern(getTestPatternAligner(), motif)).match(target).isFound());
 
-        OutputPort<Match> wrongPatternPort = new FilterPattern(filterLeftFullTarget, new MultiPattern(
-                new FuzzyMatchPattern(motif), new FuzzyMatchPattern(motif))).match(new MultiNSequenceWithQuality() {
+        OutputPort<Match> wrongPatternPort = new FilterPattern(getTestPatternAligner(), filterLeftFullTarget,
+                new MultiPattern(getTestPatternAligner(), new FuzzyMatchPattern(getTestPatternAligner(), motif),
+                        new FuzzyMatchPattern(getTestPatternAligner(), motif))).match(new MultiNSequenceWithQuality() {
             @Override
             public int numberOfSequences() {
                 return 2;
@@ -89,8 +103,9 @@ public class BorderFilterTest {
             NucleotideSequence edgeMotif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, cutSize, cutSize);
             NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
                     SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
-            FuzzyMatchPattern pattern = new FuzzyMatchPattern(motif);
-            FilterPattern filterPattern = new FilterPattern(new BorderFilter(leftSide, edgeMotif, minMatchSize, useTarget), pattern);
+            FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), motif);
+            FilterPattern filterPattern = new FilterPattern(getTestPatternAligner(),
+                    new BorderFilter(getTestPatternAligner(), leftSide, edgeMotif, minMatchSize, useTarget), pattern);
 
             boolean isMatching = false;
             if (target.toString().contains(motif.toString()))

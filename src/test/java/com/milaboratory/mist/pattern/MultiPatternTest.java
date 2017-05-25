@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
+import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
 import static org.junit.Assert.*;
 
 public class MultiPatternTest {
@@ -20,9 +21,9 @@ public class MultiPatternTest {
 
     @Test
     public void mismatchedReadsAndPatternsTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GCGAT"));
-        MultiPattern multiPattern = new MultiPattern(pattern1, pattern2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GCGAT"));
+        MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern1, pattern2);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
             public int numberOfSequences() {
@@ -41,8 +42,8 @@ public class MultiPatternTest {
 
     @Test
     public void mismatchedReadsAndRangesTest() throws Exception {
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
-        MultiPattern multiPattern = new MultiPattern(pattern);
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
+        MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
             public int numberOfSequences() {
@@ -61,8 +62,8 @@ public class MultiPatternTest {
 
     @Test
     public void mismatchedReadsAndComplementsTest1() throws Exception {
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
-        MultiPattern multiPattern = new MultiPattern(pattern);
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
+        MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
             public int numberOfSequences() {
@@ -81,8 +82,8 @@ public class MultiPatternTest {
 
     @Test
     public void mismatchedReadsAndComplementsTest2() throws Exception {
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
-        MultiPattern multiPattern = new MultiPattern(pattern);
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
+        MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
             public int numberOfSequences() {
@@ -101,11 +102,11 @@ public class MultiPatternTest {
 
     @Test
     public void simpleTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATTAGACA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTTATTACCA"));
-        AndPattern pattern3 = new AndPattern(0, -1, new FuzzyMatchPattern(new NucleotideSequence("AT")),
-                new FuzzyMatchPattern(new NucleotideSequence("GCAT")));
-        MultiPattern multiPattern = new MultiPattern(pattern1, pattern2, pattern3);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GTTATTACCA"));
+        AndPattern pattern3 = new AndPattern(getTestPatternAligner(), new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("AT")), new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GCAT")));
+        MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern1, pattern2, pattern3);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
             public int numberOfSequences() {
@@ -155,7 +156,7 @@ public class MultiPatternTest {
                 NSequenceWithQuality seqQ = new NSequenceWithQuality(seq, SequenceQuality
                         .getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, seq.getSequence().size()));
                 sequences[s] = seqQ;
-                patterns[s] = new FuzzyMatchPattern(motifSeq);
+                patterns[s] = new FuzzyMatchPattern(getTestPatternAligner(), motifSeq);
                 isMatching = isMatching && seq.toString().contains(motifSeq.toString());
             }
             MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
@@ -169,7 +170,7 @@ public class MultiPatternTest {
                     return sequences[id];
                 }
             };
-            MultiPattern multiPattern = new MultiPattern(patterns);
+            MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), patterns);
             assertEquals(isMatching, multiPattern.match(mseq).isFound());
             assertEquals(isMatching, multiPattern.match(mseq).getBestMatch() != null);
             assertEquals(isMatching, multiPattern.match(mseq).getMatches(true, false).take() != null);
@@ -201,9 +202,11 @@ public class MultiPatternTest {
             add(new GroupEdgePosition(new GroupEdge("XYZ", false), 3));
         }};
 
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("ATAGGAGGGTAGCC"), groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("TTTTCAATGCATTAG").getReverseComplement(), groups2);
-        MultiPattern multiPattern = new MultiPattern(pattern1, pattern2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("ATAGGAGGGTAGCC"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("TTTTCAATGCATTAG").getReverseComplement(), groups2);
+        MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern1, pattern2);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
             @Override
             public int numberOfSequences() {
@@ -246,10 +249,12 @@ public class MultiPatternTest {
             add(new GroupEdgePosition(new GroupEdge("XYZ", false), 3));
         }};
 
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("GTGGTTGTGTTGT"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("GTGGTTGTGTTGT"), groups2);
         exception.expect(IllegalStateException.class);
-        new MultiPattern(pattern1, pattern2);
+        new MultiPattern(getTestPatternAligner(), pattern1, pattern2);
     }
 
     @Test
@@ -263,9 +268,10 @@ public class MultiPatternTest {
             add(new GroupEdgePosition(new GroupEdge("GH", false), 11));
         }};
 
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(new NucleotideSequence("GTGGTTGTGTTGT"), groups);
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("GTGGTTGTGTTGT"), groups);
         exception.expect(IllegalStateException.class);
-        new MultiPattern(pattern, pattern);
+        new MultiPattern(getTestPatternAligner(), pattern, pattern);
     }
 
     @Test
@@ -287,10 +293,10 @@ public class MultiPatternTest {
                             SequenceQuality.GOOD_QUALITY_VALUE, motifs[id].getSequence().size()));
                 }
             };
-            FuzzyMatchPattern pattern0 = new FuzzyMatchPattern(motifs[0], 0);
-            FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(motifs[1], 0);
-            MultiPattern multiPattern0 = new MultiPattern(pattern0, pattern1);
-            MultiPattern multiPattern1 = new MultiPattern(pattern1, pattern0);
+            FuzzyMatchPattern pattern0 = new FuzzyMatchPattern(getTestPatternAligner(), motifs[0]);
+            FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), motifs[1]);
+            MultiPattern multiPattern0 = new MultiPattern(getTestPatternAligner(), pattern0, pattern1);
+            MultiPattern multiPattern1 = new MultiPattern(getTestPatternAligner(), pattern1, pattern0);
             assertEquals(pattern0.match(target.get(0)).getBestMatch().getScore()
                     + pattern1.match(target.get(1)).getBestMatch().getScore(),
                     multiPattern0.match(target).getBestMatch().getScore(), 0.0001);

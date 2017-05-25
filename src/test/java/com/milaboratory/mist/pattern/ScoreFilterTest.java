@@ -10,6 +10,7 @@ import org.junit.Test;
 import java.util.Random;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
+import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
 import static org.junit.Assert.*;
 
 public class ScoreFilterTest {
@@ -23,8 +24,8 @@ public class ScoreFilterTest {
             NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 10);
             NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
                     SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
-            FuzzyMatchPattern pattern = new FuzzyMatchPattern(motif);
-            FilterPattern filterPattern = new FilterPattern(new ScoreFilter(scoreThreshold), pattern);
+            FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), motif);
+            FilterPattern filterPattern = new FilterPattern(getTestPatternAligner(), new ScoreFilter(scoreThreshold), pattern);
             boolean isMatching = pattern.match(targetQ).isFound()
                     && pattern.match(targetQ).getBestMatch().getScore() >= scoreThreshold;
 

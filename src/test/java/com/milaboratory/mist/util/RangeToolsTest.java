@@ -1,15 +1,15 @@
 package com.milaboratory.mist.util;
 
 import com.milaboratory.core.Range;
+import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.test.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.HashMap;
-
-import static com.milaboratory.mist.util.RangeTools.checkRangesIntersection;
-import static com.milaboratory.mist.util.RangeTools.combine2Ranges;
-import static com.milaboratory.mist.util.RangeTools.combineRanges;
+import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
+import static com.milaboratory.mist.util.RangeTools.*;
 import static org.junit.Assert.*;
 
 public class RangeToolsTest {
@@ -52,8 +52,13 @@ public class RangeToolsTest {
         assertEquals(new Range(2, 13), combineRanges(new Range(2, 13)));
         assertEquals(new Range(3, 10), combineRanges(new Range(5, 10), new Range(8, 10), new Range(3, 6)));
         assertEquals(new Range(0, 20), combineRanges(new Range(0, 2), new Range(17, 20), new Range(10, 14), new Range(6, 11)));
-        assertEquals(new HashMap.SimpleEntry<>(new Range(0, 10), -5.0f), combineRanges(-1.0f,
-                new Range(0, 5), new Range(3, 6), new Range(4, 10)));
+        CombinedRange combinedRange = combineRanges(getTestPatternAligner(Integer.MIN_VALUE,
+                0, 0, -1), new NSequenceWithQuality(
+                        TestUtil.randomSequence(NucleotideSequence.ALPHABET, 20, 20).toString()),
+                new Range(0, 5), new Range(3, 6), new Range(4, 10));
+        assertEquals(new Range(0, 10), combinedRange.getRange());
+        assertEquals(-5, (int)combinedRange.getScorePenalty());
+
         exception.expect(IllegalArgumentException.class);
         combineRanges();
     }

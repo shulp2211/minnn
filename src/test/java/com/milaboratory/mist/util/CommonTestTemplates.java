@@ -11,6 +11,7 @@ import com.milaboratory.test.TestUtil;
 import java.util.*;
 
 import static com.milaboratory.mist.util.CommonTestUtils.countPortValues;
+import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
 import static org.junit.Assert.*;
 
 class CommonTestTemplates {
@@ -97,39 +98,39 @@ class CommonTestTemplates {
         ApproximateSorter sorterSingle1, sorterSingle2, sorterSingle3, sorterSingle4, sorterSingle5;
         ApproximateSorter sorterMulti1, sorterMulti2, sorterMulti3;
         if (sortByScore) {
-            sorterSingle1 = new SorterByScore(false, true, fairSorting,
-                    0, -1, MatchValidationType.INTERSECTION);
-            sorterSingle2 = new SorterByScore(false, false, fairSorting,
-                    0, -1, MatchValidationType.INTERSECTION);
-            sorterSingle3 = new SorterByScore(false, true, fairSorting,
-                    0, -1, MatchValidationType.ORDER);
-            sorterSingle4 = new SorterByScore(false, false, fairSorting,
-                    0, -1, MatchValidationType.ORDER);
-            sorterSingle5 = new SorterByScore(false, false, fairSorting,
-                    0, 0, MatchValidationType.FIRST);
-            sorterMulti1 = new SorterByScore(true, true, fairSorting,
-                    0, 0, MatchValidationType.LOGICAL_OR);
-            sorterMulti2 = new SorterByScore(true, false, fairSorting,
-                    0, 0, MatchValidationType.LOGICAL_OR);
-            sorterMulti3 = new SorterByScore(true, true, fairSorting,
-                    0, 0, MatchValidationType.LOGICAL_AND);
+            sorterSingle1 = new SorterByScore(getTestPatternAligner(), false, true,
+                    fairSorting, MatchValidationType.INTERSECTION);
+            sorterSingle2 = new SorterByScore(getTestPatternAligner(), false, false,
+                    fairSorting, MatchValidationType.INTERSECTION);
+            sorterSingle3 = new SorterByScore(getTestPatternAligner(), false, true,
+                    fairSorting, MatchValidationType.ORDER);
+            sorterSingle4 = new SorterByScore(getTestPatternAligner(), false, false,
+                    fairSorting, MatchValidationType.ORDER);
+            sorterSingle5 = new SorterByScore(getTestPatternAligner(), false, false,
+                    fairSorting, MatchValidationType.FIRST);
+            sorterMulti1 = new SorterByScore(getTestPatternAligner(), true, true,
+                    fairSorting, MatchValidationType.LOGICAL_OR);
+            sorterMulti2 = new SorterByScore(getTestPatternAligner(), true, false,
+                    fairSorting, MatchValidationType.LOGICAL_OR);
+            sorterMulti3 = new SorterByScore(getTestPatternAligner(), true, true,
+                    fairSorting, MatchValidationType.LOGICAL_AND);
         } else {
-            sorterSingle1 = new SorterByCoordinate(false, true, fairSorting,
-                    0, -1, MatchValidationType.INTERSECTION);
-            sorterSingle2 = new SorterByCoordinate(false, false, fairSorting,
-                    0, -1, MatchValidationType.INTERSECTION);
-            sorterSingle3 = new SorterByCoordinate(false, true, fairSorting,
-                    0, -1, MatchValidationType.ORDER);
-            sorterSingle4 = new SorterByCoordinate(false, false, fairSorting,
-                    0, -1, MatchValidationType.ORDER);
-            sorterSingle5 = new SorterByCoordinate(false, false, fairSorting,
-                    0, 0, MatchValidationType.FIRST);
-            sorterMulti1 = new SorterByCoordinate(true, true, fairSorting,
-                    0, 0, MatchValidationType.LOGICAL_OR);
-            sorterMulti2 = new SorterByCoordinate(true, false, fairSorting,
-                    0, 0, MatchValidationType.LOGICAL_OR);
-            sorterMulti3 = new SorterByCoordinate(true, true, fairSorting,
-                    0, 0, MatchValidationType.LOGICAL_AND);
+            sorterSingle1 = new SorterByCoordinate(getTestPatternAligner(), false, true,
+                    fairSorting, MatchValidationType.INTERSECTION);
+            sorterSingle2 = new SorterByCoordinate(getTestPatternAligner(), false, false,
+                    fairSorting, MatchValidationType.INTERSECTION);
+            sorterSingle3 = new SorterByCoordinate(getTestPatternAligner(), false, true,
+                    fairSorting, MatchValidationType.ORDER);
+            sorterSingle4 = new SorterByCoordinate(getTestPatternAligner(), false, false,
+                    fairSorting, MatchValidationType.ORDER);
+            sorterSingle5 = new SorterByCoordinate(getTestPatternAligner(), false, false,
+                    fairSorting, MatchValidationType.FIRST);
+            sorterMulti1 = new SorterByCoordinate(getTestPatternAligner(), true, true,
+                    fairSorting, MatchValidationType.LOGICAL_OR);
+            sorterMulti2 = new SorterByCoordinate(getTestPatternAligner(), true, false,
+                    fairSorting, MatchValidationType.LOGICAL_OR);
+            sorterMulti3 = new SorterByCoordinate(getTestPatternAligner(), true, true,
+                    fairSorting, MatchValidationType.LOGICAL_AND);
         }
 
         TestMatchesOutputPort testPortSingle1 = new TestMatchesOutputPort(testMatchSingle1, testMatchSingle2, testMatchSingle2);
@@ -242,11 +243,11 @@ class CommonTestTemplates {
             int numberOfMatches = randomGenerator.nextInt(10) + 1;
             Match[] matches = new Match[numberOfMatches];
             if (sortByScore)
-                sorter = new SorterByScore(false, randomGenerator.nextBoolean(), fairSorting,
-                        0, -1, MatchValidationType.INTERSECTION);
+                sorter = new SorterByScore(getTestPatternAligner(), false, randomGenerator.nextBoolean(),
+                        fairSorting, MatchValidationType.INTERSECTION);
             else
-                sorter = new SorterByCoordinate(false, randomGenerator.nextBoolean(), fairSorting,
-                        0, -1, MatchValidationType.INTERSECTION);
+                sorter = new SorterByCoordinate(getTestPatternAligner(), false, randomGenerator.nextBoolean(),
+                        fairSorting, MatchValidationType.INTERSECTION);
 
             NSequenceWithQuality target = new NSequenceWithQuality(TestUtil.randomSequence(NucleotideSequence.ALPHABET,
                     numberOfMatches, numberOfMatches + randomGenerator.nextInt(100)).toString());
@@ -275,11 +276,11 @@ class CommonTestTemplates {
             int expectedMatchesNum = numberOfFragments * (numberOfFragments - 1) * (numberOfFragments - 2) * (numberOfFragments - 3);
             int spaceLength = randomGenerator.nextInt(3);
             if (sortByScore)
-                sorter = new SorterByScore(false, randomGenerator.nextBoolean(), randomGenerator.nextBoolean(),
-                        0, -1, MatchValidationType.INTERSECTION);
+                sorter = new SorterByScore(getTestPatternAligner(), false, randomGenerator.nextBoolean(),
+                        randomGenerator.nextBoolean(), MatchValidationType.INTERSECTION);
             else
-                sorter = new SorterByCoordinate(false, randomGenerator.nextBoolean(), randomGenerator.nextBoolean(),
-                        0, -1, MatchValidationType.INTERSECTION);
+                sorter = new SorterByCoordinate(getTestPatternAligner(), false, randomGenerator.nextBoolean(),
+                        randomGenerator.nextBoolean(), MatchValidationType.INTERSECTION);
 
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, spaceLength);
             NucleotideSequence fragment = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 50, 63);
@@ -290,7 +291,7 @@ class CommonTestTemplates {
 
             final NSequenceWithQuality finalTarget = new NSequenceWithQuality(target.toString());
 
-            FuzzyMatchPattern pattern = new FuzzyMatchPattern(fragment);
+            FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), fragment);
 
             OutputPort<Match> testPort = sorter.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                 add(pattern.match(finalTarget).getMatches()); add(pattern.match(finalTarget).getMatches());

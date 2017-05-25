@@ -1,9 +1,14 @@
 package com.milaboratory.mist.util;
 
 import cc.redberry.pipe.OutputPort;
+import com.milaboratory.core.alignment.Alignment;
+import com.milaboratory.core.alignment.BandedLinearAligner;
+import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
+import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.core.sequence.SequencesUtils;
 import com.milaboratory.mist.pattern.Match;
+import com.milaboratory.mist.pattern.PatternAligner;
 import com.milaboratory.test.TestUtil;
 
 import java.util.Random;
@@ -88,5 +93,59 @@ public class CommonTestUtils {
         int position2 = randomGenerator.nextInt(seq.size());
 
         return seq.getRange(Math.min(position1, position2), Math.max(position1, position2) + 1);
+    }
+
+    public static PatternAligner getTestPatternAligner() {
+        return getTestPatternAligner(0);
+    }
+
+    public static PatternAligner getTestPatternAligner(int bitapMaxErrors) {
+        return getTestPatternAligner(Integer.MIN_VALUE, bitapMaxErrors, 0, -1);
+    }
+
+    public static PatternAligner getTestPatternAligner(int penaltyThreshold, int bitapMaxErrors, int notResultScore,
+                                                       int singleOverlapPenalty) {
+        return new PatternAligner() {
+            @Override
+            public Alignment<NucleotideSequence> align(NucleotideSequence pattern, NSequenceWithQuality target,
+                                                       int rightMatchPosition) {
+                int leftMatchPosition = rightMatchPosition + 1 - pattern.size() - bitapMaxErrors;
+                if (leftMatchPosition < 0) leftMatchPosition = 0;
+                return BandedLinearAligner.alignLeftAdded(LinearGapAlignmentScoring.getNucleotideBLASTScoring(),
+                        pattern, target.getSequence(), 0, pattern.size(), 0,
+                        leftMatchPosition, rightMatchPosition - leftMatchPosition + 1,
+                        bitapMaxErrors, bitapMaxErrors);
+            }
+
+            @Override
+            public int penaltyThreshold() {
+                return penaltyThreshold;
+            }
+
+            @Override
+            public int overlapPenalty(NSequenceWithQuality target, int overlapOffset, int overlapLength) {
+                return singleOverlapPenalty * overlapLength;
+            }
+
+            @Override
+            public int bitapMaxErrors() {
+                return bitapMaxErrors;
+            }
+
+            @Override
+            public int notResultScore() {
+                return notResultScore;
+            }
+
+            @Override
+            public boolean compatible(PatternAligner otherAligner) {
+                return true;
+            }
+
+            @Override
+            public PatternAligner overridePenaltyThreshold(int newThresholdValue) {
+                return getTestPatternAligner(newThresholdValue, bitapMaxErrors, notResultScore, singleOverlapPenalty);
+            }
+        };
     }
 }
