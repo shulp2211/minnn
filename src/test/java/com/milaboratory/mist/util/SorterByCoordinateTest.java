@@ -24,26 +24,26 @@ public class SorterByCoordinateTest {
     public void matchesWithMisplacedRangesTest() throws Exception {
         NSequenceWithQuality seq = new NSequenceWithQuality("AATTAAGGCAAAGTAAATTGAGCA");
 
-        Match testMatch1 = new Match(1, 10, new ArrayList<MatchedItem>() {{
+        Match testMatch1 = new Match(1, 0, new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seq, (byte)1, 0, new Range(0, 3))); }});
-        Match testMatch2 = new Match(1, 10, new ArrayList<MatchedItem>() {{
+        Match testMatch2 = new Match(1, 0, new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seq, (byte)1, 0, new Range(3, 7))); }});
-        Match testMatch3 = new Match(1, 10, new ArrayList<MatchedItem>() {{
+        Match testMatch3 = new Match(1, 0, new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seq, (byte)1, 0, new Range(9, 12))); }});
-        Match testMatch4 = new Match(1, 10, new ArrayList<MatchedItem>() {{
+        Match testMatch4 = new Match(1, 0, new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seq, (byte)1, 0, new Range(11, 15))); }});
 
         TestMatchesOutputPort testPort1 = new TestMatchesOutputPort(testMatch1, testMatch2, testMatch3, testMatch2, testMatch1);
         TestMatchesOutputPort testPort2 = new TestMatchesOutputPort(testMatch3, testMatch3, testMatch3, testMatch3, testMatch3);
         TestMatchesOutputPort testPort3 = new TestMatchesOutputPort(testMatch4, testMatch4, testMatch4, testMatch4, testMatch4);
 
-        ApproximateSorter sorter1 = new SorterByCoordinate(getTestPatternAligner(), false,
+        ApproximateSorter sorter1 = new SorterByCoordinate(getTestPatternAligner(true), false,
                 true, false, MatchValidationType.INTERSECTION);
-        ApproximateSorter sorter2 = new SorterByCoordinate(getTestPatternAligner(), false,
+        ApproximateSorter sorter2 = new SorterByCoordinate(getTestPatternAligner(true), false,
                 false, false, MatchValidationType.INTERSECTION);
-        ApproximateSorter sorter3 = new SorterByCoordinate(getTestPatternAligner(), false,
+        ApproximateSorter sorter3 = new SorterByCoordinate(getTestPatternAligner(true), false,
                 true, false, MatchValidationType.ORDER);
-        ApproximateSorter sorter4 = new SorterByCoordinate(getTestPatternAligner(), false,
+        ApproximateSorter sorter4 = new SorterByCoordinate(getTestPatternAligner(true), false,
                 false, false, MatchValidationType.ORDER);
 
         assertEquals(0, countPortValues(sorter1.getOutputPort(new ArrayList<OutputPort<Match>>() {{

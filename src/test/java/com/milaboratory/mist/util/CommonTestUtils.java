@@ -99,6 +99,11 @@ public class CommonTestUtils {
         return getTestPatternAligner(0);
     }
 
+    public static PatternAligner getTestPatternAligner(boolean zeroThreshold) {
+        if (zeroThreshold) return getTestPatternAligner(0, 0, 0, -1);
+        else return getTestPatternAligner();
+    }
+
     public static PatternAligner getTestPatternAligner(int bitapMaxErrors) {
         return getTestPatternAligner(Integer.MIN_VALUE, bitapMaxErrors, 0, -1);
     }

@@ -251,9 +251,9 @@ public class OrPatternTest {
             OrPattern orPattern2 = new OrPattern(getTestPatternAligner(), pattern2, pattern1);
             assertEquals(Math.max(pattern1.match(targetQ).getBestMatch().getScore(),
                     pattern2.match(targetQ).getBestMatch().getScore()),
-                    orPattern1.match(targetQ).getBestMatch().getScore(), 0.0001);
+                    orPattern1.match(targetQ).getBestMatch().getScore());
             assertEquals(orPattern1.match(targetQ).getBestMatch().getScore(),
-                    orPattern2.match(targetQ).getBestMatch().getScore(), 0.0001);
+                    orPattern2.match(targetQ).getBestMatch().getScore());
         }
     }
 }

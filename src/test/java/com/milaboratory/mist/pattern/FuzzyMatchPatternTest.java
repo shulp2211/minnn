@@ -285,13 +285,13 @@ public class FuzzyMatchPatternTest {
                 }
             }
 
-        assertEquals(40, matchingResults[0][0].getBestMatch(true).getScore(), 0.0001);
-        assertEquals(40, matchingResults[1][0].getBestMatch(true).getScore(), 0.0001);
-        assertEquals(10, matchingResults[2][0].getBestMatch(true).getScore(), 0.0001);
-        assertEquals(40, matchingResults[0][0].getBestMatch(false).getScore(), 0.0001);
-        assertEquals(40, matchingResults[1][0].getBestMatch(false).getScore(), 0.0001);
-        assertEquals(10, matchingResults[2][0].getBestMatch(false).getScore(), 0.0001);
-        assertEquals(40, matchingResults[1][1].getBestMatch().getScore(), 0.0001);
-        assertEquals(35, matchingResults[1][2].getBestMatch().getScore(), 0.0001);
+        assertEquals(40, matchingResults[0][0].getBestMatch(true).getScore());
+        assertEquals(40, matchingResults[1][0].getBestMatch(true).getScore());
+        assertEquals(10, matchingResults[2][0].getBestMatch(true).getScore());
+        assertEquals(40, matchingResults[0][0].getBestMatch(false).getScore());
+        assertEquals(40, matchingResults[1][0].getBestMatch(false).getScore());
+        assertEquals(10, matchingResults[2][0].getBestMatch(false).getScore());
+        assertEquals(40, matchingResults[1][1].getBestMatch().getScore());
+        assertEquals(35, matchingResults[1][2].getBestMatch().getScore());
     }
 }

@@ -43,8 +43,8 @@ public class MatchTest {
 
         assertEquals(1, testMatch1.getNumberOfPatterns());
         assertEquals(2, testMatch2.getNumberOfPatterns());
-        assertEquals(5, testMatch1.getScore(), 0.0001);
-        assertEquals(10, testMatch2.getScore(), 0.0001);
+        assertEquals(5, testMatch1.getScore());
+        assertEquals(10, testMatch2.getScore());
         assertEquals(new Range(0, 9), testMatch1.getMatchedRange(0).getRange());
         assertEquals(new Range(0, 9), testMatch2.getMatchedRange(0).getRange());
         assertEquals(new Range(0, 9), testMatch1.getMatchedRange().getRange());

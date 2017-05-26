@@ -473,7 +473,7 @@ public class LogicalOperatorsTest {
 
             if (!multiPatterns[0].match(targets[1]).isFound())
                 assertEquals(getTestPatternAligner().notResultScore(),
-                        notOperator.match(targets[1]).getBestMatch().getScore(), 0.0001);
+                        notOperator.match(targets[1]).getBestMatch().getScore());
             else
                 assertNull(notOperator.match(targets[1]).getBestMatch());
 
@@ -483,13 +483,13 @@ public class LogicalOperatorsTest {
                 assertNull(andOperator1.match(targets[1]).getBestMatch());
 
             assertEquals(multiPatterns[0].match(targets[0]).getBestMatch().getScore() * 2,
-                    andOperator0.match(targets[0]).getBestMatch().getScore(), 0.0001);
+                    andOperator0.match(targets[0]).getBestMatch().getScore());
             assertEquals(multiPatterns[0].match(targets[0]).getBestMatch().getScore(),
-                    orOperator0.match(targets[0]).getBestMatch().getScore(), 0.0001);
+                    orOperator0.match(targets[0]).getBestMatch().getScore());
             assertEquals(multiPatterns[0].match(targets[0]).getBestMatch().getScore(),
-                    orOperator1.match(targets[0]).getBestMatch().getScore(), 0.0001);
+                    orOperator1.match(targets[0]).getBestMatch().getScore());
             assertEquals(multiPatterns[1].match(targets[1]).getBestMatch().getScore(),
-                    orOperator1.match(targets[1]).getBestMatch().getScore(), 0.0001);
+                    orOperator1.match(targets[1]).getBestMatch().getScore());
         }
     }
 }

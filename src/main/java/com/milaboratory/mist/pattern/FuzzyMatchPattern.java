@@ -315,7 +315,7 @@ public final class FuzzyMatchPattern extends SinglePattern {
              */
             private Match generateMatch(Alignment<NucleotideSequence> alignment) {
                 Range foundRange = alignment.getSequence2Range();
-                float foundScore = alignment.getScore();
+                int foundScore = (int)alignment.getScore();
                 MatchedRange matchedRange = new MatchedRange(target, targetId, 0, foundRange);
                 ArrayList<MatchedItem> matchedItems = new ArrayList<>();
                 matchedItems.add(matchedRange);

@@ -7,14 +7,14 @@ import java.util.ArrayList;
 
 public final class Match {
     private final int numberOfPatterns;
-    private final float score;
+    private final int score;
 
     /**
      * This list contains both matched ranges and matched group edges.
      */
     private final ArrayList<MatchedItem> matchedItems;
 
-    public Match(int numberOfPatterns, float score, ArrayList<MatchedItem> matchedItems) {
+    public Match(int numberOfPatterns, int score, ArrayList<MatchedItem> matchedItems) {
         this.numberOfPatterns = numberOfPatterns;
         this.score = score;
         this.matchedItems = matchedItems;
@@ -130,7 +130,7 @@ public final class Match {
         return numberOfPatterns;
     }
 
-    public float getScore() {
+    public int getScore() {
         return score;
     }
 }

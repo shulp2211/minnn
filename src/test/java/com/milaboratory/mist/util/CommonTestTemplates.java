@@ -22,6 +22,9 @@ class CommonTestTemplates {
         NSequenceWithQuality seqMulti2_1 = new NSequenceWithQuality("ACAATTAGCCA");
         NSequenceWithQuality seqMulti2_2 = new NSequenceWithQuality("TGGCAGATGCAC");
 
+        PatternAligner patternAlignerWithThreshold = getTestPatternAligner(-15, 0, -1, -1);
+        PatternAligner patternAlignerWithoutThreshold = getTestPatternAligner(false);
+
         ArrayList<MatchedItem> testMatchedItemsSingle1 = new ArrayList<MatchedItem>() {{
             add(new MatchedRange(seqSingle, (byte)1, 0, new Range(6, 9)));
             add(new MatchedGroupEdge(seqSingle, (byte)1, 0, new GroupEdge("0", true), 6));
@@ -43,7 +46,7 @@ class CommonTestTemplates {
         }};
 
         ArrayList<MatchedItem> testMatchedItemsSingle4 = new ArrayList<MatchedItem>() {{
-            add(new MatchedRange(seqSingle, (byte)1, 0, new Range(0, 2)));
+            add(new MatchedRange(seqSingle, (byte)1, 0, new Range(1, 2)));
         }};
 
         ArrayList<MatchedItem> testMatchedItemsMulti1 = new ArrayList<MatchedItem>() {{
@@ -85,61 +88,61 @@ class CommonTestTemplates {
             add(new MatchedRange(seqMulti2_2, (byte)-2, 1, new Range(3, 11)));
         }};
 
-        Match testMatchSingle1 = new Match(1, 10, testMatchedItemsSingle1);
-        Match testMatchSingle2 = new Match(1, -3, testMatchedItemsSingle2);
-        Match testMatchSingle3 = new Match(1, -3, testMatchedItemsSingle3);
-        Match testMatchSingle4 = new Match(1, -4.5f, testMatchedItemsSingle4);
-        Match testMatchMulti1 = new Match(2, 4.0f, testMatchedItemsMulti1);
-        Match testMatchMulti2 = new Match(2, 3.9f, testMatchedItemsMulti2);
-        Match testMatchMulti3 = new Match(2, 4.0f, testMatchedItemsMulti3);
-        Match testMatchMulti4 = new Match(2, 5.0f, testMatchedItemsMulti4);
-        Match testMatchMulti5 = new Match(2, 5.0f, testMatchedItemsMulti5);
+        Match testMatchSingle1 = new Match(1, -4, testMatchedItemsSingle1);
+        Match testMatchSingle2 = new Match(1, -9, testMatchedItemsSingle2);
+        Match testMatchSingle3 = new Match(1, -13, testMatchedItemsSingle3);
+        Match testMatchSingle4 = new Match(1, -5, testMatchedItemsSingle4);
+        Match testMatchMulti1 = new Match(2, -6, testMatchedItemsMulti1);
+        Match testMatchMulti2 = new Match(2, -7, testMatchedItemsMulti2);
+        Match testMatchMulti3 = new Match(2, -6, testMatchedItemsMulti3);
+        Match testMatchMulti4 = new Match(2, -5, testMatchedItemsMulti4);
+        Match testMatchMulti5 = new Match(2, -5, testMatchedItemsMulti5);
 
         ApproximateSorter sorterSingle1, sorterSingle2, sorterSingle3, sorterSingle4, sorterSingle5;
         ApproximateSorter sorterMulti1, sorterMulti2, sorterMulti3;
         if (sortByScore) {
-            sorterSingle1 = new SorterByScore(getTestPatternAligner(), false, true,
-                    fairSorting, MatchValidationType.INTERSECTION);
-            sorterSingle2 = new SorterByScore(getTestPatternAligner(), false, false,
-                    fairSorting, MatchValidationType.INTERSECTION);
-            sorterSingle3 = new SorterByScore(getTestPatternAligner(), false, true,
-                    fairSorting, MatchValidationType.ORDER);
-            sorterSingle4 = new SorterByScore(getTestPatternAligner(), false, false,
-                    fairSorting, MatchValidationType.ORDER);
-            sorterSingle5 = new SorterByScore(getTestPatternAligner(), false, false,
-                    fairSorting, MatchValidationType.FIRST);
-            sorterMulti1 = new SorterByScore(getTestPatternAligner(), true, true,
-                    fairSorting, MatchValidationType.LOGICAL_OR);
-            sorterMulti2 = new SorterByScore(getTestPatternAligner(), true, false,
-                    fairSorting, MatchValidationType.LOGICAL_OR);
-            sorterMulti3 = new SorterByScore(getTestPatternAligner(), true, true,
-                    fairSorting, MatchValidationType.LOGICAL_AND);
+            sorterSingle1 = new SorterByScore(patternAlignerWithThreshold,
+                    false, true, fairSorting, MatchValidationType.INTERSECTION);
+            sorterSingle2 = new SorterByScore(patternAlignerWithThreshold,
+                    false, false, fairSorting, MatchValidationType.INTERSECTION);
+            sorterSingle3 = new SorterByScore(patternAlignerWithThreshold,
+                    false, true, fairSorting, MatchValidationType.ORDER);
+            sorterSingle4 = new SorterByScore(patternAlignerWithThreshold,
+                    false, false, fairSorting, MatchValidationType.ORDER);
+            sorterSingle5 = new SorterByScore(patternAlignerWithoutThreshold,
+                    false, false, fairSorting, MatchValidationType.FIRST);
+            sorterMulti1 = new SorterByScore(patternAlignerWithoutThreshold,
+                    true, true, fairSorting, MatchValidationType.LOGICAL_OR);
+            sorterMulti2 = new SorterByScore(patternAlignerWithoutThreshold,
+                    true, false, fairSorting, MatchValidationType.LOGICAL_OR);
+            sorterMulti3 = new SorterByScore(patternAlignerWithoutThreshold,
+                    true, true, fairSorting, MatchValidationType.LOGICAL_AND);
         } else {
-            sorterSingle1 = new SorterByCoordinate(getTestPatternAligner(), false, true,
-                    fairSorting, MatchValidationType.INTERSECTION);
-            sorterSingle2 = new SorterByCoordinate(getTestPatternAligner(), false, false,
-                    fairSorting, MatchValidationType.INTERSECTION);
-            sorterSingle3 = new SorterByCoordinate(getTestPatternAligner(), false, true,
-                    fairSorting, MatchValidationType.ORDER);
-            sorterSingle4 = new SorterByCoordinate(getTestPatternAligner(), false, false,
-                    fairSorting, MatchValidationType.ORDER);
-            sorterSingle5 = new SorterByCoordinate(getTestPatternAligner(), false, false,
-                    fairSorting, MatchValidationType.FIRST);
-            sorterMulti1 = new SorterByCoordinate(getTestPatternAligner(), true, true,
-                    fairSorting, MatchValidationType.LOGICAL_OR);
-            sorterMulti2 = new SorterByCoordinate(getTestPatternAligner(), true, false,
-                    fairSorting, MatchValidationType.LOGICAL_OR);
-            sorterMulti3 = new SorterByCoordinate(getTestPatternAligner(), true, true,
-                    fairSorting, MatchValidationType.LOGICAL_AND);
+            sorterSingle1 = new SorterByCoordinate(patternAlignerWithThreshold,
+                    false, true, fairSorting, MatchValidationType.INTERSECTION);
+            sorterSingle2 = new SorterByCoordinate(patternAlignerWithThreshold,
+                    false, false, fairSorting, MatchValidationType.INTERSECTION);
+            sorterSingle3 = new SorterByCoordinate(patternAlignerWithThreshold,
+                    false, true, fairSorting, MatchValidationType.ORDER);
+            sorterSingle4 = new SorterByCoordinate(patternAlignerWithThreshold,
+                    false, false, fairSorting, MatchValidationType.ORDER);
+            sorterSingle5 = new SorterByCoordinate(patternAlignerWithoutThreshold,
+                    false, false, fairSorting, MatchValidationType.FIRST);
+            sorterMulti1 = new SorterByCoordinate(patternAlignerWithoutThreshold,
+                    true, true, fairSorting, MatchValidationType.LOGICAL_OR);
+            sorterMulti2 = new SorterByCoordinate(patternAlignerWithoutThreshold,
+                    true, false, fairSorting, MatchValidationType.LOGICAL_OR);
+            sorterMulti3 = new SorterByCoordinate(patternAlignerWithoutThreshold,
+                    true, true, fairSorting, MatchValidationType.LOGICAL_AND);
         }
 
         TestMatchesOutputPort testPortSingle1 = new TestMatchesOutputPort(testMatchSingle1, testMatchSingle2, testMatchSingle2);
         TestMatchesOutputPort testPortSingle2 = new TestMatchesOutputPort(testMatchSingle3, testMatchSingle4, testMatchSingle3);
         TestMatchesOutputPort testPortSingle3;
         if (sortByScore)
-            testPortSingle3 = new TestMatchesOutputPort(testMatchSingle1, testMatchSingle2, testMatchSingle3, testMatchSingle4);
+            testPortSingle3 = new TestMatchesOutputPort(testMatchSingle1, testMatchSingle4, testMatchSingle2, testMatchSingle3);
         else
-            testPortSingle3 = new TestMatchesOutputPort(testMatchSingle4, testMatchSingle2, testMatchSingle3, testMatchSingle1);
+            testPortSingle3 = new TestMatchesOutputPort(testMatchSingle2, testMatchSingle4, testMatchSingle3, testMatchSingle1);
         TestMatchesOutputPort testPortSingle4 = new TestMatchesOutputPort(testMatchSingle4);
         TestMatchesOutputPort testPortMulti1 = new TestMatchesOutputPort(testMatchMulti1);
         TestMatchesOutputPort testPortMulti2 = new TestMatchesOutputPort(testMatchMulti2, testMatchMulti3, testMatchMulti2);
@@ -147,11 +150,11 @@ class CommonTestTemplates {
         TestMatchesOutputPort testPortMulti4 = new TestMatchesOutputPort(testMatchMulti4, testMatchMulti5, testMatchMulti4);
         TestMatchesOutputPort testPortEmpty = new TestMatchesOutputPort();
 
-        assertEquals(3, countPortValues(sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+        assertEquals(1, countPortValues(sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                 add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }})));
-        assertEquals(3, countPortValues(sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+        assertEquals(1, countPortValues(sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                 add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }})));
-        assertEquals(3, countPortValues(sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+        assertEquals(0, countPortValues(sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                 add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); add(testPortSingle3.getCopy()); }})));
         assertEquals(3, countPortValues(sorterSingle2.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                 add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }})));
@@ -179,55 +182,58 @@ class CommonTestTemplates {
                 add(testPortMulti4.getCopy()); }})));
 
         if (sortByScore) {
-            assertEquals(7, sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                    add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }})
-                    .take().getScore(), 0.0001);
-            if (fairSorting)
-                assertEquals(8, sorterMulti1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                        add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }})
-                        .take().getScore(), 0.0001);
-            else
-                assertEquals(7.9, sorterMulti1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                        add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }})
-                        .take().getScore(), 0.0001);
-            assertEquals(7, sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                    add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }})
-                    .take().getScore(), 0.0001);
-            assertEquals(10, sorterSingle2.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                    add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }})
-                    .take().getScore(), 0.0001);
+            assertEquals(-9, sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle1.getCopy()); add(testPortSingle4.getCopy()); }}).take().getScore());
+            if (fairSorting) {
+                assertEquals(-12, sorterMulti1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+                    add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }}).take().getScore());
+                assertEquals(-9, sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }}).take().getScore());
+                assertEquals(-4, sorterSingle2.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }}).take().getScore());
+            }
 
             OutputPort<Match> testPort1 = sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                     add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }});
             assertNotNull(testPort1.take());
-            assertEquals(5.5, testPort1.take().getScore(), 0.0001);
+            /* with fair sorting there must be combinations match1+match2, match2+match1, match2+match1;
+             with penalty for 2 intersections */
+            for (int i = 0; i < 3; i++)
+                if (fairSorting)
+                    assertEquals(-15, testPort1.take().getScore());
+                else
+                    assertNotNull(testPort1.take());
             assertNull(testPort1.take());
         } else {
-            if (fairSorting)
-                assertEquals(new Range(0, 9), sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            assertEquals(new Range(1, 9), sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                         add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }}).take().getRange());
-            else
-                assertEquals(new Range(3, 9), sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                    add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }}).take().getRange());
             assertEquals(new Range(0, 8), sorterMulti1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                         add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }})
                         .take().getMatchedRange(1).getRange());
-            assertEquals(new Range(0, 9), sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            if (fairSorting) {
+                assertEquals(new Range(0, 9), sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                     add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }}).take().getRange());
-            assertEquals(new Range(0, 9), sorterSingle3.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+                assertEquals(new Range(0, 9), sorterSingle3.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                     add(testPortSingle3.getCopy()); add(testPortSingle1.getCopy()); }}).take().getRange());
+            }
 
             OutputPort<Match> testPort1 = sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                     add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }});
-            assertNotNull(testPort1.take());
-            assertEquals(new Range(3, 9), testPort1.take().getRange());
+            if (fairSorting) {
+                // match1+match2, match2+match1, match2+match1, match1+match4
+                for (int i = 0; i < 3; i++)
+                    assertEquals(new Range(0, 9), testPort1.take().getRange());
+                assertEquals(new Range(1, 9), testPort1.take().getRange());
+            } else
+                for (int i = 0; i < 4; i++)
+                    assertNotNull(testPort1.take());
             assertNull(testPort1.take());
         }
 
         OutputPort<Match> testPort2 = sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                 add(testPortSingle3.getCopy()); add(testPortSingle3.getCopy()); }});
         System.out.println();
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 4; i++) {
             Match currentMatch = testPort2.take();
             System.out.println(currentMatch.getScore() + ", " + currentMatch.getRange());
         }
@@ -238,15 +244,17 @@ class CommonTestTemplates {
     static void randomMatchesApproximateSorterTest(boolean sortByScore, boolean fairSorting) throws Exception {
         ApproximateSorter sorter;
         Random randomGenerator = new Random();
-        int its = TestUtil.its(30, 100);
+        int its = TestUtil.its(300, 500);
         for (int i = 0; i < its; ++i) {
+            PatternAligner patternAligner = getTestPatternAligner(-10000, randomGenerator.nextInt(1000),
+                    -randomGenerator.nextInt(1000), -randomGenerator.nextInt(1000));
             int numberOfMatches = randomGenerator.nextInt(10) + 1;
             Match[] matches = new Match[numberOfMatches];
             if (sortByScore)
-                sorter = new SorterByScore(getTestPatternAligner(), false, randomGenerator.nextBoolean(),
+                sorter = new SorterByScore(patternAligner, false, randomGenerator.nextBoolean(),
                         fairSorting, MatchValidationType.INTERSECTION);
             else
-                sorter = new SorterByCoordinate(getTestPatternAligner(), false, randomGenerator.nextBoolean(),
+                sorter = new SorterByCoordinate(patternAligner, false, randomGenerator.nextBoolean(),
                         fairSorting, MatchValidationType.INTERSECTION);
 
             NSequenceWithQuality target = new NSequenceWithQuality(TestUtil.randomSequence(NucleotideSequence.ALPHABET,
@@ -256,12 +264,16 @@ class CommonTestTemplates {
                 ArrayList<MatchedItem> testItems = new ArrayList<MatchedItem>() {{
                     add(new MatchedRange(target, (byte)randomGenerator.nextInt(200), 0,
                             new Range(currentRangeLeft, currentRangeLeft + 1))); }};
-                matches[j] = new Match(1, randomGenerator.nextFloat() * 1000 - 500, testItems);
+                matches[j] = new Match(1, -randomGenerator.nextInt(1000), testItems);
             }
 
             TestMatchesOutputPort testPort = new TestMatchesOutputPort(matches);
             int expectedMatchesNum = numberOfMatches * (numberOfMatches - 1);
 
+            if (expectedMatchesNum != countPortValues(sorter.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+                    add(testPort.getCopy()); add(testPort.getCopy()); }}))) {
+                System.out.println(numberOfMatches);
+            }
             assertEquals(expectedMatchesNum, countPortValues(sorter.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                 add(testPort.getCopy()); add(testPort.getCopy()); }})));
         }
@@ -270,16 +282,19 @@ class CommonTestTemplates {
     static void randomMatchesFromOperatorsApproximateSorterTest(boolean sortByScore) throws Exception {
         ApproximateSorter sorter;
         Random randomGenerator = new Random();
-        int its = TestUtil.its(30, 100);
+        int its = TestUtil.its(300, 500);
         for (int i = 0; i < its; ++i) {
+            int singleOverlapPenalty = -randomGenerator.nextInt(1000);
+            PatternAligner patternAligner = getTestPatternAligner(500 * singleOverlapPenalty,
+                    0, -randomGenerator.nextInt(1000), singleOverlapPenalty);
             int numberOfFragments = randomGenerator.nextInt(3) + 4;
             int expectedMatchesNum = numberOfFragments * (numberOfFragments - 1) * (numberOfFragments - 2) * (numberOfFragments - 3);
             int spaceLength = randomGenerator.nextInt(3);
             if (sortByScore)
-                sorter = new SorterByScore(getTestPatternAligner(), false, randomGenerator.nextBoolean(),
+                sorter = new SorterByScore(patternAligner, false, randomGenerator.nextBoolean(),
                         randomGenerator.nextBoolean(), MatchValidationType.INTERSECTION);
             else
-                sorter = new SorterByCoordinate(getTestPatternAligner(), false, randomGenerator.nextBoolean(),
+                sorter = new SorterByCoordinate(patternAligner, false, randomGenerator.nextBoolean(),
                         randomGenerator.nextBoolean(), MatchValidationType.INTERSECTION);
 
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, spaceLength);
@@ -291,7 +306,7 @@ class CommonTestTemplates {
 
             final NSequenceWithQuality finalTarget = new NSequenceWithQuality(target.toString());
 
-            FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), fragment);
+            FuzzyMatchPattern pattern = new FuzzyMatchPattern(patternAligner, fragment);
 
             OutputPort<Match> testPort = sorter.getOutputPort(new ArrayList<OutputPort<Match>>() {{
                 add(pattern.match(finalTarget).getMatches()); add(pattern.match(finalTarget).getMatches());

@@ -42,8 +42,8 @@ public class GroupUtilsTest {
             add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("3", false), 8));
         }};
 
-        Match testMatchSingle = new Match(1, -5.0f, testMatchedItemsSingle);
-        Match testMatchMulti = new Match(2, -11.0f, testMatchedItemsMulti);
+        Match testMatchSingle = new Match(1, -5, testMatchedItemsSingle);
+        Match testMatchMulti = new Match(2, -11, testMatchedItemsMulti);
         ArrayList<MatchedGroup> groupsSingle = getGroupsFromMatch(testMatchSingle);
         ArrayList<MatchedGroup> groupsMulti = getGroupsFromMatch(testMatchMulti);
 

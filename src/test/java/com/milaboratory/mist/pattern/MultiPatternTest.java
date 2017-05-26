@@ -299,7 +299,7 @@ public class MultiPatternTest {
             MultiPattern multiPattern1 = new MultiPattern(getTestPatternAligner(), pattern1, pattern0);
             assertEquals(pattern0.match(target.get(0)).getBestMatch().getScore()
                     + pattern1.match(target.get(1)).getBestMatch().getScore(),
-                    multiPattern0.match(target).getBestMatch().getScore(), 0.0001);
+                    multiPattern0.match(target).getBestMatch().getScore());
             if (!motifs[0].toString().equals(motifs[1].toString()))
                 assertNull(multiPattern1.match(target).getBestMatch());
         }

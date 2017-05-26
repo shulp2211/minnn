@@ -134,15 +134,15 @@ public abstract class ApproximateSorter {
      * @param matches matches from which we will get the scores
      * @return combined score
      */
-    protected float combineMatchScores(Match... matches) {
-        float resultScore;
+    protected int combineMatchScores(Match... matches) {
+        int resultScore;
         if (combineScoresBySum) {
             resultScore = 0;
             for (Match match : matches)
                 if (match != null)
                     resultScore += match.getScore();
         } else {
-            resultScore = Float.NEGATIVE_INFINITY;
+            resultScore = Integer.MIN_VALUE;
             for (Match match : matches)
                 if (match != null)
                     if (match.getScore() > resultScore)
