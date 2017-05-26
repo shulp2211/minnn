@@ -246,7 +246,9 @@ public abstract class ApproximateSorter {
                     Range currentRange = matches[i].getRange();
                     ranges[i] = currentRange;
                     for (int j = 0; j < i; j++)     // Compare with all previously added matches
-                        if (isOverlapPenaltyOverThreshold(matches[0].getMatchedRange().getTarget(), ranges[i], ranges[j])) {
+                        if (checkFullIntersection(ranges[i], ranges[j])
+                                || (isOverlapPenaltyOverThreshold(matches[0].getMatchedRange().getTarget(),
+                                ranges[i], ranges[j]))) {
                             result = new IncompatibleIndexes(j, indexes[j], i, indexes[i]);
                             break OUTER;
                         }
@@ -261,8 +263,10 @@ public abstract class ApproximateSorter {
                     if (matches[i] == null) continue;
                     currentRange = matches[i].getRange();
                     previousRange = matches[i - 1].getRange();
-                    if ((previousRange.getLower() >= currentRange.getLower()) || isOverlapPenaltyOverThreshold(
-                            matches[0].getMatchedRange().getTarget(), previousRange, currentRange)) {
+                    if ((previousRange.getLower() >= currentRange.getLower())
+                            || checkFullIntersection(previousRange, currentRange)
+                            || isOverlapPenaltyOverThreshold(matches[0].getMatchedRange().getTarget(),
+                            previousRange, currentRange)) {
                         result = new IncompatibleIndexes(i - 1, indexes[i - 1], i, indexes[i]);
                         break;
                     }
