@@ -52,6 +52,13 @@ public final class RangeTools {
         return intersection.length();
     }
 
+    /**
+     * Returns true if one of 2 range contains another; otherwise false.
+     */
+    public static boolean checkFullIntersection(Range range0, Range range1) {
+        return range0.contains(range1) || range1.contains(range0);
+    }
+
     // For performance, to avoid allocation of new array
     public static Range combine2Ranges(Range range0, Range range1) {
         return new Range(Math.min(range0.getLower(), range1.getLower()),
