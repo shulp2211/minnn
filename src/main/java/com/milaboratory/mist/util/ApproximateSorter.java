@@ -282,13 +282,9 @@ public abstract class ApproximateSorter {
      * @return true if penalty is over threshold, otherwise false
      */
     private boolean isOverlapPenaltyOverThreshold(NSequenceWithQuality target, Range range0, Range range1) {
-        int overlapLength = getIntersectionLength(range0, range1);
-        if (overlapLength > 0) {
-            int overlapOffset = combine2Ranges(range0, range1).getLower();
-            if (patternAligner.overlapPenalty(target, overlapOffset, overlapLength) < patternAligner.penaltyThreshold())
-                return true;
-        }
-        return false;
+        Range intersection = range0.intersection(range1);
+        return (intersection != null) && (patternAligner.overlapPenalty(target,
+                intersection.getLower(), intersection.length()) < patternAligner.penaltyThreshold());
     }
 
     protected class IncompatibleIndexes {

@@ -96,11 +96,9 @@ public final class RangeTools {
         float totalPenalty = 0;
         for (int i = 0; i < ranges.length; i++)
             for (int j = i + 1; j < ranges.length; j++) {
-                int overlapLength = getIntersectionLength(ranges[i], ranges[j]);
-                if (overlapLength > 0) {
-                    int overlapOffset = combine2Ranges(ranges[i], ranges[j]).getLower();
-                    totalPenalty += patternAligner.overlapPenalty(target, overlapOffset, overlapLength);
-                }
+                Range intersection = ranges[i].intersection(ranges[j]);
+                if (intersection != null)
+                    totalPenalty += patternAligner.overlapPenalty(target, intersection.getLower(), intersection.length());
             }
 
         return new CombinedRange(combineRanges(ranges), totalPenalty);
