@@ -60,6 +60,8 @@ public final class SorterByCoordinate extends ApproximateSorter {
 
         @Override
         public Match take() {
+            Match combinedMatch = null;
+
             if (alwaysReturnNull) return null;
             if (fairSorting) return takeFairSorted();
 
@@ -97,9 +99,17 @@ public final class SorterByCoordinate extends ApproximateSorter {
                 }
 
                 IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, currentIndexes);
-                if (incompatibleIndexes == null)
-                    combinationFound = true;
-                else {
+                if (incompatibleIndexes == null) {
+                    combinedMatch = combineMatches(true, currentMatches);
+                    if ((combinedMatch != null) && (combinedMatch.getScore() >= patternAligner.penaltyThreshold()))
+                        combinationFound = true;
+                    else {
+                        /* current combination doesn't fit the score threshold, mark it as returned
+                         and continue search */
+                        tableOfIterations.addReturnedCombination(currentIndexes);
+                        calculateNextIndexes();
+                    }
+                } else {
                     /* mark invalid match as already returned in table of iterations, write found
                      incompatible indexes to table of iterations and continue search */
                     tableOfIterations.addReturnedCombination(currentIndexes);
@@ -109,7 +119,7 @@ public final class SorterByCoordinate extends ApproximateSorter {
             }
             tableOfIterations.addReturnedCombination(currentIndexes);
             calculateNextIndexes();
-            return combineMatches(false, currentMatches);
+            return combinedMatch;
         }
 
         private Match takeFairSorted() {
