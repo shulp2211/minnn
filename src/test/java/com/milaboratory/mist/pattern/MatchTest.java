@@ -38,13 +38,13 @@ public class MatchTest {
             add(new MatchedGroupEdge(seq1, (byte)1, 1, new GroupEdge("3", false), 8));
         }};
 
-        Match testMatch1 = new Match(1, 5, testMatchedItems1);
-        Match testMatch2 = new Match(2, 10, testMatchedItems2);
+        Match testMatch1 = new Match(1, -10, testMatchedItems1);
+        Match testMatch2 = new Match(2, -5, testMatchedItems2);
 
         assertEquals(1, testMatch1.getNumberOfPatterns());
         assertEquals(2, testMatch2.getNumberOfPatterns());
-        assertEquals(5, testMatch1.getScore());
-        assertEquals(10, testMatch2.getScore());
+        assertEquals(-10, testMatch1.getScore());
+        assertEquals(-5, testMatch2.getScore());
         assertEquals(new Range(0, 9), testMatch1.getMatchedRange(0).getRange());
         assertEquals(new Range(0, 9), testMatch2.getMatchedRange(0).getRange());
         assertEquals(new Range(0, 9), testMatch1.getMatchedRange().getRange());
