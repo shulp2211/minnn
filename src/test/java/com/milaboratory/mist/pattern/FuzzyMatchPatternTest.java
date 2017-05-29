@@ -83,6 +83,16 @@ public class FuzzyMatchPatternTest {
     }
 
     @Test
+    public void specialCasesTest() throws Exception {
+        PatternAligner patternAligner1 = getTestPatternAligner(7);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(patternAligner1, new NucleotideSequence("GCATCATGCT"));
+        NSequenceWithQuality target1 = new NSequenceWithQuality("TTT");
+        MatchingResult result1 = pattern1.match(target1);
+        assertTrue(result1.isFound());
+        assertEquals(1, countMatches(result1));
+    }
+
+    @Test
     public void randomMatchTest() throws Exception {
         int its = TestUtil.its(1000, 100000);
         for (int i = 0; i < its; ++i) {
