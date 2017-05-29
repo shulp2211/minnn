@@ -15,9 +15,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
-import static com.milaboratory.mist.util.CommonTestUtils.getRandomSubsequence;
-import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
-import static com.milaboratory.mist.util.CommonTestUtils.makeRandomErrors;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static com.milaboratory.mist.util.RangeTools.checkFullIntersection;
 import static com.milaboratory.mist.util.RangeTools.getIntersectionLength;
 import static org.junit.Assert.*;
@@ -240,16 +238,18 @@ public class PlusPatternTest {
                     randomGenerator.nextBoolean()).take() != null);
 
             for (Boolean fairSorting: new Boolean[] {false, true}) {
-                int errorScorePenalty = -randomGenerator.nextInt(1000) - 1;
+                int errorScorePenalty = -randomGenerator.nextInt(50) - 1;
                 int plusPenaltyThreshold;
                 boolean misplacedPatterns = false;
                 if (isMatchingPattern1) {
-                    Range range1 = pattern1.match(targetQ).getBestMatch(fairSorting).getRange();
-                    Range range2 = pattern2.match(targetQ).getBestMatch(fairSorting).getRange();
-                    plusPenaltyThreshold = errorScorePenalty * (maxErrors * 2 + getIntersectionLength(range1, range2));
-                    misplacedPatterns = (range1.getLower() >= range2.getLower()) || checkFullIntersection(range1, range2);
+                    Match match1 = pattern1.match(targetQ).getBestMatch(fairSorting);
+                    Match match2 = pattern2.match(targetQ).getBestMatch(fairSorting);
+                    plusPenaltyThreshold = match1.getScore() + match2.getScore()
+                            + errorScorePenalty * getIntersectionLength(match1.getRange(), match2.getRange());
+                    misplacedPatterns = (match1.getRange().getLower() >= match2.getRange().getLower())
+                            || checkFullIntersection(match1.getRange(), match2.getRange());
                 } else {
-                    plusPenaltyThreshold = errorScorePenalty * maxErrors;
+                    plusPenaltyThreshold = pattern2.match(targetQ).getBestMatch(fairSorting).getScore();
                     if ((targetLength <= maxErrors) || (motif1WithErrors.size() <= maxErrors))
                         plusPenaltyThreshold = 0;
                 }

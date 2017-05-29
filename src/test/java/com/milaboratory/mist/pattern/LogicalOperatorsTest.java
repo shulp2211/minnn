@@ -389,7 +389,7 @@ public class LogicalOperatorsTest {
         assertEquals(new NSequenceWithQuality("ATTAGTTA"), matchingResults[0].getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ATTAGAA"), matchingResults[1].getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ACAGACA"), matchingResults[2].getBestMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ATTTAGAA"), matchingResults[3].getBestMatch().getValue());
+        assertEquals(new NSequenceWithQuality("TTTAGAA"), matchingResults[3].getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ACAGACA"), matchingResults[4].getBestMatch().getValue());
 
         AndPattern andPattern = new AndPattern(getTestPatternAligner(), fuzzyPattern, fuzzyPattern);

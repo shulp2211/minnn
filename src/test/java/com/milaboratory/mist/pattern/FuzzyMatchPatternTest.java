@@ -263,7 +263,7 @@ public class FuzzyMatchPatternTest {
         assertEquals(new NSequenceWithQuality("ATTAGAA"), matchingResults[2][1].getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ATTAGGACA"), matchingResults[2][2].getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ACAGACA"), matchingResults[2][3].getBestMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ATTTAGAA"), matchingResults[2][4].getBestMatch().getValue());
+        assertEquals(new NSequenceWithQuality("TTTAGAA"), matchingResults[2][4].getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ACAGACA"), matchingResults[2][5].getBestMatch().getValue());
     }
 
@@ -295,13 +295,13 @@ public class FuzzyMatchPatternTest {
                 }
             }
 
-        assertEquals(40, matchingResults[0][0].getBestMatch(true).getScore());
-        assertEquals(40, matchingResults[1][0].getBestMatch(true).getScore());
-        assertEquals(10, matchingResults[2][0].getBestMatch(true).getScore());
-        assertEquals(40, matchingResults[0][0].getBestMatch(false).getScore());
-        assertEquals(40, matchingResults[1][0].getBestMatch(false).getScore());
-        assertEquals(10, matchingResults[2][0].getBestMatch(false).getScore());
-        assertEquals(40, matchingResults[1][1].getBestMatch().getScore());
-        assertEquals(35, matchingResults[1][2].getBestMatch().getScore());
+        assertEquals(0, matchingResults[0][0].getBestMatch(true).getScore());
+        assertEquals(0, matchingResults[1][0].getBestMatch(true).getScore());
+        assertEquals(0, matchingResults[2][0].getBestMatch(true).getScore());
+        assertEquals(0, matchingResults[0][0].getBestMatch(false).getScore());
+        assertEquals(0, matchingResults[1][0].getBestMatch(false).getScore());
+        assertEquals(0, matchingResults[2][0].getBestMatch(false).getScore());
+        assertEquals(0, matchingResults[1][1].getBestMatch().getScore());
+        assertEquals(-10, matchingResults[1][2].getBestMatch().getScore());
     }
 }

@@ -95,6 +95,10 @@ public class CommonTestUtils {
         return seq.getRange(Math.min(position1, position2), Math.max(position1, position2) + 1);
     }
 
+    public static LinearGapAlignmentScoring getTestScoring() {
+        return new LinearGapAlignmentScoring<>(NucleotideSequence.ALPHABET, 0, -9, -10);
+    }
+
     public static PatternAligner getTestPatternAligner() {
         return getTestPatternAligner(0);
     }
@@ -116,9 +120,8 @@ public class CommonTestUtils {
                                                        int rightMatchPosition) {
                 int leftMatchPosition = rightMatchPosition + 1 - pattern.size() - bitapMaxErrors;
                 if (leftMatchPosition < 0) leftMatchPosition = 0;
-                return BandedLinearAligner.alignLeftAdded(LinearGapAlignmentScoring.getNucleotideBLASTScoring(),
-                        pattern, target.getSequence(), 0, pattern.size(), 0,
-                        leftMatchPosition, rightMatchPosition - leftMatchPosition + 1,
+                return BandedLinearAligner.alignLeftAdded(getTestScoring(), pattern, target.getSequence(), 0,
+                        pattern.size(), 0, leftMatchPosition, rightMatchPosition - leftMatchPosition + 1,
                         bitapMaxErrors, bitapMaxErrors);
             }
 

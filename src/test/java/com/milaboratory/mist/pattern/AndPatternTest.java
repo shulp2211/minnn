@@ -15,9 +15,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
-import static com.milaboratory.mist.util.CommonTestUtils.getRandomSubsequence;
-import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
-import static com.milaboratory.mist.util.CommonTestUtils.makeRandomErrors;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static com.milaboratory.mist.util.RangeTools.checkFullIntersection;
 import static com.milaboratory.mist.util.RangeTools.getIntersectionLength;
 import static org.junit.Assert.*;
@@ -241,16 +239,17 @@ public class AndPatternTest {
                     randomGenerator.nextBoolean()).take() != null);
 
             for (Boolean fairSorting: new Boolean[] {false, true}) {
-                int errorScorePenalty = -randomGenerator.nextInt(1000) - 1;
+                int errorScorePenalty = -randomGenerator.nextInt(50) - 1;
                 int andPenaltyThreshold;
                 boolean fullyIntersectedRanges = false;
                 if (isMatchingPattern1) {
-                    Range range1 = pattern1.match(targetQ).getBestMatch(fairSorting).getRange();
-                    Range range2 = pattern2.match(targetQ).getBestMatch(fairSorting).getRange();
-                    andPenaltyThreshold = errorScorePenalty * (maxErrors * 2 + getIntersectionLength(range1, range2));
-                    fullyIntersectedRanges = checkFullIntersection(range1, range2);
+                    Match match1 = pattern1.match(targetQ).getBestMatch(fairSorting);
+                    Match match2 = pattern2.match(targetQ).getBestMatch(fairSorting);
+                    andPenaltyThreshold = match1.getScore() + match2.getScore()
+                            + errorScorePenalty * getIntersectionLength(match1.getRange(), match2.getRange());
+                    fullyIntersectedRanges = checkFullIntersection(match1.getRange(), match2.getRange());
                 } else {
-                    andPenaltyThreshold = errorScorePenalty * maxErrors;
+                    andPenaltyThreshold = pattern2.match(targetQ).getBestMatch(fairSorting).getScore();
                     if ((targetLength <= maxErrors) || (motif1WithErrors.size() <= maxErrors))
                         andPenaltyThreshold = 0;
                 }
