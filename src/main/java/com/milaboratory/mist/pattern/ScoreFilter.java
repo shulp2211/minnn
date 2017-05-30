@@ -1,9 +1,9 @@
 package com.milaboratory.mist.pattern;
 
 public final class ScoreFilter implements Filter {
-    private final float scoreThreshold;
+    private final int scoreThreshold;
 
-    public ScoreFilter(float scoreThreshold) {
+    public ScoreFilter(int scoreThreshold) {
         this.scoreThreshold = scoreThreshold;
     }
 

@@ -19,15 +19,15 @@ public class ScoreFilterTest {
         Random randomGenerator = new Random();
         int its = TestUtil.its(1000, 2000);
         for (int i = 0; i < its; ++i) {
-            float scoreThreshold = randomGenerator.nextFloat() * 100 - 50;
+            int scoreThreshold = -randomGenerator.nextInt(100);
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
             NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 10);
             NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
                     SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
-            FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), motif);
+            FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(randomGenerator.nextInt(5)), motif);
             FilterPattern filterPattern = new FilterPattern(getTestPatternAligner(), new ScoreFilter(scoreThreshold), pattern);
             boolean isMatching = pattern.match(targetQ).isFound()
-                    && pattern.match(targetQ).getBestMatch().getScore() >= scoreThreshold;
+                    && (pattern.match(targetQ).getBestMatch(true).getScore() >= scoreThreshold);
 
             assertEquals(isMatching, filterPattern.match(targetQ).isFound());
             assertTrue(countMatches(pattern.match(targetQ)) >= countMatches(filterPattern.match(targetQ)));
