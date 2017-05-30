@@ -117,7 +117,7 @@ public final class SorterByScore extends ApproximateSorter {
             if (!sortingPerformed) {
                 allMatchesFiltered = fillArrayForFairSorting(inputPorts, numberOfPorts, true);
                 filteredMatchesCount = allMatchesFiltered.length;
-                Arrays.sort(allMatchesFiltered, Comparator.comparingDouble(Match::getScore).reversed());
+                Arrays.sort(allMatchesFiltered, Comparator.comparingInt(Match::getScore).reversed());
                 sortingPerformed = true;
             }
 

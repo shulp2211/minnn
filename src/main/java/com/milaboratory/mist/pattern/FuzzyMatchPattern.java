@@ -219,7 +219,7 @@ public final class FuzzyMatchPattern extends SinglePattern {
             private Match takeFairByScore() {
                 if (!sortingPerformed) {
                     fillAllMatchesForFairSorting();
-                    Arrays.sort(allMatches, Comparator.comparingDouble(Match::getScore).reversed());
+                    Arrays.sort(allMatches, Comparator.comparingInt(Match::getScore).reversed());
                     sortingPerformed = true;
                 }
 
