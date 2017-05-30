@@ -378,8 +378,8 @@ public class LogicalOperatorsTest {
                 new NSequenceWithQuality("ATTAGTTA"),
                 new NSequenceWithQuality("ATTAGAAG"),
                 new NSequenceWithQuality("ACAGACA"),
-                new NSequenceWithQuality("ATTTAGAA"),
-                new NSequenceWithQuality("TACAGACATTTAGAA")
+                new NSequenceWithQuality("ATCTAGAA"),
+                new NSequenceWithQuality("TACAGACATCTAGAA")
         };
 
         MatchingResult[] matchingResults = new MatchingResult[5];
@@ -389,16 +389,16 @@ public class LogicalOperatorsTest {
         assertEquals(new NSequenceWithQuality("ATTAGTTA"), matchingResults[0].getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ATTAGAA"), matchingResults[1].getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ACAGACA"), matchingResults[2].getBestMatch().getValue());
-        assertEquals(new NSequenceWithQuality("TTTAGAA"), matchingResults[3].getBestMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ATCTAGAA"), matchingResults[3].getBestMatch().getValue());
         assertEquals(new NSequenceWithQuality("ACAGACA"), matchingResults[4].getBestMatch().getValue());
 
         AndPattern andPattern = new AndPattern(getTestPatternAligner(), fuzzyPattern, fuzzyPattern);
         PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(), fuzzyPattern, fuzzyPattern);
 
-        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), andPattern.match(sequences[4]).getBestMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), plusPattern.match(sequences[4]).getBestMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), andPattern.match(sequences[4]).getMatches().take().getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), plusPattern.match(sequences[4]).getMatches().take().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"), andPattern.match(sequences[4]).getBestMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"), plusPattern.match(sequences[4]).getBestMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"), andPattern.match(sequences[4]).getMatches().take().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"), plusPattern.match(sequences[4]).getMatches().take().getValue());
 
         MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), fuzzyPattern, andPattern, plusPattern);
         NotOperator notOperator = new NotOperator(getTestPatternAligner(), multiPattern);
@@ -427,8 +427,8 @@ public class LogicalOperatorsTest {
         MatchingResult result = andOperator.match(mseq);
 
         assertEquals(new NSequenceWithQuality("ATTAGAA"), result.getBestMatch().getMatchedRange(0).getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), result.getBestMatch().getMatchedRange(1).getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATTTAGAA"), result.getBestMatch().getMatchedRange(2).getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"), result.getBestMatch().getMatchedRange(1).getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"), result.getBestMatch().getMatchedRange(2).getValue());
         assertEquals(NullMatchedRange.class, result.getBestMatch().getMatchedRange(3).getClass());
         assertEquals(new NSequenceWithQuality("ATTAGAA"), result.getBestMatch().getMatchedRange(14).getValue());
 
