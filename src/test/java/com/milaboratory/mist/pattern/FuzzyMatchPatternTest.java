@@ -12,11 +12,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
 import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
+import static com.milaboratory.mist.util.CommonTestUtils.makeRandomErrors;
 import static org.junit.Assert.*;
 
 public class FuzzyMatchPatternTest {
@@ -211,6 +211,42 @@ public class FuzzyMatchPatternTest {
 
         exception.expect(IllegalArgumentException.class);
         new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("TAGCC"), groups);
+    }
+
+    @Test
+    public void randomGroupsTest() throws Exception {
+        Random randomGenerator = new Random();
+        for (int i = 0; i < 5000; i++) {
+            int numErrors = randomGenerator.nextInt(4);
+            PatternAligner patternAligner = getTestPatternAligner(numErrors);
+            ArrayList<GroupEdgePosition> groupEdges = new ArrayList<>();
+            int numGroupEdges = randomGenerator.nextInt(40);
+            int motifSize = randomGenerator.nextInt(50) + 1 + numErrors;
+            for (int j = 0; j < numGroupEdges; j++)
+                groupEdges.add(new GroupEdgePosition(new GroupEdge("1", randomGenerator.nextBoolean()),
+                        randomGenerator.nextInt(motifSize + 1 - numErrors)));
+            NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, motifSize, motifSize);
+            NucleotideSequence mutatedMotif = makeRandomErrors(motif, numErrors);
+            FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(patternAligner, motif, groupEdges);
+            FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(patternAligner, mutatedMotif, groupEdges);
+            NSequenceWithQuality target = new NSequenceWithQuality(motif.toString() + motif.toString());
+            OutputPort<Match> port1 = pattern1.match(target).getMatches(true, false);
+            OutputPort<Match> port2 = pattern2.match(target).getMatches(randomGenerator.nextBoolean(), randomGenerator.nextBoolean());
+            Match matches[] = new Match[4];
+            matches[0] = port1.take();
+            matches[1] = port1.take();
+            matches[2] = port2.take();
+            matches[3] = port2.take();
+            for (int j = 0; j < numGroupEdges; j++)
+                for (int k = 0; k < 4; k++) {
+                    MatchedGroupEdge matchedGroupEdge = matches[k].getMatchedGroupEdges().get(j);
+                    if (k == 0)
+                        assertEquals(groupEdges.get(j).getPosition(), matchedGroupEdge.getPosition());
+                    assertTrue(matchedGroupEdge.getPosition() >= 0);
+                    assertTrue(matchedGroupEdge.getPosition() <= target.size());
+                    assertTrue(matchedGroupEdge.getGroupName().equals("1"));
+                }
+        }
     }
 
     @Test
