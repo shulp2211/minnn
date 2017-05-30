@@ -114,6 +114,11 @@ public class CommonTestUtils {
 
     public static PatternAligner getTestPatternAligner(int penaltyThreshold, int bitapMaxErrors, int notResultScore,
                                                        int singleOverlapPenalty) {
+        return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty, true);
+    }
+
+    public static PatternAligner getTestPatternAligner(int penaltyThreshold, int bitapMaxErrors, int notResultScore,
+                                                       int singleOverlapPenalty, boolean compatible) {
         return new PatternAligner() {
             @Override
             public Alignment<NucleotideSequence> align(NucleotideSequence pattern, NSequenceWithQuality target,
@@ -147,7 +152,7 @@ public class CommonTestUtils {
 
             @Override
             public boolean compatible(PatternAligner otherAligner) {
-                return true;
+                return compatible;
             }
 
             @Override

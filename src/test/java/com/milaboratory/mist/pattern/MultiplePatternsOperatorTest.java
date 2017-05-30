@@ -1,5 +1,7 @@
 package com.milaboratory.mist.pattern;
 
+import com.milaboratory.core.alignment.Alignment;
+import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 import org.junit.Rule;
 import org.junit.Test;
@@ -79,5 +81,14 @@ public class MultiplePatternsOperatorTest {
                 new NucleotideSequence("GTGGTTGTGTTGT"), groups);
         exception.expect(IllegalStateException.class);
         new AndPattern(getTestPatternAligner(), pattern, pattern);
+    }
+
+    @Test
+    public void incompatiblePatternAlignersTest() throws Exception {
+        PatternAligner incompatibleAligner = getTestPatternAligner(0, 0,
+                0, 0, false);
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("A"));
+        exception.expect(IllegalStateException.class);
+        new AndPattern(incompatibleAligner, pattern, pattern);
     }
 }
