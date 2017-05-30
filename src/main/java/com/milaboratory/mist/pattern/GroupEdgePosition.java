@@ -9,6 +9,11 @@ final class GroupEdgePosition {
         this.position = position;
     }
 
+    @Override
+    public String toString() {
+        return "GroupEdgePosition(" + groupEdge + ", " + position + ")";
+    }
+
     GroupEdge getGroupEdge() {
         return groupEdge;
     }

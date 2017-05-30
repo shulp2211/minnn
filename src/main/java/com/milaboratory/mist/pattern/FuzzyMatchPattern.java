@@ -43,6 +43,11 @@ public final class FuzzyMatchPattern extends SinglePattern {
     }
 
     @Override
+    public String toString() {
+        return "FuzzyMatchPattern(" + patternSeq + ", " + groupEdgePositions + ")";
+    }
+
+    @Override
     public ArrayList<GroupEdge> getGroupEdges() {
         ArrayList<GroupEdge> groupEdges = new ArrayList<>();
         for (GroupEdgePosition groupEdgePosition : groupEdgePositions)

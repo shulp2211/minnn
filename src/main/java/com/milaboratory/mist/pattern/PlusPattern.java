@@ -7,10 +7,16 @@ import com.milaboratory.mist.util.SorterByCoordinate;
 import com.milaboratory.mist.util.SorterByScore;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public final class PlusPattern extends MultiplePatternsOperator {
     public PlusPattern(PatternAligner patternAligner, SinglePattern... operandPatterns) {
         super(patternAligner, operandPatterns);
+    }
+
+    @Override
+    public String toString() {
+        return "PlusPattern(" + Arrays.toString(operandPatterns) + ")";
     }
 
     @Override

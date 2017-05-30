@@ -47,6 +47,11 @@ public final class BorderFilter implements Filter {
     }
 
     @Override
+    public String toString() {
+        return "BorderFilter(" + leftSide + ", " + seq + ", " + minNucleotides + ", " + useTarget + ")";
+    }
+
+    @Override
     public Match checkMatch(Match match) {
         if (match.getNumberOfPatterns() > 1)
             throw new IllegalArgumentException("BorderFilter must not be used for multi-target matches!");

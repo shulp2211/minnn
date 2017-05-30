@@ -7,6 +7,7 @@ import com.milaboratory.mist.util.SorterByCoordinate;
 import com.milaboratory.mist.util.SorterByScore;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * This pattern takes multiple SinglePattern arguments and matches best of them that is found, or not matches
@@ -15,6 +16,11 @@ import java.util.ArrayList;
 public final class OrPattern extends MultiplePatternsOperator {
     public OrPattern(PatternAligner patternAligner, SinglePattern... operandPatterns) {
         super(patternAligner, false, operandPatterns);
+    }
+
+    @Override
+    public String toString() {
+        return "OrPattern(" + Arrays.toString(operandPatterns) + ")";
     }
 
     @Override

@@ -21,6 +21,11 @@ public final class GroupEdge {
     }
 
     @Override
+    public String toString() {
+        return "GroupEdge('" + groupName + "', " + isStart + ")";
+    }
+
+    @Override
     public boolean equals(Object other) {
         if (!(other instanceof GroupEdge))
             return false;

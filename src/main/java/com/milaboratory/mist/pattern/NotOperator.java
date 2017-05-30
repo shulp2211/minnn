@@ -5,6 +5,7 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public final class NotOperator extends MultipleReadsOperator {
     public NotOperator(PatternAligner patternAligner, MultipleReadsOperator... operandPatterns) {
@@ -13,6 +14,11 @@ public final class NotOperator extends MultipleReadsOperator {
             throw new IllegalArgumentException("Not operator must take exactly 1 operand!");
         if (groupEdges.size() > 0)
             throw new IllegalStateException("Not operator must not contain group edges inside!");
+    }
+
+    @Override
+    public String toString() {
+        return "NotOperator(" + operandPatterns[0] + ")";
     }
 
     @Override

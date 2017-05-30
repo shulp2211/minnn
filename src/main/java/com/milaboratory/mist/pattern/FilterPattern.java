@@ -22,6 +22,11 @@ public final class FilterPattern extends SinglePattern {
     }
 
     @Override
+    public String toString() {
+        return "FilterPattern(" + filter + ", " + pattern + ")";
+    }
+
+    @Override
     public MatchingResult match(MultiNSequenceWithQuality target) {
         return new FilterMatchingResult(filter, pattern, target);
     }

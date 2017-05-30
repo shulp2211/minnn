@@ -9,10 +9,16 @@ import com.milaboratory.mist.util.SorterByCoordinate;
 import com.milaboratory.mist.util.SorterByScore;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public final class MultiPattern extends MultipleReadsOperator {
     public MultiPattern(PatternAligner patternAligner, SinglePattern... singlePatterns) {
         super(patternAligner, singlePatterns);
+    }
+
+    @Override
+    public String toString() {
+        return "MultiPattern(" + Arrays.toString(singlePatterns) + ")";
     }
 
     @Override

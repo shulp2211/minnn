@@ -8,10 +8,16 @@ import com.milaboratory.mist.util.SorterByCoordinate;
 import com.milaboratory.mist.util.SorterByScore;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public final class AndOperator extends MultipleReadsOperator {
     public AndOperator(PatternAligner patternAligner, MultipleReadsOperator... operandPatterns) {
         super(patternAligner, operandPatterns);
+    }
+
+    @Override
+    public String toString() {
+        return "AndOperator(" + Arrays.toString(operandPatterns) + ")";
     }
 
     @Override
