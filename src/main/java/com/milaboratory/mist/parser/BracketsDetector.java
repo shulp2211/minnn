@@ -13,8 +13,8 @@ final class BracketsDetector {
      * @param str string to search: it may be entire parser query or substring from TokenizedString
      * @return list of all brackets pairs
      */
-    private static HashSet<BracketsPair> getAllBrackets(BracketsType bracketsType, String str) throws ParserException {
-        return null;
+    static HashSet<BracketsPair> getAllBrackets(BracketsType bracketsType, String str) throws ParserException {
+        return new HashSet<>();
     }
 
     /**

@@ -152,6 +152,26 @@ final class TokenizedString {
     }
 
     /**
+     * Get left coordinate of the specified element of TokenizedString.
+     *
+     * @param index index of element in the list
+     * @return left coordinate of the specified element, inclusive
+     */
+    int getLeftByIndex(int index) {
+        return calculateLength(0, index);
+    }
+
+    /**
+     * Get right coordinate of the specified element of TokenizedString.
+     *
+     * @param index index of element in the list
+     * @return right coordinate of the specified element, exclusive
+     */
+    int getRightByIndex(int index) {
+        return calculateLength(0, index + 1);
+    }
+
+    /**
      * Calculate element index in tokenizedString that contains the specified position in query string.
      *
      * @param position position in query string
@@ -167,5 +187,57 @@ final class TokenizedString {
         }
 
         throw new IllegalStateException("Reached the end of tokenizedString and didn't get index for position " + position);
+    }
+
+    /**
+     * Get a part of TokenizedString by specifying the coordinates interval. If a token is partially in the interval,
+     * Pattern will not be included, and String will be cut and returned partially.
+     *
+     * @param from left side, inclusive
+     * @param to right side, exclusive
+     * @return list of tokens that are inside the interval; types of tokens are String and Pattern
+     */
+    ArrayList<Object> getTokens(int from, int to) {
+        ArrayList<Object> tokens = new ArrayList<>();
+        int lastIndex = getIndexByPosition(to - 1);
+        int currentIndex = getIndexByPosition(from);
+        int currentLeft = getLeftByIndex(currentIndex);
+        Object currentObject = tokenizedString.get(currentIndex);
+
+        if (currentLeft == from)
+            tokens.add(getStringOrPattern(currentObject));
+        else if (currentObject instanceof String)
+            if (currentIndex < lastIndex)
+                tokens.add(((String)currentObject).substring(from - currentLeft));
+            else
+                tokens.add(((String)currentObject).substring(from - currentLeft, to - currentLeft));
+
+        if (currentIndex < lastIndex) {
+            currentIndex++;
+            while (currentIndex < lastIndex)
+                tokens.add(getStringOrPattern(tokenizedString.get(currentIndex++)));
+
+            int lastRight = getRightByIndex(lastIndex);
+            Object lastObject = tokenizedString.get(lastIndex);
+            if (lastRight == to)
+                tokens.add(getStringOrPattern(lastObject));
+            else if (lastObject instanceof String)
+                tokens.add(((String)lastObject).substring(0, to - getLeftByIndex(lastIndex)));
+        }
+        return tokens;
+    }
+
+    /**
+     * Convert token from TokenizedString that is String or TokenizedStringPattern to String or Pattern.
+     *
+     * @param object token from TokenizedString
+     * @return unchanged String or Pattern from TokenizedStringPattern
+     */
+    private Object getStringOrPattern(Object object) {
+        if (object instanceof String)
+            return object;
+        else if (object instanceof TokenizedStringPattern)
+            return ((TokenizedStringPattern)object).pattern;
+        else throw new IllegalArgumentException("Called getStringOrPattern with object of class " + object.getClass());
     }
 }
