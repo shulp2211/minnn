@@ -6,7 +6,7 @@ import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import java.util.*;
 import java.util.stream.IntStream;
 
-abstract class MultipleReadsOperator extends Pattern {
+public abstract class MultipleReadsOperator extends Pattern {
     protected final MultipleReadsOperator[] operandPatterns;
     protected final SinglePattern[] singlePatterns;
     protected final ArrayList<GroupEdge> groupEdges;

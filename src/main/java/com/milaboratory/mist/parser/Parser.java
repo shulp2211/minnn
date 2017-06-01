@@ -1,21 +1,13 @@
 package com.milaboratory.mist.parser;
 
 import com.milaboratory.mist.pattern.Pattern;
+import com.milaboratory.mist.pattern.PatternAligner;
 
 public final class Parser {
-    private final int maxErrors;
-    private final float errorScorePenalty;
+    private final PatternAligner patternAligner;
 
-    /**
-     * Initialize parser.
-     *
-     * @param maxErrors maximum number of errors for FuzzyMatchPattern; maximum number of nucleotide intersections
-     *                  for AndPattern and PlusPattern
-     * @param errorScorePenalty score penalty for nucleotide intersections for AndPattern and PlusPattern
-     */
-    public Parser(int maxErrors, float errorScorePenalty) {
-        this.maxErrors = maxErrors;
-        this.errorScorePenalty = errorScorePenalty;
+    public Parser(PatternAligner patternAligner) {
+        this.patternAligner = patternAligner;
     }
 
     public Pattern parseQuery(String query) throws ParserException {

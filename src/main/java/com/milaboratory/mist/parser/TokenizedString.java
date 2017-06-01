@@ -4,6 +4,8 @@ import com.milaboratory.mist.pattern.Pattern;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 final class TokenizedString {
     private final LinkedList<Object> tokenizedString;
@@ -18,22 +20,45 @@ final class TokenizedString {
         this.tokenizedString.add(query);
     }
 
-    LinkedList<Object> getTokenizedString() {
-        return tokenizedString;
+    void assertFullyTokenized() throws ParserException {
+        List<Object> strings = tokenizedString.stream().filter(o -> o instanceof String).collect(Collectors.toList());
+        if (strings.size() > 0)
+            throw new ParserException("Some tokens not parsed: " + strings);
     }
 
-    int getNumberOfStrings() {
-        int numberOfStrings = 0;
-        for (Object token : tokenizedString)
-            if (token instanceof String) numberOfStrings++;
-        return numberOfStrings;
+    void assertNotTokenized() {
+        if ((tokenizedString.size() != 1) || !(tokenizedString.get(0) instanceof String))
+            throw new IllegalStateException("Expected to find one string, found: " + tokenizedString);
     }
 
-    ArrayList<String> getStrings() {
-        ArrayList<String> strings = new ArrayList<>();
-        for (Object token : tokenizedString)
-            if (token instanceof String) strings.add((String)token);
-        return strings;
+    /**
+     * Wrapper for tokenizeSubstring that gets coordinates in string as parameters.
+     *
+     * @param pattern pattern to put into tokenized string
+     * @param from start position to delete, inclusive
+     * @param to end position to delete, exclusive
+     */
+    void tokenizeSubstring(Pattern pattern, int from, int to) {
+        int startIndex = getIndexByPosition(from);
+        int endIndex = getIndexByPosition(to - 1);
+        int startIndexLastPosition;
+        int endIndexFirstPosition;
+        if (from == getLeftByIndex(startIndex))
+            startIndexLastPosition = -1;
+        else
+            if (tokenizedString.get(startIndex) instanceof String)
+                startIndexLastPosition = from - getLeftByIndex(startIndex);
+            else throw new IllegalArgumentException("Trying to tokenize in the middle of "
+                    + tokenizedString.get(startIndex));
+        if (to == getRightByIndex(endIndex))
+            endIndexFirstPosition = -1;
+        else
+            if (tokenizedString.get(endIndex) instanceof String)
+                endIndexFirstPosition = to - getLeftByIndex(endIndex);
+            else throw new IllegalArgumentException("Trying to tokenize in the middle of "
+                    + tokenizedString.get(endIndex));
+
+        tokenizeSubstring(pattern, startIndex, startIndexLastPosition, endIndex, endIndexFirstPosition);
     }
 
     /**
@@ -48,7 +73,7 @@ final class TokenizedString {
      * @param endIndexFirstPosition -1 to delete fully; must be always -1 if endIndex points to Pattern;
      *                              if not -1, it is first position to preserve inside string, inclusive
      */
-    void tokenizeSubstring(Pattern pattern, int startIndex, int startIndexLastPosition,
+    private void tokenizeSubstring(Pattern pattern, int startIndex, int startIndexLastPosition,
                            int endIndex, int endIndexFirstPosition) {
         if ((startIndex >= tokenizedString.size()) || (startIndex < 0))
             throw new IndexOutOfBoundsException("startIndex = " + startIndex + ", tokenizedString size = " + tokenizedString.size());
@@ -225,6 +250,31 @@ final class TokenizedString {
                 tokens.add(((String)lastObject).substring(0, to - getLeftByIndex(lastIndex)));
         }
         return tokens;
+    }
+
+    /**
+     * Convert this TokenizedString to String; must be used only before tokenizing anything.
+     *
+     * @return full query string
+     */
+    String getOneString() {
+        assertNotTokenized();
+        return (String)(tokenizedString.get(0));
+    }
+
+    /**
+     * Return a part of TokenizedString that must be one String, or throw exception if this is not one String.
+     *
+     * @param from left coordinate, inclusive
+     * @param to right coordinate, exclusive
+     * @return part of TokenizedString as String
+     */
+    String getOneString(int from, int to) {
+        ArrayList<Object> tokenizedStringPart = getTokens(from, to);
+        if ((tokenizedStringPart.size() != 1) || !(tokenizedStringPart.get(0) instanceof String))
+            throw new IllegalStateException("Expected only 1 string in tokenizedStringPart, got this: "
+                    + tokenizedStringPart);
+        return (String)(tokenizedStringPart.get(0));
     }
 
     /**

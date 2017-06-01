@@ -7,7 +7,7 @@ import java.util.ArrayList;
 public abstract class Pattern {
     protected final PatternAligner patternAligner;
 
-    public Pattern(PatternAligner patternAligner) {
+    Pattern(PatternAligner patternAligner) {
         this.patternAligner = patternAligner;
     }
 

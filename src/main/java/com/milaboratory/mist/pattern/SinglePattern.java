@@ -4,7 +4,7 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 
-abstract class SinglePattern extends Pattern {
+public abstract class SinglePattern extends Pattern {
     SinglePattern(PatternAligner patternAligner) {
         super(patternAligner);
     }

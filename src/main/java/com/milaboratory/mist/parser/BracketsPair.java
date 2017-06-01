@@ -42,6 +42,12 @@ final class BracketsPair {
     }
 
     @Override
+    public String toString() {
+        return "BracketsPair{" + "bracketsType=" + bracketsType + ", start=" + start + ", end=" + end
+                + ", nestedLevel=" + nestedLevel + "}";
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
