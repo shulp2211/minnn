@@ -26,13 +26,12 @@ final class SimplifiedTokenizer {
     /**
      * Convert all tokenizedString contents into pattern. This class is for simplified parser syntax.
      *
-     * @param patternAligner pattern aligner
      * @param tokenizedString TokenizedString object that was created from query string
      */
-    void tokenize(PatternAligner patternAligner, TokenizedString tokenizedString) throws ParserException {
+    void tokenize(TokenizedString tokenizedString) throws ParserException {
         String fullString = tokenizedString.getOneString();
-        HashSet<BracketsPair> parenthesesPairs = getAllBrackets(PARENTHESES, fullString);
-        HashSet<BracketsPair> squareBracketsPairs = getAllBrackets(SQUARE, fullString);
+        List<BracketsPair> parenthesesPairs = getAllBrackets(PARENTHESES, fullString);
+        List<BracketsPair> squareBracketsPairs = getAllBrackets(SQUARE, fullString);
         ArrayList<ObjectString> objectStrings = new ArrayList<>();
 
         for (BracketsPair parenthesesPair : parenthesesPairs) {
@@ -129,10 +128,18 @@ final class SimplifiedTokenizer {
                     tokenizedString.tokenizeSubstring(orOperator, objectString.getStart(), objectString.getEnd());
                     break;
                 case "NotOperator":
-                    // TODO
+                    ArrayList<Object> notOperatorTokenizedSubstring = tokenizedString.getTokens(
+                            objectString.getStart(), objectString.getEnd());
+                    NotOperator notOperator = parseNotOperator(patternAligner, notOperatorTokenizedSubstring,
+                            startingPart);
+                    tokenizedString.tokenizeSubstring(notOperator, objectString.getStart(), objectString.getEnd());
                     break;
                 case "FilterPattern":
-                    // TODO
+                    ArrayList<Object> filterPatternTokenizedSubstring = tokenizedString.getTokens(
+                            objectString.getStart(), objectString.getEnd());
+                    FilterPattern filterPattern = parseFilterPattern(patternAligner, filterPatternTokenizedSubstring,
+                            startingPart);
+                    tokenizedString.tokenizeSubstring(filterPattern, objectString.getStart(), objectString.getEnd());
                     break;
                 default:
                     throw new ParserException("Found wrong object name: " + objectString.getName());
@@ -141,7 +148,7 @@ final class SimplifiedTokenizer {
     }
 
     private <P extends Pattern> ArrayList<P> getPatternOperands(
-            TokenizedString tokenizedString, HashSet<BracketsPair> squareBracketsPairs, ObjectString objectString)
+            TokenizedString tokenizedString, List<BracketsPair> squareBracketsPairs, ObjectString objectString)
             throws ParserException {
         List<BracketsPair> innerSquareBrackets = squareBracketsPairs.stream().
                 filter(bp -> objectString.getParenthesesPair().contains(bp)).collect(Collectors.toList());
@@ -175,7 +182,7 @@ final class SimplifiedTokenizer {
             throw new IllegalArgumentException("Array of patterns must be in square brackets; got brackets pair: "
                     + bracketsPair);
         if (bracketsPair.end == bracketsPair.start + 1)
-            throw new ParserException("Found empty square brackets pair: " + bracketsPair);
+            throw new ParserException("Expected array of patterns, found empty square brackets pair: " + bracketsPair);
         else {
             ArrayList<P> patterns = new ArrayList<>();
             for (Object token : tokenizedString.getTokens(bracketsPair.start + 1, bracketsPair.end)) {
