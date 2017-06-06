@@ -161,4 +161,18 @@ public class CommonTestUtils {
             }
         };
     }
+
+    public static <T extends Enum<?>> T getRandomEnumItem(Class<T> enumClass){
+        return enumClass.getEnumConstants()[new Random().nextInt(enumClass.getEnumConstants().length)];
+    }
+
+    public static String getRandomString(int length) {
+        StringBuilder sb = new StringBuilder();
+        Random r = new Random();
+        for (int i = 0; i < length; i++) {
+            char c = (char)(r.nextInt(r.nextInt(2) == 0 ? 128 : Character.MAX_VALUE));
+            sb.append(c);
+        }
+        return sb.toString();
+    }
 }
