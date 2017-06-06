@@ -18,7 +18,8 @@ final class SimplifiedTokenizer {
         ObjectStringStartingParts = new HashMap<>();
         for (String name: new String[] {
                 "FuzzyMatchPattern", "AndPattern", "PlusPattern", "OrPattern", "MultiPattern",
-                "AndOperator", "OrOperator", "NotOperator", "FilterPattern", "ScoreFilter", "BorderFilter"})
+                "AndOperator", "OrOperator", "NotOperator", "MultipleReadsFilterPattern",
+                "FilterPattern", "ScoreFilter", "BorderFilter"})
             ObjectStringStartingParts.put(name, name + "(");
         ObjectStringStartingParts.put("GroupEdgePosition", "GroupEdgePosition(GroupEdge('");
     }
@@ -133,6 +134,9 @@ final class SimplifiedTokenizer {
                     NotOperator notOperator = parseNotOperator(patternAligner, notOperatorTokenizedSubstring,
                             startingPart);
                     tokenizedString.tokenizeSubstring(notOperator, objectString.getStart(), objectString.getEnd());
+                    break;
+                case "MultipleReadsFilterPattern":
+                    // TODO
                     break;
                 case "FilterPattern":
                     ArrayList<Object> filterPatternTokenizedSubstring = tokenizedString.getTokens(
