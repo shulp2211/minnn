@@ -115,6 +115,21 @@ final class BracketsDetector {
         return null;
     }
 
+    /**
+     * Get closing bracket coordinate by opening bracket coordinate from a list of bracket pairs.
+     *
+     * @param bracketsPairs list of bracket pairs
+     * @param start opening bracket coordinate
+     * @return closing bracket coordinate
+     */
+    static int getEndByStart(List<BracketsPair> bracketsPairs, int start) {
+        for (BracketsPair bracketsPair : bracketsPairs)
+            if (bracketsPair.start == start)
+                return bracketsPair.end;
+        throw new IllegalArgumentException("List of bracket pairs " + bracketsPairs
+                + " doesn't contain bracket with start " + start);
+    }
+
     private static class OpenBracket {
         final BracketsType bracketType;
         final int position;

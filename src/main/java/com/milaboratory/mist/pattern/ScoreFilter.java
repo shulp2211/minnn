@@ -18,4 +18,8 @@ public final class ScoreFilter implements Filter {
             return null;
         else return match;
     }
+
+    public int getScoreThreshold() {
+        return scoreThreshold;
+    }
 }
