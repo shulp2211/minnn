@@ -8,9 +8,9 @@ public interface PatternAligner {
     /**
      * Returned alignment will have maximal score equals zero.
      *
-     * @param pattern
-     * @param target
-     * @param rightMatchPosition inclusive
+     * @param pattern nucleotide sequence from pattern
+     * @param target target nucleotide sequence with quality
+     * @param rightMatchPosition right position of found bitap match, inclusive
      * @return alignment with score less or equals than zero
      */
     Alignment<NucleotideSequence> align(NucleotideSequence pattern, NSequenceWithQuality target, int rightMatchPosition);

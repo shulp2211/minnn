@@ -5,7 +5,6 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public final class NotOperator extends MultipleReadsOperator {
     public NotOperator(PatternAligner patternAligner, MultipleReadsOperator... operandPatterns) {
