@@ -20,17 +20,6 @@ final class TokenizedString {
         this.tokenizedString.add(query);
     }
 
-    void assertFullyTokenized() throws ParserException {
-        List<Object> strings = tokenizedString.stream().filter(o -> o instanceof String).collect(Collectors.toList());
-        if (strings.size() > 0)
-            throw new ParserException("Some tokens not parsed: " + strings);
-    }
-
-    void assertNotTokenized() {
-        if ((tokenizedString.size() != 1) || !(tokenizedString.get(0) instanceof String))
-            throw new IllegalStateException("Expected to find one string, found: " + tokenizedString);
-    }
-
     /**
      * Wrapper for tokenizeSubstring that gets coordinates in string as parameters.
      *
@@ -43,14 +32,14 @@ final class TokenizedString {
         int endIndex = getIndexByPosition(to - 1);
         int startIndexLastPosition;
         int endIndexFirstPosition;
-        if (from == getLeftByIndex(startIndex))
+        if ((from == getLeftByIndex(startIndex)) && !(tokenizedString.get(startIndex) instanceof String))
             startIndexLastPosition = -1;
         else
             if (tokenizedString.get(startIndex) instanceof String)
                 startIndexLastPosition = from - getLeftByIndex(startIndex);
             else throw new IllegalArgumentException("Trying to tokenize in the middle of "
                     + tokenizedString.get(startIndex));
-        if (to == getRightByIndex(endIndex))
+        if ((to == getRightByIndex(endIndex)) && !(tokenizedString.get(endIndex) instanceof String))
             endIndexFirstPosition = -1;
         else
             if (tokenizedString.get(endIndex) instanceof String)
@@ -91,7 +80,7 @@ final class TokenizedString {
             if ((startIndexLastPosition == -1) && (endIndexFirstPosition == -1)) {
                 TokenizedStringPattern tokenizedStringPattern = new TokenizedStringPattern(pattern, specifiedString.length());
                 tokenizedString.set(startIndex, tokenizedStringPattern);
-            } else if (endIndexFirstPosition > startIndexLastPosition) {
+            } else if ((startIndexLastPosition >= 0) && (endIndexFirstPosition > startIndexLastPosition)) {
                 TokenizedStringPattern tokenizedStringPattern  = new TokenizedStringPattern(pattern,
                         endIndexFirstPosition - startIndexLastPosition);
 
@@ -278,6 +267,32 @@ final class TokenizedString {
     }
 
     /**
+     * Get final pattern when string is fully tokenized.
+     *
+     * @return final pattern from fully tokenized string
+     * @throws ParserException if string was not fully tokenized
+     */
+    Pattern getFinalPattern() throws ParserException {
+        assertFullyTokenized();
+        return ((TokenizedStringPattern)(tokenizedString.get(0))).pattern;
+    }
+
+    private void assertNotTokenized() {
+        if ((tokenizedString.size() != 1) || !(tokenizedString.get(0) instanceof String))
+            throw new IllegalStateException("Expected to find one string, found: " + tokenizedString);
+    }
+
+    private void assertFullyTokenized() throws ParserException {
+        List<Object> strings = tokenizedString.stream().filter(o -> o instanceof String).collect(Collectors.toList());
+        if (strings.size() > 0)
+            throw new ParserException("Some tokens not parsed: " + strings);
+        if (tokenizedString.size() > 1)
+            throw new ParserException("After parsing, string contains separate patterns instead of 1 final pattern!");
+        if (tokenizedString.size() < 1)
+            throw new IllegalStateException("After parsing, tokenizedString size is " + tokenizedString.size());
+    }
+
+    /**
      * Convert token from TokenizedString that is String or TokenizedStringPattern to String or Pattern.
      *
      * @param object token from TokenizedString
@@ -289,5 +304,15 @@ final class TokenizedString {
         else if (object instanceof TokenizedStringPattern)
             return ((TokenizedStringPattern)object).pattern;
         else throw new IllegalArgumentException("Called getStringOrPattern with object of class " + object.getClass());
+    }
+
+    private static class TokenizedStringPattern {
+        final Pattern pattern;
+        final int length;
+
+        TokenizedStringPattern(Pattern pattern, int length) {
+            this.pattern = pattern;
+            this.length = length;
+        }
     }
 }
