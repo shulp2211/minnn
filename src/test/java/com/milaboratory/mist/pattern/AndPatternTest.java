@@ -132,13 +132,6 @@ public class AndPatternTest {
         AndPattern andPattern = new AndPattern(getTestPatternAligner(true), pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("ATATATATTATA");
         OutputPort<Match> matches = andPattern.match(nseq).getMatches(false, true);
-        while (true) {
-            Match match = matches.take();
-            if (match == null) break;
-            String seq = match.getValue().getSequence().toString();
-            Range range = match.getRange();
-            System.out.println(seq + " " + range.getLower() + " " + range.getUpper());
-        }
         assertEquals(10, countMatches(andPattern.match(nseq), true));
     }
 
