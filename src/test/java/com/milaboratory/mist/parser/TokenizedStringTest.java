@@ -44,6 +44,8 @@ public class TokenizedStringTest {
         TokenizedString ts = new TokenizedString(multiPattern.toString());
         ts.tokenizeSubstring(fuzzyMatchPattern, 5, 10);
         assertEquals(3, ts.getTokens(1, 20).size());
+        assertEquals("Multi", ts.getTokens(0, 20).get(0));
+        assertEquals("lti", ts.getTokens(2, 30).get(0));
         exception.expect(IllegalArgumentException.class);
         ts.tokenizeSubstring(andPattern, 7, 12);
     }
