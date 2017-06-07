@@ -43,7 +43,7 @@ final class ParserUtils {
             case NORMAL:
                 throw new IllegalStateException("Not yet implemented");
             case SIMPLIFIED:
-                final String filterPatternName = "FilterPattern";
+                final String filterPatternName = "FilterPattern";   // also will detect MultipleReadsFilterPattern
                 final String scoreFilterName = "ScoreFilter";
                 final String simplifiedScoreFilterStart = filterPatternName + "(" + scoreFilterName + "(";
                 int minFilterLength = simplifiedScoreFilterStart.length() + 8;

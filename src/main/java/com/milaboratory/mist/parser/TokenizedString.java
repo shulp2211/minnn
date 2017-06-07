@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 final class TokenizedString {
     private final LinkedList<Object> tokenizedString;
+    private final int length;
 
     /**
      * Tokenized string that allows to replace parts of string with patterns.
@@ -18,6 +19,7 @@ final class TokenizedString {
     TokenizedString(String query) {
         this.tokenizedString = new LinkedList<>();
         this.tokenizedString.add(query);
+        this.length = query.length();
     }
 
     /**
@@ -109,7 +111,7 @@ final class TokenizedString {
                 if ((startIndexLastPosition > ((String)startObject).length()) || (startIndexLastPosition < 0))
                     throw new IndexOutOfBoundsException("startLast: " + startIndexLastPosition
                             + ", startString: " + startObject);
-                patternLength += startIndexLastPosition;
+                patternLength += ((String)startObject).length() - startIndexLastPosition;
             }
 
             if (endIndexFirstPosition == -1)
@@ -120,7 +122,7 @@ final class TokenizedString {
                 if ((endIndexFirstPosition > ((String)endObject).length()) || (endIndexFirstPosition < 0))
                     throw new IndexOutOfBoundsException("endFirst: " + endIndexFirstPosition
                             + ", endString: " + endObject);
-                patternLength += ((String)endObject).length() - endIndexFirstPosition;
+                patternLength += endIndexFirstPosition;
             }
 
             TokenizedStringPattern tokenizedStringPattern = new TokenizedStringPattern(pattern, patternLength);
@@ -133,13 +135,15 @@ final class TokenizedString {
             } else tokenizedString.remove(startIndex);
 
             if ((endIndexFirstPosition != -1) && (endIndexFirstPosition != ((String)endObject).length())) {
-                tokenizedString.set(endIndex, ((String)endObject).substring(endIndexFirstPosition));
+                tokenizedString.set(deleteIndexLast, ((String)endObject).substring(endIndexFirstPosition));
                 deleteIndexLast--;
             }
 
             for (int i = deleteIndexLast; i >= deleteIndexFirst; --i)
                 tokenizedString.remove(i);
         }
+
+        assertLengthNotChanged();
     }
 
     /**
@@ -154,13 +158,12 @@ final class TokenizedString {
         if (start == end) return 0;
         int length = 0;
 
-        for (Object currentObject : tokenizedString.subList(start, end)) {
+        for (Object currentObject : tokenizedString.subList(start, end))
             if (currentObject instanceof String)
                 length += ((String)currentObject).length();
             else if (currentObject instanceof TokenizedStringPattern)
                 length += ((TokenizedStringPattern)currentObject).length;
             else throw new IllegalStateException("TokenizedString contains object of class " + currentObject.getClass());
-        }
 
         return length;
     }
@@ -292,6 +295,12 @@ final class TokenizedString {
             throw new IllegalStateException("After parsing, tokenizedString size is " + tokenizedString.size());
     }
 
+    private void assertLengthNotChanged() {
+        if (calculateLength(0, tokenizedString.size()) != length)
+            throw new IllegalStateException("Changed length: old " + length + ", new "
+                    + calculateLength(0, tokenizedString.size()));
+    }
+
     /**
      * Convert token from TokenizedString that is String or TokenizedStringPattern to String or Pattern.
      *
@@ -313,6 +322,11 @@ final class TokenizedString {
         TokenizedStringPattern(Pattern pattern, int length) {
             this.pattern = pattern;
             this.length = length;
+        }
+
+        @Override
+        public String toString() {
+            return "TokenizedStringPattern{" + "pattern=" + pattern + ", length=" + length + "}";
         }
     }
 }

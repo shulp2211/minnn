@@ -14,39 +14,30 @@ final class SimplifiedParsers {
      *
      * @param patternAligner pattern aligner
      * @param str string containing FuzzyMatchPattern and all arguments
-     * @param startingPart start of pattern string before 1st argument
      * @param groupEdgePositions parsed group edge positions
      * @return FuzzyMatchPattern
      */
-    static FuzzyMatchPattern parseFuzzyMatchPattern(PatternAligner patternAligner, String str, String startingPart,
+    static FuzzyMatchPattern parseFuzzyMatchPattern(PatternAligner patternAligner, String str,
                                                     ArrayList<GroupEdgePosition> groupEdgePositions) throws ParserException {
         NucleotideSequence seq;
 
-        if (!str.substring(0, startingPart.length()).equals(startingPart))
-            throw new ParserException("Incorrect operand string start in " + str + ", expected: " + startingPart);
-
         int commaPosition = str.indexOf(",");
         if (commaPosition == -1)
-            if (str.substring(str.length() - 1).equals(")"))
-                if (str.length() < startingPart.length() + 2)
-                    throw new ParserException("Missing nucleotide sequence: " + str);
-                else try {
-                    seq = new NucleotideSequence(str.substring(startingPart.length(), str.length() - 1));
-                } catch (IllegalArgumentException e) {
-                    throw new ParserException("Wrong nucleotide sequence in " + str + ": " + e);
-                }
-            else
-                throw new ParserException("Missing closing parenthesis in " + str);
+            if (str.length() == 0)
+                throw new ParserException("Missing nucleotide sequence, empty argument string for fuzzy match pattern!");
+            else try {
+                seq = new NucleotideSequence(str);
+            } catch (IllegalArgumentException e) {
+                throw new ParserException("Wrong nucleotide sequence in " + str + ": " + e);
+            }
         else
-            if (!str.substring(str.length() - 1).equals(")"))
-                throw new ParserException("Missing closing parenthesis in " + str);
-            else if (!str.substring(commaPosition, commaPosition + 3).equals(", ["))
+            if (!str.substring(commaPosition, commaPosition + 3).equals(", ["))
                 throw new ParserException("Error while parsing " + str + ": expected ', [', found '"
                         + str.substring(commaPosition, commaPosition + 3) + "'");
-            else if (commaPosition < startingPart.length() + 1)
+            else if (commaPosition == 0)
                 throw new ParserException("Missing nucleotide sequence: " + str);
             else try {
-                seq = new NucleotideSequence(str.substring(startingPart.length(), commaPosition));
+                seq = new NucleotideSequence(str.substring(0, commaPosition));
             } catch (IllegalArgumentException e) {
                 throw new ParserException("Wrong nucleotide sequence in " + str + ": " + e);
             }
@@ -59,93 +50,64 @@ final class SimplifiedParsers {
      *
      * @param patternAligner pattern aligner
      * @param tokenizedSubstring tokenized substring returned by getTokens() function
-     * @param startingPart start of pattern string before 1st argument
      * @param singlePatterns parsed operand patterns
      * @return AndPattern
      */
     static AndPattern parseAndPattern(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
-                                      String startingPart, ArrayList<SinglePattern> singlePatterns)
-            throws ParserException {
-        checkOperandArraySpelling(tokenizedSubstring, startingPart);
+                                      ArrayList<SinglePattern> singlePatterns) throws ParserException {
+        checkOperandArraySpelling(tokenizedSubstring);
         return new AndPattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
     }
 
     static PlusPattern parsePlusPattern(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
-                                        String startingPart, ArrayList<SinglePattern> singlePatterns)
-            throws ParserException {
-        checkOperandArraySpelling(tokenizedSubstring, startingPart);
+                                        ArrayList<SinglePattern> singlePatterns) throws ParserException {
+        checkOperandArraySpelling(tokenizedSubstring);
         return new PlusPattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
     }
 
     static OrPattern parseOrPattern(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
-                                    String startingPart, ArrayList<SinglePattern> singlePatterns)
-            throws ParserException {
-        checkOperandArraySpelling(tokenizedSubstring, startingPart);
+                                    ArrayList<SinglePattern> singlePatterns) throws ParserException {
+        checkOperandArraySpelling(tokenizedSubstring);
         return new OrPattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
     }
 
     static MultiPattern parseMultiPattern(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
-                                          String startingPart, ArrayList<SinglePattern> singlePatterns)
-            throws ParserException {
-        checkOperandArraySpelling(tokenizedSubstring, startingPart);
+                                          ArrayList<SinglePattern> singlePatterns) throws ParserException {
+        checkOperandArraySpelling(tokenizedSubstring);
         return new MultiPattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
     }
 
     static AndOperator parseAndOperator(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
-                                        String startingPart, ArrayList<MultipleReadsOperator> operands)
-            throws ParserException {
-        checkOperandArraySpelling(tokenizedSubstring, startingPart);
+                                        ArrayList<MultipleReadsOperator> operands) throws ParserException {
+        checkOperandArraySpelling(tokenizedSubstring);
         return new AndOperator(patternAligner, operands.toArray(new MultipleReadsOperator[operands.size()]));
     }
 
     static OrOperator parseOrOperator(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
-                                      String startingPart, ArrayList<MultipleReadsOperator> operands)
-            throws ParserException {
-        checkOperandArraySpelling(tokenizedSubstring, startingPart);
+                                      ArrayList<MultipleReadsOperator> operands) throws ParserException {
+        checkOperandArraySpelling(tokenizedSubstring);
         return new OrOperator(patternAligner, operands.toArray(new MultipleReadsOperator[operands.size()]));
     }
 
-    static NotOperator parseNotOperator(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
-                                        String startingPart) throws ParserException {
-        if (tokenizedSubstring.size() != 3)
-            throw new ParserException(
-                    "Syntax not parsed correctly for Not operator; possibly missing operand or closing parenthesis: "
+    static NotOperator parseNotOperator(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring)
+            throws ParserException {
+        if (tokenizedSubstring.size() != 1)
+            throw new ParserException("Syntax not parsed correctly for Not operator; possibly missing operand: "
                     + tokenizedSubstring);
-        if (!(tokenizedSubstring.get(0) instanceof String))
-            throw new IllegalArgumentException("Incorrect string start in " + tokenizedSubstring
-                    + ", expected: " + startingPart);
-        else if (!tokenizedSubstring.get(0).equals(startingPart))
-            throw new ParserException("Incorrect operand string start: " + tokenizedSubstring.get(0)
-                    + ", expected: " + startingPart);
-        if (!(tokenizedSubstring.get(2) instanceof String))
-            throw new IllegalArgumentException("Wrong tokenizedSubstring for NotOperator: " + tokenizedSubstring);
-        else if (!tokenizedSubstring.get(2).equals(")"))
-            throw new ParserException("Found wrong end of NotOperator string: '" + tokenizedSubstring.get(2)
-                    + "', expected: ')'");
-        if (!MultipleReadsOperator.class.isAssignableFrom(tokenizedSubstring.get(1).getClass()))
+        if (!MultipleReadsOperator.class.isAssignableFrom(tokenizedSubstring.get(0).getClass()))
             throw new IllegalArgumentException("Wrong tokenizedSubstring for NotOperator: " + tokenizedSubstring);
 
-        return new NotOperator(patternAligner, (MultipleReadsOperator)(tokenizedSubstring.get(1)));
+        return new NotOperator(patternAligner, (MultipleReadsOperator)(tokenizedSubstring.get(0)));
     }
 
-    static FilterPattern parseFilterPattern(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
-                                            String startingPart) throws ParserException {
-        if (tokenizedSubstring.size() != 3)
-            throw new ParserException(
-                    "Syntax not parsed correctly for Filter pattern; possibly missing operand or closing parenthesis: "
-                            + tokenizedSubstring);
+    static Pattern parseFilterPattern(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
+                                      boolean multipleReads) throws ParserException {
+        if (tokenizedSubstring.size() != 2)
+            throw new ParserException("Syntax not parsed correctly for Filter pattern; possibly missing operand: "
+                    + tokenizedSubstring);
         if (!(tokenizedSubstring.get(0) instanceof String))
-            throw new IllegalArgumentException("Incorrect string start in " + tokenizedSubstring
-                    + ", expected: " + startingPart);
+            throw new IllegalArgumentException("Incorrect start in " + tokenizedSubstring + ", expected filter string!");
         String startingSubstring = (String)(tokenizedSubstring.get(0));
-        if (!startingSubstring.substring(0, startingPart.length()).equals(startingPart))
-            throw new ParserException("Incorrect operand string start: "
-                    + startingSubstring.substring(0, startingPart.length()) + ", expected: " + startingPart);
-        if (!(tokenizedSubstring.get(2) instanceof String))
-            throw new IllegalArgumentException("Wrong tokenizedSubstring for FilterPattern: " + tokenizedSubstring);
-        else if (!tokenizedSubstring.get(2).equals(")"))
-            throw new ParserException("Found wrong end of FilterPattern string: '" + tokenizedSubstring.get(2)
-                    + "', expected: ')'");
         if (!Pattern.class.isAssignableFrom(tokenizedSubstring.get(1).getClass()))
             throw new IllegalArgumentException("Wrong tokenizedSubstring for FilterPattern: " + tokenizedSubstring);
 
@@ -153,7 +115,7 @@ final class SimplifiedParsers {
             throw new ParserException("Expected ', ' in FilterPattern starting substring, found '"
                     + startingSubstring.substring(startingSubstring.length() - 2) + "'");
 
-        String filterString = startingSubstring.substring(startingPart.length(), startingSubstring.length() - 2);
+        String filterString = startingSubstring.substring(0, startingSubstring.length() - 2);
         int parenthesisPosition = filterString.indexOf("(");
         if (parenthesisPosition == -1)
             throw new ParserException("Missing open parenthesis in filter string: " + filterString);
@@ -165,13 +127,18 @@ final class SimplifiedParsers {
                 filter = parseScoreFilter(filterString, filterStartingPart);
                 break;
             case "BorderFilter":
+                if (multipleReads)
+                    throw new ParserException("BorderFilter must not be used with multiple reads!");
                 filter = parseBorderFilter(patternAligner, filterString, filterStartingPart);
                 break;
             default:
                 throw new ParserException("Wrong filter name: " + filterName);
         }
 
-        return new FilterPattern(patternAligner, filter, (Pattern)(tokenizedSubstring.get(1)));
+        if (multipleReads)
+            return new MultipleReadsFilterPattern(patternAligner, filter, (MultipleReadsOperator)(tokenizedSubstring.get(1)));
+        else
+            return new FilterPattern(patternAligner, filter, (SinglePattern)(tokenizedSubstring.get(1)));
     }
 
     static ScoreFilter parseScoreFilter(String str, String startingPart) throws ParserException {
@@ -213,7 +180,7 @@ final class SimplifiedParsers {
         else
             throw new ParserException("Failed to parse left/right side flag from " + str);
 
-        int secondCommaPosition = str.substring(firstCommaPosition + 2).indexOf(", ") + firstCommaPosition + 2;
+        int secondCommaPosition = str.substring(firstCommaPosition + 1).indexOf(", ") + firstCommaPosition + 1;
         if (secondCommaPosition == -1) {
             try {
                 seq = new NucleotideSequence(str.substring(firstCommaPosition + 2, str.length() - 1));
@@ -227,7 +194,7 @@ final class SimplifiedParsers {
             throw new ParserException("Wrong nucleotide sequence in " + str + ": " + e);
         }
 
-        int thirdCommaPosition = str.substring(secondCommaPosition + 2).indexOf(", ") + secondCommaPosition + 2;
+        int thirdCommaPosition = str.substring(secondCommaPosition + 1).indexOf(", ") + secondCommaPosition + 1;
         if (thirdCommaPosition == -1) {
             if (str.substring(secondCommaPosition + 2, str.length() - 1).equals("true"))
                 return new BorderFilter(patternAligner, leftSide, seq, true);
@@ -270,17 +237,18 @@ final class SimplifiedParsers {
         if (!str.substring(0, startingPart.length()).equals(startingPart))
             throw new IllegalArgumentException("Incorrect string start in " + str + ", expected: " + startingPart);
 
-        int firstCommaPosition = str.indexOf(",");
+        int firstCommaPosition = str.indexOf(", ");
         if (firstCommaPosition == -1)
-            throw new ParserException("Missing comma in " + str);
+            throw new ParserException("Missing ', ' in " + str);
         String groupName = str.substring(startingPart.length(), firstCommaPosition - 1);
         if (groupName.length() == 0)
             throw new ParserException("Found empty group name in " + str);
 
-        int secondCommaPosition = str.indexOf(",", 1);
+        int secondCommaPosition = str.substring(firstCommaPosition + 1).indexOf(", ") + firstCommaPosition + 1;
         if (secondCommaPosition == -1)
-            throw new ParserException("Missing second comma in " + str);
+            throw new ParserException("Missing second ', ' in " + str);
         boolean isStart;
+
         if (str.substring(firstCommaPosition - 1, secondCommaPosition).equals("', true)"))
             isStart = true;
         else if (str.substring(firstCommaPosition - 1, secondCommaPosition).equals("', false)"))
@@ -303,30 +271,28 @@ final class SimplifiedParsers {
         return new GroupEdgePosition(new GroupEdge(groupName, isStart), position);
     }
 
-    private static void checkOperandArraySpelling(ArrayList<Object> tokenizedSubstring, String startingPart)
+    private static void checkOperandArraySpelling(ArrayList<Object> tokenizedSubstring)
             throws ParserException {
         if (tokenizedSubstring.size() < 3)
             throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
         if (!(tokenizedSubstring.get(0) instanceof String))
-            throw new IllegalArgumentException("Incorrect string start in " + tokenizedSubstring
-                    + ", expected: " + startingPart + "[");
-        else if (!tokenizedSubstring.get(0).equals(startingPart + "["))
-            throw new ParserException("Incorrect operand string start: " + tokenizedSubstring.get(0)
-                    + ", expected: " + startingPart + "[");
+            throw new IllegalArgumentException("Incorrect string start in " + tokenizedSubstring + ", expected '['");
+        else if (!tokenizedSubstring.get(0).equals("["))
+            throw new ParserException("Incorrect operand string start: " + tokenizedSubstring.get(0) + ", expected '['");
         if (!(tokenizedSubstring.get(tokenizedSubstring.size() - 1) instanceof String))
             throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
-        else if (!tokenizedSubstring.get(tokenizedSubstring.size() - 1).equals("])"))
+        else if (!tokenizedSubstring.get(tokenizedSubstring.size() - 1).equals("]"))
             throw new ParserException("Found wrong end of operand array string: "
                     + tokenizedSubstring.get(tokenizedSubstring.size() - 1));
         if (!Pattern.class.isAssignableFrom(tokenizedSubstring.get(1).getClass()))
             throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
         for (int i = 2; i < tokenizedSubstring.size() - 1; i++) {
-            if (i % 2 == 0)
+            if (i % 2 == 0) {
                 if (!(tokenizedSubstring.get(i) instanceof String))
                     throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
                 else if (!tokenizedSubstring.get(i).equals(", "))
                     throw new ParserException("Found wrong delimiter in array of patterns: " + tokenizedSubstring.get(i));
-            else if (!(Pattern.class.isAssignableFrom(tokenizedSubstring.get(i).getClass())))
+            } else if (!(Pattern.class.isAssignableFrom(tokenizedSubstring.get(i).getClass())))
                 throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
         }
     }
