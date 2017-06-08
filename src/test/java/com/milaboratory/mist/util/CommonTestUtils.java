@@ -7,11 +7,10 @@ import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.core.sequence.SequencesUtils;
-import com.milaboratory.mist.pattern.Match;
-import com.milaboratory.mist.pattern.PatternAligner;
+import com.milaboratory.mist.pattern.*;
 import com.milaboratory.test.TestUtil;
 
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -167,12 +166,126 @@ public class CommonTestUtils {
     }
 
     public static String getRandomString(int length) {
+        return getRandomString(length, "");
+    }
+
+    public static String getRandomString(int length, String exclude) {
         StringBuilder sb = new StringBuilder();
         Random r = new Random();
         for (int i = 0; i < length; i++) {
-            char c = (char)(r.nextInt(r.nextInt(2) == 0 ? 128 : Character.MAX_VALUE));
+            char c;
+            do {
+                c = (char)(r.nextInt(r.nextInt(2) == 0 ? 128 : Character.MAX_VALUE));
+            } while (exclude.contains(Character.toString(c)));
             sb.append(c);
         }
         return sb.toString();
+    }
+
+    public static ArrayList<GroupEdgePosition> getRandomGroupsForFuzzyMatch(int maxCoordinate) {
+         return getRandomGroupsForFuzzyMatch(maxCoordinate, new Random().nextInt(40) + 1);
+    }
+
+    public static ArrayList<GroupEdgePosition> getRandomGroupsForFuzzyMatch(int maxCoordinate, int numGroups) {
+        if (maxCoordinate < 1)
+            throw new IllegalArgumentException("maxCoordinate=" + maxCoordinate);
+        ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
+        Random r = new Random();
+        while (groupEdgePositions.size() < numGroups * 2) {
+            String groupName = getRandomString(r.nextInt(30) + 1, "<>(){}[] '\"");
+            if (groupEdgePositions.stream().anyMatch(g -> g.getGroupEdge().getGroupName().equals(groupName)))
+                continue;
+            int leftPosition = r.nextInt(maxCoordinate);
+            int rightPosition = r.nextInt(maxCoordinate - leftPosition) + leftPosition + 1;
+            groupEdgePositions.add(new GroupEdgePosition(new GroupEdge(groupName, true), leftPosition));
+            groupEdgePositions.add(new GroupEdgePosition(new GroupEdge(groupName, false), rightPosition));
+        }
+        return groupEdgePositions;
+    }
+
+    public static PatternAligner getRandomPatternAligner() {
+        Random r = new Random();
+        return getTestPatternAligner(-r.nextInt(100), r.nextInt(4), -r.nextInt(4), -r.nextInt(3));
+    }
+
+    public static FuzzyMatchPattern getRandomFuzzyPattern() {
+        return getRandomFuzzyPattern(false);
+    }
+
+    public static FuzzyMatchPattern getRandomFuzzyPattern(PatternAligner patternAligner) {
+        return getRandomFuzzyPattern(patternAligner, false);
+    }
+
+    public static FuzzyMatchPattern getRandomFuzzyPattern(boolean withGroups) {
+        return getRandomFuzzyPattern(getRandomPatternAligner(), withGroups);
+    }
+
+    public static FuzzyMatchPattern getRandomFuzzyPattern(PatternAligner patternAligner, boolean withGroups) {
+        int length = new Random().nextInt(100) + 1;
+        NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, length, length);
+        return new FuzzyMatchPattern(patternAligner, seq, withGroups ? getRandomGroupsForFuzzyMatch(length)
+                : new ArrayList<>());
+    }
+
+    public static SinglePattern getRandomSinglePattern(SinglePattern... patterns) {
+        return getRandomSinglePattern(getRandomPatternAligner(), patterns);
+    }
+
+    public static SinglePattern getRandomSinglePattern(PatternAligner patternAligner, SinglePattern... singlePatterns) {
+        Random r = new Random();
+        SinglePattern[] patterns;
+        if (singlePatterns.length == 0) {
+            int numPatterns = r.nextInt(5) + 1;
+            patterns = new FuzzyMatchPattern[numPatterns];
+            for (int i = 0; i < numPatterns; i++)
+                patterns[i] = getRandomFuzzyPattern(patternAligner);
+        } else
+            patterns = singlePatterns;
+        switch (r.nextInt(6)) {
+            case 0:
+                return patterns[0];
+            case 1:
+                return new AndPattern(patternAligner, patterns);
+            case 2:
+                return new PlusPattern(patternAligner, patterns);
+            case 3:
+                return new OrPattern(patternAligner, patterns);
+            case 4:
+                return new FilterPattern(patternAligner, new ScoreFilter(-r.nextInt(75)), patterns[0]);
+            case 5:
+            default:
+                int seqLength = r.nextInt(10) + 1;
+                NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, seqLength, seqLength);
+                BorderFilter borderFilter = new BorderFilter(patternAligner, r.nextBoolean(), seq, seqLength, r.nextBoolean());
+                return new FilterPattern(patternAligner, borderFilter, patterns[0]);
+        }
+    }
+
+    public static MultipleReadsOperator getRandomMultiReadPattern(MultipleReadsOperator... patterns) {
+        return getRandomMultiReadPattern(getRandomPatternAligner(), patterns);
+    }
+
+    public static MultipleReadsOperator getRandomMultiReadPattern(PatternAligner patternAligner,
+                                                                  MultipleReadsOperator... patterns) {
+        Random r = new Random();
+        if (patterns.length == 0) {
+            int numPatterns = r.nextInt(5) + 1;
+            FuzzyMatchPattern[] fuzzyMatchPatterns = new FuzzyMatchPattern[numPatterns];
+            for (int i = 0; i < numPatterns; i++)
+                fuzzyMatchPatterns[i] = getRandomFuzzyPattern(patternAligner);
+            return new MultiPattern(patternAligner, fuzzyMatchPatterns);
+        } else {
+            switch (r.nextInt(4)) {
+                case 0:
+                    return new AndOperator(patternAligner, patterns);
+                case 1:
+                    return new OrOperator(patternAligner, patterns);
+                case 2:
+                    return new NotOperator(patternAligner, patterns[0]);
+                case 3:
+                default:
+                    return new MultipleReadsFilterPattern(patternAligner, new ScoreFilter(-r.nextInt(75)), patterns[0]);
+            }
+        }
     }
 }

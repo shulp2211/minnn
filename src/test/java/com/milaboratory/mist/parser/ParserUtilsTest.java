@@ -26,17 +26,17 @@ public class ParserUtilsTest {
             StringBuilder target = new StringBuilder();
             for (int r = 0; r < repeats; r++) {
                 scores.add(new ArrayList<>());
-                target.append(getRandomString(randomGenerator.nextInt(100)).replaceAll("[(){}\\[\\]]", ""));
+                target.append(getRandomString(randomGenerator.nextInt(100), "(){}[]"));
                 for (int n = 0; n < nested; n++) {
                     scores.get(r).add(-randomGenerator.nextInt(100));
                     target.append(start);
                     target.append(scores.get(r).get(n));
                     target.append("), ");
-                    target.append(getRandomString(randomGenerator.nextInt(100) + 10).replaceAll("[(){}\\[\\]]", ""));
+                    target.append(getRandomString(randomGenerator.nextInt(100) + 10, "(){}[]"));
                 }
                 for (int n = 0; n < nested; n++) {
                     target.append(")");
-                    target.append(getRandomString(randomGenerator.nextInt(100)).replaceAll("[(){}\\[\\]]", ""));
+                    target.append(getRandomString(randomGenerator.nextInt(100), "(){}[]"));
                 }
             }
             ArrayList<ScoreThreshold> scoreThresholds = getScoreThresholds(target.toString(), SIMPLIFIED);

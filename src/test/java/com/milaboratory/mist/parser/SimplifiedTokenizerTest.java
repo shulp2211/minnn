@@ -7,9 +7,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Random;
 
 import static com.milaboratory.mist.parser.ParserFormat.SIMPLIFIED;
-import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class SimplifiedTokenizerTest {
@@ -52,5 +54,39 @@ public class SimplifiedTokenizerTest {
         Pattern parseResult = parser.parseQuery(orOperator.toString(), SIMPLIFIED);
         assertNotNull(parseResult);
         assertEquals(orOperator.toString(), parseResult.toString());
+    }
+
+    @Test
+    public void randomTest() throws Exception {
+        Random r = new Random();
+        for (int i = 0; i < r.nextInt(100) + 400; i++) {
+            int nestedSingleLevel = r.nextInt(7) + 1;
+            int nestedMultiLevel = r.nextInt(7) + 1;
+            ArrayList<SinglePattern> singlePatterns = new ArrayList<>();
+            for (int j = 0; j < nestedSingleLevel; j++) {
+                singlePatterns.add(getRandomSinglePattern(singlePatterns.toArray(new SinglePattern[singlePatterns.size()])));
+                Collections.reverse(singlePatterns);
+            }
+            Parser parser = new Parser(getRandomPatternAligner());
+            Pattern parseResult = parser.parseQuery(singlePatterns.get(0).toString(), SIMPLIFIED);
+            assertNotNull(parseResult);
+            assertEquals(singlePatterns.get(0).toString(), parseResult.toString());
+            ArrayList<MultipleReadsOperator> multiPatterns = new ArrayList<>();
+            multiPatterns.add(new MultiPattern(getRandomPatternAligner(), singlePatterns.get(0)));
+            multiPatterns.add(getRandomMultiReadPattern());
+            for (int j = 1; j < nestedMultiLevel; j++) {
+                multiPatterns.add(getRandomMultiReadPattern(multiPatterns.toArray(
+                        new MultipleReadsOperator[multiPatterns.size()])));
+                Collections.reverse(multiPatterns);
+            }
+            parseResult = parser.parseQuery(multiPatterns.get(0).toString(), SIMPLIFIED);
+            assertNotNull(parseResult);
+            assertEquals(multiPatterns.get(0).toString(), parseResult.toString());
+            multiPatterns.add(new MultiPattern(getRandomPatternAligner(), getRandomSinglePattern(
+                    getRandomFuzzyPattern(true), getRandomFuzzyPattern(), singlePatterns.get(0))));
+            parseResult = parser.parseQuery(multiPatterns.get(multiPatterns.size() - 1).toString(), SIMPLIFIED);
+            assertNotNull(parseResult);
+            assertEquals(multiPatterns.get(multiPatterns.size() - 1).toString(), parseResult.toString());
+        }
     }
 }

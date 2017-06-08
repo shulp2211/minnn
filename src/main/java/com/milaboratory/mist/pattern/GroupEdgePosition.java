@@ -14,11 +14,11 @@ public final class GroupEdgePosition {
         return "GroupEdgePosition(" + groupEdge + ", " + position + ")";
     }
 
-    GroupEdge getGroupEdge() {
+    public GroupEdge getGroupEdge() {
         return groupEdge;
     }
 
-    int getPosition() {
+    public int getPosition() {
         return position;
     }
 }
