@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 final class TokenizedString {
     private final LinkedList<Object> tokenizedString;
+    private final int length;
 
     /**
      * Tokenized string that allows to replace parts of string with patterns.
@@ -18,17 +19,7 @@ final class TokenizedString {
     TokenizedString(String query) {
         this.tokenizedString = new LinkedList<>();
         this.tokenizedString.add(query);
-    }
-
-    void assertFullyTokenized() throws ParserException {
-        List<Object> strings = tokenizedString.stream().filter(o -> o instanceof String).collect(Collectors.toList());
-        if (strings.size() > 0)
-            throw new ParserException("Some tokens not parsed: " + strings);
-    }
-
-    void assertNotTokenized() {
-        if ((tokenizedString.size() != 1) || !(tokenizedString.get(0) instanceof String))
-            throw new IllegalStateException("Expected to find one string, found: " + tokenizedString);
+        this.length = query.length();
     }
 
     /**
@@ -43,14 +34,14 @@ final class TokenizedString {
         int endIndex = getIndexByPosition(to - 1);
         int startIndexLastPosition;
         int endIndexFirstPosition;
-        if (from == getLeftByIndex(startIndex))
+        if ((from == getLeftByIndex(startIndex)) && !(tokenizedString.get(startIndex) instanceof String))
             startIndexLastPosition = -1;
         else
             if (tokenizedString.get(startIndex) instanceof String)
                 startIndexLastPosition = from - getLeftByIndex(startIndex);
             else throw new IllegalArgumentException("Trying to tokenize in the middle of "
                     + tokenizedString.get(startIndex));
-        if (to == getRightByIndex(endIndex))
+        if ((to == getRightByIndex(endIndex)) && !(tokenizedString.get(endIndex) instanceof String))
             endIndexFirstPosition = -1;
         else
             if (tokenizedString.get(endIndex) instanceof String)
@@ -91,7 +82,7 @@ final class TokenizedString {
             if ((startIndexLastPosition == -1) && (endIndexFirstPosition == -1)) {
                 TokenizedStringPattern tokenizedStringPattern = new TokenizedStringPattern(pattern, specifiedString.length());
                 tokenizedString.set(startIndex, tokenizedStringPattern);
-            } else if (endIndexFirstPosition > startIndexLastPosition) {
+            } else if ((startIndexLastPosition >= 0) && (endIndexFirstPosition > startIndexLastPosition)) {
                 TokenizedStringPattern tokenizedStringPattern  = new TokenizedStringPattern(pattern,
                         endIndexFirstPosition - startIndexLastPosition);
 
@@ -120,7 +111,7 @@ final class TokenizedString {
                 if ((startIndexLastPosition > ((String)startObject).length()) || (startIndexLastPosition < 0))
                     throw new IndexOutOfBoundsException("startLast: " + startIndexLastPosition
                             + ", startString: " + startObject);
-                patternLength += startIndexLastPosition;
+                patternLength += ((String)startObject).length() - startIndexLastPosition;
             }
 
             if (endIndexFirstPosition == -1)
@@ -131,7 +122,7 @@ final class TokenizedString {
                 if ((endIndexFirstPosition > ((String)endObject).length()) || (endIndexFirstPosition < 0))
                     throw new IndexOutOfBoundsException("endFirst: " + endIndexFirstPosition
                             + ", endString: " + endObject);
-                patternLength += ((String)endObject).length() - endIndexFirstPosition;
+                patternLength += endIndexFirstPosition;
             }
 
             TokenizedStringPattern tokenizedStringPattern = new TokenizedStringPattern(pattern, patternLength);
@@ -144,13 +135,15 @@ final class TokenizedString {
             } else tokenizedString.remove(startIndex);
 
             if ((endIndexFirstPosition != -1) && (endIndexFirstPosition != ((String)endObject).length())) {
-                tokenizedString.set(endIndex, ((String)endObject).substring(endIndexFirstPosition));
+                tokenizedString.set(deleteIndexLast, ((String)endObject).substring(endIndexFirstPosition));
                 deleteIndexLast--;
             }
 
             for (int i = deleteIndexLast; i >= deleteIndexFirst; --i)
                 tokenizedString.remove(i);
         }
+
+        assertLengthNotChanged();
     }
 
     /**
@@ -165,13 +158,12 @@ final class TokenizedString {
         if (start == end) return 0;
         int length = 0;
 
-        for (Object currentObject : tokenizedString.subList(start, end)) {
+        for (Object currentObject : tokenizedString.subList(start, end))
             if (currentObject instanceof String)
                 length += ((String)currentObject).length();
             else if (currentObject instanceof TokenizedStringPattern)
                 length += ((TokenizedStringPattern)currentObject).length;
             else throw new IllegalStateException("TokenizedString contains object of class " + currentObject.getClass());
-        }
 
         return length;
     }
@@ -278,6 +270,38 @@ final class TokenizedString {
     }
 
     /**
+     * Get final pattern when string is fully tokenized.
+     *
+     * @return final pattern from fully tokenized string
+     * @throws ParserException if string was not fully tokenized
+     */
+    Pattern getFinalPattern() throws ParserException {
+        assertFullyTokenized();
+        return ((TokenizedStringPattern)(tokenizedString.get(0))).pattern;
+    }
+
+    private void assertNotTokenized() {
+        if ((tokenizedString.size() != 1) || !(tokenizedString.get(0) instanceof String))
+            throw new IllegalStateException("Expected to find one string, found: " + tokenizedString);
+    }
+
+    private void assertFullyTokenized() throws ParserException {
+        List<Object> strings = tokenizedString.stream().filter(o -> o instanceof String).collect(Collectors.toList());
+        if (strings.size() > 0)
+            throw new ParserException("Some tokens not parsed: " + strings);
+        if (tokenizedString.size() > 1)
+            throw new ParserException("After parsing, string contains separate patterns instead of 1 final pattern!");
+        if (tokenizedString.size() < 1)
+            throw new IllegalStateException("After parsing, tokenizedString size is " + tokenizedString.size());
+    }
+
+    private void assertLengthNotChanged() {
+        if (calculateLength(0, tokenizedString.size()) != length)
+            throw new IllegalStateException("Changed length: old " + length + ", new "
+                    + calculateLength(0, tokenizedString.size()));
+    }
+
+    /**
      * Convert token from TokenizedString that is String or TokenizedStringPattern to String or Pattern.
      *
      * @param object token from TokenizedString
@@ -289,5 +313,20 @@ final class TokenizedString {
         else if (object instanceof TokenizedStringPattern)
             return ((TokenizedStringPattern)object).pattern;
         else throw new IllegalArgumentException("Called getStringOrPattern with object of class " + object.getClass());
+    }
+
+    private static class TokenizedStringPattern {
+        final Pattern pattern;
+        final int length;
+
+        TokenizedStringPattern(Pattern pattern, int length) {
+            this.pattern = pattern;
+            this.length = length;
+        }
+
+        @Override
+        public String toString() {
+            return "TokenizedStringPattern{" + "pattern=" + pattern + ", length=" + length + "}";
+        }
     }
 }

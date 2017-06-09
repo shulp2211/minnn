@@ -25,6 +25,12 @@ public final class Parser {
     public Pattern parseQuery(String query, ParserFormat format) throws ParserException {
         if (query.equals("")) throw new IllegalArgumentException("Parser query is empty!");
         TokenizedString tokenizedString = new TokenizedString(query);
-        return null;
+        if (format == ParserFormat.SIMPLIFIED) {
+            SimplifiedTokenizer simplifiedTokenizer = new SimplifiedTokenizer(patternAligner);
+            simplifiedTokenizer.tokenize(tokenizedString);
+            return tokenizedString.getFinalPattern();
+        } else {
+            return null;
+        }
     }
 }

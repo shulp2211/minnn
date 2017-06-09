@@ -2,19 +2,67 @@ package com.milaboratory.mist.parser;
 
 import com.milaboratory.mist.pattern.GroupEdge;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.milaboratory.mist.parser.BracketsType.*;
 
 final class BracketsDetector {
     /**
-     * Get non-filtered list of all bracket pairs of the specified type.
+     * Get list of all bracket pairs of the specified type.
      *
      * @param bracketsType brackets type
      * @param str string to search: it may be entire parser query or substring from TokenizedString
-     * @return list of all brackets pairs
+     * @return list of all brackets pairs of the specified type
      */
-    static HashSet<BracketsPair> getAllBrackets(BracketsType bracketsType, String str) throws ParserException {
-        return new HashSet<>();
+    static List<BracketsPair> getAllBrackets(BracketsType bracketsType, String str) throws ParserException {
+        ArrayList<BracketsPair> bracketsPairs = new ArrayList<>();
+        Stack<OpenBracket> openBrackets = new Stack<>();
+        int currentNestedLevel = 0;
+        for (int currentPosition = 0; currentPosition < str.length(); currentPosition++) {
+            char currentChar = str.charAt(currentPosition);
+            switch (currentChar) {
+                case '(':
+                    openBrackets.push(new OpenBracket(PARENTHESES, currentPosition, currentNestedLevel++));
+                    break;
+                case '[':
+                    openBrackets.push(new OpenBracket(SQUARE, currentPosition, currentNestedLevel++));
+                    break;
+                case '{':
+                    openBrackets.push(new OpenBracket(BRACES, currentPosition, currentNestedLevel++));
+                    break;
+                case ')':
+                    if (currentNestedLevel == 0)
+                        throw new ParserException("Found ')' without '(' in " + str);
+                    if (openBrackets.peek().bracketType != PARENTHESES)
+                        throw new ParserException("Found ')' after opening bracket of type "
+                                + openBrackets.peek().bracketType + " in " + str);
+                    bracketsPairs.add(new BracketsPair(PARENTHESES, openBrackets.pop().position, currentPosition,
+                            --currentNestedLevel));
+                    break;
+                case ']':
+                    if (currentNestedLevel == 0)
+                        throw new ParserException("Found ']' without '[' in " + str);
+                    if (openBrackets.peek().bracketType != SQUARE)
+                        throw new ParserException("Found ']' after opening bracket of type "
+                                + openBrackets.peek().bracketType + " in " + str);
+                    bracketsPairs.add(new BracketsPair(SQUARE, openBrackets.pop().position, currentPosition,
+                            --currentNestedLevel));
+                    break;
+                case '}':
+                    if (currentNestedLevel == 0)
+                        throw new ParserException("Found '}' without '{' in " + str);
+                    if (openBrackets.peek().bracketType != BRACES)
+                        throw new ParserException("Found '}' after opening bracket of type "
+                                + openBrackets.peek().bracketType + " in " + str);
+                    bracketsPairs.add(new BracketsPair(BRACES, openBrackets.pop().position, currentPosition,
+                            --currentNestedLevel));
+                    break;
+            }
+        }
+        if (currentNestedLevel > 0)
+            throw new ParserException("Missing " + currentNestedLevel + " closing bracket(s) in " + str);
+        return bracketsPairs.stream().filter(bp -> bp.bracketsType == bracketsType).collect(Collectors.toList());
     }
 
     /**
@@ -63,7 +111,34 @@ final class BracketsDetector {
      * @param query query string as it came to the parser
      * @return
      */
-    static HashSet<BracketsPair> getCommonParentheses(String query) throws ParserException {
+    static List<BracketsPair> getCommonParentheses(String query) throws ParserException {
         return null;
+    }
+
+    /**
+     * Get closing bracket coordinate by opening bracket coordinate from a list of bracket pairs.
+     *
+     * @param bracketsPairs list of bracket pairs
+     * @param start opening bracket coordinate
+     * @return closing bracket coordinate
+     */
+    static int getEndByStart(List<BracketsPair> bracketsPairs, int start) {
+        for (BracketsPair bracketsPair : bracketsPairs)
+            if (bracketsPair.start == start)
+                return bracketsPair.end;
+        throw new IllegalArgumentException("List of bracket pairs " + bracketsPairs
+                + " doesn't contain bracket with start " + start);
+    }
+
+    private static class OpenBracket {
+        final BracketsType bracketType;
+        final int position;
+        final int nestedLevel;
+
+        OpenBracket(BracketsType bracketType, int position, int nestedLevel) {
+            this.bracketType = bracketType;
+            this.position = position;
+            this.nestedLevel = nestedLevel;
+        }
     }
 }

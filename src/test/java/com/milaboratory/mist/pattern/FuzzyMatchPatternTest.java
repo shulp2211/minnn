@@ -216,7 +216,7 @@ public class FuzzyMatchPatternTest {
     @Test
     public void randomGroupsTest() throws Exception {
         Random randomGenerator = new Random();
-        for (int i = 0; i < 5000; i++) {
+        for (int i = 0; i < 100000; i++) {
             int numErrors = randomGenerator.nextInt(4);
             PatternAligner patternAligner = getTestPatternAligner(numErrors);
             ArrayList<GroupEdgePosition> groupEdges = new ArrayList<>();
@@ -237,8 +237,17 @@ public class FuzzyMatchPatternTest {
             matches[1] = port1.take();
             matches[2] = port2.take();
             matches[3] = port2.take();
+            int matchesArraySize;
+            if (matches[3] == null) {
+                matchesArraySize = 3;
+                Range matchedRange = patternAligner.align(mutatedMotif, target, target.size() - 1)
+                        .getSequence1Range();
+                assertTrue(matchedRange.getLower() == 0);
+                assertTrue(matchedRange.getUpper() < target.size());
+            } else
+                matchesArraySize = 4;
             for (int j = 0; j < numGroupEdges; j++)
-                for (int k = 0; k < 4; k++) {
+                for (int k = 0; k < matchesArraySize; k++) {
                     MatchedGroupEdge matchedGroupEdge = matches[k].getMatchedGroupEdges().get(j);
                     if (k == 0)
                         assertEquals(groupEdges.get(j).getPosition(), matchedGroupEdge.getPosition());
