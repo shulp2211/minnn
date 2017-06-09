@@ -44,7 +44,18 @@ public interface PatternAligner {
      *
      * @return not result score
      */
-    int notResultScore();
+    default int notResultScore() {
+        return 0;
+    }
+
+    /**
+     * Maximal allowed overlap for two intersecting sub-patterns
+     *
+     * @return max overlap; or -1 if no limit on overlap size
+     */
+    default int maxOverlap() {
+        return -1;
+    }
 
     /**
      * Checks whether two aligners are of the same type (may be with different penalty threshold).
@@ -55,9 +66,16 @@ public interface PatternAligner {
     boolean compatible(PatternAligner otherAligner);
 
     /**
-     * Return new pattern with more strict threshold.
+     * Return new pattern with more strict penalty threshold.
      *
-     * @return copy of this PatternAligner with more strict threshold
+     * @return copy of this PatternAligner with more strict penalty threshold
      */
     PatternAligner overridePenaltyThreshold(int newThresholdValue);
+
+    /**
+     * Return new pattern with more strict maxOverlap threshold.
+     *
+     * @return copy of this PatternAligner with more strict maxOverlap threshold
+     */
+    PatternAligner overrideMaxOverlap(int newMaxOverlap);
 }
