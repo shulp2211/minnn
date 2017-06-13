@@ -232,6 +232,7 @@ public class PlusPatternTest {
 
             for (Boolean fairSorting: new Boolean[] {false, true}) {
                 int errorScorePenalty = -randomGenerator.nextInt(50) - 1;
+                int maxOverlap = randomGenerator.nextInt(5) - 1;
                 int plusPenaltyThreshold;
                 boolean misplacedPatterns = false;
                 if (isMatchingPattern1) {
@@ -240,7 +241,8 @@ public class PlusPatternTest {
                     plusPenaltyThreshold = match1.getScore() + match2.getScore()
                             + errorScorePenalty * getIntersectionLength(match1.getRange(), match2.getRange());
                     misplacedPatterns = (match1.getRange().getLower() >= match2.getRange().getLower())
-                            || checkFullIntersection(match1.getRange(), match2.getRange());
+                            || checkFullIntersection(match1.getRange(), match2.getRange()) || ((maxOverlap != -1)
+                            && (getIntersectionLength(match1.getRange(), match2.getRange()) > maxOverlap));
                 } else {
                     plusPenaltyThreshold = pattern2.match(targetQ).getBestMatch(fairSorting).getScore();
                     if ((targetLength <= maxErrors) || (motif1WithErrors.size() <= maxErrors))
@@ -264,14 +266,16 @@ public class PlusPatternTest {
                     OUTER:
                     for (Range range1: ranges1)
                         for (Range range2: ranges2)
-                            if ((range1.getLower() < range2.getLower()) && !checkFullIntersection(range1, range2)) {
+                            if (!((range1.getLower() >= range2.getLower())
+                                    || checkFullIntersection(range1, range2) || ((maxOverlap != -1)
+                                    && (getIntersectionLength(range1, range2) > maxOverlap)))) {
                                 plusMustBeFound = true;
                                 break OUTER;
                             }
                 }
 
-                PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(plusPenaltyThreshold,
-                        0, 0, errorScorePenalty), pattern1, pattern2);
+                PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(plusPenaltyThreshold, 0,
+                        0, errorScorePenalty, true, maxOverlap), pattern1, pattern2);
 
                 if (!fairSorting)
                     assertEquals(plusMustBeFound, plusPattern.match(targetQ).isFound());
