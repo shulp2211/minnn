@@ -57,62 +57,60 @@ final class SimplifiedParsers {
      * @param singlePatterns parsed operand patterns
      * @return AndPattern
      */
-    static AndPattern parseAndPattern(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
+    static AndPattern parseAndPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                       ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         return new AndPattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
     }
 
-    static PlusPattern parsePlusPattern(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
+    static PlusPattern parsePlusPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                         ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         return new PlusPattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
     }
 
-    static OrPattern parseOrPattern(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
+    static OrPattern parseOrPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                     ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         return new OrPattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
     }
 
-    static MultiPattern parseMultiPattern(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
+    static MultiPattern parseMultiPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                           ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         return new MultiPattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
     }
 
-    static AndOperator parseAndOperator(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
+    static AndOperator parseAndOperator(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                         ArrayList<MultipleReadsOperator> operands) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         return new AndOperator(patternAligner, operands.toArray(new MultipleReadsOperator[operands.size()]));
     }
 
-    static OrOperator parseOrOperator(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
+    static OrOperator parseOrOperator(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                       ArrayList<MultipleReadsOperator> operands) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         return new OrOperator(patternAligner, operands.toArray(new MultipleReadsOperator[operands.size()]));
     }
 
-    static NotOperator parseNotOperator(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring)
+    static NotOperator parseNotOperator(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring)
             throws ParserException {
         if (tokenizedSubstring.size() != 1)
             throw new ParserException("Syntax not parsed correctly for Not operator; possibly missing operand: "
                     + tokenizedSubstring);
-        if (!MultipleReadsOperator.class.isAssignableFrom(tokenizedSubstring.get(0).getClass()))
-            throw new IllegalArgumentException("Wrong tokenizedSubstring for NotOperator: " + tokenizedSubstring);
 
-        return new NotOperator(patternAligner, (MultipleReadsOperator)(tokenizedSubstring.get(0)));
+        return new NotOperator(patternAligner, tokenizedSubstring.get(0).getMultipleReadsOperator());
     }
 
-    static Pattern parseFilterPattern(PatternAligner patternAligner, ArrayList<Object> tokenizedSubstring,
+    static Pattern parseFilterPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                       boolean multipleReads) throws ParserException {
         if (tokenizedSubstring.size() != 2)
             throw new ParserException("Syntax not parsed correctly for Filter pattern; possibly missing operand: "
                     + tokenizedSubstring);
-        if (!(tokenizedSubstring.get(0) instanceof String))
+        if (!tokenizedSubstring.get(0).isString())
             throw new IllegalArgumentException("Incorrect start in " + tokenizedSubstring + ", expected filter string!");
-        String startingSubstring = (String)(tokenizedSubstring.get(0));
-        if (!Pattern.class.isAssignableFrom(tokenizedSubstring.get(1).getClass()))
+        String startingSubstring = tokenizedSubstring.get(0).getString();
+        if (tokenizedSubstring.get(1).isString())
             throw new IllegalArgumentException("Wrong tokenizedSubstring for FilterPattern: " + tokenizedSubstring);
 
         if (!startingSubstring.substring(startingSubstring.length() - 2).equals(", "))
@@ -140,9 +138,9 @@ final class SimplifiedParsers {
         }
 
         if (multipleReads)
-            return new MultipleReadsFilterPattern(patternAligner, filter, (MultipleReadsOperator)(tokenizedSubstring.get(1)));
+            return new MultipleReadsFilterPattern(patternAligner, filter, tokenizedSubstring.get(1).getMultipleReadsOperator());
         else
-            return new FilterPattern(patternAligner, filter, (SinglePattern)(tokenizedSubstring.get(1)));
+            return new FilterPattern(patternAligner, filter, tokenizedSubstring.get(1).getSinglePattern());
     }
 
     static ScoreFilter parseScoreFilter(String str, String startingPart) throws ParserException {
@@ -276,28 +274,30 @@ final class SimplifiedParsers {
         return new GroupEdgePosition(new GroupEdge(groupName, isStart), position);
     }
 
-    private static void checkOperandArraySpelling(ArrayList<Object> tokenizedSubstring)
+    private static void checkOperandArraySpelling(ArrayList<Token> tokenizedSubstring)
             throws ParserException {
         if (tokenizedSubstring.size() < 3)
             throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
-        if (!(tokenizedSubstring.get(0) instanceof String))
+        if (!tokenizedSubstring.get(0).isString())
             throw new IllegalArgumentException("Incorrect string start in " + tokenizedSubstring + ", expected '['");
-        else if (!tokenizedSubstring.get(0).equals("["))
-            throw new ParserException("Incorrect operand string start: " + tokenizedSubstring.get(0) + ", expected '['");
-        if (!(tokenizedSubstring.get(tokenizedSubstring.size() - 1) instanceof String))
+        else if (!tokenizedSubstring.get(0).getString().equals("["))
+            throw new ParserException("Incorrect operand string start: " + tokenizedSubstring.get(0).getString()
+                    + ", expected '['");
+        if (!tokenizedSubstring.get(tokenizedSubstring.size() - 1).isString())
             throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
-        else if (!tokenizedSubstring.get(tokenizedSubstring.size() - 1).equals("]"))
+        else if (!tokenizedSubstring.get(tokenizedSubstring.size() - 1).getString().equals("]"))
             throw new ParserException("Found wrong end of operand array string: "
-                    + tokenizedSubstring.get(tokenizedSubstring.size() - 1));
-        if (!Pattern.class.isAssignableFrom(tokenizedSubstring.get(1).getClass()))
+                    + tokenizedSubstring.get(tokenizedSubstring.size() - 1).getString());
+        if (tokenizedSubstring.get(1).isString())
             throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
         for (int i = 2; i < tokenizedSubstring.size() - 1; i++) {
             if (i % 2 == 0) {
-                if (!(tokenizedSubstring.get(i) instanceof String))
+                if (!tokenizedSubstring.get(i).isString())
                     throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
-                else if (!tokenizedSubstring.get(i).equals(", "))
-                    throw new ParserException("Found wrong delimiter in array of patterns: " + tokenizedSubstring.get(i));
-            } else if (!(Pattern.class.isAssignableFrom(tokenizedSubstring.get(i).getClass())))
+                else if (!tokenizedSubstring.get(i).getString().equals(", "))
+                    throw new ParserException("Found wrong delimiter in array of patterns: "
+                            + tokenizedSubstring.get(i).getString());
+            } else if (tokenizedSubstring.get(i).isString())
                 throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
         }
     }

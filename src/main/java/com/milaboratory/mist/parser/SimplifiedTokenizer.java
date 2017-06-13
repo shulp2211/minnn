@@ -71,7 +71,7 @@ final class SimplifiedTokenizer {
                 case "AndPattern":
                     ArrayList<SinglePattern> andPatternOperands = getPatternOperands(
                             tokenizedString, squareBracketsPairs, objectString);
-                    ArrayList<Object> andPatternTokenizedSubstring = tokenizedString.getTokens(
+                    ArrayList<Token> andPatternTokenizedSubstring = tokenizedString.getTokens(
                             objectString.getDataStart(), objectString.getDataEnd());
                     AndPattern andPattern = parseAndPattern(currentPatternAligner, andPatternTokenizedSubstring,
                             andPatternOperands);
@@ -81,7 +81,7 @@ final class SimplifiedTokenizer {
                 case "PlusPattern":
                     ArrayList<SinglePattern> plusPatternOperands = getPatternOperands(
                             tokenizedString, squareBracketsPairs, objectString);
-                    ArrayList<Object> plusPatternTokenizedSubstring = tokenizedString.getTokens(
+                    ArrayList<Token> plusPatternTokenizedSubstring = tokenizedString.getTokens(
                             objectString.getDataStart(), objectString.getDataEnd());
                     PlusPattern plusPattern = parsePlusPattern(currentPatternAligner, plusPatternTokenizedSubstring,
                             plusPatternOperands);
@@ -91,7 +91,7 @@ final class SimplifiedTokenizer {
                 case "OrPattern":
                     ArrayList<SinglePattern> orPatternOperands = getPatternOperands(
                             tokenizedString, squareBracketsPairs, objectString);
-                    ArrayList<Object> orPatternTokenizedSubstring = tokenizedString.getTokens(
+                    ArrayList<Token> orPatternTokenizedSubstring = tokenizedString.getTokens(
                             objectString.getDataStart(), objectString.getDataEnd());
                     OrPattern orPattern = parseOrPattern(currentPatternAligner, orPatternTokenizedSubstring,
                             orPatternOperands);
@@ -101,7 +101,7 @@ final class SimplifiedTokenizer {
                 case "MultiPattern":
                     ArrayList<SinglePattern> multiPatternOperands = getPatternOperands(
                             tokenizedString, squareBracketsPairs, objectString);
-                    ArrayList<Object> multiPatternTokenizedSubstring = tokenizedString.getTokens(
+                    ArrayList<Token> multiPatternTokenizedSubstring = tokenizedString.getTokens(
                             objectString.getDataStart(), objectString.getDataEnd());
                     MultiPattern multiPattern = parseMultiPattern(currentPatternAligner, multiPatternTokenizedSubstring,
                             multiPatternOperands);
@@ -111,7 +111,7 @@ final class SimplifiedTokenizer {
                 case "AndOperator":
                     ArrayList<MultipleReadsOperator> andOperatorOperands = getPatternOperands(
                             tokenizedString, squareBracketsPairs, objectString);
-                    ArrayList<Object> andOperatorTokenizedSubstring = tokenizedString.getTokens(
+                    ArrayList<Token> andOperatorTokenizedSubstring = tokenizedString.getTokens(
                             objectString.getDataStart(), objectString.getDataEnd());
                     AndOperator andOperator = parseAndOperator(currentPatternAligner, andOperatorTokenizedSubstring,
                             andOperatorOperands);
@@ -121,7 +121,7 @@ final class SimplifiedTokenizer {
                 case "OrOperator":
                     ArrayList<MultipleReadsOperator> orOperatorOperands = getPatternOperands(
                             tokenizedString, squareBracketsPairs, objectString);
-                    ArrayList<Object> orOperatorTokenizedSubstring = tokenizedString.getTokens(
+                    ArrayList<Token> orOperatorTokenizedSubstring = tokenizedString.getTokens(
                             objectString.getDataStart(), objectString.getDataEnd());
                     OrOperator orOperator = parseOrOperator(currentPatternAligner, orOperatorTokenizedSubstring,
                             orOperatorOperands);
@@ -129,14 +129,14 @@ final class SimplifiedTokenizer {
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
                 case "NotOperator":
-                    ArrayList<Object> notOperatorTokenizedSubstring = tokenizedString.getTokens(
+                    ArrayList<Token> notOperatorTokenizedSubstring = tokenizedString.getTokens(
                             objectString.getDataStart(), objectString.getDataEnd());
                     NotOperator notOperator = parseNotOperator(currentPatternAligner, notOperatorTokenizedSubstring);
                     tokenizedString.tokenizeSubstring(notOperator,
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
                 case "MultipleReadsFilterPattern":
-                    ArrayList<Object> mFilterPatternTokenizedSubstring = tokenizedString.getTokens(
+                    ArrayList<Token> mFilterPatternTokenizedSubstring = tokenizedString.getTokens(
                             objectString.getDataStart(), objectString.getDataEnd());
                     MultipleReadsFilterPattern mFilterPattern = (MultipleReadsFilterPattern)parseFilterPattern(
                             currentPatternAligner, mFilterPatternTokenizedSubstring, true);
@@ -144,7 +144,7 @@ final class SimplifiedTokenizer {
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
                 case "FilterPattern":
-                    ArrayList<Object> filterPatternTokenizedSubstring = tokenizedString.getTokens(
+                    ArrayList<Token> filterPatternTokenizedSubstring = tokenizedString.getTokens(
                             objectString.getDataStart(), objectString.getDataEnd());
                     FilterPattern filterPattern = (FilterPattern)parseFilterPattern(currentPatternAligner,
                             filterPatternTokenizedSubstring, false);
@@ -157,9 +157,8 @@ final class SimplifiedTokenizer {
         }
     }
 
-    private <P extends Pattern> ArrayList<P> getPatternOperands(
-            TokenizedString tokenizedString, List<BracketsPair> squareBracketsPairs, ObjectString objectString)
-            throws ParserException {
+    private <P extends Pattern> ArrayList<P> getPatternOperands(TokenizedString tokenizedString,
+            List<BracketsPair> squareBracketsPairs, ObjectString objectString) throws ParserException {
         List<BracketsPair> innerSquareBrackets = squareBracketsPairs.stream().
                 filter(bp -> objectString.getParenthesesPair().contains(bp)).collect(Collectors.toList());
         innerSquareBrackets.sort(Comparator.comparingInt((BracketsPair bp) -> bp.nestedLevel));
@@ -169,8 +168,8 @@ final class SimplifiedTokenizer {
             return parseArrayOfPatterns(tokenizedString, innerSquareBrackets.get(0));
     }
 
-    private <P extends Pattern> ArrayList<P> parseArrayOfPatterns(
-            TokenizedString tokenizedString, BracketsPair bracketsPair) throws ParserException {
+    private <P extends Pattern> ArrayList<P> parseArrayOfPatterns(TokenizedString tokenizedString,
+            BracketsPair bracketsPair) throws ParserException {
         if (bracketsPair.bracketsType != SQUARE)
             throw new IllegalArgumentException("Array of patterns must be in square brackets; got brackets pair: "
                     + bracketsPair);
@@ -178,15 +177,12 @@ final class SimplifiedTokenizer {
             throw new ParserException("Expected array of patterns, found empty square brackets pair: " + bracketsPair);
         else {
             ArrayList<P> patterns = new ArrayList<>();
-            for (Object token : tokenizedString.getTokens(bracketsPair.start + 1, bracketsPair.end)) {
-                if (token instanceof String) {
-                    if (!token.equals(", "))
-                        throw new ParserException("Found not parsed token in array of patterns: " + token);
-                } else try {
-                    patterns.add((P)token);
-                } catch (ClassCastException e) {
-                    throw new IllegalStateException("Found token of invalid class in array of patterns: " + e);
-                }
+            for (Token token : tokenizedString.getTokens(bracketsPair.start + 1, bracketsPair.end)) {
+                if (token.isString()) {
+                    if (!token.getString().equals(", "))
+                        throw new ParserException("Found not parsed token in array of patterns: " + token.getString());
+                } else
+                    patterns.add(token.getSpecificPattern());
             }
             return patterns;
         }

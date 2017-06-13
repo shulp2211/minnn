@@ -23,13 +23,13 @@ public class TokenizedStringTest {
         assertEquals("TTAA", ts1.getOneString(2, 6));
         assertEquals(2, ts1.getTokens(0, 6).size());
         ts1.tokenizeSubstring(testPattern2, 2, 4);
-        assertEquals("A", ts1.getTokens(1, 5).get(1));
+        assertEquals("A", ts1.getTokens(1, 5).get(1).getString());
         ts1.tokenizeSubstring(testPattern1, 0, 6);
         assertNotNull(ts1.getFinalPattern());
         TokenizedString ts2 = new TokenizedString("ATTAGACA");
         ts2.tokenizeSubstring(testPattern2, 1, 3);
         assertEquals(3, ts2.calculateLength(0, 2));
-        assertEquals("AGACA", ts2.getTokens(0, 8).get(2));
+        assertEquals("AGACA", ts2.getTokens(0, 8).get(2).getString());
         exception.expect(IllegalArgumentException.class);
         ts2.tokenizeSubstring(testPattern1, 1, 3);
     }
@@ -44,8 +44,8 @@ public class TokenizedStringTest {
         TokenizedString ts = new TokenizedString(multiPattern.toString());
         ts.tokenizeSubstring(fuzzyMatchPattern, 5, 10);
         assertEquals(3, ts.getTokens(1, 20).size());
-        assertEquals("Multi", ts.getTokens(0, 20).get(0));
-        assertEquals("lti", ts.getTokens(2, 30).get(0));
+        assertEquals("Multi", ts.getTokens(0, 20).get(0).getString());
+        assertEquals("lti", ts.getTokens(2, 30).get(0).getString());
         exception.expect(IllegalArgumentException.class);
         ts.tokenizeSubstring(andPattern, 7, 12);
     }
