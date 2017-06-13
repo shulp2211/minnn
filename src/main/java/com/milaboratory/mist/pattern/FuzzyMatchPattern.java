@@ -44,7 +44,10 @@ public final class FuzzyMatchPattern extends SinglePattern {
 
     @Override
     public String toString() {
-        return "FuzzyMatchPattern(" + patternSeq + ", " + groupEdgePositions + ")";
+        if (groupEdgePositions.size() > 0)
+            return "FuzzyMatchPattern(" + patternSeq + ", " + groupEdgePositions + ")";
+        else
+            return "FuzzyMatchPattern(" + patternSeq + ")";
     }
 
     @Override
