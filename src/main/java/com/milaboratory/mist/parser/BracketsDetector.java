@@ -102,8 +102,11 @@ final class BracketsDetector {
      */
     static int nextNonQuotedPosition(List<QuotesPair> quotesPairs, int currentPosition) {
         for (QuotesPair quotesPair : quotesPairs)
-            if (quotesPair.contains(currentPosition))
-                return quotesPair.end + 1;
+            if (quotesPair.contains(currentPosition + 1))
+                if (!isInQuotes(quotesPairs, quotesPair.end + 1))
+                    return quotesPair.end + 1;
+                else
+                    currentPosition = quotesPair.end;
         return currentPosition + 1;
     }
 
