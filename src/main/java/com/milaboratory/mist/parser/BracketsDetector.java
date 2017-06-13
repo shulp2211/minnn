@@ -6,8 +6,107 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.parser.BracketsType.*;
+import static com.milaboratory.mist.parser.QuotesType.*;
 
 final class BracketsDetector {
+    /**
+     * Get list of all quotes pairs of all types.
+     *
+     * @param str string to search: it may be entire parser query or substring from TokenizedString
+     * @return list of all quotes pairs of all types
+     */
+    static List<QuotesPair> getAllQuotes(String str) throws ParserException {
+        List<QuotesPair> quotesPairs = new ArrayList<>();
+        OpenQuote lastOpenQuote = null;
+        for (int currentPosition = 0; currentPosition < str.length(); currentPosition++) {
+            if (lastOpenQuote != null) {
+                if (currentPosition < str.length() - 1) {
+                    switch (str.substring(currentPosition, currentPosition + 2)) {
+                        case "\\\\":
+                        case "\\\"":
+                        case "\\\'":
+                            // skip escaped backslash or escaped quotes inside quotes
+                            currentPosition++;
+                            continue;
+                    }
+                }
+                switch (str.charAt(currentPosition)) {
+                    case '\"':
+                        if (lastOpenQuote.quotesType == DOUBLE) {
+                            quotesPairs.add(new QuotesPair(DOUBLE, lastOpenQuote.position, currentPosition));
+                            lastOpenQuote = null;
+                        }
+                        break;
+                    case '\'':
+                        if (lastOpenQuote.quotesType == SINGLE) {
+                            quotesPairs.add(new QuotesPair(SINGLE, lastOpenQuote.position, currentPosition));
+                            lastOpenQuote = null;
+                        }
+                }
+            } else {
+                switch (str.charAt(currentPosition)) {
+                    case '\"':
+                        lastOpenQuote = new OpenQuote(DOUBLE, currentPosition);
+                        break;
+                    case '\'':
+                        lastOpenQuote = new OpenQuote(SINGLE, currentPosition);
+                }
+            }
+        }
+        if (lastOpenQuote != null)
+            throw new ParserException("Missing closing " + (lastOpenQuote.quotesType == SINGLE ? "\'" : "\"")
+                    + " in " + str);
+        return quotesPairs;
+    }
+
+    /**
+     * Checks is this position inside quotes (inclusive on left and right sides).
+     *
+     * @param quotesPairs all quotes pairs detected by getAllQuotes function
+     * @param position position in string
+     * @return is this position inside quotes (inclusive on left and right sides)
+     */
+    static boolean isInQuotes(List<QuotesPair> quotesPairs, int position) {
+        for (QuotesPair quotesPair : quotesPairs)
+            if (quotesPair.contains(position))
+                return true;
+        return false;
+    }
+
+    /**
+     * String.indexOf function that searches only non-quoted tokens. It will skip tokens for which start position
+     * is inside quotes.
+     *
+     * @param quotesPairs all quotes pairs detected by getAllQuotes function
+     * @param str string in which we do the search
+     * @param token token to search
+     * @param currentPosition current position in string where we start the search
+     * @return found position of next token; -1 if not found
+     */
+    static int nonQuotedIndexOf(List<QuotesPair> quotesPairs, String str, String token, int currentPosition) {
+        int foundPosition;
+        do {
+            if (currentPosition == str.length()) return -1;
+            foundPosition = str.indexOf(token, currentPosition);
+            currentPosition = foundPosition + 1;
+        } while (isInQuotes(quotesPairs, foundPosition));
+        return foundPosition;
+    }
+
+    /**
+     * Returns next position in query that is not inside quotes; used for searching non-quoted tokens in string.
+     *
+     * @param quotesPairs all quotes pairs detected by getAllQuotes function
+     * @param currentPosition current position in string
+     * @return next non-quoted position in string; string length is not checked
+     */
+    static int nextNonQuotedPosition(List<QuotesPair> quotesPairs, int currentPosition) {
+        for (QuotesPair quotesPair : quotesPairs)
+            if (quotesPair.contains(currentPosition))
+                return quotesPair.end + 1;
+        return currentPosition + 1;
+    }
+
     /**
      * Get list of all bracket pairs of the specified type.
      *
@@ -18,8 +117,10 @@ final class BracketsDetector {
     static List<BracketsPair> getAllBrackets(BracketsType bracketsType, String str) throws ParserException {
         ArrayList<BracketsPair> bracketsPairs = new ArrayList<>();
         Stack<OpenBracket> openBrackets = new Stack<>();
+        List<QuotesPair> quotesPairs = getAllQuotes(str);
         int currentNestedLevel = 0;
-        for (int currentPosition = 0; currentPosition < str.length(); currentPosition++) {
+        for (int currentPosition = 0; currentPosition < str.length(); currentPosition = nextNonQuotedPosition(
+                quotesPairs, currentPosition)) {
             char currentChar = str.charAt(currentPosition);
             switch (currentChar) {
                 case '(':
@@ -128,6 +229,16 @@ final class BracketsDetector {
                 return bracketsPair.end;
         throw new IllegalArgumentException("List of bracket pairs " + bracketsPairs
                 + " doesn't contain bracket with start " + start);
+    }
+
+    private static class OpenQuote {
+        final QuotesType quotesType;
+        final int position;
+
+        OpenQuote(QuotesType quotesType, int position) {
+            this.quotesType = quotesType;
+            this.position = position;
+        }
     }
 
     private static class OpenBracket {

@@ -55,9 +55,11 @@ public class BracketsDetectorTest {
         for (int i = 0; i < 500; i++) {
             BracketsType bracketsType = getRandomEnumItem(BracketsType.class);
             List<BracketsPair> bracketsPairs = new ArrayList<>();
-            for (int j = 0; j < randomGenerator.nextInt(30); j++)
-                bracketsPairs.add(new BracketsPair(bracketsType, randomGenerator.nextInt(100),
-                        randomGenerator.nextInt(100), randomGenerator.nextInt(30)));
+            for (int j = 0; j < randomGenerator.nextInt(30); j++) {
+                int start = randomGenerator.nextInt(100);
+                int end = start + randomGenerator.nextInt(100) + 1;
+                bracketsPairs.add(new BracketsPair(bracketsType, start, end, randomGenerator.nextInt(30)));
+            }
             int newPairStart;
             while (true) {
                 final int randomValue = randomGenerator.nextInt(100);
@@ -66,8 +68,8 @@ public class BracketsDetectorTest {
                     break;
                 }
             }
-            BracketsPair newBracketsPair = new BracketsPair(bracketsType, newPairStart, randomGenerator.nextInt(100),
-                    randomGenerator.nextInt(30));
+            BracketsPair newBracketsPair = new BracketsPair(bracketsType, newPairStart,
+                    newPairStart + 1 + randomGenerator.nextInt(100), randomGenerator.nextInt(30));
             bracketsPairs.add(newBracketsPair);
             Collections.shuffle(bracketsPairs);
             assertEquals(newBracketsPair.end, getEndByStart(bracketsPairs, newBracketsPair.start));

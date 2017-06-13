@@ -1,9 +1,7 @@
 package com.milaboratory.mist.parser;
 
-final class BracketsPair {
+final class BracketsPair extends CharPair {
     final BracketsType bracketsType;
-    final int start;
-    final int end;
     final int nestedLevel;
 
     /**
@@ -15,9 +13,8 @@ final class BracketsPair {
      * @param nestedLevel number of brackets of any type inside which this one is placed; 0 is the top level
      */
     BracketsPair(BracketsType bracketsType, int start, int end, int nestedLevel) {
+        super(start, end);
         this.bracketsType = bracketsType;
-        this.start = start;
-        this.end = end;
         this.nestedLevel = nestedLevel;
     }
 

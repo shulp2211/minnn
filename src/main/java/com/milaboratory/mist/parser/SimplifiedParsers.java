@@ -4,6 +4,9 @@ import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.mist.pattern.*;
 
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.milaboratory.mist.parser.BracketsDetector.*;
 
 /**
  * Parsers for objects and their parameters for simplified syntax.
@@ -19,9 +22,10 @@ final class SimplifiedParsers {
      */
     static FuzzyMatchPattern parseFuzzyMatchPattern(PatternAligner patternAligner, String str,
                                                     ArrayList<GroupEdgePosition> groupEdgePositions) throws ParserException {
+        List<QuotesPair> quotesPairs = getAllQuotes(str);
         NucleotideSequence seq;
 
-        int commaPosition = str.indexOf(",");
+        int commaPosition = nonQuotedIndexOf(quotesPairs, str, ",", 0);
         if (commaPosition == -1)
             if (str.length() == 0)
                 throw new ParserException("Missing nucleotide sequence, empty argument string for fuzzy match pattern!");
@@ -236,15 +240,16 @@ final class SimplifiedParsers {
     static GroupEdgePosition parseGroupEdgePosition(String str, String startingPart) throws ParserException {
         if (!str.substring(0, startingPart.length()).equals(startingPart))
             throw new IllegalArgumentException("Incorrect string start in " + str + ", expected: " + startingPart);
+        List<QuotesPair> quotesPairs = getAllQuotes(str);
 
-        int firstCommaPosition = str.indexOf(", ");
+        int firstCommaPosition = nonQuotedIndexOf(quotesPairs, str, ", ", 0);
         if (firstCommaPosition == -1)
             throw new ParserException("Missing ', ' in " + str);
         String groupName = str.substring(startingPart.length(), firstCommaPosition - 1);
         if (groupName.length() == 0)
             throw new ParserException("Found empty group name in " + str);
 
-        int secondCommaPosition = str.substring(firstCommaPosition + 1).indexOf(", ") + firstCommaPosition + 1;
+        int secondCommaPosition = nonQuotedIndexOf(quotesPairs, str, ", ", firstCommaPosition + 1);
         if (secondCommaPosition == -1)
             throw new ParserException("Missing second ', ' in " + str);
         boolean isStart;

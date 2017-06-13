@@ -31,6 +31,27 @@ final class ParserUtils {
     }
 
     /**
+     * Get object name at left of open parenthesis for simplified syntax.
+     *
+     * @param leftParenthesisPosition position of open parenthesis in string
+     * @param fullString string where to search
+     * @return object name
+     */
+    static String getObjectName(int leftParenthesisPosition, String fullString) throws ParserException {
+        final String STOP_CHARACTERS = " ([";
+        ArrayList<Character> reversedNameCharacters = new ArrayList<>();
+        int currentPosition = leftParenthesisPosition - 1;
+
+        while ((currentPosition >= 0)
+                && (!STOP_CHARACTERS.contains(fullString.substring(currentPosition, currentPosition + 1))))
+            reversedNameCharacters.add(fullString.charAt(currentPosition--));
+        StringBuilder builder = new StringBuilder(reversedNameCharacters.size());
+        for (int i = reversedNameCharacters.size() - 1; i >= 0; i--)
+            builder.append(reversedNameCharacters.get(i));
+        return builder.toString();
+    }
+
+    /**
      * Detect all score thresholds in query string.
      *
      * @param query query string

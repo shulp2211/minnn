@@ -5,9 +5,10 @@ import com.milaboratory.mist.pattern.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.milaboratory.mist.parser.BracketsDetector.getAllBrackets;
+import static com.milaboratory.mist.parser.BracketsDetector.*;
 import static com.milaboratory.mist.parser.BracketsType.*;
 import static com.milaboratory.mist.parser.ParserFormat.*;
+import static com.milaboratory.mist.parser.ParserUtils.getObjectName;
 import static com.milaboratory.mist.parser.ParserUtils.getScoreThresholds;
 import static com.milaboratory.mist.parser.SimplifiedParsers.*;
 
@@ -168,20 +169,6 @@ final class SimplifiedTokenizer {
             return parseArrayOfPatterns(tokenizedString, innerSquareBrackets.get(0));
     }
 
-    private String getObjectName(int leftParenthesisPosition, String fullString) throws ParserException {
-        final String STOP_CHARACTERS = " ([";
-        ArrayList<Character> reversedNameCharacters = new ArrayList<>();
-        int currentPosition = leftParenthesisPosition - 1;
-
-        while ((currentPosition >= 0)
-                && (!STOP_CHARACTERS.contains(fullString.substring(currentPosition, currentPosition + 1))))
-            reversedNameCharacters.add(fullString.charAt(currentPosition--));
-        StringBuilder builder = new StringBuilder(reversedNameCharacters.size());
-        for (int i = reversedNameCharacters.size() - 1; i >= 0; i--)
-            builder.append(reversedNameCharacters.get(i));
-        return builder.toString();
-    }
-
     private <P extends Pattern> ArrayList<P> parseArrayOfPatterns(
             TokenizedString tokenizedString, BracketsPair bracketsPair) throws ParserException {
         if (bracketsPair.bracketsType != SQUARE)
@@ -217,10 +204,11 @@ final class SimplifiedTokenizer {
             ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
             final String STRING_START = "GroupEdgePosition(GroupEdge('";
             String arrayString = tokenizedString.getOneString(bracketsPair.start + 1, bracketsPair.end);
+            List<QuotesPair> quotesPairs = getAllQuotes(arrayString);
             int currentPosition = 0;
             int foundTokenPosition;
             do {
-                foundTokenPosition = arrayString.indexOf(", " + STRING_START, currentPosition);
+                foundTokenPosition = nonQuotedIndexOf(quotesPairs, arrayString, ", " + STRING_START, currentPosition);
                 if (foundTokenPosition != -1) {
                     String currentToken = arrayString.substring(currentPosition, foundTokenPosition);
                     groupEdgePositions.add(parseGroupEdgePosition(currentToken, STRING_START));

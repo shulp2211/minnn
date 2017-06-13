@@ -209,7 +209,7 @@ public class CommonTestUtils {
         ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
         Random r = new Random();
         while (groupEdgePositions.size() < numGroups * 2) {
-            String groupName = getRandomString(r.nextInt(30) + 1, "<>(){}[] '\"");
+            String groupName = getRandomString(r.nextInt(30) + 1, "'\"\\");
             if (groupEdgePositions.stream().anyMatch(g -> g.getGroupEdge().getGroupName().equals(groupName)))
                 continue;
             int leftPosition = r.nextInt(maxCoordinate);
