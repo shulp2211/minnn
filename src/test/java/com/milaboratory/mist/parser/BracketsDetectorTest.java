@@ -8,12 +8,63 @@ import java.util.*;
 
 import static com.milaboratory.mist.parser.BracketsDetector.*;
 import static com.milaboratory.mist.parser.BracketsType.*;
+import static com.milaboratory.mist.parser.QuotesType.*;
 import static com.milaboratory.mist.util.CommonTestUtils.getRandomEnumItem;
 import static org.junit.Assert.*;
 
 public class BracketsDetectorTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
+
+    @Test
+    public void getAllQuotesTest1() throws Exception {
+        String string1 = "'\\\'\"12'37\"\\(0\\)'\\\\\"'))\\\"\\\\\\\'{\"'\"2\\\'3'\"'\"'\\>>{\"\"\"\\\'\"\\\"\"";
+        String string2 = "<<AT'G1:ATA'GCGCGGC'AT&GC'|(AT&GG)";
+        String string3 = "'\"''\"))\"";
+        List<QuotesPair> result1 = getAllQuotes(string1);
+        List<QuotesPair> result2 = getAllQuotes(string2);
+        assertEquals(8, result1.size());
+        assertEquals(5, result1.stream().filter(qp -> qp.quotesType == DOUBLE).count());
+        assertEquals(3, result1.stream().filter(qp -> qp.quotesType == SINGLE).count());
+        assertEquals(2, result2.size());
+        assertEquals(0, result2.stream().filter(qp -> qp.quotesType == DOUBLE).count());
+        assertEquals(2, result2.stream().filter(qp -> qp.quotesType == SINGLE).count());
+
+        exception.expect(ParserException.class);
+        getAllQuotes(string3);
+    }
+
+    @Test
+    public void getAllQuotesTest2() throws Exception {
+        exception.expect(ParserException.class);
+        getAllQuotes("'''");
+    }
+
+    @Test
+    public void getAllQuotesTest3() throws Exception {
+        exception.expect(ParserException.class);
+        getAllQuotes("'\"'\"");
+    }
+
+    @Test
+    public void skipQuotesTest() throws Exception {
+        String string = "'\\\'\"12'37\"\\(0\\)'\\\\\"'))\\\"\\\\\\\'{\"'\"2\\\'3'\"'\"'\\>>{\"\"\"\\\'\"\\\"\"";
+        List<QuotesPair> quotesPairs = getAllQuotes(string);
+        int counter1 = 0;
+        int counter2 = 0;
+        for (int i = 0; i < string.length(); i = nextNonQuotedPosition(quotesPairs, i)) {
+            counter1++;
+            if (!isInQuotes(quotesPairs, i)) counter2++;
+        }
+        assertEquals(8, counter1);
+        assertEquals(7, counter2);
+        assertEquals(41, nonQuotedIndexOf(quotesPairs, string, "\\", 0));
+        assertEquals(41, nonQuotedIndexOf(quotesPairs, string, "\\", 41));
+        assertEquals(41, nonQuotedIndexOf(quotesPairs, string, "\\>", 0));
+        assertEquals(51, nonQuotedIndexOf(quotesPairs, string, "\\", 42));
+        assertEquals(51, nonQuotedIndexOf(quotesPairs, string, "\\\"", 0));
+        assertEquals(-1, nonQuotedIndexOf(quotesPairs, string, "\\'", 0));
+    }
 
     @Test
     public void getAllBracketsTest1() throws Exception {
