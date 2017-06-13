@@ -118,10 +118,11 @@ public class CommonTestUtils {
 
     public static PatternAligner getTestPatternAligner(int penaltyThreshold, int bitapMaxErrors, int notResultScore,
                                                        int singleOverlapPenalty, boolean compatible) {
-        return getTestPatternAligner_(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty, compatible, 0);
+        return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty,
+                compatible, -1);
     }
 
-    public static PatternAligner getTestPatternAligner_(int penaltyThreshold, int bitapMaxErrors, int notResultScore,
+    public static PatternAligner getTestPatternAligner(int penaltyThreshold, int bitapMaxErrors, int notResultScore,
                                                         int singleOverlapPenalty, boolean compatible, int maxOverlap) {
         return new PatternAligner() {
             @Override
@@ -166,13 +167,13 @@ public class CommonTestUtils {
 
             @Override
             public PatternAligner overridePenaltyThreshold(int newThresholdValue) {
-                return getTestPatternAligner_(newThresholdValue, bitapMaxErrors, notResultScore, singleOverlapPenalty,
+                return getTestPatternAligner(newThresholdValue, bitapMaxErrors, notResultScore, singleOverlapPenalty,
                         compatible, maxOverlap);
             }
 
             @Override
             public PatternAligner overrideMaxOverlap(int newMaxOverlap) {
-                return getTestPatternAligner_(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty,
+                return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty,
                         compatible, newMaxOverlap);
             }
         };

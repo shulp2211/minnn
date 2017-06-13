@@ -247,8 +247,7 @@ public abstract class ApproximateSorter {
                     ranges[i] = currentRange;
                     for (int j = 0; j < i; j++)     // Compare with all previously added matches
                         if (checkFullIntersection(ranges[i], ranges[j])
-                                || (isOverlapPenaltyOverThreshold(matches[0].getMatchedRange().getTarget(),
-                                ranges[i], ranges[j]))) {
+                                || checkOverlap(matches[0].getMatchedRange().getTarget(), ranges[i], ranges[j])) {
                             result = new IncompatibleIndexes(j, indexes[j], i, indexes[i]);
                             break OUTER;
                         }
@@ -265,8 +264,7 @@ public abstract class ApproximateSorter {
                     previousRange = matches[i - 1].getRange();
                     if ((previousRange.getLower() >= currentRange.getLower())
                             || checkFullIntersection(previousRange, currentRange)
-                            || isOverlapPenaltyOverThreshold(matches[0].getMatchedRange().getTarget(),
-                            previousRange, currentRange)) {
+                            || checkOverlap(matches[0].getMatchedRange().getTarget(), previousRange, currentRange)) {
                         result = new IncompatibleIndexes(i - 1, indexes[i - 1], i, indexes[i]);
                         break;
                     }
@@ -277,14 +275,15 @@ public abstract class ApproximateSorter {
     }
 
     /**
-     * Check if overlap penalty for 2 ranges is over threshold.
+     * Check is overlap too big to invalidate this combination of ranges.
      *
-     * @return true if penalty is over threshold, otherwise false
+     * @return true if overlap is too big and this combination of ranges is invalid
      */
-    private boolean isOverlapPenaltyOverThreshold(NSequenceWithQuality target, Range range0, Range range1) {
+    private boolean checkOverlap(NSequenceWithQuality target, Range range0, Range range1) {
         Range intersection = range0.intersection(range1);
-        return (intersection != null) && (patternAligner.overlapPenalty(target,
-                intersection.getLower(), intersection.length()) < patternAligner.penaltyThreshold());
+        return (intersection != null) && (((patternAligner.maxOverlap() != -1) && (patternAligner.maxOverlap()
+                < intersection.length())) || (patternAligner.overlapPenalty(target, intersection.getLower(),
+                intersection.length()) < patternAligner.penaltyThreshold()));
     }
 
     protected class IncompatibleIndexes {
