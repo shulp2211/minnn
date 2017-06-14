@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.milaboratory.mist.parser.BracketsDetector.*;
+import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 
 /**
  * Parsers for objects and their parameters for simplified syntax.
@@ -16,7 +17,7 @@ final class SimplifiedParsers {
      * Parse FuzzyMatchPattern parameters; group edge positions must be already parsed in this stage.
      *
      * @param patternAligner pattern aligner
-     * @param str string containing FuzzyMatchPattern and all arguments
+     * @param str string containing FuzzyMatchPattern arguments which were inside parentheses
      * @param groupEdgePositions parsed group edge positions
      * @return FuzzyMatchPattern
      */
@@ -53,7 +54,7 @@ final class SimplifiedParsers {
      * Parse AndPattern from tokenized substring returned by getTokens() function and already parsed operand patterns.
      *
      * @param patternAligner pattern aligner
-     * @param tokenizedSubstring tokenized substring returned by getTokens() function
+     * @param tokenizedSubstring tokenized substring for this AndPattern that returned by getTokens() function
      * @param singlePatterns parsed operand patterns
      * @return AndPattern
      */
@@ -125,10 +126,10 @@ final class SimplifiedParsers {
         String filterStartingPart = filterName + "(";
         Filter filter;
         switch (filterName) {
-            case "ScoreFilter":
+            case SCORE_FILTER_NAME:
                 filter = parseScoreFilter(filterString, filterStartingPart);
                 break;
-            case "BorderFilter":
+            case BORDER_FILTER_NAME:
                 if (multipleReads)
                     throw new ParserException("BorderFilter must not be used with multiple reads!");
                 filter = parseBorderFilter(patternAligner, filterString, filterStartingPart);
@@ -232,18 +233,18 @@ final class SimplifiedParsers {
      * Parse group edge position from string that represents it.
      *
      * @param str string representing 1 group edge position
-     * @param startingPart start of GroupEdgePosition string before group name
      * @return parsed GroupEdgePosition
      */
-    static GroupEdgePosition parseGroupEdgePosition(String str, String startingPart) throws ParserException {
-        if (!str.substring(0, startingPart.length()).equals(startingPart))
-            throw new IllegalArgumentException("Incorrect string start in " + str + ", expected: " + startingPart);
+    static GroupEdgePosition parseGroupEdgePosition(String str) throws ParserException {
+        if (!str.substring(0, GROUP_EDGE_POSITION_START.length()).equals(GROUP_EDGE_POSITION_START))
+            throw new IllegalArgumentException("Incorrect string start in " + str + ", expected: "
+                    + GROUP_EDGE_POSITION_START);
         List<QuotesPair> quotesPairs = getAllQuotes(str);
 
         int firstCommaPosition = nonQuotedIndexOf(quotesPairs, str, ", ", 0);
         if (firstCommaPosition == -1)
             throw new ParserException("Missing ', ' in " + str);
-        String groupName = str.substring(startingPart.length(), firstCommaPosition - 1);
+        String groupName = str.substring(GROUP_EDGE_POSITION_START.length(), firstCommaPosition - 1);
         if (groupName.length() == 0)
             throw new ParserException("Found empty group name in " + str);
 
@@ -274,8 +275,7 @@ final class SimplifiedParsers {
         return new GroupEdgePosition(new GroupEdge(groupName, isStart), position);
     }
 
-    private static void checkOperandArraySpelling(ArrayList<Token> tokenizedSubstring)
-            throws ParserException {
+    private static void checkOperandArraySpelling(ArrayList<Token> tokenizedSubstring) throws ParserException {
         if (tokenizedSubstring.size() < 3)
             throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
         if (!tokenizedSubstring.get(0).isString())

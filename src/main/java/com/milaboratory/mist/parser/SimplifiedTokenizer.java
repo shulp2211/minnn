@@ -7,10 +7,12 @@ import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.parser.BracketsDetector.*;
 import static com.milaboratory.mist.parser.BracketsType.*;
+import static com.milaboratory.mist.parser.GroupsChecker.checkGroups;
 import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.parser.ParserUtils.getObjectName;
 import static com.milaboratory.mist.parser.ParserUtils.getScoreThresholds;
 import static com.milaboratory.mist.parser.SimplifiedParsers.*;
+import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 
 final class SimplifiedTokenizer {
     private final PatternAligner patternAligner;
@@ -29,6 +31,7 @@ final class SimplifiedTokenizer {
         List<BracketsPair> parenthesesPairs = getAllBrackets(PARENTHESES, fullString);
         List<BracketsPair> squareBracketsPairs = getAllBrackets(SQUARE, fullString);
         ArrayList<ScoreThreshold> scoreThresholds = getScoreThresholds(fullString, SIMPLIFIED);
+        checkGroups(fullString, SIMPLIFIED);
         ArrayList<ObjectString> objectStrings = new ArrayList<>();
 
         for (BracketsPair parenthesesPair : parenthesesPairs) {
@@ -42,12 +45,12 @@ final class SimplifiedTokenizer {
         for (ObjectString objectString : objectStrings) {
             PatternAligner currentPatternAligner = getPatternAligner(scoreThresholds, objectString);
             switch (objectString.getName()) {
-                case "GroupEdge":
-                case "GroupEdgePosition":
-                case "ScoreFilter":
-                case "BorderFilter":
+                case GROUP_EDGE_NAME:
+                case GROUP_EDGE_POSITION_NAME:
+                case SCORE_FILTER_NAME:
+                case BORDER_FILTER_NAME:
                     break;
-                case "FuzzyMatchPattern":
+                case FUZZY_MATCH_PATTERN_NAME:
                     ArrayList<GroupEdgePosition> groupEdgePositions;
                     List<BracketsPair> innerSquareBrackets = squareBracketsPairs.stream().
                             filter(bp -> objectString.getParenthesesPair().contains(bp)).collect(Collectors.toList());
@@ -68,7 +71,7 @@ final class SimplifiedTokenizer {
                     tokenizedString.tokenizeSubstring(fuzzyMatchPattern,
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
-                case "AndPattern":
+                case AND_PATTERN_NAME:
                     ArrayList<SinglePattern> andPatternOperands = getPatternOperands(
                             tokenizedString, squareBracketsPairs, objectString);
                     ArrayList<Token> andPatternTokenizedSubstring = tokenizedString.getTokens(
@@ -78,7 +81,7 @@ final class SimplifiedTokenizer {
                     tokenizedString.tokenizeSubstring(andPattern,
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
-                case "PlusPattern":
+                case PLUS_PATTERN_NAME:
                     ArrayList<SinglePattern> plusPatternOperands = getPatternOperands(
                             tokenizedString, squareBracketsPairs, objectString);
                     ArrayList<Token> plusPatternTokenizedSubstring = tokenizedString.getTokens(
@@ -88,7 +91,7 @@ final class SimplifiedTokenizer {
                     tokenizedString.tokenizeSubstring(plusPattern,
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
-                case "OrPattern":
+                case OR_PATTERN_NAME:
                     ArrayList<SinglePattern> orPatternOperands = getPatternOperands(
                             tokenizedString, squareBracketsPairs, objectString);
                     ArrayList<Token> orPatternTokenizedSubstring = tokenizedString.getTokens(
@@ -98,7 +101,7 @@ final class SimplifiedTokenizer {
                     tokenizedString.tokenizeSubstring(orPattern,
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
-                case "MultiPattern":
+                case MULTI_PATTERN_NAME:
                     ArrayList<SinglePattern> multiPatternOperands = getPatternOperands(
                             tokenizedString, squareBracketsPairs, objectString);
                     ArrayList<Token> multiPatternTokenizedSubstring = tokenizedString.getTokens(
@@ -108,7 +111,7 @@ final class SimplifiedTokenizer {
                     tokenizedString.tokenizeSubstring(multiPattern,
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
-                case "AndOperator":
+                case AND_OPERATOR_NAME:
                     ArrayList<MultipleReadsOperator> andOperatorOperands = getPatternOperands(
                             tokenizedString, squareBracketsPairs, objectString);
                     ArrayList<Token> andOperatorTokenizedSubstring = tokenizedString.getTokens(
@@ -118,7 +121,7 @@ final class SimplifiedTokenizer {
                     tokenizedString.tokenizeSubstring(andOperator,
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
-                case "OrOperator":
+                case OR_OPERATOR_NAME:
                     ArrayList<MultipleReadsOperator> orOperatorOperands = getPatternOperands(
                             tokenizedString, squareBracketsPairs, objectString);
                     ArrayList<Token> orOperatorTokenizedSubstring = tokenizedString.getTokens(
@@ -128,14 +131,14 @@ final class SimplifiedTokenizer {
                     tokenizedString.tokenizeSubstring(orOperator,
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
-                case "NotOperator":
+                case NOT_OPERATOR_NAME:
                     ArrayList<Token> notOperatorTokenizedSubstring = tokenizedString.getTokens(
                             objectString.getDataStart(), objectString.getDataEnd());
                     NotOperator notOperator = parseNotOperator(currentPatternAligner, notOperatorTokenizedSubstring);
                     tokenizedString.tokenizeSubstring(notOperator,
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
-                case "MultipleReadsFilterPattern":
+                case MULTIPLE_READS_FILTER_PATTERN_NAME:
                     ArrayList<Token> mFilterPatternTokenizedSubstring = tokenizedString.getTokens(
                             objectString.getDataStart(), objectString.getDataEnd());
                     MultipleReadsFilterPattern mFilterPattern = (MultipleReadsFilterPattern)parseFilterPattern(
@@ -143,7 +146,7 @@ final class SimplifiedTokenizer {
                     tokenizedString.tokenizeSubstring(mFilterPattern,
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
-                case "FilterPattern":
+                case FILTER_PATTERN_NAME:
                     ArrayList<Token> filterPatternTokenizedSubstring = tokenizedString.getTokens(
                             objectString.getDataStart(), objectString.getDataEnd());
                     FilterPattern filterPattern = (FilterPattern)parseFilterPattern(currentPatternAligner,
@@ -198,21 +201,21 @@ final class SimplifiedTokenizer {
             return new ArrayList<>();
         else {
             ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
-            final String STRING_START = "GroupEdgePosition(GroupEdge('";
             String arrayString = tokenizedString.getOneString(bracketsPair.start + 1, bracketsPair.end);
             List<QuotesPair> quotesPairs = getAllQuotes(arrayString);
             int currentPosition = 0;
             int foundTokenPosition;
             do {
-                foundTokenPosition = nonQuotedIndexOf(quotesPairs, arrayString, ", " + STRING_START, currentPosition);
+                foundTokenPosition = nonQuotedIndexOf(quotesPairs, arrayString, ", " + GROUP_EDGE_POSITION_START,
+                        currentPosition);
                 if (foundTokenPosition != -1) {
                     String currentToken = arrayString.substring(currentPosition, foundTokenPosition);
-                    groupEdgePositions.add(parseGroupEdgePosition(currentToken, STRING_START));
+                    groupEdgePositions.add(parseGroupEdgePosition(currentToken));
                     currentPosition = foundTokenPosition + 2;
                 }
             } while (foundTokenPosition != -1);
             String lastToken = arrayString.substring(currentPosition);
-            groupEdgePositions.add(parseGroupEdgePosition(lastToken, STRING_START));
+            groupEdgePositions.add(parseGroupEdgePosition(lastToken));
 
             return groupEdgePositions;
         }

@@ -6,6 +6,7 @@ import static com.milaboratory.mist.parser.BracketsDetector.getAllBrackets;
 import static com.milaboratory.mist.parser.BracketsDetector.getEndByStart;
 import static com.milaboratory.mist.parser.BracketsType.*;
 import static com.milaboratory.mist.parser.SimplifiedParsers.parseScoreFilter;
+import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 
 final class ParserUtils {
     /**
@@ -38,12 +39,11 @@ final class ParserUtils {
      * @return object name
      */
     static String getObjectName(int leftParenthesisPosition, String fullString) throws ParserException {
-        final String STOP_CHARACTERS = " ([";
         ArrayList<Character> reversedNameCharacters = new ArrayList<>();
         int currentPosition = leftParenthesisPosition - 1;
 
         while ((currentPosition >= 0)
-                && (!STOP_CHARACTERS.contains(fullString.substring(currentPosition, currentPosition + 1))))
+                && (!NAME_STOP_CHARACTERS.contains(fullString.substring(currentPosition, currentPosition + 1))))
             reversedNameCharacters.add(fullString.charAt(currentPosition--));
         StringBuilder builder = new StringBuilder(reversedNameCharacters.size());
         for (int i = reversedNameCharacters.size() - 1; i >= 0; i--)
@@ -64,26 +64,25 @@ final class ParserUtils {
             case NORMAL:
                 throw new IllegalStateException("Not yet implemented");
             case SIMPLIFIED:
-                final String filterPatternName = "FilterPattern";   // also will detect MultipleReadsFilterPattern
-                final String scoreFilterName = "ScoreFilter";
-                final String simplifiedScoreFilterStart = filterPatternName + "(" + scoreFilterName + "(";
-                int minFilterLength = simplifiedScoreFilterStart.length() + 8;
+                int minFilterLength = SCORE_FILTER_START.length() + 8;
                 List<BracketsPair> parentheses = getAllBrackets(PARENTHESES, query);
                 for (int currentPosition = 0; currentPosition < query.length() - minFilterLength; currentPosition++)
-                    if (query.substring(currentPosition, currentPosition + simplifiedScoreFilterStart.length())
-                            .equals(simplifiedScoreFilterStart)) {
-                        int startCoordinate = currentPosition + filterPatternName.length();
+                    if (query.substring(currentPosition, currentPosition + SCORE_FILTER_START.length())
+                            .equals(SCORE_FILTER_START)) {
+                        int startCoordinate = currentPosition + FILTER_PATTERN_NAME.length();
                         int endCoordinate = getEndByStart(parentheses, startCoordinate);
                         int filterStartCoordinate = startCoordinate + 1;
                         int filterEndCoordinate = getEndByStart(parentheses,
-                                currentPosition + simplifiedScoreFilterStart.length() - 1);
+                                currentPosition + SCORE_FILTER_START.length() - 1);
                         String scoreFilterSubstring = query.substring(filterStartCoordinate, filterEndCoordinate + 1);
-                        int scoreThreshold = parseScoreFilter(scoreFilterSubstring, scoreFilterName + "(").getScoreThreshold();
+                        int scoreThreshold = parseScoreFilter(scoreFilterSubstring, SCORE_FILTER_NAME + "(")
+                                .getScoreThreshold();
                         int currentNestedLevel = 0;
                         for (ScoreThreshold currentScoreThreshold : scoreThresholds)
                             if (currentScoreThreshold.contains(startCoordinate, endCoordinate))
                                 currentNestedLevel++;
-                        scoreThresholds.add(new ScoreThreshold(scoreThreshold, startCoordinate, endCoordinate + 1, currentNestedLevel));
+                        scoreThresholds.add(new ScoreThreshold(scoreThreshold, startCoordinate, endCoordinate + 1,
+                                currentNestedLevel));
                     }
                 return scoreThresholds;
             default:
