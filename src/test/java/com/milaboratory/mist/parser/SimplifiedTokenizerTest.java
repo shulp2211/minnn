@@ -59,7 +59,7 @@ public class SimplifiedTokenizerTest {
     @Test
     public void randomTest() throws Exception {
         Random r = new Random();
-        for (int i = 0; i < r.nextInt(100) + 400; i++) {
+        for (int i = 0; i < r.nextInt(50) + 300; i++) {
             int nestedSingleLevel = r.nextInt(7) + 1;
             int nestedMultiLevel = r.nextInt(7) + 1;
             ArrayList<SinglePattern> singlePatterns = new ArrayList<>();

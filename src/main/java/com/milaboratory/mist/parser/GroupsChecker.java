@@ -24,6 +24,7 @@ final class GroupsChecker {
                 throw new IllegalStateException("Not yet implemented");
             case SIMPLIFIED:
                 List<BracketsPair> parenthesesPairs = getAllBrackets(PARENTHESES, query);
+                parenthesesPairs.sort(Comparator.comparingInt(bp -> bp.start));
                 List<GroupEdgesPair> groupEdgesPairs = getGroupEdgesPairsSimplified(parenthesesPairs, query);
                 checkGroupsPlacement(parenthesesPairs, groupEdgesPairs, query);
                 break;
@@ -43,20 +44,22 @@ final class GroupsChecker {
             throws ParserException {
         ArrayList<GroupEdgeToken> groupEdgeTokens = new ArrayList<>();
         ArrayList<GroupEdgesPair> groupEdgesPairs = new ArrayList<>();
-        for (BracketsPair parenthesesPair : parenthesesPairs)
+        for (int i = 0; i < parenthesesPairs.size(); i++) {
+            BracketsPair parenthesesPair = parenthesesPairs.get(i);
             if (getObjectName(parenthesesPair.start, query).equals(GROUP_EDGE_POSITION_NAME)) {
                 String groupEdgePositionString = query.substring(parenthesesPair.start - GROUP_EDGE_POSITION_NAME.length(),
                         parenthesesPair.end + 1);
                 GroupEdgePosition groupEdgePosition = parseGroupEdgePosition(groupEdgePositionString);
-                groupEdgeTokens.add(new GroupEdgeToken(groupEdgePosition, parenthesesPair));
+                groupEdgeTokens.add(new GroupEdgeToken(groupEdgePosition, parenthesesPair, i));
             }
+        }
         for (int i = 1; i < groupEdgeTokens.size(); i++)
             for (int j = i - 1; j >= 0; j--) {
                 GroupEdgeToken start = groupEdgeTokens.get(j);
                 GroupEdgeToken end = groupEdgeTokens.get(i);
                 if (end.isPair(start)) {
-                    groupEdgesPairs.add(new GroupEdgesPair(start.getGroupName(), start.getTokenStart(),
-                            start.getTokenEnd(), end.getTokenStart(), end.getTokenEnd()));
+                    groupEdgesPairs.add(new GroupEdgesPair(start.getGroupName(), start.getParenthesisIndex(),
+                            end.getParenthesisIndex()));
                     start.use();
                     end.use();
                 }
@@ -81,8 +84,10 @@ final class GroupsChecker {
                                              String query) throws ParserException {
         for (int i = 0; i < groupEdgesPairs.size(); i++) {
             GroupEdgesPair currentGroup = groupEdgesPairs.get(i);
-            ArrayList<Integer> currentGroupStartAncestors = getAncestors(parenthesesPairs, currentGroup.groupStartTokenStart);
-            ArrayList<Integer> currentGroupEndAncestors = getAncestors(parenthesesPairs, currentGroup.groupEndTokenStart);
+            ArrayList<Integer> currentGroupStartAncestors = getAncestors(parenthesesPairs,
+                    currentGroup.groupStartParenthesisIndex);
+            ArrayList<Integer> currentGroupEndAncestors = getAncestors(parenthesesPairs,
+                    currentGroup.groupEndParenthesisIndex);
             ArrayList<Integer> currentGroupNotCommonAncestors = getTreeToCommonAncestor(currentGroupStartAncestors,
                     currentGroupEndAncestors);
             checkOuterObjects(currentGroup.groupName, positionsToNames(currentGroupStartAncestors, query),
@@ -91,9 +96,9 @@ final class GroupsChecker {
                 GroupEdgesPair otherGroup = groupEdgesPairs.get(j);
                 if (currentGroup.sameName(otherGroup)) {
                     ArrayList<Integer> otherGroupStartAncestors = getAncestors(parenthesesPairs,
-                            otherGroup.groupStartTokenStart);
+                            otherGroup.groupStartParenthesisIndex);
                     ArrayList<Integer> otherGroupEndAncestors = getAncestors(parenthesesPairs,
-                            otherGroup.groupEndTokenStart);
+                            otherGroup.groupEndParenthesisIndex);
                     int closestCommonAncestorPosition = getClosestCommonAncestor(currentGroupStartAncestors,
                             currentGroupEndAncestors, otherGroupStartAncestors, otherGroupEndAncestors);
                     String closestCommonAncestor = getObjectName(closestCommonAncestorPosition, query);
@@ -154,30 +159,23 @@ final class GroupsChecker {
      * Get positions for ancestor objects for coordinate in query string (for SIMPLIFIED parser format).
      * Positions are for open parentheses for ancestor objects. They are sorted from left to right.
      *
-     * @param parenthesesPairs list of parentheses pairs; it must be initially sorted from left to right
-     * @param position position of start of GroupEdgePosition object name in query string
+     * @param parenthesesPairs list of parentheses pairs; it must be initially sorted by open parentheses coordinates
+     * @param index index of parentheses pair of this GroupEdgePosition object in parenthesesPairs list
      * @return list of open parentheses positions for ancestor objects
      */
-    private static ArrayList<Integer> getAncestors(List<BracketsPair> parenthesesPairs, int position) throws ParserException {
+    private static ArrayList<Integer> getAncestors(List<BracketsPair> parenthesesPairs, int index) throws ParserException {
         ArrayList<Integer> ancestors = new ArrayList<>();
-        int closestParenthesisIndex = parenthesesPairs.size() - 1;
-        for (int i = 0; i < parenthesesPairs.size(); i++)
-            if (position <= parenthesesPairs.get(i).start) {
-                if (position == parenthesesPairs.get(i).start)
-                    throw new IllegalArgumentException("Group edge position must not be on parenthesis!");
-                if (i == 0)
-                    throw new ParserException("Group edge position must not be outside of patterns!");
-                closestParenthesisIndex = i - 1;
-                break;
-            }
-        int currentNestedLevel = parenthesesPairs.get(closestParenthesisIndex).nestedLevel;
-        for (int i = closestParenthesisIndex; i >= 0; i--) {
+
+        int currentNestedLevel = parenthesesPairs.get(index).nestedLevel - 1;
+        for (int i = index - 1; i >= 0; i--) {
             BracketsPair currentParentheses = parenthesesPairs.get(i);
             if (currentParentheses.nestedLevel <= currentNestedLevel) {
                 ancestors.add(currentParentheses.start);
                 currentNestedLevel--;
             }
         }
+        if (ancestors.size() == 0)
+            throw new ParserException("GroupEdgePosition objects must not be outside of patterns!");
         Collections.reverse(ancestors);
         return ancestors;
     }
@@ -237,11 +235,21 @@ final class GroupsChecker {
     private static class GroupEdgeToken {
         private final GroupEdgePosition groupEdgePosition;
         private final BracketsPair parenthesesPair;
+        private final int parenthesesPairIndex;
         private boolean notUsed = true;
 
-        GroupEdgeToken(GroupEdgePosition groupEdgePosition, BracketsPair parenthesesPair) {
+        GroupEdgeToken(GroupEdgePosition groupEdgePosition, BracketsPair parenthesesPair, int parenthesesPairIndex) {
             this.groupEdgePosition = groupEdgePosition;
             this.parenthesesPair = parenthesesPair;
+            this.parenthesesPairIndex = parenthesesPairIndex;
+        }
+
+        private int getTokenStart() {
+            return parenthesesPair.start - GROUP_EDGE_POSITION_NAME.length();
+        }
+
+        private int getTokenEnd() {
+            return parenthesesPair.end + 1;
         }
 
         String getGroupName() {
@@ -252,12 +260,8 @@ final class GroupsChecker {
             return groupEdgePosition.getGroupEdge().isStart();
         }
 
-        int getTokenStart() {
-            return parenthesesPair.start - GROUP_EDGE_POSITION_NAME.length();
-        }
-
-        int getTokenEnd() {
-            return parenthesesPair.end + 1;
+        int getParenthesisIndex() {
+            return parenthesesPairIndex;
         }
 
         String getString(String query) {
@@ -286,18 +290,13 @@ final class GroupsChecker {
 
     private static class GroupEdgesPair {
         final String groupName;
-        final int groupStartTokenStart;
-        final int groupStartTokenEnd;
-        final int groupEndTokenStart;
-        final int groupEndTokenEnd;
+        final int groupStartParenthesisIndex;
+        final int groupEndParenthesisIndex;
 
-        GroupEdgesPair(String groupName, int groupStartTokenStart, int groupStartTokenEnd,
-                       int groupEndTokenStart, int groupEndTokenEnd) {
+        GroupEdgesPair(String groupName, int groupStartParenthesisIndex, int groupEndParenthesisIndex) {
             this.groupName = groupName;
-            this.groupStartTokenStart = groupStartTokenStart;
-            this.groupStartTokenEnd = groupStartTokenEnd;
-            this.groupEndTokenStart = groupEndTokenStart;
-            this.groupEndTokenEnd = groupEndTokenEnd;
+            this.groupStartParenthesisIndex = groupStartParenthesisIndex;
+            this.groupEndParenthesisIndex = groupEndParenthesisIndex;
         }
 
         boolean sameName(GroupEdgesPair other) {
