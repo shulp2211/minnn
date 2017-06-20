@@ -198,7 +198,7 @@ public final class FuzzyMatchPattern extends SinglePattern {
             private Match takeFairByScore() {
                 if (!sortingPerformed) {
                     fillAllMatchesForFairSorting();
-                    Arrays.sort(allMatches, Comparator.comparingInt(Match::getScore).reversed());
+                    Arrays.sort(allMatches, Comparator.comparingLong(Match::getScore).reversed());
                     sortingPerformed = true;
                 }
 
@@ -225,7 +225,7 @@ public final class FuzzyMatchPattern extends SinglePattern {
              */
             private Match generateMatch(Alignment<NucleotideSequence> alignment) {
                 Range foundRange = alignment.getSequence2Range();
-                int foundScore = (int)alignment.getScore();
+                long foundScore = (long)alignment.getScore();
                 MatchedRange matchedRange = new MatchedRange(target, targetId, 0, foundRange);
                 ArrayList<MatchedItem> matchedItems = new ArrayList<>();
                 matchedItems.add(matchedRange);

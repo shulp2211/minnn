@@ -117,7 +117,7 @@ public final class SorterByScore extends ApproximateSorter {
             if (!sortingPerformed) {
                 allMatchesFiltered = fillArrayForFairSorting(inputPorts, numberOfPorts, true);
                 filteredMatchesCount = allMatchesFiltered.length;
-                Arrays.sort(allMatchesFiltered, Comparator.comparingInt(Match::getScore).reversed());
+                Arrays.sort(allMatchesFiltered, Comparator.comparingLong(Match::getScore).reversed());
                 sortingPerformed = true;
             }
 
@@ -158,14 +158,14 @@ public final class SorterByScore extends ApproximateSorter {
             while (tableOfIterations.getNumberOfEndedPorts() < numberOfPorts) {
                 if (combineScoresBySum) {
                     int bestDeltaPort = 0;
-                    float bestDelta = Float.NEGATIVE_INFINITY;
+                    long bestDelta = Long.MIN_VALUE;
                     for (int i = 0; i < numberOfPorts; i++) {
                         if (tableOfIterations.isPortEndReached(i)) continue;
                         int match1Number = (currentIndexes[i] == 0) ? 0 : currentIndexes[i] - 1;
                         int match2Number = (currentIndexes[i] == 0) ? 1 : currentIndexes[i];
                         Match match1 = takenMatches.get(i).get(match1Number);
                         Match match2 = takenMatches.get(i).get(match2Number);
-                        float currentDelta = match2.getScore() - match1.getScore();
+                        long currentDelta = match2.getScore() - match1.getScore();
                         if (currentDelta > bestDelta) {
                             bestDelta = currentDelta;
                             bestDeltaPort = i;
@@ -174,7 +174,7 @@ public final class SorterByScore extends ApproximateSorter {
                     currentIndexes[bestDeltaPort] += 1;
                 } else {
                     int bestScorePort = 0;
-                    float bestScore = Float.NEGATIVE_INFINITY;
+                    long bestScore = Long.MIN_VALUE;
                     for (int i = 0; i < numberOfPorts; i++) {
                         if (tableOfIterations.isPortEndReached(i)) continue;
                         Match currentMatch = takenMatches.get(i).get(currentIndexes[i]);

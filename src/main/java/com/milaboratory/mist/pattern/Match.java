@@ -7,14 +7,14 @@ import java.util.ArrayList;
 
 public final class Match {
     private final int numberOfPatterns;
-    private final int score;
+    private final long score;
 
     /**
      * This list contains both matched ranges and matched group edges.
      */
     private final ArrayList<MatchedItem> matchedItems;
 
-    public Match(int numberOfPatterns, int score, ArrayList<MatchedItem> matchedItems) {
+    public Match(int numberOfPatterns, long score, ArrayList<MatchedItem> matchedItems) {
         if (score > 0) throw new IllegalArgumentException("Score must not be positive!");
         this.numberOfPatterns = numberOfPatterns;
         this.score = score;
@@ -131,7 +131,7 @@ public final class Match {
         return numberOfPatterns;
     }
 
-    public int getScore() {
+    public long getScore() {
         return score;
     }
 }

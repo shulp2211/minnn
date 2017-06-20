@@ -20,7 +20,7 @@ public interface PatternAligner {
      *
      * @return penalty threshold
      */
-    int penaltyThreshold();
+    long penaltyThreshold();
 
     /**
      * Calculate penalty value for given overlap in the target.
@@ -30,7 +30,7 @@ public interface PatternAligner {
      * @param overlapLength length
      * @return negative penalty value
      */
-    int overlapPenalty(NSequenceWithQuality target, int overlapOffset, int overlapLength);
+    long overlapPenalty(NSequenceWithQuality target, int overlapOffset, int overlapLength);
 
     /**
      * Max errors to use in bitap matcher.
@@ -44,7 +44,7 @@ public interface PatternAligner {
      *
      * @return not result score
      */
-    default int notResultScore() {
+    default long notResultScore() {
         return 0;
     }
 
@@ -70,7 +70,7 @@ public interface PatternAligner {
      *
      * @return copy of this PatternAligner with more strict penalty threshold
      */
-    PatternAligner overridePenaltyThreshold(int newThresholdValue);
+    PatternAligner overridePenaltyThreshold(long newThresholdValue);
 
     /**
      * Return new pattern with more strict maxOverlap threshold.

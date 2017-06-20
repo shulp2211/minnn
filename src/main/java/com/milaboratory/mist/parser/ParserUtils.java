@@ -27,8 +27,7 @@ final class ParserUtils {
      * @param query query string as it came to the parser
      * @return map of start (inclusive) and end (exclusive) positions for fuzzy match pattern areas
      */
-    static HashMap<Integer, Integer> findFuzzyMatchPatterns(String query) throws ParserException {
-        return null;
+    static void findFuzzyMatchPatterns(String query) throws ParserException {
     }
 
     /**
@@ -75,7 +74,7 @@ final class ParserUtils {
                         int filterEndCoordinate = getEndByStart(parentheses,
                                 currentPosition + SCORE_FILTER_START.length() - 1);
                         String scoreFilterSubstring = query.substring(filterStartCoordinate, filterEndCoordinate + 1);
-                        int scoreThreshold = parseScoreFilter(scoreFilterSubstring, SCORE_FILTER_NAME + "(")
+                        long scoreThreshold = parseScoreFilter(scoreFilterSubstring, SCORE_FILTER_NAME + "(")
                                 .getScoreThreshold();
                         int currentNestedLevel = 0;
                         for (ScoreThreshold currentScoreThreshold : scoreThresholds)

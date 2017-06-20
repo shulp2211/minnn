@@ -231,9 +231,9 @@ public class PlusPatternTest {
                     randomGenerator.nextBoolean()).take() != null);
 
             for (Boolean fairSorting: new Boolean[] {false, true}) {
-                int errorScorePenalty = -randomGenerator.nextInt(50) - 1;
+                long errorScorePenalty = -randomGenerator.nextInt(50) - 1;
                 int maxOverlap = randomGenerator.nextInt(5) - 1;
-                int plusPenaltyThreshold;
+                long plusPenaltyThreshold;
                 boolean misplacedPatterns = false;
                 if (isMatchingPattern1) {
                     Match match1 = pattern1.match(targetQ).getBestMatch(fairSorting);

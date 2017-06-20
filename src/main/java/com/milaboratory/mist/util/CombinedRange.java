@@ -4,7 +4,7 @@ import com.milaboratory.core.Range;
 
 class CombinedRange {
     private final Range range;
-    private final int scorePenalty;
+    private final long scorePenalty;
 
     /**
      * CombinedRange used to store result when combining multiple ranges and calculating score penalty
@@ -13,7 +13,7 @@ class CombinedRange {
      * @param range resulting range
      * @param scorePenalty score penalty for intersections (zero or negative)
      */
-    CombinedRange(Range range, int scorePenalty) {
+    CombinedRange(Range range, long scorePenalty) {
         this.range = range;
         this.scorePenalty = scorePenalty;
     }
@@ -22,7 +22,7 @@ class CombinedRange {
         return range;
     }
 
-    int getScorePenalty() {
+    long getScorePenalty() {
         return scorePenalty;
     }
 }

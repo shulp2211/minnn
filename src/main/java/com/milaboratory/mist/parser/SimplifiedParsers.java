@@ -150,9 +150,9 @@ final class SimplifiedParsers {
         if (!str.substring(str.length() - 1).equals(")"))
             throw new ParserException("Missing closing parenthesis in " + str);
 
-        int scoreThreshold;
+        long scoreThreshold;
         try {
-            scoreThreshold = Integer.parseInt(str.substring(startingPart.length(), str.length() - 1));
+            scoreThreshold = Long.parseLong(str.substring(startingPart.length(), str.length() - 1));
         } catch (NumberFormatException e) {
             throw new ParserException("Failed to parse score threshold ("
                     + str.substring(startingPart.length(), str.length() - 1) + ") in " + str);

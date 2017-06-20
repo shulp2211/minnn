@@ -111,19 +111,19 @@ public class CommonTestUtils {
         return getTestPatternAligner(Integer.MIN_VALUE, bitapMaxErrors, 0, -1);
     }
 
-    public static PatternAligner getTestPatternAligner(int penaltyThreshold, int bitapMaxErrors, int notResultScore,
-                                                       int singleOverlapPenalty) {
+    public static PatternAligner getTestPatternAligner(long penaltyThreshold, int bitapMaxErrors, long notResultScore,
+                                                       long singleOverlapPenalty) {
         return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty, true);
     }
 
-    public static PatternAligner getTestPatternAligner(int penaltyThreshold, int bitapMaxErrors, int notResultScore,
-                                                       int singleOverlapPenalty, boolean compatible) {
+    public static PatternAligner getTestPatternAligner(long penaltyThreshold, int bitapMaxErrors, long notResultScore,
+                                                       long singleOverlapPenalty, boolean compatible) {
         return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty,
                 compatible, -1);
     }
 
-    public static PatternAligner getTestPatternAligner(int penaltyThreshold, int bitapMaxErrors, int notResultScore,
-                                                        int singleOverlapPenalty, boolean compatible, int maxOverlap) {
+    public static PatternAligner getTestPatternAligner(long penaltyThreshold, int bitapMaxErrors, long notResultScore,
+                                                        long singleOverlapPenalty, boolean compatible, int maxOverlap) {
         return new PatternAligner() {
             @Override
             public Alignment<NucleotideSequence> align(NucleotideSequence pattern, NSequenceWithQuality target,
@@ -136,12 +136,12 @@ public class CommonTestUtils {
             }
 
             @Override
-            public int penaltyThreshold() {
+            public long penaltyThreshold() {
                 return penaltyThreshold;
             }
 
             @Override
-            public int overlapPenalty(NSequenceWithQuality target, int overlapOffset, int overlapLength) {
+            public long overlapPenalty(NSequenceWithQuality target, int overlapOffset, int overlapLength) {
                 return singleOverlapPenalty * overlapLength;
             }
 
@@ -151,7 +151,7 @@ public class CommonTestUtils {
             }
 
             @Override
-            public int notResultScore() {
+            public long notResultScore() {
                 return notResultScore;
             }
 
@@ -166,7 +166,7 @@ public class CommonTestUtils {
             }
 
             @Override
-            public PatternAligner overridePenaltyThreshold(int newThresholdValue) {
+            public PatternAligner overridePenaltyThreshold(long newThresholdValue) {
                 return getTestPatternAligner(newThresholdValue, bitapMaxErrors, notResultScore, singleOverlapPenalty,
                         compatible, maxOverlap);
             }

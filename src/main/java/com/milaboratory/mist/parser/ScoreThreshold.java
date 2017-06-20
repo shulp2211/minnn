@@ -3,7 +3,7 @@ package com.milaboratory.mist.parser;
 final class ScoreThreshold {
     private final int start;
     private final int end;
-    final int threshold;
+    final long threshold;
     final int nestedLevel;
 
     /**
@@ -15,7 +15,7 @@ final class ScoreThreshold {
      * @param nestedLevel number of score thresholds outside of this threshold;
      *                    threshold with higher nestedLevel has higher priority
      */
-    ScoreThreshold(int threshold, int start, int end, int nestedLevel) {
+    ScoreThreshold(long threshold, int start, int end, int nestedLevel) {
         this.threshold = threshold;
         this.start = start;
         this.end = end;

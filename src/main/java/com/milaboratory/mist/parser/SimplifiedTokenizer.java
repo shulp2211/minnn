@@ -232,7 +232,7 @@ final class SimplifiedTokenizer {
     private PatternAligner getPatternAligner(ArrayList<ScoreThreshold> scoreThresholds, ObjectString objectString)
             throws ParserException {
         int currentNestedLevel = -1;
-        int currentThreshold = 0;
+        long currentThreshold = 0;
         for (ScoreThreshold scoreThreshold : scoreThresholds)
             if (scoreThreshold.contains(objectString.getFullStringStart(), objectString.getFullStringEnd())
                     && (scoreThreshold.nestedLevel > currentNestedLevel)) {

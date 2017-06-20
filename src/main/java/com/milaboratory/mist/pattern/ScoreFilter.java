@@ -1,9 +1,9 @@
 package com.milaboratory.mist.pattern;
 
 public final class ScoreFilter implements Filter {
-    private final int scoreThreshold;
+    private final long scoreThreshold;
 
-    public ScoreFilter(int scoreThreshold) {
+    public ScoreFilter(long scoreThreshold) {
         this.scoreThreshold = scoreThreshold;
     }
 
@@ -19,7 +19,7 @@ public final class ScoreFilter implements Filter {
         else return match;
     }
 
-    public int getScoreThreshold() {
+    public long getScoreThreshold() {
         return scoreThreshold;
     }
 }

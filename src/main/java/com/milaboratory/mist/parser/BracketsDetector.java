@@ -1,7 +1,5 @@
 package com.milaboratory.mist.parser;
 
-import com.milaboratory.mist.pattern.GroupEdge;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -175,8 +173,7 @@ final class BracketsDetector {
      * @param query query string as it came to the parser
      * @return map of group edges and their positions in the query string
      */
-    static HashMap<GroupEdge, Integer> getGroupEdgePositions(String query) throws ParserException {
-        return null;
+    static void getGroupEdgePositions(String query) throws ParserException {
     }
 
     /**
@@ -185,8 +182,7 @@ final class BracketsDetector {
      * @param str string to search: it may be entire parser query or substring from TokenizedString
      * @return map of bracket pairs and corresponding read numbers
      */
-    static HashMap<BracketsPair, Integer> getReads(String str) throws ParserException {
-        return null;
+    static void getReads(String str) throws ParserException {
     }
 
     /**
@@ -195,8 +191,7 @@ final class BracketsDetector {
      * @param query query string as it came to the parser
      * @return map of curly braces pairs and corresponding score limits
      */
-    static HashMap<BracketsPair, Float> getScoreLimits(String query) throws ParserException {
-        return null;
+    static void getScoreLimits(String query) throws ParserException {
     }
 
     /**
@@ -205,8 +200,7 @@ final class BracketsDetector {
      * @param query query string as it came to the parser
      * @return map of parentheses and their numbers of nucleotides for BorderFilter
      */
-    static HashMap<BracketsPair, Integer> getBorderFilterParentheses(String query) throws ParserException {
-        return null;
+    static void getBorderFilterParentheses(String query) throws ParserException {
     }
 
     /**

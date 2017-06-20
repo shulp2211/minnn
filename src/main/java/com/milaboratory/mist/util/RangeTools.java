@@ -93,7 +93,7 @@ public final class RangeTools {
         if (ranges.length == 0)
             throw new IllegalArgumentException("Cannot combine 0 ranges.");
 
-        int totalPenalty = 0;
+        long totalPenalty = 0;
         for (int i = 0; i < ranges.length; i++)
             for (int j = i + 1; j < ranges.length; j++) {
                 Range intersection = ranges[i].intersection(ranges[j]);

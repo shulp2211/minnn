@@ -97,7 +97,7 @@ public abstract class ApproximateSorter {
                 boolean matchExist = false;
                 int bestMatchPort = 0;
                 int bestCoordinate = Integer.MAX_VALUE;
-                float bestScore = Float.NEGATIVE_INFINITY;
+                long bestScore = Long.MIN_VALUE;
                 for (int i = 0; i < matches.length; i++)
                     if ((matches[i] != null)
                         && ((sortingByScore && (matches[i].getScore() > bestScore))
@@ -134,8 +134,8 @@ public abstract class ApproximateSorter {
      * @param matches matches from which we will get the scores
      * @return combined score
      */
-    protected int combineMatchScores(Match... matches) {
-        int resultScore;
+    protected long combineMatchScores(Match... matches) {
+        long resultScore;
         if (combineScoresBySum) {
             resultScore = 0;
             for (Match match : matches)
