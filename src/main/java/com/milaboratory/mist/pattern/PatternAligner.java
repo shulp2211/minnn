@@ -66,6 +66,14 @@ public interface PatternAligner {
     boolean compatible(PatternAligner otherAligner);
 
     /**
+     * Fixed left border position for alignment if it is specified; -1 if not specified.
+     * If left border is specified, global aligner is used.
+     *
+     * @return left border position for alignment if it is specified; -1 if not specified
+     */
+    default int leftBorder() { return -1; }
+
+    /**
      * Return new pattern with more strict penalty threshold.
      *
      * @return copy of this PatternAligner with more strict penalty threshold
@@ -78,4 +86,12 @@ public interface PatternAligner {
      * @return copy of this PatternAligner with more strict maxOverlap threshold
      */
     PatternAligner overrideMaxOverlap(int newMaxOverlap);
+
+    /**
+     * Set left border for alignment. When it is set, global aligner is used.
+     *
+     * @param leftBorder left border for alignment
+     * @return copy of this PatternAligner with fixed left border
+     */
+    PatternAligner setLeftBorder(int leftBorder);
 }

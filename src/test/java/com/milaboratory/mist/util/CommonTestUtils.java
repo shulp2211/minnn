@@ -1,6 +1,7 @@
 package com.milaboratory.mist.util;
 
 import cc.redberry.pipe.OutputPort;
+import com.milaboratory.core.alignment.Aligner;
 import com.milaboratory.core.alignment.Alignment;
 import com.milaboratory.core.alignment.BandedLinearAligner;
 import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
@@ -123,16 +124,32 @@ public class CommonTestUtils {
     }
 
     public static PatternAligner getTestPatternAligner(long penaltyThreshold, int bitapMaxErrors, long notResultScore,
-                                                        long singleOverlapPenalty, boolean compatible, int maxOverlap) {
+                                                       long singleOverlapPenalty, boolean compatible, int maxOverlap) {
+        return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty,
+                compatible, maxOverlap, -1);
+    }
+
+    public static PatternAligner getTestPatternAligner(long penaltyThreshold, int bitapMaxErrors, long notResultScore,
+                                                       long singleOverlapPenalty, boolean compatible, int maxOverlap,
+                                                       int fixedLeftBorder) {
         return new PatternAligner() {
             @Override
             public Alignment<NucleotideSequence> align(NucleotideSequence pattern, NSequenceWithQuality target,
                                                        int rightMatchPosition) {
-                int leftMatchPosition = rightMatchPosition + 1 - pattern.size() - bitapMaxErrors;
-                if (leftMatchPosition < 0) leftMatchPosition = 0;
-                return BandedLinearAligner.alignLeftAdded(getTestScoring(), pattern, target.getSequence(), 0,
-                        pattern.size(), 0, leftMatchPosition, rightMatchPosition - leftMatchPosition + 1,
-                        bitapMaxErrors, bitapMaxErrors);
+                if (fixedLeftBorder == -1) {
+                    int leftMatchPosition = rightMatchPosition + 1 - pattern.size() - bitapMaxErrors;
+                    if (leftMatchPosition < 0) leftMatchPosition = 0;
+                    return BandedLinearAligner.alignLeftAdded(getTestScoring(), pattern, target.getSequence(),
+                            0, pattern.size(), 0, leftMatchPosition,
+                            rightMatchPosition - leftMatchPosition + 1, bitapMaxErrors, bitapMaxErrors);
+                } else {
+                    NucleotideSequence targetPart = target.getSubSequence(fixedLeftBorder, rightMatchPosition + 1)
+                            .getSequence();
+                    Alignment<NucleotideSequence> partAlignment = Aligner.alignGlobal(getTestScoring(), pattern, targetPart);
+                    return new Alignment<>(pattern, partAlignment.getAbsoluteMutations(),
+                            partAlignment.getSequence1Range(), partAlignment.getSequence2Range().move(fixedLeftBorder),
+                            partAlignment.getScore());
+                }
             }
 
             @Override
@@ -168,13 +185,19 @@ public class CommonTestUtils {
             @Override
             public PatternAligner overridePenaltyThreshold(long newThresholdValue) {
                 return getTestPatternAligner(newThresholdValue, bitapMaxErrors, notResultScore, singleOverlapPenalty,
-                        compatible, maxOverlap);
+                        compatible, maxOverlap, fixedLeftBorder);
             }
 
             @Override
             public PatternAligner overrideMaxOverlap(int newMaxOverlap) {
                 return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty,
-                        compatible, newMaxOverlap);
+                        compatible, newMaxOverlap, fixedLeftBorder);
+            }
+
+            @Override
+            public PatternAligner setLeftBorder(int leftBorder) {
+                return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty,
+                        compatible, maxOverlap, leftBorder);
             }
         };
     }
