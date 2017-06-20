@@ -115,15 +115,21 @@ public abstract class ApproximateSorter {
                 NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
                 byte targetId = matches[0].getMatchedRange().getTargetId();
                 Range[] ranges = new Range[matches.length];
+                ArrayList<ArrayList<MatchedGroupEdge>> matchedGroupEdgesFromOperands = new ArrayList<>();
 
                 for (int i = 0; i < matches.length; i++) {
-                    matchedItems.addAll(matches[i].getMatchedGroupEdges());
+                    matchedGroupEdgesFromOperands.add(new ArrayList<>());
+                    matchedGroupEdgesFromOperands.get(i).addAll(matches[i].getMatchedGroupEdges());
                     ranges[i] = matches[i].getRange();
                 }
 
-                CombinedRange combinedRange = combineRanges(patternAligner, target, ranges);
+                Arrays.sort(ranges, Comparator.comparingInt(Range::getLower));
+                CombinedRange combinedRange = combineRanges(patternAligner, matchedGroupEdgesFromOperands,
+                        target, ranges);
+                matchedItems.addAll(combinedRange.getMatchedGroupEdges());
                 matchedItems.add(new MatchedRange(target, targetId, 0, combinedRange.getRange()));
-                return new Match(1, combineMatchScores(matches) + combinedRange.getScorePenalty(), matchedItems);
+                return new Match(1, combineMatchScores(matches) + combinedRange.getScorePenalty(),
+                        matchedItems);
             }
     }
 

@@ -27,4 +27,8 @@ public final class MatchedGroupEdge extends MatchedItem {
     public int getPosition() {
         return position;
     }
+
+    public MatchedGroupEdge overridePosition(int position) {
+        return new MatchedGroupEdge(target, targetId, patternIndex, groupEdge, position);
+    }
 }

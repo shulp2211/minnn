@@ -2,7 +2,10 @@ package com.milaboratory.mist.util;
 
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.mist.pattern.MatchedGroupEdge;
 import com.milaboratory.mist.pattern.PatternAligner;
+
+import java.util.ArrayList;
 
 public final class RangeTools {
     /**
@@ -82,25 +85,43 @@ public final class RangeTools {
     }
 
     /**
-     * Combine ranges in target and calculate score penalty for intersections.
+     * Combine ranges in target, calculate score penalty for intersections and update coordinates in matched group edges.
      *
      * @param patternAligner pattern aligner; used to get score penalties for intersections
+     * @param matchedGroupEdgesFromOperands matched group edges without corrections for intersections
      * @param target target
-     * @param ranges ranges to combine
-     * @return combined range and total score penalty
+     * @param ranges ranges to combine, must be sorted by left border ascending
+     * @return matched group edges with corrections, combined range and total score penalty
      */
-    static CombinedRange combineRanges(PatternAligner patternAligner, NSequenceWithQuality target, Range... ranges) {
+    static CombinedRange combineRanges(PatternAligner patternAligner,
+            ArrayList<ArrayList<MatchedGroupEdge>> matchedGroupEdgesFromOperands, NSequenceWithQuality target,
+            Range... ranges) {
+        ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
+
         if (ranges.length == 0)
             throw new IllegalArgumentException("Cannot combine 0 ranges.");
 
         long totalPenalty = 0;
-        for (int i = 0; i < ranges.length; i++)
-            for (int j = i + 1; j < ranges.length; j++) {
+        for (int i = 0; i < ranges.length; i++) {
+            int maxIntersection = 0;
+            for (int j = i - 1; j >= 0; j--) {
                 Range intersection = ranges[i].intersection(ranges[j]);
-                if (intersection != null)
+                if (intersection != null) {
                     totalPenalty += patternAligner.overlapPenalty(target, intersection.getLower(), intersection.length());
+                    maxIntersection = Math.max(maxIntersection, intersection.length());
+                }
             }
+            if (maxIntersection > 0) {
+                for (MatchedGroupEdge matchedGroupEdge : matchedGroupEdgesFromOperands.get(i)) {
+                    if (matchedGroupEdge.getPosition() >= ranges[i].getLower() + maxIntersection)
+                        matchedGroupEdges.add(matchedGroupEdge);
+                    else
+                        matchedGroupEdges.add(matchedGroupEdge.overridePosition(ranges[i].getLower() + maxIntersection));
+                }
+            } else
+                matchedGroupEdges.addAll(matchedGroupEdgesFromOperands.get(i));
+        }
 
-        return new CombinedRange(combineRanges(ranges), totalPenalty);
+        return new CombinedRange(matchedGroupEdges, combineRanges(ranges), totalPenalty);
     }
 }
