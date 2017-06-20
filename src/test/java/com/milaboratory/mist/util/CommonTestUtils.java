@@ -108,7 +108,7 @@ public class CommonTestUtils {
     }
 
     public static PatternAligner getTestPatternAligner(int bitapMaxErrors) {
-        return getTestPatternAligner(Integer.MIN_VALUE, bitapMaxErrors, 0, -1);
+        return getTestPatternAligner(Long.MIN_VALUE, bitapMaxErrors, 0, -1);
     }
 
     public static PatternAligner getTestPatternAligner(long penaltyThreshold, int bitapMaxErrors, long notResultScore,

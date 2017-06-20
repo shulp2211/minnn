@@ -148,7 +148,7 @@ public abstract class ApproximateSorter {
                 if (match != null)
                     resultScore += match.getScore();
         } else {
-            resultScore = Integer.MIN_VALUE;
+            resultScore = Long.MIN_VALUE;
             for (Match match : matches)
                 if (match != null)
                     if (match.getScore() > resultScore)

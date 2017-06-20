@@ -251,7 +251,7 @@ public class AndPatternTest {
 
                 boolean andMustBeFound = isMatchingPattern1;
                 if (tooBigOverlap) {
-                    andPenaltyThreshold = Integer.MIN_VALUE;
+                    andPenaltyThreshold = Long.MIN_VALUE;
                     ArrayList<Range> ranges1 = new ArrayList<>();
                     ArrayList<Range> ranges2 = new ArrayList<>();
                     OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(randomGenerator.nextBoolean(), fairSorting);

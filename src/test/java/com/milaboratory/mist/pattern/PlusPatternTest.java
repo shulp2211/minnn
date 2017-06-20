@@ -251,7 +251,7 @@ public class PlusPatternTest {
 
                 boolean plusMustBeFound = isMatchingPattern1;
                 if (misplacedPatterns) {
-                    plusPenaltyThreshold = Integer.MIN_VALUE;
+                    plusPenaltyThreshold = Long.MIN_VALUE;
                     ArrayList<Range> ranges1 = new ArrayList<>();
                     ArrayList<Range> ranges2 = new ArrayList<>();
                     OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(randomGenerator.nextBoolean(), fairSorting);
