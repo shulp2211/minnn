@@ -7,6 +7,7 @@ import com.milaboratory.mist.pattern.*;
 
 import java.util.*;
 
+import static com.milaboratory.mist.pattern.MatchValidationType.*;
 import static com.milaboratory.mist.util.RangeTools.*;
 
 public abstract class ApproximateSorter {
@@ -35,11 +36,9 @@ public abstract class ApproximateSorter {
         this.combineScoresBySum = combineScoresBySum;
         this.fairSorting = fairSorting;
         this.matchValidationType = matchValidationType;
-        if ((multipleReads && ((matchValidationType == MatchValidationType.INTERSECTION)
-                || (matchValidationType == MatchValidationType.ORDER)
-                || (matchValidationType == MatchValidationType.FIRST))) || (!multipleReads
-                && ((matchValidationType == MatchValidationType.LOGICAL_AND)
-                || (matchValidationType == MatchValidationType.LOGICAL_OR))))
+        if ((multipleReads && ((matchValidationType == INTERSECTION)
+                || (matchValidationType == ORDER) || (matchValidationType == FOLLOWING) || (matchValidationType == FIRST)))
+                || (!multipleReads && ((matchValidationType == LOGICAL_AND) || (matchValidationType == LOGICAL_OR))))
             throw new IllegalArgumentException("Invalid combination of multipleReads and matchValidationType flags!");
     }
 
@@ -56,7 +55,7 @@ public abstract class ApproximateSorter {
      * (by combining ranges for single read or by numbering the matched ranges for multiple reads).
      *
      * @param sortingByScore true if we use sorting by score, false if we use sorting by coordinate;
-     *                       it really used only for matchValidationType == MatchValidationType.FIRST
+     *                       it really used only for matchValidationType == FIRST
      * @param matches input matches
      * @return combined match
      */
@@ -68,7 +67,7 @@ public abstract class ApproximateSorter {
             boolean allMatchesAreNull = true;
             for (Match match : matches) {
                 if (match == null) {
-                    if (matchValidationType == MatchValidationType.LOGICAL_OR) {
+                    if (matchValidationType == LOGICAL_OR) {
                         matchedItems.add(new NullMatchedRange(patternIndex++));
                         continue;
                     } else throw new IllegalStateException("Found null match when MatchValidationType doesn't allow them");
@@ -93,7 +92,7 @@ public abstract class ApproximateSorter {
             if (allMatchesAreNull) return null;
             return new Match(patternIndex, combineMatchScores(matches), matchedItems);
         } else
-            if (matchValidationType == MatchValidationType.FIRST) {
+            if (matchValidationType == FIRST) {
                 boolean matchExist = false;
                 int bestMatchPort = 0;
                 int bestCoordinate = Integer.MAX_VALUE;
@@ -125,7 +124,7 @@ public abstract class ApproximateSorter {
 
                 Arrays.sort(ranges, Comparator.comparingInt(Range::getLower));
                 CombinedRange combinedRange = combineRanges(patternAligner, matchedGroupEdgesFromOperands,
-                        target, ranges);
+                        target, matchValidationType == FOLLOWING, ranges);
                 matchedItems.addAll(combinedRange.getMatchedGroupEdges());
                 matchedItems.add(new MatchedRange(target, targetId, 0, combinedRange.getRange()));
                 return new Match(1, combineMatchScores(matches) + combinedRange.getScorePenalty(),
@@ -158,12 +157,12 @@ public abstract class ApproximateSorter {
     }
 
     /**
-     * Returns true if null match taken from operand does not guarantee that all operator will not match.
+     * Returns true if null match taken from operand does not guarantee that this operator will not match.
      *
      * @return true if null matches taken from operands must not automatically discard the current combination
      */
     protected boolean areNullMatchesAllowed() {
-        return ((matchValidationType == MatchValidationType.LOGICAL_OR) || (matchValidationType == MatchValidationType.FIRST));
+        return ((matchValidationType == LOGICAL_OR) || (matchValidationType == FIRST));
     }
 
     /**
@@ -261,16 +260,19 @@ public abstract class ApproximateSorter {
 
                 return result;
             case ORDER:
+            case FOLLOWING:
                 Range currentRange;
                 Range previousRange;
 
                 for (int i = 1; i < matches.length; i++) {
                     if (matches[i] == null) continue;
+                    NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
                     currentRange = matches[i].getRange();
                     previousRange = matches[i - 1].getRange();
                     if ((previousRange.getLower() >= currentRange.getLower())
                             || checkFullIntersection(previousRange, currentRange)
-                            || checkOverlap(matches[0].getMatchedRange().getTarget(), previousRange, currentRange)) {
+                            || checkOverlap(target, previousRange, currentRange)
+                            || checkInsertionPenalty(target, previousRange, currentRange)) {
                         result = new IncompatibleIndexes(i - 1, indexes[i - 1], i, indexes[i]);
                         break;
                     }
@@ -290,6 +292,19 @@ public abstract class ApproximateSorter {
         return (intersection != null) && (((patternAligner.maxOverlap() != -1) && (patternAligner.maxOverlap()
                 < intersection.length())) || (patternAligner.overlapPenalty(target, intersection.getLower(),
                 intersection.length()) < patternAligner.penaltyThreshold()));
+    }
+
+    /**
+     * Check is insertion penalty between ranges too big to invalidate this combination of ranges.
+     *
+     * @return true if insertion penalty is too big and this combination of ranges is invalid
+     */
+    private boolean checkInsertionPenalty(NSequenceWithQuality target, Range range0, Range range1) {
+        if (matchValidationType == FOLLOWING) {
+            int insertionLength = range1.getLower() - range0.getUpper();
+            return (insertionLength > 0) && (patternAligner.insertionPenalty(target, range0.getUpper(), insertionLength)
+                    < patternAligner.penaltyThreshold());
+        } else return false;
     }
 
     protected class IncompatibleIndexes {
@@ -420,8 +435,9 @@ public abstract class ApproximateSorter {
          * already know that matches with that indexes have misplaced ranges. Also this function automatically
          * marks found incompatible combinations as already returned.
          *
-         * @param allNextIncompatible true if operand matches are sorted by coordinate and ranges must be in order
-         *                            (Plus pattern); otherwise false. In fair sorting it must be always false.
+         * @param allNextIncompatible true if operand matches are sorted by coordinate and matchValidationType == ORDER;
+         *                            otherwise false. In fair sorting it must be always false. This flag marks that
+         *                            next indexes can be considered incompatible to speed up search.
          * @param indexes indexes of matches
          * @return true if there are no incompatible indexes found; false if they are found
          */

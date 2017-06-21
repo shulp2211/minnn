@@ -9,28 +9,24 @@ import com.milaboratory.mist.util.SorterByScore;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static com.milaboratory.mist.pattern.MatchValidationType.FIRST;
+import static com.milaboratory.mist.pattern.MatchValidationType.FOLLOWING;
 
-/**
- * This pattern takes multiple SinglePattern arguments and matches best of them that is found, or not matches
- * if all arguments didn't match.
- */
-public final class OrPattern extends MultiplePatternsOperator {
-    public OrPattern(PatternAligner patternAligner, SinglePattern... operandPatterns) {
-        super(patternAligner, false, operandPatterns);
+public final class SequencePattern extends MultiplePatternsOperator {
+    public SequencePattern(PatternAligner patternAligner, SinglePattern... operandPatterns) {
+        super(patternAligner, operandPatterns);
     }
 
     @Override
     public String toString() {
-        return "OrPattern(" + Arrays.toString(operandPatterns) + ")";
+        return "SequencePattern(" + Arrays.toString(operandPatterns) + ")";
     }
 
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
-        return new OrPatternMatchingResult(patternAligner, operandPatterns, target, from, to, targetId);
+        return new SequencePatternMatchingResult(patternAligner, operandPatterns, target, from, to, targetId);
     }
 
-    private static class OrPatternMatchingResult extends MatchingResult {
+    private static class SequencePatternMatchingResult extends MatchingResult {
         private final PatternAligner patternAligner;
         private final SinglePattern[] operandPatterns;
         private final NSequenceWithQuality target;
@@ -38,8 +34,8 @@ public final class OrPattern extends MultiplePatternsOperator {
         private final int to;
         private final byte targetId;
 
-        OrPatternMatchingResult(PatternAligner patternAligner, SinglePattern[] operandPatterns,
-                                       NSequenceWithQuality target, int from, int to, byte targetId) {
+        SequencePatternMatchingResult(PatternAligner patternAligner, SinglePattern[] operandPatterns,
+                                      NSequenceWithQuality target, int from, int to, byte targetId) {
             this.patternAligner = patternAligner;
             this.operandPatterns = operandPatterns;
             this.target = target;
@@ -57,11 +53,11 @@ public final class OrPattern extends MultiplePatternsOperator {
                 operandPorts.add(operandPattern.match(target, from, to, targetId).getMatches(byScore, fairSorting));
 
             if (byScore)
-                sorter = new SorterByScore(patternAligner, false, false, fairSorting,
-                        FIRST);
+                sorter = new SorterByScore(patternAligner, false, true, fairSorting,
+                        FOLLOWING);
             else
-                sorter = new SorterByCoordinate(patternAligner, false, false, fairSorting,
-                        FIRST);
+                sorter = new SorterByCoordinate(patternAligner, false, true, fairSorting,
+                        FOLLOWING);
 
             return sorter.getOutputPort(operandPorts);
         }

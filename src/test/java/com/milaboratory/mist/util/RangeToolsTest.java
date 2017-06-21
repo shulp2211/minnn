@@ -66,7 +66,7 @@ public class RangeToolsTest {
         }
         CombinedRange combinedRange = combineRanges(getTestPatternAligner(Long.MIN_VALUE,
                 0, 0, -1), testGroupEdgePositions, testTarget,
-                new Range(0, 5), new Range(3, 6), new Range(4, 10));
+                true, new Range(0, 5), new Range(3, 6), new Range(4, 10));
         assertEquals(new Range(0, 10), combinedRange.getRange());
         assertEquals(-5, (int)combinedRange.getScorePenalty());
         assertEquals(1, combinedRange.getMatchedGroupEdges().get(0).getPosition());

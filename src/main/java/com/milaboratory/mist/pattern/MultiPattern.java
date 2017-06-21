@@ -11,6 +11,8 @@ import com.milaboratory.mist.util.SorterByScore;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static com.milaboratory.mist.pattern.MatchValidationType.LOGICAL_AND;
+
 public final class MultiPattern extends MultipleReadsOperator {
     public MultiPattern(PatternAligner patternAligner, SinglePattern... singlePatterns) {
         super(patternAligner, singlePatterns);
@@ -76,10 +78,10 @@ public final class MultiPattern extends MultipleReadsOperator {
 
             if (byScore)
                 sorter = new SorterByScore(patternAligner, true, true, fairSorting,
-                        MatchValidationType.LOGICAL_AND);
+                        LOGICAL_AND);
             else
                 sorter = new SorterByCoordinate(patternAligner, true, true, fairSorting,
-                        MatchValidationType.LOGICAL_AND);
+                        LOGICAL_AND);
 
             return sorter.getOutputPort(operandPorts);
         }

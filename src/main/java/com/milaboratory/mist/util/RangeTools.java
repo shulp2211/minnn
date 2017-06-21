@@ -90,12 +90,14 @@ public final class RangeTools {
      * @param patternAligner pattern aligner; used to get score penalties for intersections
      * @param matchedGroupEdgesFromOperands matched group edges without corrections for intersections
      * @param target target
+     * @param insertionPenalty true if there must be score penalty for insertions between ranges
+     *                         (must be true if matchValidationType == FOLLOWING)
      * @param ranges ranges to combine, must be sorted by left border ascending
      * @return matched group edges with corrections, combined range and total score penalty
      */
     static CombinedRange combineRanges(PatternAligner patternAligner,
             ArrayList<ArrayList<MatchedGroupEdge>> matchedGroupEdgesFromOperands, NSequenceWithQuality target,
-            Range... ranges) {
+            boolean insertionPenalty, Range... ranges) {
         ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
 
         if (ranges.length == 0)
@@ -110,6 +112,9 @@ public final class RangeTools {
                     totalPenalty += patternAligner.overlapPenalty(target, intersection.getLower(), intersection.length());
                     maxIntersection = Math.max(maxIntersection, intersection.length());
                 }
+                if (insertionPenalty && (j == i - 1) && (ranges[i].getLower() > ranges[j].getUpper()))
+                    totalPenalty += patternAligner.insertionPenalty(target, ranges[j].getUpper(),
+                            ranges[i].getLower() - ranges[j].getUpper());
             }
             if (maxIntersection > 0) {
                 for (MatchedGroupEdge matchedGroupEdge : matchedGroupEdgesFromOperands.get(i)) {

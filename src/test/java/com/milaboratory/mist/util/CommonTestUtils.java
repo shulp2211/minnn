@@ -163,6 +163,11 @@ public class CommonTestUtils {
             }
 
             @Override
+            public long insertionPenalty(NSequenceWithQuality target, int insertionOffset, int insertionLength) {
+                return singleOverlapPenalty * insertionLength;
+            }
+
+            @Override
             public int bitapMaxErrors() {
                 return bitapMaxErrors;
             }

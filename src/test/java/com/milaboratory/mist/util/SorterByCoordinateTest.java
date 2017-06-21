@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import java.util.*;
 
+import static com.milaboratory.mist.pattern.MatchValidationType.*;
 import static com.milaboratory.mist.util.CommonTestTemplates.*;
 import static com.milaboratory.mist.util.CommonTestUtils.countPortValues;
 import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
@@ -38,13 +39,13 @@ public class SorterByCoordinateTest {
         TestMatchesOutputPort testPort3 = new TestMatchesOutputPort(testMatch4, testMatch4, testMatch4, testMatch4, testMatch4);
 
         ApproximateSorter sorter1 = new SorterByCoordinate(getTestPatternAligner(true), false,
-                true, false, MatchValidationType.INTERSECTION);
+                true, false, INTERSECTION);
         ApproximateSorter sorter2 = new SorterByCoordinate(getTestPatternAligner(true), false,
-                false, false, MatchValidationType.INTERSECTION);
+                false, false, INTERSECTION);
         ApproximateSorter sorter3 = new SorterByCoordinate(getTestPatternAligner(true), false,
-                true, false, MatchValidationType.ORDER);
+                true, false, ORDER);
         ApproximateSorter sorter4 = new SorterByCoordinate(getTestPatternAligner(true), false,
-                false, false, MatchValidationType.ORDER);
+                false, false, ORDER);
 
         assertEquals(0, countPortValues(sorter1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
             add(testPort2.getCopy()); add(testPort3.getCopy()); }})));
@@ -94,11 +95,11 @@ public class SorterByCoordinateTest {
             add(testPortEmpty); add(testPortMulti.getCopy()); }};
 
         ApproximateSorter sorterSingle = new SorterByCoordinate(getTestPatternAligner(), false,
-                true, false, MatchValidationType.INTERSECTION);
+                true, false, INTERSECTION);
         ApproximateSorter sorterMulti1 = new SorterByCoordinate(getTestPatternAligner(), true,
-                true, false, MatchValidationType.LOGICAL_AND);
+                true, false, LOGICAL_AND);
         ApproximateSorter sorterMulti2 = new SorterByCoordinate(getTestPatternAligner(), true,
-                true, false, MatchValidationType.LOGICAL_OR);
+                true, false, LOGICAL_OR);
 
         assertEquals(0, countPortValues(sorterSingle.getOutputPort(testPortsSingleWithNull1)));
         assertEquals(0, countPortValues(sorterSingle.getOutputPort(testPortsSingleWithNull2)));
@@ -114,13 +115,13 @@ public class SorterByCoordinateTest {
         NSequenceWithQuality seq = new NSequenceWithQuality("ACTGCGATAAATTAGACAGTACGTATTAGACATTATTATTAGACAGAGACA");
 
         ApproximateSorter sorterUnfair1 = new SorterByCoordinate(getTestPatternAligner(), false,
-                true, false, MatchValidationType.INTERSECTION);
+                true, false, INTERSECTION);
         ApproximateSorter sorterUnfair2 = new SorterByCoordinate(getTestPatternAligner(), false,
-                true, false, MatchValidationType.ORDER);
+                true, false, ORDER);
         ApproximateSorter sorterFair1 = new SorterByCoordinate(getTestPatternAligner(), false,
-                true, true, MatchValidationType.INTERSECTION);
+                true, true, INTERSECTION);
         ApproximateSorter sorterFair2 = new SorterByCoordinate(getTestPatternAligner(), false,
-                true, true, MatchValidationType.ORDER);
+                true, true, ORDER);
 
         assertEquals(3, countPortValues(pattern.match(seq).getMatches()));
         assertEquals(3, countPortValues(sorterUnfair1.getOutputPort(new ArrayList<OutputPort<Match>>() {{

@@ -9,6 +9,8 @@ import com.milaboratory.mist.util.SorterByScore;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static com.milaboratory.mist.pattern.MatchValidationType.ORDER;
+
 public final class PlusPattern extends MultiplePatternsOperator {
     public PlusPattern(PatternAligner patternAligner, SinglePattern... operandPatterns) {
         super(patternAligner, operandPatterns);
@@ -52,10 +54,10 @@ public final class PlusPattern extends MultiplePatternsOperator {
 
             if (byScore)
                 sorter = new SorterByScore(patternAligner, false, true, fairSorting,
-                        MatchValidationType.ORDER);
+                        ORDER);
             else
                 sorter = new SorterByCoordinate(patternAligner, false, true, fairSorting,
-                        MatchValidationType.ORDER);
+                        ORDER);
 
             return sorter.getOutputPort(operandPorts);
         }

@@ -33,6 +33,16 @@ public interface PatternAligner {
     long overlapPenalty(NSequenceWithQuality target, int overlapOffset, int overlapLength);
 
     /**
+     * Calculate penalty value for given insertion in the target.
+     *
+     * @param target          target
+     * @param insertionOffset offset inclusive
+     * @param insertionLength length
+     * @return negative penalty value
+     */
+    long insertionPenalty(NSequenceWithQuality target, int insertionOffset, int insertionLength);
+
+    /**
      * Max errors to use in bitap matcher.
      *
      * @return max errors for bitap

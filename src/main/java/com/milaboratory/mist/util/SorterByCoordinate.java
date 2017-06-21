@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import static com.milaboratory.mist.pattern.MatchValidationType.*;
+
 public final class SorterByCoordinate extends ApproximateSorter {
     /**
      * Sorter by coordinate.
@@ -167,8 +169,7 @@ public final class SorterByCoordinate extends ApproximateSorter {
             while (true) {
                 if (!tableOfIterations.isCombinationReturned(innerArrayIndexes)
                         && (combinationContainsUnfinishedPort(innerArrayIndexes)
-                        || tableOfIterations.isCompatible(matchValidationType == MatchValidationType.ORDER,
-                        innerArrayIndexes))) {
+                        || tableOfIterations.isCompatible(matchValidationType == ORDER, innerArrayIndexes))) {
                     System.arraycopy(innerArrayIndexes, 0, currentIndexes, 0, numberOfPorts);
                     return;
                 }

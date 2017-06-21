@@ -10,6 +10,8 @@ import com.milaboratory.mist.util.SorterByScore;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static com.milaboratory.mist.pattern.MatchValidationType.LOGICAL_OR;
+
 public final class OrOperator extends MultipleReadsOperator {
     public OrOperator(PatternAligner patternAligner, MultipleReadsOperator... operandPatterns) {
         super(patternAligner, operandPatterns);
@@ -51,10 +53,10 @@ public final class OrOperator extends MultipleReadsOperator {
 
             if (byScore)
                 sorter = new SorterByScore(patternAligner, true, false, fairSorting,
-                        MatchValidationType.LOGICAL_OR);
+                        LOGICAL_OR);
             else
                 sorter = new SorterByCoordinate(patternAligner, true, false, fairSorting,
-                        MatchValidationType.LOGICAL_OR);
+                        LOGICAL_OR);
 
             return sorter.getOutputPort(operandPorts);
         }
