@@ -33,9 +33,10 @@ public final class FuzzyMatchPattern extends SinglePattern {
     }
 
     /**
-     * Find match with possible insertions and deletions using bitap and aligner.
+     * Find match with possible insertions and deletions using bitap and aligner. If fixedLeftBorder or fixedRightBorder
+     * is specified, find only matches near that border.
      *
-     * @param patternAligner pattern aligner; it also provides information about scoring and pattern overlap limits
+     * @param patternAligner pattern aligner; it also provides information about maxErrors for bitap
      * @param patternSeq sequence to find in the target
      * @param fixedLeftBorder position in target where must be the left border; -1 if there is no fixed left border
      * @param fixedRightBorder position in target where must be the right border; -1 if there is no fixed right border
@@ -246,12 +247,15 @@ public final class FuzzyMatchPattern extends SinglePattern {
             }
 
             private Match takeFromFixedPosition() {
+                if (((fixedLeftBorder != -1) && (from > fixedLeftBorder))
+                        || ((fixedRightBorder != -1) && (to < fixedRightBorder)))
+                    return null;
                 if (fixedRightBorder != -1)
                     if (takenValues == 0) {
                         takenValues++;
                         if (fixedLeftBorder != -1)
                             return generateMatch(patternAligner.setLeftBorder(fixedLeftBorder)
-                                .align(patternSeq, target, fixedRightBorder));
+                                    .align(patternSeq, target, fixedRightBorder));
                         else
                             return generateMatch(patternAligner.align(patternSeq, target, fixedRightBorder));
                     } else return null;
@@ -333,8 +337,10 @@ public final class FuzzyMatchPattern extends SinglePattern {
                 PatternAligner patternAligner = this.patternAligner.setLeftBorder(fixedLeftBorder);
                 Alignment<NucleotideSequence> alignment;
 
-                for (int rightBorder = fixedLeftBorder + patternSeq.size() - patternAligner.bitapMaxErrors();
-                        rightBorder <= fixedLeftBorder + patternSeq.size() + patternAligner.bitapMaxErrors();
+                for (int rightBorder = Math.max(fixedLeftBorder + 1, fixedLeftBorder + patternSeq.size()
+                                - patternAligner.bitapMaxErrors());
+                        rightBorder <= Math.min(to, fixedLeftBorder + patternSeq.size()
+                                + patternAligner.bitapMaxErrors());
                         rightBorder++)
                     if ((rightBorder > fixedLeftBorder) && (rightBorder <= target.size())) {
                         alignment = patternAligner.align(patternSeq, target, rightBorder);
