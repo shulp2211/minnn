@@ -10,6 +10,7 @@ import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public final class FuzzyMatchPattern extends SinglePattern {
     private final NucleotideSequence patternSeq;
@@ -71,10 +72,8 @@ public final class FuzzyMatchPattern extends SinglePattern {
 
     @Override
     public ArrayList<GroupEdge> getGroupEdges() {
-        ArrayList<GroupEdge> groupEdges = new ArrayList<>();
-        for (GroupEdgePosition groupEdgePosition : groupEdgePositions)
-            groupEdges.add(groupEdgePosition.getGroupEdge());
-        return groupEdges;
+        return groupEdgePositions.stream().map(GroupEdgePosition::getGroupEdge)
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     @Override
