@@ -12,12 +12,16 @@ public abstract class MultipleReadsOperator extends Pattern {
     protected final ArrayList<GroupEdge> groupEdges;
 
     MultipleReadsOperator(PatternAligner patternAligner, MultipleReadsOperator... operandPatterns) {
+        this(patternAligner, true, operandPatterns);
+    }
+
+    MultipleReadsOperator(PatternAligner patternAligner, boolean checkGroupEdges, MultipleReadsOperator... operandPatterns) {
         super(patternAligner);
         testAlignersCompatibility(operandPatterns);
         this.operandPatterns = operandPatterns;
         this.singlePatterns = new SinglePattern[0];
         this.groupEdges = new ArrayList<>();
-        getGroupEdgesFromOperands(operandPatterns);
+        getGroupEdgesFromOperands(checkGroupEdges, operandPatterns);
     }
 
     MultipleReadsOperator(PatternAligner patternAligner, SinglePattern... singlePatterns) {
@@ -26,7 +30,7 @@ public abstract class MultipleReadsOperator extends Pattern {
         this.singlePatterns = singlePatterns;
         this.operandPatterns = new MultipleReadsOperator[0];
         this.groupEdges = new ArrayList<>();
-        getGroupEdgesFromOperands(singlePatterns);
+        getGroupEdgesFromOperands(true, singlePatterns);
     }
 
     @Override
@@ -73,10 +77,10 @@ public abstract class MultipleReadsOperator extends Pattern {
         return groupEdges;
     }
 
-    private <T extends Pattern> void getGroupEdgesFromOperands(T[] patterns) {
+    private <T extends Pattern> void getGroupEdgesFromOperands(boolean checkGroupEdges, T[] patterns) {
         for (T pattern : patterns)
             groupEdges.addAll(pattern.getGroupEdges());
-        if (groupEdges.size() != new HashSet<>(groupEdges).size())
+        if (checkGroupEdges && (groupEdges.size() != new HashSet<>(groupEdges).size()))
             throw new IllegalStateException("Operands contain equal group edges!");
     }
 }

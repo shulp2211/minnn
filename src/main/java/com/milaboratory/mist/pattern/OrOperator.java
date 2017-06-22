@@ -14,7 +14,7 @@ import static com.milaboratory.mist.pattern.MatchValidationType.LOGICAL_OR;
 
 public final class OrOperator extends MultipleReadsOperator {
     public OrOperator(PatternAligner patternAligner, MultipleReadsOperator... operandPatterns) {
-        super(patternAligner, operandPatterns);
+        super(patternAligner, false, operandPatterns);
     }
 
     @Override

@@ -271,7 +271,7 @@ public class LogicalOperatorsTest {
         MultiPattern multiPattern2 = new MultiPattern(getTestPatternAligner(), pattern2, pattern4);
 
         exception.expect(IllegalStateException.class);
-        new OrOperator(getTestPatternAligner(), multiPattern1, multiPattern2);
+        new AndOperator(getTestPatternAligner(), multiPattern1, multiPattern2);
     }
 
     @Test
