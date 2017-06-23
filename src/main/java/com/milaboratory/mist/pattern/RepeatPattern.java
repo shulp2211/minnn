@@ -167,14 +167,13 @@ public final class RepeatPattern extends SinglePattern {
 
             private Match takeFair() {
                 if (!sortingPerformed) {
-                    ArrayList<Match> allMatchesList = new ArrayList<>();
-                    ArrayList<Range> uniqueRanges = new ArrayList<>();
+                    HashMap<Range, Match> matchesWithUniqueRanges = new HashMap<>();
                     int patternSeqLength = patternSeq.size();
                     int repeatsLimit = Math.min(maxRepeats, (to - from) / patternSeqLength);
-                    NucleotideSequence[] sequencesToConcatenate = new NucleotideSequence[minRepeats];
-                    Arrays.fill(sequencesToConcatenate, patternSeq);
-                    NucleotideSequence currentSequence = SequencesUtils.concatenate(sequencesToConcatenate);
-                    for (int repeats = minRepeats; repeats <= repeatsLimit; repeats++) {
+                    for (int repeats = repeatsLimit; repeats >= minRepeats; repeats--) {
+                        NucleotideSequence[] sequencesToConcatenate = new NucleotideSequence[repeats];
+                        Arrays.fill(sequencesToConcatenate, patternSeq);
+                        NucleotideSequence currentSequence = SequencesUtils.concatenate(sequencesToConcatenate);
                         OutputPort<Match> currentPort = new FuzzyMatchPattern(patternAligner, currentSequence,
                                 fixedLeftBorder, fixedRightBorder,
                                 fixGroupEdgePositions(groupEdgePositions, patternSeqLength * repeats))
@@ -183,16 +182,16 @@ public final class RepeatPattern extends SinglePattern {
                         Match currentMatch;
                         do {
                             currentMatch = currentPort.take();
-                            if ((currentMatch != null) && !uniqueRanges.contains(currentMatch.getRange())) {
-                                allMatchesList.add(currentMatch);
-                                uniqueRanges.add(currentMatch.getRange());
+                            if (currentMatch != null) {
+                                Range currentRange = currentMatch.getRange();
+                                if ((matchesWithUniqueRanges.get(currentRange) == null)
+                                        || (matchesWithUniqueRanges.get(currentRange).getScore() < currentMatch.getScore()))
+                                    matchesWithUniqueRanges.put(currentRange, currentMatch);
                             }
                         } while (currentMatch != null);
-                        if (repeats < repeatsLimit)
-                            currentSequence = SequencesUtils.concatenate(currentSequence, patternSeq);
                     }
-                    allMatches = new Match[allMatchesList.size()];
-                    allMatchesList.toArray(allMatches);
+                    allMatches = new Match[matchesWithUniqueRanges.size()];
+                    matchesWithUniqueRanges.values().toArray(allMatches);
                     if (byScore)
                         Arrays.sort(allMatches, Comparator.comparingLong(Match::getScore).reversed());
                     else
