@@ -130,8 +130,15 @@ public final class RepeatPattern extends SinglePattern {
             private final byte targetId;
             private final boolean byScore;
             private final boolean fairSorting;
+            private final int patternSeqLength;
 
-            // Data structures used for fair sorting.
+            private OutputPort<Match> currentPort;
+
+            // for unfair sorting
+            private boolean currentPortEmpty = true;
+            private int currentRepeats;
+
+            // for fair sorting
             private Match[] allMatches;
             private boolean sortingPerformed = false;
             private int takenValues = 0;
@@ -143,8 +150,9 @@ public final class RepeatPattern extends SinglePattern {
                                     boolean byScore, boolean fairSorting) {
                 this.patternAligner = patternAligner;
                 this.patternSeq = patternSeq;
+                this.patternSeqLength = patternSeq.size();
                 this.minRepeats = minRepeats;
-                this.maxRepeats = maxRepeats;
+                this.maxRepeats = Math.min(maxRepeats, (to - from) / patternSeqLength);
                 this.fixedLeftBorder = fixedLeftBorder;
                 this.fixedRightBorder = fixedRightBorder;
                 this.groupEdgePositions = groupEdgePositions;
@@ -154,6 +162,7 @@ public final class RepeatPattern extends SinglePattern {
                 this.targetId = targetId;
                 this.byScore = byScore;
                 this.fairSorting = fairSorting;
+                this.currentRepeats = maxRepeats;
             }
 
             @Override
@@ -162,19 +171,36 @@ public final class RepeatPattern extends SinglePattern {
             }
 
             private Match takeUnfair() {
+                while ((currentRepeats >= minRepeats) || !currentPortEmpty) {
+                    if (currentPortEmpty) {
+                        NucleotideSequence[] sequencesToConcatenate = new NucleotideSequence[currentRepeats];
+                        Arrays.fill(sequencesToConcatenate, patternSeq);
+                        NucleotideSequence currentSequence = SequencesUtils.concatenate(sequencesToConcatenate);
+                        currentPort = new FuzzyMatchPattern(patternAligner, currentSequence,
+                                fixedLeftBorder, fixedRightBorder,
+                                fixGroupEdgePositions(groupEdgePositions, patternSeqLength * currentRepeats))
+                                .match(target, from, to, targetId)
+                                .getMatches(byScore, false);
+                        currentPortEmpty = false;
+                        currentRepeats--;
+                    }
+                    Match currentMatch = currentPort.take();
+                    if (currentMatch != null)
+                        return currentMatch;
+                    else
+                        currentPortEmpty = true;
+                }
                 return null;
             }
 
             private Match takeFair() {
                 if (!sortingPerformed) {
                     HashMap<Range, Match> matchesWithUniqueRanges = new HashMap<>();
-                    int patternSeqLength = patternSeq.size();
-                    int repeatsLimit = Math.min(maxRepeats, (to - from) / patternSeqLength);
-                    for (int repeats = repeatsLimit; repeats >= minRepeats; repeats--) {
+                    for (int repeats = maxRepeats; repeats >= minRepeats; repeats--) {
                         NucleotideSequence[] sequencesToConcatenate = new NucleotideSequence[repeats];
                         Arrays.fill(sequencesToConcatenate, patternSeq);
                         NucleotideSequence currentSequence = SequencesUtils.concatenate(sequencesToConcatenate);
-                        OutputPort<Match> currentPort = new FuzzyMatchPattern(patternAligner, currentSequence,
+                        currentPort = new FuzzyMatchPattern(patternAligner, currentSequence,
                                 fixedLeftBorder, fixedRightBorder,
                                 fixGroupEdgePositions(groupEdgePositions, patternSeqLength * repeats))
                                 .match(target, from, to, targetId)
