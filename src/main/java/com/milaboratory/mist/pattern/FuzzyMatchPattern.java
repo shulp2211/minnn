@@ -12,6 +12,8 @@ import com.milaboratory.core.sequence.NucleotideSequence;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.milaboratory.mist.pattern.PatternUtils.invertCoordinate;
+
 public final class FuzzyMatchPattern extends SinglePattern {
     private final NucleotideSequence patternSeq;
     private final Motif<NucleotideSequence> motif;
@@ -40,7 +42,9 @@ public final class FuzzyMatchPattern extends SinglePattern {
      * @param patternAligner pattern aligner; it also provides information about maxErrors for bitap
      * @param patternSeq sequence to find in the target
      * @param fixedLeftBorder position in target where must be the left border; -1 if there is no fixed left border
+     *                        -2 - x means coordinate from the end of target; fixedLeftBorder is inclusive
      * @param fixedRightBorder position in target where must be the right border; -1 if there is no fixed right border
+     *                         -2 - x means coordinate from the end of target; fixedRightBorder is inclusive
      * @param groupEdgePositions list of group edges and their positions
      */
     public FuzzyMatchPattern(PatternAligner patternAligner, NucleotideSequence patternSeq, int fixedLeftBorder,
@@ -78,6 +82,10 @@ public final class FuzzyMatchPattern extends SinglePattern {
 
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
+        int fixedLeftBorder = (this.fixedLeftBorder > -2) ? this.fixedLeftBorder
+                : target.size() - 1 - invertCoordinate(this.fixedLeftBorder);
+        int fixedRightBorder = (this.fixedRightBorder > -2) ? this.fixedRightBorder
+                : target.size() - 1 - invertCoordinate(this.fixedRightBorder);
         return new FuzzyMatchingResult(patternAligner, patternSeq, motif, fixedLeftBorder, fixedRightBorder,
                 groupEdgePositions, target, from, to, targetId);
     }
@@ -246,8 +254,9 @@ public final class FuzzyMatchPattern extends SinglePattern {
             }
 
             private Match takeFromFixedPosition() {
+                // important: to is exclusive and fixedRightBorder is inclusive
                 if (((fixedLeftBorder != -1) && (from > fixedLeftBorder))
-                        || ((fixedRightBorder != -1) && (to < fixedRightBorder)))
+                        || ((fixedRightBorder != -1) && (to <= fixedRightBorder)))
                     return null;
                 if (fixedRightBorder != -1)
                     if (takenValues == 0) {
@@ -296,7 +305,7 @@ public final class FuzzyMatchPattern extends SinglePattern {
                                     + ", Sequence2Range=" + alignment.getSequence2Range()
                                     + ", GroupEdgePosition=" + groupEdgePosition.getPosition());
                     else if (foundGroupEdgePosition < 0)
-                        foundGroupEdgePosition = -2 - foundGroupEdgePosition;
+                        foundGroupEdgePosition = invertCoordinate(foundGroupEdgePosition);
                     MatchedGroupEdge matchedGroupEdge = new MatchedGroupEdge(target, targetId, 0,
                             groupEdgePosition.getGroupEdge(), foundGroupEdgePosition);
                     matchedItems.add(matchedGroupEdge);
