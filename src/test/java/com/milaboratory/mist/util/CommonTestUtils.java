@@ -13,6 +13,7 @@ import com.milaboratory.test.TestUtil;
 
 import java.util.*;
 
+import static com.milaboratory.mist.pattern.PatternUtils.invertCoordinate;
 import static org.junit.Assert.*;
 
 public class CommonTestUtils {
@@ -254,23 +255,41 @@ public class CommonTestUtils {
         return getTestPatternAligner(-r.nextInt(100), r.nextInt(4), -r.nextInt(4), -r.nextInt(3));
     }
 
-    public static FuzzyMatchPattern getRandomFuzzyPattern() {
-        return getRandomFuzzyPattern(false);
-    }
-
-    public static FuzzyMatchPattern getRandomFuzzyPattern(PatternAligner patternAligner) {
-        return getRandomFuzzyPattern(patternAligner, false);
-    }
-
-    public static FuzzyMatchPattern getRandomFuzzyPattern(boolean withGroups) {
-        return getRandomFuzzyPattern(getRandomPatternAligner(), withGroups);
-    }
-
     public static FuzzyMatchPattern getRandomFuzzyPattern(PatternAligner patternAligner, boolean withGroups) {
-        int length = new Random().nextInt(100) + 1;
+        Random rg = new Random();
+        int length = rg.nextInt(100) + 1;
+        RandomBorders randomBorders = new RandomBorders(rg, length);
         NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, length, length);
-        return new FuzzyMatchPattern(patternAligner, seq, withGroups ? getRandomGroupsForFuzzyMatch(length)
-                : new ArrayList<>());
+        return new FuzzyMatchPattern(patternAligner, seq, randomBorders.left, randomBorders.right,
+                withGroups ? getRandomGroupsForFuzzyMatch(length) : new ArrayList<>());
+    }
+
+    public static RepeatPattern getRandomRepeatPattern(PatternAligner patternAligner, boolean withGroups) {
+        Random rg = new Random();
+        int minRepeats = rg.nextInt(50) + 1;
+        int maxRepeats = rg.nextInt(50) + minRepeats;
+        int length = rg.nextInt(100) + 1;
+        RandomBorders randomBorders = new RandomBorders(rg, length);
+        NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, length, length);
+        return new RepeatPattern(patternAligner, seq, minRepeats, maxRepeats, randomBorders.left, randomBorders.right,
+                withGroups ? getRandomGroupsForFuzzyMatch(length) : new ArrayList<>());
+    }
+
+    public static SinglePattern getRandomBasicPattern() {
+        return getRandomBasicPattern(false);
+    }
+
+    public static SinglePattern getRandomBasicPattern(PatternAligner patternAligner) {
+        return getRandomBasicPattern(patternAligner, false);
+    }
+
+    public static SinglePattern getRandomBasicPattern(boolean withGroups) {
+        return getRandomBasicPattern(getRandomPatternAligner(), withGroups);
+    }
+
+    public static SinglePattern getRandomBasicPattern(PatternAligner patternAligner, boolean withGroups) {
+        return new Random().nextBoolean() ? getRandomFuzzyPattern(patternAligner, withGroups)
+                : getRandomRepeatPattern(patternAligner, withGroups);
     }
 
     public static SinglePattern getRandomSinglePattern(SinglePattern... patterns) {
@@ -282,12 +301,12 @@ public class CommonTestUtils {
         SinglePattern[] patterns;
         if (singlePatterns.length == 0) {
             int numPatterns = r.nextInt(5) + 1;
-            patterns = new FuzzyMatchPattern[numPatterns];
+            patterns = new SinglePattern[numPatterns];
             for (int i = 0; i < numPatterns; i++)
-                patterns[i] = getRandomFuzzyPattern(patternAligner);
+                patterns[i] = getRandomBasicPattern(patternAligner);
         } else
             patterns = singlePatterns;
-        switch (r.nextInt(6)) {
+        switch (r.nextInt(7)) {
             case 0:
                 return patterns[0];
             case 1:
@@ -295,10 +314,12 @@ public class CommonTestUtils {
             case 2:
                 return new PlusPattern(patternAligner, patterns);
             case 3:
-                return new OrPattern(patternAligner, patterns);
+                return new SequencePattern(patternAligner, patterns);
             case 4:
-                return new FilterPattern(patternAligner, new ScoreFilter(-r.nextInt(75)), patterns[0]);
+                return new OrPattern(patternAligner, patterns);
             case 5:
+                return new FilterPattern(patternAligner, new ScoreFilter(-r.nextInt(75)), patterns[0]);
+            case 6:
             default:
                 int seqLength = r.nextInt(10) + 1;
                 NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, seqLength, seqLength);
@@ -316,10 +337,10 @@ public class CommonTestUtils {
         Random r = new Random();
         if (patterns.length == 0) {
             int numPatterns = r.nextInt(5) + 1;
-            FuzzyMatchPattern[] fuzzyMatchPatterns = new FuzzyMatchPattern[numPatterns];
+            SinglePattern[] basicPatterns = new SinglePattern[numPatterns];
             for (int i = 0; i < numPatterns; i++)
-                fuzzyMatchPatterns[i] = getRandomFuzzyPattern(patternAligner);
-            return new MultiPattern(patternAligner, fuzzyMatchPatterns);
+                basicPatterns[i] = getRandomBasicPattern(patternAligner);
+            return new MultiPattern(patternAligner, basicPatterns);
         } else {
             switch (r.nextInt(4)) {
                 case 0:
@@ -332,6 +353,35 @@ public class CommonTestUtils {
                 default:
                     return new MultipleReadsFilterPattern(patternAligner, new ScoreFilter(-r.nextInt(75)), patterns[0]);
             }
+        }
+    }
+
+    public static class RandomBorders {
+        final int left;
+        final int right;
+
+        RandomBorders(Random rg, int targetSize) {
+            if (targetSize < 1)
+                throw new IllegalArgumentException("Cannot create RandomBorders for targetSize " + targetSize);
+            int r = rg.nextInt(12);
+            int minRight;
+            if (r < 10) {
+                minRight = 0;
+                left = -1;
+            } else if (r == 10) {
+                minRight = rg.nextInt(targetSize);
+                left = minRight;
+            } else {
+                minRight = rg.nextInt(targetSize);
+                left = invertCoordinate(targetSize - 1 - minRight);
+            }
+            r = rg.nextInt(12);
+            if (r < 10)
+                right = -1;
+            else if (r == 10)
+                right = minRight + rg.nextInt(targetSize - minRight);
+            else
+                right = invertCoordinate(targetSize - 1 - minRight - rg.nextInt(targetSize - minRight));
         }
     }
 }

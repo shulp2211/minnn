@@ -83,7 +83,7 @@ public class SimplifiedTokenizerTest {
             assertNotNull(parseResult);
             assertEquals(multiPatterns.get(0).toString(), parseResult.toString());
             multiPatterns.add(new MultiPattern(getRandomPatternAligner(), getRandomSinglePattern(
-                    getRandomFuzzyPattern(true), getRandomFuzzyPattern(), singlePatterns.get(0))));
+                    getRandomBasicPattern(true), getRandomBasicPattern(), singlePatterns.get(0))));
             parseResult = parser.parseQuery(multiPatterns.get(multiPatterns.size() - 1).toString(), SIMPLIFIED);
             assertNotNull(parseResult);
             assertEquals(multiPatterns.get(multiPatterns.size() - 1).toString(), parseResult.toString());
