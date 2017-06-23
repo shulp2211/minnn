@@ -190,12 +190,9 @@ public class AndPatternTest {
         MatchingResult result = andPattern.match(nseq);
         OutputPort<Match> matchOutputPort = result.getMatches(false, true);
         Match match = matchOutputPort.take();
-        assertEquals(16, match.getMatchedGroupEdge("2", true)
-                .getPosition());
-        assertEquals(9, match.getMatchedGroupEdge("5", false)
-                .getPosition());
-        assertEquals("3", match.getMatchedGroupEdge("3", true)
-                .getGroupName());
+        assertEquals(16, match.getMatchedGroupEdge("2", true).getPosition());
+        assertEquals(9, match.getMatchedGroupEdge("5", false).getPosition());
+        assertEquals("3", match.getMatchedGroupEdge("3", true).getGroupName());
         assertNull(matchOutputPort.take());
     }
 

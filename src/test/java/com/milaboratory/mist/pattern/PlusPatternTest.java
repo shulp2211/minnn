@@ -189,12 +189,9 @@ public class PlusPatternTest {
         MatchingResult result = plusPattern.match(nseq);
         OutputPort<Match> matchOutputPort = result.getMatches(false, true);
         Match match = matchOutputPort.take();
-        assertEquals(16, match.getMatchedGroupEdge("2", true)
-                .getPosition());
-        assertEquals(20, match.getMatchedGroupEdge("4", false)
-                .getPosition());
-        assertEquals("3", match.getMatchedGroupEdge("3", true)
-                .getGroupName());
+        assertEquals(16, match.getMatchedGroupEdge("2", true).getPosition());
+        assertEquals(20, match.getMatchedGroupEdge("4", false).getPosition());
+        assertEquals("3", match.getMatchedGroupEdge("3", true).getGroupName());
         assertNull(matchOutputPort.take());
     }
 
@@ -318,5 +315,41 @@ public class PlusPatternTest {
             if (!leftPart.toString().equals(rightPart.toString()))
                 assertNull(plusPattern4.match(targetQ).getBestMatch());
         }
+    }
+
+    @Test
+    public void groupsInOverlapsTest() throws Exception {
+        ArrayList<GroupEdgePosition> groupsEdgePositions1 = new ArrayList<GroupEdgePosition>() {{
+            add(new GroupEdgePosition(new GroupEdge("A", true), 5));
+            add(new GroupEdgePosition(new GroupEdge("B", true), 2));
+            add(new GroupEdgePosition(new GroupEdge("C", true), 1));
+            add(new GroupEdgePosition(new GroupEdge("C", false), 5));
+        }};
+
+        ArrayList<GroupEdgePosition> groupsEdgePositions2 = new ArrayList<GroupEdgePosition>() {{
+            add(new GroupEdgePosition(new GroupEdge("A", false), 0));
+            add(new GroupEdgePosition(new GroupEdge("B", false), 4));
+            add(new GroupEdgePosition(new GroupEdge("D", true), 1));
+            add(new GroupEdgePosition(new GroupEdge("D", false), 5));
+        }};
+
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("ATAGA"), groupsEdgePositions1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("GATTC"), groupsEdgePositions2);
+        PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(-10, 0, 0,
+                -5, true, 2, -1), pattern1, pattern2);
+        NSequenceWithQuality nseq = new NSequenceWithQuality("ATAGATTC");
+        MatchingResult result = plusPattern.match(nseq);
+        OutputPort<Match> matchOutputPort = result.getMatches(false, true);
+        Match match = matchOutputPort.take();
+        assertEquals(5, match.getMatchedGroupEdge("A", true).getPosition());
+        assertEquals(5, match.getMatchedGroupEdge("A", false).getPosition());
+        assertEquals(2, match.getMatchedGroupEdge("B", true).getPosition());
+        assertEquals(7, match.getMatchedGroupEdge("B", false).getPosition());
+        assertEquals(1, match.getMatchedGroupEdge("C", true).getPosition());
+        assertEquals(5, match.getMatchedGroupEdge("C", false).getPosition());
+        assertEquals(5, match.getMatchedGroupEdge("D", true).getPosition());
+        assertEquals(8, match.getMatchedGroupEdge("D", false).getPosition());
     }
 }

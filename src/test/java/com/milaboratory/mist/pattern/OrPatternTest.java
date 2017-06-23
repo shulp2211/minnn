@@ -173,12 +173,9 @@ public class OrPatternTest {
         MatchingResult result = orPattern.match(nseq);
         OutputPort<Match> matchOutputPort = result.getMatches(false, true);
         Match match = matchOutputPort.take();
-        assertEquals(4, match.getMatchedGroupEdge("2", true)
-                .getPosition());
-        assertEquals(4, match.getMatchedGroupEdge("1", false)
-                .getPosition());
-        assertEquals("4", match.getMatchedGroupEdge("4", true)
-                .getGroupName());
+        assertEquals(4, match.getMatchedGroupEdge("2", true).getPosition());
+        assertEquals(4, match.getMatchedGroupEdge("1", false).getPosition());
+        assertEquals("4", match.getMatchedGroupEdge("4", true).getGroupName());
         assertNull(matchOutputPort.take());
     }
 
