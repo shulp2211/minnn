@@ -86,8 +86,11 @@ public final class FuzzyMatchPattern extends SinglePattern {
                 : target.size() - 1 - invertCoordinate(this.fixedLeftBorder);
         int fixedRightBorder = (this.fixedRightBorder > -2) ? this.fixedRightBorder
                 : target.size() - 1 - invertCoordinate(this.fixedRightBorder);
+        int fromWithBorder = (fixedLeftBorder == -1) ? from : Math.max(from, fixedLeftBorder);
+        // to is exclusive and fixedRightBorder is inclusive
+        int toWithBorder = (fixedRightBorder == -1) ? to : Math.min(to, fixedRightBorder + 1);
         return new FuzzyMatchingResult(patternAligner, patternSeq, motif, fixedLeftBorder, fixedRightBorder,
-                groupEdgePositions, target, from, to, targetId);
+                groupEdgePositions, target, fromWithBorder, toWithBorder, targetId);
     }
 
     private static class FuzzyMatchingResult extends MatchingResult {
@@ -129,6 +132,7 @@ public final class FuzzyMatchPattern extends SinglePattern {
             private final NucleotideSequence patternSeq;
             private final int fixedLeftBorder;
             private final int fixedRightBorder;
+            private final boolean fixedBorder;
             private final ArrayList<GroupEdgePosition> groupEdgePositions;
             private final int maxErrors;
             private final NSequenceWithQuality target;
@@ -165,6 +169,7 @@ public final class FuzzyMatchPattern extends SinglePattern {
                 this.patternSeq = patternSeq;
                 this.fixedLeftBorder = fixedLeftBorder;
                 this.fixedRightBorder = fixedRightBorder;
+                this.fixedBorder = (fixedLeftBorder != -1) || (fixedRightBorder != -1);
                 this.groupEdgePositions = groupEdgePositions;
                 this.maxErrors = patternAligner.bitapMaxErrors();
                 this.target = target;
@@ -174,29 +179,29 @@ public final class FuzzyMatchPattern extends SinglePattern {
                 this.byScore = byScore;
                 this.fairSorting = fairSorting;
                 this.bitapPattern = motif.getBitapPattern();
-                if (!fairSorting && byScore) {
+                if (!fixedBorder && !fairSorting && byScore) {
                     this.bitapMatcherFilter = new BitapMatcherFilter(bitapPattern.substitutionAndIndelMatcherLast(
                             0, target.getSequence(), from, to));
                     this.alreadyReturnedPositions = new HashSet<>();
                 } else
                     this.bitapMatcherFilter = new BitapMatcherFilter(bitapPattern.substitutionAndIndelMatcherLast(
                             maxErrors, target.getSequence(), from, to));
-                if (fairSorting)
+                if (fixedBorder || fairSorting)
                     uniqueRanges = new HashSet<>();
             }
 
             @Override
             public Match take() {
                 Match match;
-                if ((fixedLeftBorder == -1) && (fixedRightBorder == -1))
+                if (fixedBorder)
+                    match = takeFromFixedPosition();
+                else
                     if (fairSorting)
                         if (byScore) match = takeFairByScore();
                         else match = takeFairByCoordinate();
                     else
                         if (byScore) match = takeUnfairByScore();
                         else match = takeUnfairByCoordinate();
-                else
-                    match = takeFromFixedPosition();
 
                 return match;
             }
@@ -256,7 +261,8 @@ public final class FuzzyMatchPattern extends SinglePattern {
             private Match takeFromFixedPosition() {
                 // important: to is exclusive and fixedRightBorder is inclusive
                 if (((fixedLeftBorder != -1) && (from > fixedLeftBorder))
-                        || ((fixedRightBorder != -1) && (to <= fixedRightBorder)))
+                        || ((fixedRightBorder != -1) && (to <= fixedRightBorder))
+                        || (bitapMatcherFilter.findNext() == -1))
                     return null;
                 if (fixedRightBorder != -1)
                     if (takenValues == 0) {
@@ -345,12 +351,12 @@ public final class FuzzyMatchPattern extends SinglePattern {
                 PatternAligner patternAligner = this.patternAligner.setLeftBorder(fixedLeftBorder);
                 Alignment<NucleotideSequence> alignment;
 
-                for (int rightBorder = Math.max(fixedLeftBorder + 1, fixedLeftBorder + patternSeq.size()
-                                - patternAligner.bitapMaxErrors());
-                        rightBorder <= Math.min(to, fixedLeftBorder + patternSeq.size()
-                                + patternAligner.bitapMaxErrors());
+                for (int rightBorder = Math.max(fixedLeftBorder, fixedLeftBorder + patternSeq.size()
+                                - patternAligner.bitapMaxErrors() - 1);
+                        rightBorder <= Math.min(to - 1, fixedLeftBorder + patternSeq.size()
+                                + patternAligner.bitapMaxErrors() - 1);
                         rightBorder++)
-                    if ((rightBorder > fixedLeftBorder) && (rightBorder <= target.size())) {
+                    if ((rightBorder >= fixedLeftBorder) && (rightBorder < target.size())) {
                         alignment = patternAligner.align(patternSeq, target, rightBorder);
                         if (!uniqueRanges.contains(alignment.getSequence2Range())) {
                             uniqueRanges.add(alignment.getSequence2Range());
