@@ -356,6 +356,14 @@ public class CommonTestUtils {
         }
     }
 
+    public static String bestToString(MatchingResult matchingResult) {
+        return bestToString(matchingResult, true);
+    }
+
+    public static String bestToString(MatchingResult matchingResult, boolean fairSorting) {
+        return matchingResult.getBestMatch(fairSorting).getValue().getSequence().toString();
+    }
+
     public static class RandomBorders {
         final int left;
         final int right;

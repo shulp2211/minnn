@@ -15,8 +15,7 @@ import org.junit.rules.ExpectedException;
 import java.util.*;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
-import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
-import static com.milaboratory.mist.util.CommonTestUtils.makeRandomErrors;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class FuzzyMatchPatternTest {
@@ -348,5 +347,42 @@ public class FuzzyMatchPatternTest {
         assertEquals(0, matchingResults[2][0].getBestMatch(false).getScore());
         assertEquals(0, matchingResults[1][1].getBestMatch().getScore());
         assertEquals(-10, matchingResults[1][2].getBestMatch().getScore());
+    }
+
+    @Test
+    public void fixedBordersTest() throws Exception {
+        PatternAligner patternAligner = getTestPatternAligner(1);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("ATTAGACA"),
+                2, -1, getRandomGroupsForFuzzyMatch(8));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("ATTAGACA"),
+                -1, 11, getRandomGroupsForFuzzyMatch(4));
+        FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("ATTAGACA"),
+                3, 9, getRandomGroupsForFuzzyMatch(6, 15));
+        NSequenceWithQuality target1_1 = new NSequenceWithQuality("GATTAGACA");
+        NSequenceWithQuality target1_2 = new NSequenceWithQuality("ATTAGACA");
+        NSequenceWithQuality target2_1 = new NSequenceWithQuality("GTTCAATTAGACATTA");
+        NSequenceWithQuality target2_2 = new NSequenceWithQuality("GTATCAATTAGACATTA");
+        NSequenceWithQuality target3_1 = new NSequenceWithQuality("TTCATTAGACATTA");
+        NSequenceWithQuality target3_2 = new NSequenceWithQuality("TCATTAGACATTA");
+        NSequenceWithQuality target3_3 = new NSequenceWithQuality("TATTAGACATTA");
+        for (boolean fairSorting : new boolean[] {true, false}) {
+            assertEquals("TTAGACA", bestToString(pattern1.match(target1_1), fairSorting));
+            assertNull(pattern1.match(target1_2).getBestMatch(fairSorting));
+            assertEquals("TTAGACA", bestToString(pattern1.match(target1_1, 2, 9), fairSorting));
+            assertNull(pattern1.match(target1_1, 2, 8).getBestMatch(fairSorting));
+
+            assertEquals("AATTAGAC", bestToString(pattern2.match(target2_1), fairSorting));
+            assertNull(pattern2.match(target2_2).getBestMatch(fairSorting));
+            assertEquals("AATTAGAC", bestToString(pattern2.match(target2_1, 5, 12), fairSorting));
+            assertNull(pattern2.match(target2_1, 6, 12).getBestMatch(fairSorting));
+
+            assertEquals("ATTAGAC", bestToString(pattern3.match(target3_1), fairSorting));
+            assertEquals("TTAGACA", bestToString(pattern3.match(target3_2), fairSorting));
+            assertNull(pattern3.match(target3_3).getBestMatch(fairSorting));
+            assertEquals("ATTAGAC", bestToString(pattern3.match(target3_1, 3, 10), fairSorting));
+            assertNull(pattern3.match(target3_1, 4, 10).getBestMatch(fairSorting));
+            assertNull(pattern3.match(target3_1, 3, 9).getBestMatch(fairSorting));
+            assertNull(pattern3.match(target3_1, 4, 9).getBestMatch(fairSorting));
+        }
     }
 }
