@@ -5,7 +5,6 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.motif.BitapMatcher;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
-import com.milaboratory.core.sequence.SequenceQuality;
 import com.milaboratory.core.sequence.SequencesUtils;
 import com.milaboratory.test.TestUtil;
 import org.junit.Rule;
@@ -93,42 +92,33 @@ public class FuzzyMatchPatternTest {
 
     @Test
     public void randomMatchTest() throws Exception {
-        int its = TestUtil.its(1000, 100000);
-        for (int i = 0; i < its; ++i) {
+        Random rg = new Random();
+        for (int i = 0; i < 30000; i++) {
             NucleotideSequence seqM = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 10, 60);
             NucleotideSequence seqL = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, 40);
             NucleotideSequence seqR = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, 40);
             NucleotideSequence fullSeq = SequencesUtils.concatenate(seqL, seqM, seqR);
-            NSequenceWithQuality target = new NSequenceWithQuality(fullSeq,
-                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, fullSeq.getSequence().size()));
+            NSequenceWithQuality target = new NSequenceWithQuality(fullSeq.toString());
             FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), seqM);
             assertTrue(pattern.match(target).isFound());
-            assertNotNull(pattern.match(target).getBestMatch(false));
-            assertNotNull(pattern.match(target).getMatches(true, false).take());
-            assertNotNull(pattern.match(target).getMatches(false, false).take());
-            assertNotNull(pattern.match(target).getBestMatch(true));
-            assertNotNull(pattern.match(target).getMatches(true, true).take());
-            assertNotNull(pattern.match(target).getMatches(false, true).take());
+            assertNotNull(pattern.match(target).getBestMatch(rg.nextBoolean()));
+            assertNotNull(pattern.match(target).getMatches(rg.nextBoolean(), rg.nextBoolean()).take());
         }
     }
 
     @Test
     public void randomTest() throws Exception {
-        int its = TestUtil.its(1000, 10000);
-        for (int i = 0; i < its; ++i) {
+        Random rg = new Random();
+        for (int i = 0; i < 10000; i++) {
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
             NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 50);
-            NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
-                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
+            NSequenceWithQuality targetQ = new NSequenceWithQuality(target.toString());
             FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), motif);
             boolean isMatching = target.toString().contains(motif.toString());
             assertEquals(isMatching, pattern.match(targetQ).isFound());
-            assertEquals(isMatching, pattern.match(targetQ).getBestMatch(false) != null);
-            assertEquals(isMatching, pattern.match(targetQ).getMatches(true, false).take() != null);
-            assertEquals(isMatching, pattern.match(targetQ).getMatches(false, false).take() != null);
-            assertEquals(isMatching, pattern.match(targetQ).getBestMatch(true) != null);
-            assertEquals(isMatching, pattern.match(targetQ).getMatches(true, true).take() != null);
-            assertEquals(isMatching, pattern.match(targetQ).getMatches(false, true).take() != null);
+            assertEquals(isMatching, pattern.match(targetQ).getBestMatch(rg.nextBoolean()) != null);
+            assertEquals(isMatching, pattern.match(targetQ).getMatches(rg.nextBoolean(),
+                    rg.nextBoolean()).take() != null);
         }
     }
 
@@ -214,23 +204,23 @@ public class FuzzyMatchPatternTest {
 
     @Test
     public void randomGroupsTest() throws Exception {
-        Random randomGenerator = new Random();
-        for (int i = 0; i < 100000; i++) {
-            int numErrors = randomGenerator.nextInt(4);
+        Random rg = new Random();
+        for (int i = 0; i < 30000; i++) {
+            int numErrors = rg.nextInt(4);
             PatternAligner patternAligner = getTestPatternAligner(numErrors);
             ArrayList<GroupEdgePosition> groupEdges = new ArrayList<>();
-            int numGroupEdges = randomGenerator.nextInt(40);
-            int motifSize = randomGenerator.nextInt(50) + 1 + numErrors;
+            int numGroupEdges = rg.nextInt(40);
+            int motifSize = rg.nextInt(50) + 1 + numErrors;
             for (int j = 0; j < numGroupEdges; j++)
-                groupEdges.add(new GroupEdgePosition(new GroupEdge("1", randomGenerator.nextBoolean()),
-                        randomGenerator.nextInt(motifSize + 1 - numErrors)));
+                groupEdges.add(new GroupEdgePosition(new GroupEdge("1", rg.nextBoolean()),
+                        rg.nextInt(motifSize + 1 - numErrors)));
             NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, motifSize, motifSize);
             NucleotideSequence mutatedMotif = makeRandomErrors(motif, numErrors);
             FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(patternAligner, motif, groupEdges);
             FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(patternAligner, mutatedMotif, groupEdges);
             NSequenceWithQuality target = new NSequenceWithQuality(motif.toString() + motif.toString());
             OutputPort<Match> port1 = pattern1.match(target).getMatches(true, false);
-            OutputPort<Match> port2 = pattern2.match(target).getMatches(randomGenerator.nextBoolean(), randomGenerator.nextBoolean());
+            OutputPort<Match> port2 = pattern2.match(target).getMatches(rg.nextBoolean(), rg.nextBoolean());
             Match matches[] = new Match[4];
             matches[0] = port1.take();
             matches[1] = port1.take();
@@ -259,12 +249,11 @@ public class FuzzyMatchPatternTest {
 
     @Test
     public void masksTest() throws Exception {
-        int its = TestUtil.its(1000, 10000);
-        for (int i = 0; i < its; ++i) {
+        for (int i = 0; i < 10000; i++) {
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
-            NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 50, false);
-            NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
-                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
+            NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 50,
+                    false);
+            NSequenceWithQuality targetQ = new NSequenceWithQuality(target.toString());
             FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), motif);
             BitapMatcher matcher = motif.toMotif().getBitapPattern().exactMatcher(target.getSequence(), 0, target.size());
             boolean isMatching = (matcher.findNext() != -1);
@@ -332,21 +321,21 @@ public class FuzzyMatchPatternTest {
             for (int j = 0; j < 3; j++) {
                 matchingResults[i][j] = patterns[i].match(sequences[j]);
                 previousMatch = null;
-                for (currentPort = matchingResults[i][j].getMatches(true, true); (currentMatch = currentPort.take()) != null;) {
+                for (currentPort = matchingResults[i][j].getMatches(true, true);
+                     (currentMatch = currentPort.take()) != null;) {
                     if (previousMatch != null)
                         assertTrue(currentMatch.getScore() <= previousMatch.getScore());
                     previousMatch = currentMatch;
                 }
             }
 
-        assertEquals(0, matchingResults[0][0].getBestMatch(true).getScore());
-        assertEquals(0, matchingResults[1][0].getBestMatch(true).getScore());
-        assertEquals(0, matchingResults[2][0].getBestMatch(true).getScore());
-        assertEquals(0, matchingResults[0][0].getBestMatch(false).getScore());
-        assertEquals(0, matchingResults[1][0].getBestMatch(false).getScore());
-        assertEquals(0, matchingResults[2][0].getBestMatch(false).getScore());
-        assertEquals(0, matchingResults[1][1].getBestMatch().getScore());
-        assertEquals(-10, matchingResults[1][2].getBestMatch().getScore());
+        for (boolean fairSorting : new boolean[] {true, false}) {
+            assertEquals(0, matchingResults[0][0].getBestMatch(fairSorting).getScore());
+            assertEquals(0, matchingResults[1][0].getBestMatch(fairSorting).getScore());
+            assertEquals(0, matchingResults[2][0].getBestMatch(fairSorting).getScore());
+            assertEquals(0, matchingResults[1][1].getBestMatch(fairSorting).getScore());
+            assertEquals(-10, matchingResults[1][2].getBestMatch(fairSorting).getScore());
+        }
     }
 
     @Test
