@@ -53,6 +53,9 @@ public final class RepeatPattern extends SinglePattern {
             this.minRepeats = minRepeats;
             this.maxRepeats = maxRepeats;
         }
+        if (patternSeq.size() * maxRepeats >= 64)
+            throw new IllegalArgumentException("Motif length must be less than 64; patternSeq.size()="
+                    + patternSeq.size() + ", maxRepeats=" + maxRepeats);
         this.fixedLeftBorder = fixedLeftBorder;
         this.fixedRightBorder = fixedRightBorder;
         this.groupEdgePositions = groupEdgePositions;
@@ -152,7 +155,7 @@ public final class RepeatPattern extends SinglePattern {
                 this.patternSeq = patternSeq;
                 this.patternSeqLength = patternSeq.size();
                 this.minRepeats = minRepeats;
-                this.maxRepeats = Math.min(maxRepeats, (to - from) / patternSeqLength);
+                this.maxRepeats = Math.min(maxRepeats, (to - from + patternAligner.bitapMaxErrors()) / patternSeqLength);
                 this.fixedLeftBorder = fixedLeftBorder;
                 this.fixedRightBorder = fixedRightBorder;
                 this.groupEdgePositions = groupEdgePositions;
@@ -186,7 +189,7 @@ public final class RepeatPattern extends SinglePattern {
                     }
                     Match currentMatch = currentPort.take();
                     if (currentMatch != null)
-                        return currentMatch;
+                        return overrideMatchScore(currentMatch, currentRepeats + 1);
                     else
                         currentPortEmpty = true;
                 }
@@ -209,6 +212,7 @@ public final class RepeatPattern extends SinglePattern {
                         do {
                             currentMatch = currentPort.take();
                             if (currentMatch != null) {
+                                currentMatch = overrideMatchScore(currentMatch, repeats);
                                 Range currentRange = currentMatch.getRange();
                                 if ((matchesWithUniqueRanges.get(currentRange) == null)
                                         || (matchesWithUniqueRanges.get(currentRange).getScore() < currentMatch.getScore()))
@@ -238,9 +242,14 @@ public final class RepeatPattern extends SinglePattern {
              */
             private ArrayList<GroupEdgePosition> fixGroupEdgePositions(ArrayList<GroupEdgePosition> groupEdgePositions,
                                                                        int maxPosition) {
-                return groupEdgePositions.stream().map(gp -> (gp.getPosition() > maxPosition) ? gp
+                return groupEdgePositions.stream().map(gp -> (gp.getPosition() <= maxPosition) ? gp
                         : new GroupEdgePosition(gp.getGroupEdge(), maxPosition))
                         .collect(Collectors.toCollection(ArrayList::new));
+            }
+
+            private Match overrideMatchScore(Match match, int repeats) {
+                return new Match(match.getNumberOfPatterns(), match.getScore() + patternAligner.repeatsPenalty(
+                        patternSeq, repeats, maxRepeats), match.getMatchedItems());
             }
         }
     }

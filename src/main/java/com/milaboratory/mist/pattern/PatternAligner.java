@@ -43,6 +43,18 @@ public interface PatternAligner {
     long insertionPenalty(NSequenceWithQuality target, int insertionOffset, int insertionLength);
 
     /**
+     * Get penalty value for given number of motif repeats for RepeatPattern match.
+     *
+     * @param motif motif of this RepeatPattern
+     * @param repeats number of motif repeats for this RepeatPattern match
+     * @param maxRepeats maximum number of motif repeats for this RepeatPattern
+     * @return negative penalty value
+     */
+    default long repeatsPenalty(NucleotideSequence motif, int repeats, int maxRepeats) {
+        return 0;
+    }
+
+    /**
      * Max errors to use in bitap matcher.
      *
      * @return max errors for bitap
