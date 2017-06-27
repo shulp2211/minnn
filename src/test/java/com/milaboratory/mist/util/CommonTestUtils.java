@@ -208,6 +208,10 @@ public class CommonTestUtils {
         };
     }
 
+    public static String repeatString(String str, int num) {
+        return new String(new char[num]).replace("\0", str);
+    }
+
     public static <T extends Enum<?>> T getRandomEnumItem(Class<T> enumClass){
         return enumClass.getEnumConstants()[new Random().nextInt(enumClass.getEnumConstants().length)];
     }
