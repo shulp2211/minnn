@@ -35,7 +35,8 @@ final class SimplifiedTokenizer {
         ArrayList<ObjectString> objectStrings = new ArrayList<>();
 
         for (BracketsPair parenthesesPair : parenthesesPairs) {
-            if (parenthesesPair.end == parenthesesPair.start + 1)
+            if ((parenthesesPair.end == parenthesesPair.start + 1)
+                    && !getObjectName(parenthesesPair.start, fullString).equals(ANY_PATTERN_NAME))
                 throw new ParserException("Found empty parentheses: "
                         + parenthesesPair.start + ", " + parenthesesPair.end + "; argument list must not be empty!");
             objectStrings.add(new ObjectString(getObjectName(parenthesesPair.start, fullString), parenthesesPair));
@@ -51,15 +52,16 @@ final class SimplifiedTokenizer {
                 case BORDER_FILTER_NAME:
                     break;
                 case FUZZY_MATCH_PATTERN_NAME:
-                    ArrayList<GroupEdgePosition> groupEdgePositions;
-                    List<BracketsPair> innerSquareBrackets = squareBracketsPairs.stream().
+                    ArrayList<GroupEdgePosition> groupEdgePositionsFuzzy;
+                    List<BracketsPair> innerSquareBracketsFuzzy = squareBracketsPairs.stream().
                             filter(bp -> objectString.getParenthesesPair().contains(bp)).collect(Collectors.toList());
-                    switch (innerSquareBrackets.size()) {
+                    switch (innerSquareBracketsFuzzy.size()) {
                         case 0:
-                            groupEdgePositions = new ArrayList<>();
+                            groupEdgePositionsFuzzy = new ArrayList<>();
                             break;
                         case 1:
-                            groupEdgePositions = parseArrayOfGroupEdgePositions(tokenizedString, innerSquareBrackets.get(0));
+                            groupEdgePositionsFuzzy = parseArrayOfGroupEdgePositions(tokenizedString,
+                                    innerSquareBracketsFuzzy.get(0));
                             break;
                         default:
                             throw new ParserException("Found multiple square bracket pairs in FuzzyMatchPattern!");
@@ -67,8 +69,37 @@ final class SimplifiedTokenizer {
                     String fuzzyMatchPatternString = tokenizedString.getOneString(
                             objectString.getDataStart(), objectString.getDataEnd());
                     FuzzyMatchPattern fuzzyMatchPattern = parseFuzzyMatchPattern(currentPatternAligner,
-                            fuzzyMatchPatternString, groupEdgePositions);
+                            fuzzyMatchPatternString, groupEdgePositionsFuzzy);
                     tokenizedString.tokenizeSubstring(fuzzyMatchPattern,
+                            objectString.getFullStringStart(), objectString.getFullStringEnd());
+                    break;
+                case REPEAT_PATTERN_NAME:
+                    ArrayList<GroupEdgePosition> groupEdgePositionsRepeat;
+                    List<BracketsPair> innerSquareBracketsRepeat = squareBracketsPairs.stream().
+                            filter(bp -> objectString.getParenthesesPair().contains(bp)).collect(Collectors.toList());
+                    switch (innerSquareBracketsRepeat.size()) {
+                        case 0:
+                            groupEdgePositionsRepeat = new ArrayList<>();
+                            break;
+                        case 1:
+                            groupEdgePositionsRepeat = parseArrayOfGroupEdgePositions(tokenizedString,
+                                    innerSquareBracketsRepeat.get(0));
+                            break;
+                        default:
+                            throw new ParserException("Found multiple square bracket pairs in RepeatPattern!");
+                    }
+                    String repeatPatternString = tokenizedString.getOneString(
+                            objectString.getDataStart(), objectString.getDataEnd());
+                    RepeatPattern repeatPattern = parseRepeatPattern(currentPatternAligner,
+                            repeatPatternString, groupEdgePositionsRepeat);
+                    tokenizedString.tokenizeSubstring(repeatPattern,
+                            objectString.getFullStringStart(), objectString.getFullStringEnd());
+                    break;
+                case ANY_PATTERN_NAME:
+                    String anyPatternString = tokenizedString.getOneString(
+                            objectString.getDataStart(), objectString.getDataEnd());
+                    AnyPattern anyPattern = parseAnyPattern(currentPatternAligner, anyPatternString);
+                    tokenizedString.tokenizeSubstring(anyPattern,
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
                 case AND_PATTERN_NAME:
@@ -89,6 +120,16 @@ final class SimplifiedTokenizer {
                     PlusPattern plusPattern = parsePlusPattern(currentPatternAligner, plusPatternTokenizedSubstring,
                             plusPatternOperands);
                     tokenizedString.tokenizeSubstring(plusPattern,
+                            objectString.getFullStringStart(), objectString.getFullStringEnd());
+                    break;
+                case SEQUENCE_PATTERN_NAME:
+                    ArrayList<SinglePattern> sequencePatternOperands = getPatternOperands(
+                            tokenizedString, squareBracketsPairs, objectString);
+                    ArrayList<Token> sequencePatternTokenizedSubstring = tokenizedString.getTokens(
+                            objectString.getDataStart(), objectString.getDataEnd());
+                    SequencePattern sequencePattern = parseSequencePattern(currentPatternAligner,
+                            sequencePatternTokenizedSubstring, sequencePatternOperands);
+                    tokenizedString.tokenizeSubstring(sequencePattern,
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
                 case OR_PATTERN_NAME:

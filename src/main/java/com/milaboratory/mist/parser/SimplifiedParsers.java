@@ -24,30 +24,130 @@ final class SimplifiedParsers {
     static FuzzyMatchPattern parseFuzzyMatchPattern(PatternAligner patternAligner, String str,
                                                     ArrayList<GroupEdgePosition> groupEdgePositions) throws ParserException {
         List<QuotesPair> quotesPairs = getAllQuotes(str);
+        int commaPositions[] = new int[3];
         NucleotideSequence seq;
+        int fixedLeftBorder;
+        int fixedRightBorder;
 
-        int commaPosition = nonQuotedIndexOf(quotesPairs, str, ",", 0);
-        if (commaPosition == -1)
-            if (str.length() == 0)
-                throw new ParserException("Missing nucleotide sequence, empty argument string for fuzzy match pattern!");
-            else try {
-                seq = new NucleotideSequence(str);
-            } catch (IllegalArgumentException e) {
-                throw new ParserException("Wrong nucleotide sequence in " + str + ": " + e);
-            }
-        else
-            if (!str.substring(commaPosition, commaPosition + 3).equals(", ["))
+        commaPositions[0] = nonQuotedIndexOf(quotesPairs, str, ", ", 0);
+        if (commaPositions[0] == -1)
+            throw new ParserException("Missing first ', ' in FuzzyMatchPattern arguments: " + str);
+        else if (commaPositions[0] == 0)
+            throw new ParserException("Missing nucleotide sequence in FuzzyMatchPattern: " + str);
+        commaPositions[1] = nonQuotedIndexOf(quotesPairs, str, ", ", commaPositions[0] + 1);
+        if (commaPositions[1] == -1)
+            throw new ParserException("Missing second ', ' in FuzzyMatchPattern arguments: " + str);
+        commaPositions[2] = nonQuotedIndexOf(quotesPairs, str, ", ", commaPositions[1] + 1);
+
+        try {
+            seq = new NucleotideSequence(str.substring(0, commaPositions[0]));
+        } catch (IllegalArgumentException e) {
+            throw new ParserException("Wrong nucleotide sequence in " + str + ": " + e);
+        }
+
+        String fixedLeftBorderSubstring = str.substring(commaPositions[0] + 2, commaPositions[1]);
+        try {
+            fixedLeftBorder = Integer.parseInt(fixedLeftBorderSubstring);
+        } catch (NumberFormatException e) {
+            throw new ParserException("Failed to parse fixedLeftBorder (" + fixedLeftBorderSubstring + ") in " + str);
+        }
+
+        String fixedRightBorderSubstring = str.substring(commaPositions[1] + 2, (commaPositions[2] == -1)
+                ? str.length() : commaPositions[2]);
+        try {
+            fixedRightBorder = Integer.parseInt(fixedRightBorderSubstring);
+        } catch (NumberFormatException e) {
+            throw new ParserException("Failed to parse fixedRightBorder (" + fixedRightBorderSubstring + ") in " + str);
+        }
+
+        if (commaPositions[2] != -1)
+            if ((str.substring(commaPositions[2]).length() < 3)
+                    || (!str.substring(commaPositions[2], commaPositions[2] + 3).equals(", [")))
                 throw new ParserException("Error while parsing " + str + ": expected ', [', found '"
-                        + str.substring(commaPosition, commaPosition + 3) + "'");
-            else if (commaPosition == 0)
-                throw new ParserException("Missing nucleotide sequence: " + str);
-            else try {
-                seq = new NucleotideSequence(str.substring(0, commaPosition));
-            } catch (IllegalArgumentException e) {
-                throw new ParserException("Wrong nucleotide sequence in " + str + ": " + e);
-            }
+                        + str.substring(commaPositions[2]) + "'");
 
-        return new FuzzyMatchPattern(patternAligner, seq, groupEdgePositions);
+        return new FuzzyMatchPattern(patternAligner, seq, fixedLeftBorder, fixedRightBorder, groupEdgePositions);
+    }
+
+    /**
+     * Parse RepeatPattern parameters; group edge positions must be already parsed in this stage.
+     *
+     * @param patternAligner pattern aligner
+     * @param str string containing RepeatPattern arguments which were inside parentheses
+     * @param groupEdgePositions parsed group edge positions
+     * @return RepeatPattern
+     */
+    static RepeatPattern parseRepeatPattern(PatternAligner patternAligner, String str,
+                                            ArrayList<GroupEdgePosition> groupEdgePositions) throws ParserException {
+        List<QuotesPair> quotesPairs = getAllQuotes(str);
+        int commaPositions[] = new int[5];
+        NucleotideSequence seq;
+        int minRepeats;
+        int maxRepeats;
+        int fixedLeftBorder;
+        int fixedRightBorder;
+
+        commaPositions[0] = nonQuotedIndexOf(quotesPairs, str, ", ", 0);
+        if (commaPositions[0] == -1)
+            throw new ParserException("Missing first ', ' in RepeatPattern arguments: " + str);
+        else if (commaPositions[0] == 0)
+            throw new ParserException("Missing nucleotide sequence in RepeatPattern: " + str);
+        for (int i = 1; i <= 4; i++) {
+            commaPositions[i] = nonQuotedIndexOf(quotesPairs, str, ", ", commaPositions[i - 1] + 1);
+            if ((i < 4) && (commaPositions[i] == -1))
+                throw new ParserException("Missing ', ' with index " + i
+                        + " in RepeatPattern arguments (probably, insufficient arguments): " + str);
+        }
+
+        try {
+            seq = new NucleotideSequence(str.substring(0, commaPositions[0]));
+        } catch (IllegalArgumentException e) {
+            throw new ParserException("Wrong nucleotide sequence in " + str + ": " + e);
+        }
+
+        String minRepeatsSubstring = str.substring(commaPositions[0] + 2, commaPositions[1]);
+        try {
+            minRepeats = Integer.parseInt(minRepeatsSubstring);
+        } catch (NumberFormatException e) {
+            throw new ParserException("Failed to parse minRepeats (" + minRepeatsSubstring + ") in " + str);
+        }
+
+        String maxRepeatsSubstring = str.substring(commaPositions[1] + 2, commaPositions[2]);
+        try {
+            maxRepeats = Integer.parseInt(maxRepeatsSubstring);
+        } catch (NumberFormatException e) {
+            throw new ParserException("Failed to parse maxRepeats (" + maxRepeatsSubstring + ") in " + str);
+        }
+
+        String fixedLeftBorderSubstring = str.substring(commaPositions[2] + 2, commaPositions[3]);
+        try {
+            fixedLeftBorder = Integer.parseInt(fixedLeftBorderSubstring);
+        } catch (NumberFormatException e) {
+            throw new ParserException("Failed to parse fixedLeftBorder (" + fixedLeftBorderSubstring + ") in " + str);
+        }
+
+        String fixedRightBorderSubstring = str.substring(commaPositions[3] + 2, (commaPositions[4] == -1)
+                ? str.length() : commaPositions[4]);
+        try {
+            fixedRightBorder = Integer.parseInt(fixedRightBorderSubstring);
+        } catch (NumberFormatException e) {
+            throw new ParserException("Failed to parse fixedRightBorder (" + fixedRightBorderSubstring + ") in " + str);
+        }
+
+        if (commaPositions[4] != -1)
+            if ((str.substring(commaPositions[4]).length() < 3)
+                    || (!str.substring(commaPositions[4], commaPositions[4] + 3).equals(", [")))
+                throw new ParserException("Error while parsing " + str + ": expected ', [', found '"
+                        + str.substring(commaPositions[4]) + "'");
+
+        return new RepeatPattern(patternAligner, seq, minRepeats, maxRepeats, fixedLeftBorder, fixedRightBorder,
+                groupEdgePositions);
+    }
+
+    static AnyPattern parseAnyPattern(PatternAligner patternAligner, String str) throws ParserException {
+        if (!str.equals(""))
+            throw new ParserException("AnyPattern must not have arguments; found: " + str);
+        return new AnyPattern(patternAligner);
     }
 
     /**
@@ -68,6 +168,12 @@ final class SimplifiedParsers {
                                         ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         return new PlusPattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
+    }
+
+    static SequencePattern parseSequencePattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
+                                                ArrayList<SinglePattern> singlePatterns) throws ParserException {
+        checkOperandArraySpelling(tokenizedSubstring);
+        return new SequencePattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
     }
 
     static OrPattern parseOrPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
