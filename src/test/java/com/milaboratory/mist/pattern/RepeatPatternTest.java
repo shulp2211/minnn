@@ -234,18 +234,4 @@ public class RepeatPatternTest {
             assertNull(pattern3.match(target3_1, 4, 9).getBestMatch(fairSorting));
         }
     }
-
-    private static class RandomRepeats {
-        final int motifSize;
-        final int repeats;
-        final int minRepeats;
-        final int maxRepeats;
-
-        RandomRepeats(Random rg) {
-            motifSize = rg.nextInt(60) + 1;
-            repeats = Math.max(1, rg.nextInt(60 / motifSize + 1));
-            minRepeats = repeats - rg.nextInt(repeats);
-            maxRepeats = Math.max(repeats, rg.nextInt(60 / motifSize + 1));
-        }
-    }
 }
