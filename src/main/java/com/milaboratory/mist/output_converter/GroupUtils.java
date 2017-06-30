@@ -1,6 +1,8 @@
-package com.milaboratory.mist.pattern;
+package com.milaboratory.mist.output_converter;
 
 import com.milaboratory.core.Range;
+import com.milaboratory.mist.pattern.Match;
+import com.milaboratory.mist.pattern.MatchedGroupEdge;
 
 import java.util.ArrayList;
 

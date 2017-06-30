@@ -1,14 +1,15 @@
-package com.milaboratory.mist.pattern;
+package com.milaboratory.mist.output_converter;
 
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.mist.pattern.*;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 
-import static com.milaboratory.mist.pattern.GroupUtils.getGroupsFromMatch;
+import static com.milaboratory.mist.output_converter.GroupUtils.getGroupsFromMatch;
 import static org.junit.Assert.*;
 
 public class GroupUtilsTest {
