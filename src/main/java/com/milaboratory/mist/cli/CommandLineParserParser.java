@@ -17,17 +17,17 @@ public class CommandLineParserParser extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		COMMAND=1, OPTION=2, STRING=3, WS=4;
+		OPTION=1, COMMAND=2, STRING=3, WS=4;
 	public static final int
-		RULE_commandLine = 0;
+		RULE_commandLine = 0, RULE_option = 1;
 	public static final String[] ruleNames = {
-		"commandLine"
+		"commandLine", "option"
 	};
 
 	private static final String[] _LITERAL_NAMES = {
 	};
 	private static final String[] _SYMBOLIC_NAMES = {
-		null, "COMMAND", "OPTION", "STRING", "WS"
+		null, "OPTION", "COMMAND", "STRING", "WS"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -80,9 +80,11 @@ public class CommandLineParserParser extends Parser {
 	}
 	public static class CommandLineContext extends ParserRuleContext {
 		public TerminalNode COMMAND() { return getToken(CommandLineParserParser.COMMAND, 0); }
-		public List<TerminalNode> OPTION() { return getTokens(CommandLineParserParser.OPTION); }
-		public TerminalNode OPTION(int i) {
-			return getToken(CommandLineParserParser.OPTION, i);
+		public List<OptionContext> option() {
+			return getRuleContexts(OptionContext.class);
+		}
+		public OptionContext option(int i) {
+			return getRuleContext(OptionContext.class,i);
 		}
 		public CommandLineContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -105,19 +107,19 @@ public class CommandLineParserParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(2);
+			setState(4);
 			match(COMMAND);
-			setState(4); 
+			setState(6); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
 				{
-				setState(3);
-				match(OPTION);
+				setState(5);
+				option();
 				}
 				}
-				setState(6); 
+				setState(8); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			} while ( _la==OPTION );
@@ -134,11 +136,52 @@ public class CommandLineParserParser extends Parser {
 		return _localctx;
 	}
 
+	public static class OptionContext extends ParserRuleContext {
+		public TerminalNode OPTION() { return getToken(CommandLineParserParser.OPTION, 0); }
+		public TerminalNode STRING() { return getToken(CommandLineParserParser.STRING, 0); }
+		public OptionContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_option; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof CommandLineParserListener ) ((CommandLineParserListener)listener).enterOption(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof CommandLineParserListener ) ((CommandLineParserListener)listener).exitOption(this);
+		}
+	}
+
+	public final OptionContext option() throws RecognitionException {
+		OptionContext _localctx = new OptionContext(_ctx, getState());
+		enterRule(_localctx, 2, RULE_option);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(10);
+			match(OPTION);
+			setState(11);
+			match(STRING);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\6\13\4\2\t\2\3\2"+
-		"\3\2\6\2\7\n\2\r\2\16\2\b\3\2\2\2\3\2\2\2\2\n\2\4\3\2\2\2\4\6\7\3\2\2"+
-		"\5\7\7\4\2\2\6\5\3\2\2\2\7\b\3\2\2\2\b\6\3\2\2\2\b\t\3\2\2\2\t\3\3\2\2"+
-		"\2\3\b";
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\6\20\4\2\t\2\4\3"+
+		"\t\3\3\2\3\2\6\2\t\n\2\r\2\16\2\n\3\3\3\3\3\3\3\3\2\2\4\2\4\2\2\2\16\2"+
+		"\6\3\2\2\2\4\f\3\2\2\2\6\b\7\4\2\2\7\t\5\4\3\2\b\7\3\2\2\2\t\n\3\2\2\2"+
+		"\n\b\3\2\2\2\n\13\3\2\2\2\13\3\3\2\2\2\f\r\7\3\2\2\r\16\7\5\2\2\16\5\3"+
+		"\2\2\2\3\n";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

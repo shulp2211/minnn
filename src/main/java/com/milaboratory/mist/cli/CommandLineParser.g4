@@ -1,8 +1,10 @@
 grammar CommandLineParser;
 
-commandLine : COMMAND OPTION+ ;
+commandLine : COMMAND option+ ;
 
+option : OPTION STRING;
+
+OPTION: '--' COMMAND ;
 COMMAND : [a-z]+ ;
-OPTION : '-' COMMAND STRING ;
 STRING : '"' ('""'|~'"')* '"' ;
 WS : [ \t\n\r]+ -> skip ;

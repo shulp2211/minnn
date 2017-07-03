@@ -17,4 +17,14 @@ public interface CommandLineParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitCommandLine(CommandLineParserParser.CommandLineContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CommandLineParserParser#option}.
+	 * @param ctx the parse tree
+	 */
+	void enterOption(CommandLineParserParser.OptionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CommandLineParserParser#option}.
+	 * @param ctx the parse tree
+	 */
+	void exitOption(CommandLineParserParser.OptionContext ctx);
 }

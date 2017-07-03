@@ -23,6 +23,18 @@ public class CommandLineParserBaseListener implements CommandLineParserListener 
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitCommandLine(CommandLineParserParser.CommandLineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterOption(CommandLineParserParser.OptionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitOption(CommandLineParserParser.OptionContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

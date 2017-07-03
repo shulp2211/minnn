@@ -1,7 +1,12 @@
 package com.milaboratory.mist;
 
+import com.milaboratory.mist.cli.CommandLineParser;
+
+import java.io.IOException;
+
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hi!+");
+        CommandLineParser commandLineParser = new CommandLineParser(args);
+        commandLineParser.parseAndExecute();
     }
 }
