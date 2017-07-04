@@ -1,10 +1,13 @@
 grammar CommandLineParser;
 
-commandLine : COMMAND option+ ;
+commandLine : ('parse' parseOption+) | ('filter' FILE_NAME+ filterOutput+) ;
 
-option : OPTION STRING;
+parseOption : OPTION (ID | STRING | FILE_NAME)* ;
+filterOutput : OPTION (EXPRESSION | STRING) FILE_NAME+? ;
 
-OPTION: '--' COMMAND ;
-COMMAND : [a-z]+ ;
+OPTION : '--' [a-z]* ;
 STRING : '"' ('""'|~'"')* '"' ;
+FILE_NAME : [0-9a-zA-Z_\-.]+ ;
+EXPRESSION : [A-Za-z]+ '=' [A-Za-z]+ ;
+ID : [0-9a-zA-Z]+ ;
 WS : [ \t\n\r]+ -> skip ;

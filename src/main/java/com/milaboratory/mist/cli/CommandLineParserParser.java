@@ -17,17 +17,19 @@ public class CommandLineParserParser extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		OPTION=1, COMMAND=2, STRING=3, WS=4;
+		T__0=1, T__1=2, OPTION=3, STRING=4, FILE_NAME=5, EXPRESSION=6, ID=7, WS=8;
 	public static final int
-		RULE_commandLine = 0, RULE_option = 1;
+		RULE_commandLine = 0, RULE_parseOption = 1, RULE_filterOutput = 2;
 	public static final String[] ruleNames = {
-		"commandLine", "option"
+		"commandLine", "parseOption", "filterOutput"
 	};
 
 	private static final String[] _LITERAL_NAMES = {
+		null, "'parse'", "'filter'"
 	};
 	private static final String[] _SYMBOLIC_NAMES = {
-		null, "OPTION", "COMMAND", "STRING", "WS"
+		null, null, null, "OPTION", "STRING", "FILE_NAME", "EXPRESSION", "ID", 
+		"WS"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -79,12 +81,21 @@ public class CommandLineParserParser extends Parser {
 		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
 	}
 	public static class CommandLineContext extends ParserRuleContext {
-		public TerminalNode COMMAND() { return getToken(CommandLineParserParser.COMMAND, 0); }
-		public List<OptionContext> option() {
-			return getRuleContexts(OptionContext.class);
+		public List<ParseOptionContext> parseOption() {
+			return getRuleContexts(ParseOptionContext.class);
 		}
-		public OptionContext option(int i) {
-			return getRuleContext(OptionContext.class,i);
+		public ParseOptionContext parseOption(int i) {
+			return getRuleContext(ParseOptionContext.class,i);
+		}
+		public List<TerminalNode> FILE_NAME() { return getTokens(CommandLineParserParser.FILE_NAME); }
+		public TerminalNode FILE_NAME(int i) {
+			return getToken(CommandLineParserParser.FILE_NAME, i);
+		}
+		public List<FilterOutputContext> filterOutput() {
+			return getRuleContexts(FilterOutputContext.class);
+		}
+		public FilterOutputContext filterOutput(int i) {
+			return getRuleContext(FilterOutputContext.class,i);
 		}
 		public CommandLineContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -105,24 +116,71 @@ public class CommandLineParserParser extends Parser {
 		enterRule(_localctx, 0, RULE_commandLine);
 		int _la;
 		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(4);
-			match(COMMAND);
-			setState(6); 
+			setState(23);
 			_errHandler.sync(this);
-			_la = _input.LA(1);
-			do {
+			switch (_input.LA(1)) {
+			case T__0:
+				enterOuterAlt(_localctx, 1);
 				{
 				{
-				setState(5);
-				option();
-				}
-				}
+				setState(6);
+				match(T__0);
 				setState(8); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==OPTION );
+				do {
+					{
+					{
+					setState(7);
+					parseOption();
+					}
+					}
+					setState(10); 
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+				} while ( _la==OPTION );
+				}
+				}
+				break;
+			case T__1:
+				enterOuterAlt(_localctx, 2);
+				{
+				{
+				setState(12);
+				match(T__1);
+				setState(14); 
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				do {
+					{
+					{
+					setState(13);
+					match(FILE_NAME);
+					}
+					}
+					setState(16); 
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+				} while ( _la==FILE_NAME );
+				setState(19); 
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				do {
+					{
+					{
+					setState(18);
+					filterOutput();
+					}
+					}
+					setState(21); 
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+				} while ( _la==OPTION );
+				}
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
 			}
 		}
 		catch (RecognitionException re) {
@@ -136,33 +194,140 @@ public class CommandLineParserParser extends Parser {
 		return _localctx;
 	}
 
-	public static class OptionContext extends ParserRuleContext {
+	public static class ParseOptionContext extends ParserRuleContext {
 		public TerminalNode OPTION() { return getToken(CommandLineParserParser.OPTION, 0); }
-		public TerminalNode STRING() { return getToken(CommandLineParserParser.STRING, 0); }
-		public OptionContext(ParserRuleContext parent, int invokingState) {
+		public List<TerminalNode> ID() { return getTokens(CommandLineParserParser.ID); }
+		public TerminalNode ID(int i) {
+			return getToken(CommandLineParserParser.ID, i);
+		}
+		public List<TerminalNode> STRING() { return getTokens(CommandLineParserParser.STRING); }
+		public TerminalNode STRING(int i) {
+			return getToken(CommandLineParserParser.STRING, i);
+		}
+		public List<TerminalNode> FILE_NAME() { return getTokens(CommandLineParserParser.FILE_NAME); }
+		public TerminalNode FILE_NAME(int i) {
+			return getToken(CommandLineParserParser.FILE_NAME, i);
+		}
+		public ParseOptionContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_option; }
+		@Override public int getRuleIndex() { return RULE_parseOption; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CommandLineParserListener ) ((CommandLineParserListener)listener).enterOption(this);
+			if ( listener instanceof CommandLineParserListener ) ((CommandLineParserListener)listener).enterParseOption(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CommandLineParserListener ) ((CommandLineParserListener)listener).exitOption(this);
+			if ( listener instanceof CommandLineParserListener ) ((CommandLineParserListener)listener).exitParseOption(this);
 		}
 	}
 
-	public final OptionContext option() throws RecognitionException {
-		OptionContext _localctx = new OptionContext(_ctx, getState());
-		enterRule(_localctx, 2, RULE_option);
+	public final ParseOptionContext parseOption() throws RecognitionException {
+		ParseOptionContext _localctx = new ParseOptionContext(_ctx, getState());
+		enterRule(_localctx, 2, RULE_parseOption);
+		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(10);
+			setState(25);
 			match(OPTION);
-			setState(11);
-			match(STRING);
+			setState(29);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << STRING) | (1L << FILE_NAME) | (1L << ID))) != 0)) {
+				{
+				{
+				setState(26);
+				_la = _input.LA(1);
+				if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << STRING) | (1L << FILE_NAME) | (1L << ID))) != 0)) ) {
+				_errHandler.recoverInline(this);
+				}
+				else {
+					if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
+					_errHandler.reportMatch(this);
+					consume();
+				}
+				}
+				}
+				setState(31);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+			}
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class FilterOutputContext extends ParserRuleContext {
+		public TerminalNode OPTION() { return getToken(CommandLineParserParser.OPTION, 0); }
+		public TerminalNode EXPRESSION() { return getToken(CommandLineParserParser.EXPRESSION, 0); }
+		public TerminalNode STRING() { return getToken(CommandLineParserParser.STRING, 0); }
+		public List<TerminalNode> FILE_NAME() { return getTokens(CommandLineParserParser.FILE_NAME); }
+		public TerminalNode FILE_NAME(int i) {
+			return getToken(CommandLineParserParser.FILE_NAME, i);
+		}
+		public FilterOutputContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_filterOutput; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof CommandLineParserListener ) ((CommandLineParserListener)listener).enterFilterOutput(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof CommandLineParserListener ) ((CommandLineParserListener)listener).exitFilterOutput(this);
+		}
+	}
+
+	public final FilterOutputContext filterOutput() throws RecognitionException {
+		FilterOutputContext _localctx = new FilterOutputContext(_ctx, getState());
+		enterRule(_localctx, 4, RULE_filterOutput);
+		int _la;
+		try {
+			int _alt;
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(32);
+			match(OPTION);
+			setState(33);
+			_la = _input.LA(1);
+			if ( !(_la==STRING || _la==EXPRESSION) ) {
+			_errHandler.recoverInline(this);
+			}
+			else {
+				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
+				_errHandler.reportMatch(this);
+				consume();
+			}
+			setState(35); 
+			_errHandler.sync(this);
+			_alt = 1+1;
+			do {
+				switch (_alt) {
+				case 1+1:
+					{
+					{
+					setState(34);
+					match(FILE_NAME);
+					}
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
+				}
+				setState(37); 
+				_errHandler.sync(this);
+				_alt = getInterpreter().adaptivePredict(_input,5,_ctx);
+			} while ( _alt!=1 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
 			}
 		}
 		catch (RecognitionException re) {
@@ -177,11 +342,19 @@ public class CommandLineParserParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\6\20\4\2\t\2\4\3"+
-		"\t\3\3\2\3\2\6\2\t\n\2\r\2\16\2\n\3\3\3\3\3\3\3\3\2\2\4\2\4\2\2\2\16\2"+
-		"\6\3\2\2\2\4\f\3\2\2\2\6\b\7\4\2\2\7\t\5\4\3\2\b\7\3\2\2\2\t\n\3\2\2\2"+
-		"\n\b\3\2\2\2\n\13\3\2\2\2\13\3\3\2\2\2\f\r\7\3\2\2\r\16\7\5\2\2\16\5\3"+
-		"\2\2\2\3\n";
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\n*\4\2\t\2\4\3\t"+
+		"\3\4\4\t\4\3\2\3\2\6\2\13\n\2\r\2\16\2\f\3\2\3\2\6\2\21\n\2\r\2\16\2\22"+
+		"\3\2\6\2\26\n\2\r\2\16\2\27\5\2\32\n\2\3\3\3\3\7\3\36\n\3\f\3\16\3!\13"+
+		"\3\3\4\3\4\3\4\6\4&\n\4\r\4\16\4\'\3\4\3\'\2\5\2\4\6\2\4\4\2\6\7\t\t\4"+
+		"\2\6\6\b\b\2,\2\31\3\2\2\2\4\33\3\2\2\2\6\"\3\2\2\2\b\n\7\3\2\2\t\13\5"+
+		"\4\3\2\n\t\3\2\2\2\13\f\3\2\2\2\f\n\3\2\2\2\f\r\3\2\2\2\r\32\3\2\2\2\16"+
+		"\20\7\4\2\2\17\21\7\7\2\2\20\17\3\2\2\2\21\22\3\2\2\2\22\20\3\2\2\2\22"+
+		"\23\3\2\2\2\23\25\3\2\2\2\24\26\5\6\4\2\25\24\3\2\2\2\26\27\3\2\2\2\27"+
+		"\25\3\2\2\2\27\30\3\2\2\2\30\32\3\2\2\2\31\b\3\2\2\2\31\16\3\2\2\2\32"+
+		"\3\3\2\2\2\33\37\7\5\2\2\34\36\t\2\2\2\35\34\3\2\2\2\36!\3\2\2\2\37\35"+
+		"\3\2\2\2\37 \3\2\2\2 \5\3\2\2\2!\37\3\2\2\2\"#\7\5\2\2#%\t\3\2\2$&\7\7"+
+		"\2\2%$\3\2\2\2&\'\3\2\2\2\'(\3\2\2\2\'%\3\2\2\2(\7\3\2\2\2\b\f\22\27\31"+
+		"\37\'";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {
