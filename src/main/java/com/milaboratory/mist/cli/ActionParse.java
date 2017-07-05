@@ -2,7 +2,10 @@ package com.milaboratory.mist.cli;
 
 import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
 import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.mist.parser.Parser;
+import com.milaboratory.mist.parser.ParserException;
 import com.milaboratory.mist.pattern.BasePatternAligner;
+import com.milaboratory.mist.pattern.Pattern;
 import com.milaboratory.mist.pattern.PatternAligner;
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -10,6 +13,7 @@ import java.util.ArrayList;
 
 import static com.milaboratory.mist.cli.CommandLineParser.exitWithError;
 import static com.milaboratory.mist.cli.Defaults.*;
+import static com.milaboratory.mist.parser.ParserFormat.*;
 
 final class ActionParse {
     static void executeActionParse(ArrayList<ParseTree> options) {
@@ -60,5 +64,13 @@ final class ActionParse {
                 DEFAULT_ALPHABET, matchScore, mismatchScore, gapScore);
         PatternAligner patternAligner = new BasePatternAligner(scoring, penaltyThreshold, singleOverlapPenalty,
                 bitapMaxErrors);
+        Parser patternParser = new Parser(patternAligner);
+        Pattern pattern;
+        try {
+            pattern = patternParser.parseQuery(query, SIMPLIFIED);
+        } catch (ParserException e) {
+            System.err.println("Error while parsing the pattern!");
+            exitWithError(e.getMessage());
+        }
     }
 }
