@@ -9,6 +9,7 @@ import java.util.ArrayList;
 
 import static com.milaboratory.mist.cli.ActionFilter.executeActionFilter;
 import static com.milaboratory.mist.cli.ActionParse.executeActionParse;
+import static com.milaboratory.mist.util.SystemUtils.exitWithError;
 
 public final class CommandLineParser {
     private final String commandLine;
@@ -59,11 +60,5 @@ public final class CommandLineParser {
             default:
                 exitWithError("Action not recognized: " + action);
         }
-    }
-
-    static void exitWithError(String message) {
-        System.err.println(message);
-        System.exit(1);
-        throw new IllegalStateException();
     }
 }

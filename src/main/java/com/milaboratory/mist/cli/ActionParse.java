@@ -11,10 +11,10 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.ArrayList;
 
-import static com.milaboratory.mist.cli.CommandLineParser.exitWithError;
 import static com.milaboratory.mist.cli.Defaults.*;
 import static com.milaboratory.mist.output.ResultWriter.writeResultsFromPort;
 import static com.milaboratory.mist.parser.ParserFormat.*;
+import static com.milaboratory.mist.util.SystemUtils.exitWithError;
 
 final class ActionParse {
     static void executeActionParse(ArrayList<ParseTree> options) {
