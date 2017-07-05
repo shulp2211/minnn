@@ -2,17 +2,18 @@ package com.milaboratory.mist.cli;
 
 import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
 import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.mist.input.TargetReader;
+import com.milaboratory.mist.output_converter.ParsedReadsPort;
 import com.milaboratory.mist.parser.Parser;
 import com.milaboratory.mist.parser.ParserException;
-import com.milaboratory.mist.pattern.BasePatternAligner;
-import com.milaboratory.mist.pattern.Pattern;
-import com.milaboratory.mist.pattern.PatternAligner;
+import com.milaboratory.mist.pattern.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.ArrayList;
 
 import static com.milaboratory.mist.cli.CommandLineParser.exitWithError;
 import static com.milaboratory.mist.cli.Defaults.*;
+import static com.milaboratory.mist.output.ResultWriter.writeResultsFromPort;
 import static com.milaboratory.mist.parser.ParserFormat.*;
 
 final class ActionParse {
@@ -65,12 +66,15 @@ final class ActionParse {
         PatternAligner patternAligner = new BasePatternAligner(scoring, penaltyThreshold, singleOverlapPenalty,
                 bitapMaxErrors);
         Parser patternParser = new Parser(patternAligner);
-        Pattern pattern;
+        Pattern pattern = null;
         try {
             pattern = patternParser.parseQuery(query, SIMPLIFIED);
         } catch (ParserException e) {
             System.err.println("Error while parsing the pattern!");
             exitWithError(e.getMessage());
         }
+        TargetReader targetReader = new TargetReader(pattern);
+        ParsedReadsPort parsedReadsPort = new ParsedReadsPort(targetReader.getMatchingResult(inputFileNames));
+        writeResultsFromPort(outputFileNames, parsedReadsPort);
     }
 }
