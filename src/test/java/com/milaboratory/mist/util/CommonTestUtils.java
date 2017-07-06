@@ -24,10 +24,6 @@ public class CommonTestUtils {
         return counter;
     }
 
-    public static String inQuotes(String str) {
-        return '"' + str + '"';
-    }
-
     public static NucleotideSequence makeRandomInsertions(NucleotideSequence seq, int number) {
         Random randomGenerator = new Random();
         NucleotideSequence result = seq;
@@ -100,7 +96,7 @@ public class CommonTestUtils {
         return seq.getRange(Math.min(position1, position2), Math.max(position1, position2) + 1);
     }
 
-    public static LinearGapAlignmentScoring getTestScoring() {
+    public static LinearGapAlignmentScoring<NucleotideSequence> getTestScoring() {
         return new LinearGapAlignmentScoring<>(NucleotideSequence.ALPHABET, 0, -9, -10);
     }
 
@@ -212,12 +208,12 @@ public class CommonTestUtils {
         };
     }
 
-    public static String repeatString(String str, int num) {
-        return new String(new char[num]).replace("\0", str);
+    public static String inQuotes(String str) {
+        return '"' + str + '"';
     }
 
-    public static <T extends Enum<?>> T getRandomEnumItem(Class<T> enumClass){
-        return enumClass.getEnumConstants()[new Random().nextInt(enumClass.getEnumConstants().length)];
+    public static String repeatString(String str, int num) {
+        return new String(new char[num]).replace("\0", str);
     }
 
     public static String getRandomString(int length) {
@@ -235,6 +231,10 @@ public class CommonTestUtils {
             sb.append(c);
         }
         return sb.toString();
+    }
+
+    public static <T extends Enum<?>> T getRandomEnumItem(Class<T> enumClass) {
+        return enumClass.getEnumConstants()[new Random().nextInt(enumClass.getEnumConstants().length)];
     }
 
     public static ArrayList<GroupEdgePosition> getRandomGroupsForFuzzyMatch(int maxCoordinate) {
