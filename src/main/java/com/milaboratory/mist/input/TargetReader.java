@@ -12,6 +12,7 @@ import com.milaboratory.mist.pattern.SinglePattern;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import static com.milaboratory.mist.util.SystemUtils.exitWithError;
 
@@ -30,7 +31,7 @@ public class TargetReader {
      *                  multiple files = 1 file for each read; empty list = use stdin
      * @return MatchingResult object
      */
-    public MatchingResult getMatchingResult(ArrayList<String> fileNames) {
+    public MatchingResult getMatchingResult(List<String> fileNames) {
         if (fileNames.size() <= 1) {
             SingleFastqReader reader = null;
             try {

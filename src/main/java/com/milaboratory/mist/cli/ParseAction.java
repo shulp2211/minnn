@@ -17,6 +17,7 @@ import com.milaboratory.mist.pattern.Pattern;
 import com.milaboratory.mist.pattern.PatternAligner;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static com.milaboratory.mist.cli.Defaults.*;
 import static com.milaboratory.mist.output.ResultWriter.writeResultsFromPort;
@@ -64,13 +65,13 @@ public final class ParseAction implements Action {
 
         @Parameter(description = "Input files. Single file means that there is 1 read or multi-read file; " +
                     "multiple files mean that there is 1 file for each read.",
-                names = {"--input"})
-        ArrayList<String> inputFileNames = new ArrayList<>();
+                names = {"--input"}, variableArity = true)
+        List<String> inputFileNames = new ArrayList<>();
 
         @Parameter(description = "Output files. Single file means that there is 1 read or multi-read file; " +
                     "multiple files mean that there is 1 file for each read.",
-                names = {"--output"})
-        ArrayList<String> outputFileNames = new ArrayList<>();
+                names = {"--output"}, variableArity = true)
+        List<String> outputFileNames = new ArrayList<>();
 
         @Parameter(description = "Query, pattern specified in MiST format.",
                 names = {"--oriented"})

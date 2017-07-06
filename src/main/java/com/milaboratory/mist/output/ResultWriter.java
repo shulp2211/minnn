@@ -3,7 +3,7 @@ package com.milaboratory.mist.output;
 import com.milaboratory.mist.output_converter.ParsedRead;
 import com.milaboratory.mist.output_converter.ParsedReadsPort;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class ResultWriter {
     /**
@@ -13,12 +13,12 @@ public class ResultWriter {
      *                  multiple files = 1 file for each read; empty list = use stdout
      * @param port port to take parsed reads
      */
-    public static void writeResultsFromPort(ArrayList<String> fileNames, ParsedReadsPort port) {
+    public static void writeResultsFromPort(List<String> fileNames, ParsedReadsPort port) {
         ParsedRead bestParsedRead = port.take();
         if (bestParsedRead != null)
             writeResult(fileNames, bestParsedRead);
     }
 
-    private static void writeResult(ArrayList<String> fileNames, ParsedRead parsedRead) {
+    private static void writeResult(List<String> fileNames, ParsedRead parsedRead) {
     }
 }
