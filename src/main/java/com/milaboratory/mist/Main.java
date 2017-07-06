@@ -1,12 +1,38 @@
 package com.milaboratory.mist;
 
-import com.milaboratory.mist.cli.CommandLineParser;
+import com.milaboratory.cli.JCommanderBasedMain;
+import com.milaboratory.mist.cli.FilterAction;
+import com.milaboratory.mist.cli.ParseAction;
+import com.milaboratory.util.VersionInfo;
+import sun.misc.Signal;
 
-import java.io.IOException;
+import static com.milaboratory.mist.util.SystemUtils.exitWithError;
 
-public class Main {
-    public static void main(String[] args) {
-        CommandLineParser commandLineParser = new CommandLineParser(args);
-        commandLineParser.parseAndExecute();
+public final class Main {
+    public static void main(String[] args) throws Exception {
+        Signal.handle(new Signal("PIPE"), signal -> exitWithError("Broken pipe!"));
+
+        JCommanderBasedMain jCommanderBasedMain = new JCommanderBasedMain("mist",
+                new ParseAction(),
+                new FilterAction());
+
+        jCommanderBasedMain.setVersionInfoCallback(() -> {
+            VersionInfo milibVersionInfo = VersionInfo.getVersionInfoForArtifact("milib");
+            VersionInfo mistVersionInfo = VersionInfo.getVersionInfoForArtifact("mist");
+
+            System.out.println(
+                    "MiST v" + mistVersionInfo.getVersion() +
+                    " (built " + mistVersionInfo.getTimestamp() +
+                    "; rev=" + mistVersionInfo.getRevision() +
+                    "; branch=" + milibVersionInfo.getBranch() +
+                    "; host=" + milibVersionInfo.getHost() +
+                    ")\n" +
+                    "MiLib v" + milibVersionInfo.getVersion() +
+                    " (rev=" + milibVersionInfo.getRevision() +
+                    "; branch=" + milibVersionInfo.getBranch() +
+                    ")");
+        });
+
+        jCommanderBasedMain.main(args);
     }
 }
