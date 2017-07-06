@@ -24,6 +24,10 @@ public class CommonTestUtils {
         return counter;
     }
 
+    public static String inQuotes(String str) {
+        return '"' + str + '"';
+    }
+
     public static NucleotideSequence makeRandomInsertions(NucleotideSequence seq, int number) {
         Random randomGenerator = new Random();
         NucleotideSequence result = seq;

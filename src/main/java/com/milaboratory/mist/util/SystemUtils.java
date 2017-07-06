@@ -1,9 +1,14 @@
 package com.milaboratory.mist.util;
 
-public class SystemUtils {
+public final class SystemUtils {
+    public static boolean exitOnError = true;
+
     public static void exitWithError(String message) {
-        System.err.println(message);
-        //System.exit(1);
-        throw new IllegalStateException();
+        if (exitOnError) {
+            System.err.println(message);
+            System.exit(1);
+            throw new IllegalStateException();
+        } else
+            throw new IllegalStateException(message);
     }
 }

@@ -1,4 +1,3 @@
-mixcr.iml
 target
 *.iml
 .idea
@@ -7,3 +6,4 @@ doc/_build
 .flooignore
 out
 test_target
+test_output

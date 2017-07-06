@@ -47,13 +47,13 @@ final class ActionParse {
                     if (childCount < 2)
                         exitWithError("Missing arguments for --input");
                     for (int i = 1; i < childCount; i++)
-                        inputFileNames.add(option.getChild(i).getText());
+                        inputFileNames.add(option.getChild(i).getText().replaceAll("^\"|\"$", ""));
                     break;
                 case "--output":
                     if (childCount < 2)
                         exitWithError("Missing arguments for --output");
                     for (int i = 1; i < childCount; i++)
-                        outputFileNames.add(option.getChild(i).getText());
+                        outputFileNames.add(option.getChild(i).getText().replaceAll("^\"|\"$", ""));
                     break;
                 default:
                     exitWithError("Option not recognized: " + optionName);

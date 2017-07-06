@@ -1,18 +1,14 @@
-package com.milaboratory.mist.cli;
+package com.milaboratory.mist.input;
 
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 import static com.milaboratory.mist.util.SystemUtils.exitOnError;
 import static org.junit.Assert.*;
 
-public class ActionFilterTest {
+public class TargetReaderTest {
     @BeforeClass
     public static void init() {
         exitOnError = false;
     }
 
-    @Test
-    public void simpleTest() throws Exception {
-    }
 }
