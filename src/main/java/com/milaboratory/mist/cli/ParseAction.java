@@ -21,7 +21,7 @@ import java.util.List;
 
 import static com.milaboratory.mist.cli.Defaults.*;
 import static com.milaboratory.mist.output.ResultWriter.writeResultsFromPort;
-import static com.milaboratory.mist.parser.ParserFormat.SIMPLIFIED;
+import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.util.SystemUtils.exitWithError;
 
 public final class ParseAction implements Action {
@@ -42,7 +42,8 @@ public final class ParseAction implements Action {
             exitWithError(e.getMessage());
         }
         TargetReader targetReader = new TargetReader(pattern);
-        ParsedReadsPort parsedReadsPort = new ParsedReadsPort(targetReader.getMatchingResult(params.inputFileNames));
+        ParsedReadsPort parsedReadsPort = new ParsedReadsPort(targetReader.getMatchingResult(params.inputFileNames),
+                params.fairSorting, params.firstReadNumber);
         writeResultsFromPort(params.outputFileNames, parsedReadsPort);
     }
 
@@ -100,6 +101,14 @@ public final class ParseAction implements Action {
         @Parameter(description = "Maximum allowed number of errors for bitap matcher.",
                 names = {"--bitap-max-errors"})
         int bitapMaxErrors = DEFAULT_BITAP_MAX_ERRORS;
+
+        @Parameter(description = "Use fair sorting and fair best match by score for all patterns.",
+                names = {"--fair-sorting"})
+        boolean fairSorting = false;
+
+        @Parameter(description = "First read number, default is 1.",
+                names = {"--first-read-number"})
+        int firstReadNumber = 1;
 
         @Override
         public void validate() {
