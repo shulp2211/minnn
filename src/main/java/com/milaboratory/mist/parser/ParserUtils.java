@@ -88,4 +88,17 @@ final class ParserUtils {
                 throw new IllegalArgumentException("Unknown parser format: " + format);
         }
     }
+
+    /**
+     * Test group name for validity, throw ParserException if it is invalid. Special characters are not allowed
+     * in group names because they may lead to bad Fastq output files.
+     *
+     * @param groupName group name
+     */
+    static void checkGroupName(String groupName) throws ParserException {
+        if (groupName.length() == 0)
+            throw new ParserException("Group name must not be empty!");
+        if (!groupName.matches("[a-zA-Z0-9]*"))
+            throw new ParserException("Group names must contain only letters and digits; invalid group name: " + groupName);
+    }
 }

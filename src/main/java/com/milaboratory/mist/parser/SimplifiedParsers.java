@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.milaboratory.mist.parser.BracketsDetector.*;
+import static com.milaboratory.mist.parser.ParserUtils.checkGroupName;
 import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 
 /**
@@ -351,8 +352,7 @@ final class SimplifiedParsers {
         if (firstCommaPosition == -1)
             throw new ParserException("Missing ', ' in " + str);
         String groupName = str.substring(GROUP_EDGE_POSITION_START.length(), firstCommaPosition - 1);
-        if (groupName.length() == 0)
-            throw new ParserException("Found empty group name in " + str);
+        checkGroupName(groupName);
 
         int secondCommaPosition = nonQuotedIndexOf(quotesPairs, str, ", ", firstCommaPosition + 1);
         if (secondCommaPosition == -1)

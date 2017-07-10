@@ -17,6 +17,8 @@ import static com.milaboratory.mist.pattern.PatternUtils.invertCoordinate;
 import static org.junit.Assert.*;
 
 public class CommonTestUtils {
+    private static final String LETTERS_AND_NUMBERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
     public static int countPortValues(OutputPort<Match> port) {
         int counter = 0;
         while (port.take() != null)
@@ -217,16 +219,23 @@ public class CommonTestUtils {
     }
 
     public static String getRandomString(int length) {
-        return getRandomString(length, "");
+        return getRandomString(length, "", false);
     }
 
     public static String getRandomString(int length, String exclude) {
+        return getRandomString(length, exclude, false);
+    }
+
+    public static String getRandomString(int length, String exclude, boolean lettersAndNumbers) {
         StringBuilder sb = new StringBuilder();
         Random r = new Random();
         for (int i = 0; i < length; i++) {
             char c;
             do {
-                c = (char)(r.nextInt(r.nextInt(2) == 0 ? 128 : Character.MAX_VALUE));
+                if (lettersAndNumbers)
+                    c = LETTERS_AND_NUMBERS.charAt(r.nextInt(LETTERS_AND_NUMBERS.length()));
+                else
+                    c = (char)(r.nextInt(r.nextInt(2) == 0 ? 128 : Character.MAX_VALUE));
             } while (exclude.contains(Character.toString(c)));
             sb.append(c);
         }
@@ -247,7 +256,7 @@ public class CommonTestUtils {
         ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
         Random r = new Random();
         while (groupEdgePositions.size() < numGroups * 2) {
-            String groupName = getRandomString(r.nextInt(30) + 1, "'\"\\");
+            String groupName = getRandomString(r.nextInt(30) + 1, "", true);
             if (groupEdgePositions.stream().anyMatch(g -> g.getGroupEdge().getGroupName().equals(groupName)))
                 continue;
             int leftPosition = r.nextInt(maxCoordinate);
