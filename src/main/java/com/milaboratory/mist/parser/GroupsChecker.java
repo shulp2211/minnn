@@ -166,12 +166,12 @@ final class GroupsChecker {
     private static ArrayList<Integer> getAncestors(List<BracketsPair> parenthesesPairs, int index) throws ParserException {
         ArrayList<Integer> ancestors = new ArrayList<>();
 
-        int currentNestedLevel = parenthesesPairs.get(index).nestedLevel - 1;
+        int currentNestedLevel = parenthesesPairs.get(index).nestedLevel;
         for (int i = index - 1; i >= 0; i--) {
             BracketsPair currentParentheses = parenthesesPairs.get(i);
-            if (currentParentheses.nestedLevel <= currentNestedLevel) {
+            if (currentParentheses.nestedLevel < currentNestedLevel) {
                 ancestors.add(currentParentheses.start);
-                currentNestedLevel--;
+                currentNestedLevel = currentParentheses.nestedLevel;
             }
         }
         if (ancestors.size() == 0)
