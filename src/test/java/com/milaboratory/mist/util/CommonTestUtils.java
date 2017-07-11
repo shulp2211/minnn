@@ -374,6 +374,16 @@ public class CommonTestUtils {
         }
     }
 
+    public static MultipleReadsOperator[] singleToMultiPatterns(SinglePattern... singlePatterns) {
+        return singleToMultiPatterns(getTestPatternAligner(), singlePatterns);
+    }
+
+    public static MultipleReadsOperator[] singleToMultiPatterns(PatternAligner patternAligner,
+                                                                SinglePattern... singlePatterns) {
+        return Arrays.stream(singlePatterns).map(sp -> new MultiPattern(patternAligner, sp))
+                .toArray(MultipleReadsOperator[]::new);
+    }
+
     public static String bestToString(MatchingResult matchingResult) {
         return bestToString(matchingResult, true);
     }
