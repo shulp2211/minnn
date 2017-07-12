@@ -5,32 +5,23 @@ import com.milaboratory.mist.pattern.GroupEdgePosition;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.milaboratory.mist.parser.BracketsDetector.getAllBrackets;
+import static com.milaboratory.mist.parser.BracketsDetector.*;
 import static com.milaboratory.mist.parser.BracketsType.*;
 import static com.milaboratory.mist.parser.ParserUtils.getObjectName;
 import static com.milaboratory.mist.parser.SimplifiedParsers.parseGroupEdgePosition;
 import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 
-final class GroupsChecker {
+final class SimplifiedSyntaxGroupsChecker {
     /**
-     * This function checks groups in query and throws ParserException if they are not correct.
+     * This function checks groups in query for SIMPLIFIED format and throws ParserException if they are not correct.
      *
-     * @param query query string
-     * @param format parser format: NORMAL for end users or SIMPLIFIED as toString() output in inner classes
+     * @param query query in SIMPLIFIED parser format
      */
-    static void checkGroups(String query, ParserFormat format) throws ParserException {
-        switch (format) {
-            case NORMAL:
-                throw new IllegalStateException("Not yet implemented");
-            case SIMPLIFIED:
-                List<BracketsPair> parenthesesPairs = getAllBrackets(PARENTHESES, query);
-                parenthesesPairs.sort(Comparator.comparingInt(bp -> bp.start));
-                List<GroupEdgesPair> groupEdgesPairs = getGroupEdgesPairsSimplified(parenthesesPairs, query);
-                checkGroupsPlacement(parenthesesPairs, groupEdgesPairs, query);
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown parser format: " + format);
-        }
+    static void checkGroups(String query) throws ParserException {
+        List<BracketsPair> parenthesesPairs = getAllBrackets(PARENTHESES, query);
+        parenthesesPairs.sort(Comparator.comparingInt(bp -> bp.start));
+        List<GroupEdgesPair> groupEdgesPairs = getGroupEdgesPairsSimplified(parenthesesPairs, query);
+        checkGroupsPlacement(parenthesesPairs, groupEdgesPairs, query);
     }
 
     /**

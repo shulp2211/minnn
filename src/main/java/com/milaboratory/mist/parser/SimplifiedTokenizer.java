@@ -7,18 +7,16 @@ import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.parser.BracketsDetector.*;
 import static com.milaboratory.mist.parser.BracketsType.*;
-import static com.milaboratory.mist.parser.GroupsChecker.checkGroups;
 import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.parser.ParserUtils.getObjectName;
 import static com.milaboratory.mist.parser.ParserUtils.getScoreThresholds;
 import static com.milaboratory.mist.parser.SimplifiedParsers.*;
+import static com.milaboratory.mist.parser.SimplifiedSyntaxGroupsChecker.checkGroups;
 import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 
-final class SimplifiedTokenizer {
-    private final PatternAligner patternAligner;
-
+final class SimplifiedTokenizer extends Tokenizer {
     SimplifiedTokenizer(PatternAligner patternAligner) {
-        this.patternAligner = patternAligner;
+        super(patternAligner);
     }
 
     /**
@@ -26,12 +24,13 @@ final class SimplifiedTokenizer {
      *
      * @param tokenizedString TokenizedString object that was created from query string
      */
+    @Override
     void tokenize(TokenizedString tokenizedString) throws ParserException {
         String fullString = tokenizedString.getOneString();
         List<BracketsPair> parenthesesPairs = getAllBrackets(PARENTHESES, fullString);
         List<BracketsPair> squareBracketsPairs = getAllBrackets(SQUARE, fullString);
         ArrayList<ScoreThreshold> scoreThresholds = getScoreThresholds(fullString, SIMPLIFIED);
-        checkGroups(fullString, SIMPLIFIED);
+        checkGroups(fullString);
         ArrayList<ObjectString> objectStrings = new ArrayList<>();
 
         for (BracketsPair parenthesesPair : parenthesesPairs) {

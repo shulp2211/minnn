@@ -168,49 +168,42 @@ final class BracketsDetector {
     }
 
     /**
-     * Get all group edges and their positions.
+     * Get parentheses that used for setting number for BorderFilter (NORMAL syntax).
      *
      * @param query query string as it came to the parser
-     * @return map of group edges and their positions in the query string
+     * @param parenthesesPairs all parentheses pairs from the query
+     * @return list of parentheses that used for BorderFilter, with parameters for BorderFilter
      */
-    static void getGroupEdgePositions(String query) throws ParserException {
+    static List<BorderFilterParenthesesPair> getBorderFilterParentheses(String query,
+            List<BracketsPair> parenthesesPairs) throws ParserException {
+        ArrayList<BorderFilterParenthesesPair> borderFilterParenthesesPairs = new ArrayList<>();
+        for (BracketsPair parenthesesPair : parenthesesPairs)
+            if ((parenthesesPair.start > 0) && ("<>".contains(query.substring(parenthesesPair.start - 1,
+                    parenthesesPair.start)))) {
+                int numberOfRepeats;
+                try {
+                    numberOfRepeats = Integer.parseInt(query.substring(parenthesesPair.start + 1, parenthesesPair.end));
+                } catch (NumberFormatException e) {
+                    throw new ParserException("Failed to parse number of repeats for border filter ("
+                            + query.substring(parenthesesPair.start + 1, parenthesesPair.end) + ") in " + query);
+                }
+                borderFilterParenthesesPairs.add(new BorderFilterParenthesesPair(parenthesesPair,
+                        query.charAt(parenthesesPair.start - 1) == '<', numberOfRepeats));
+            }
+        return borderFilterParenthesesPairs;
     }
 
     /**
-     * Get all reads that specified in the string and their square brackets.
+     * Filter list of parentheses, return only that are used for groups (NORMAL syntax).
      *
-     * @param str string to search: it may be entire parser query or substring from TokenizedString
-     * @return map of bracket pairs and corresponding read numbers
+     * @param parenthesesPairs all parentheses pairs from the query
+     * @param borderFilterParenthesesPairs found list of BorderFilter parentheses pairs
+     * @return list of parentheses that used for groups
      */
-    static void getReads(String str) throws ParserException {
-    }
-
-    /**
-     * Get all score limits that specified in the query.
-     *
-     * @param query query string as it came to the parser
-     * @return map of curly braces pairs and corresponding score limits
-     */
-    static void getScoreLimits(String query) throws ParserException {
-    }
-
-    /**
-     * Get parentheses that used for setting number for BorderFilter.
-     *
-     * @param query query string as it came to the parser
-     * @return map of parentheses and their numbers of nucleotides for BorderFilter
-     */
-    static void getBorderFilterParentheses(String query) throws ParserException {
-    }
-
-    /**
-     * Get list of parentheses, only ones that used for setting operations priority.
-     *
-     * @param query query string as it came to the parser
-     * @return
-     */
-    static List<BracketsPair> getCommonParentheses(String query) throws ParserException {
-        return null;
+    static List<BracketsPair> getGroupParentheses(List<BracketsPair> parenthesesPairs,
+            List<BorderFilterParenthesesPair> borderFilterParenthesesPairs) throws ParserException {
+        return parenthesesPairs.stream().filter(pp -> borderFilterParenthesesPairs.stream()
+                .noneMatch(bf -> bf.start == pp.start)).collect(Collectors.toList());
     }
 
     /**

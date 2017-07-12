@@ -10,27 +10,6 @@ import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 
 final class ParserUtils {
     /**
-     * Get position in string right after next semicolon.
-     *
-     * @param str string to search
-     * @param currentPosition current position in str
-     * @return position after next semicolon that is after currentPosition
-     * @throws ParserException if semicolon not found after currentPosition
-     */
-    static int getPositionAfterSemicolon(String str, int currentPosition) throws ParserException {
-        return 0;
-    }
-
-    /**
-     * Find areas for fuzzy match patterns in the query. Found areas may contain group edges.
-     *
-     * @param query query string as it came to the parser
-     * @return map of start (inclusive) and end (exclusive) positions for fuzzy match pattern areas
-     */
-    static void findFuzzyMatchPatterns(String query) throws ParserException {
-    }
-
-    /**
      * Get object name at left of open parenthesis for simplified syntax.
      *
      * @param leftParenthesisPosition position of open parenthesis in string
@@ -61,7 +40,37 @@ final class ParserUtils {
         ArrayList<ScoreThreshold> scoreThresholds = new ArrayList<>();
         switch (format) {
             case NORMAL:
-                throw new IllegalStateException("Not yet implemented");
+                List<BracketsPair> squareBrackets = getAllBrackets(SQUARE, query);
+                squareBrackets.sort(Comparator.comparingInt(bp -> bp.start));
+                for (BracketsPair bracketsPair : squareBrackets) {
+                    boolean isScoreLimit = false;
+                    int colonPosition = 0;
+                    for (int i = bracketsPair.start + 1; i < bracketsPair.end; i++) {
+                        if ("([{\"'".contains(query.substring(i, i + 1)))
+                            break;
+                        if (query.charAt(i) == ':') {
+                            isScoreLimit = true;
+                            colonPosition = i;
+                            break;
+                        }
+                    }
+                    if (isScoreLimit) {
+                        long scoreThreshold;
+                        try {
+                            scoreThreshold = Long.parseLong(query.substring(bracketsPair.start + 1, colonPosition));
+                        } catch (NumberFormatException e) {
+                            throw new ParserException("Failed to parse score threshold ("
+                                    + query.substring(bracketsPair.start + 1, colonPosition) + ") in " + query);
+                        }
+                        int currentNestedLevel = 0;
+                        for (ScoreThreshold currentScoreThreshold : scoreThresholds)
+                            if (currentScoreThreshold.contains(bracketsPair.start, bracketsPair.end))
+                                currentNestedLevel++;
+                        scoreThresholds.add(new ScoreThreshold(scoreThreshold,
+                                bracketsPair.start, bracketsPair.end + 1, currentNestedLevel));
+                    }
+                }
+                break;
             case SIMPLIFIED:
                 int minFilterLength = SCORE_FILTER_START.length() + 8;
                 List<BracketsPair> parentheses = getAllBrackets(PARENTHESES, query);
@@ -83,10 +92,8 @@ final class ParserUtils {
                         scoreThresholds.add(new ScoreThreshold(scoreThreshold, startCoordinate, endCoordinate + 1,
                                 currentNestedLevel));
                     }
-                return scoreThresholds;
-            default:
-                throw new IllegalArgumentException("Unknown parser format: " + format);
         }
+        return scoreThresholds;
     }
 
     /**

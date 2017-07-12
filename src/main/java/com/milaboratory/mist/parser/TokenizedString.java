@@ -23,6 +23,15 @@ final class TokenizedString {
     }
 
     /**
+     * Wrapper for tokenizeSubstring that gets FoundToken object as parameter.
+     *
+     * @param foundToken FoundToken object that contains found pattern, start and end positions
+     */
+    void tokenizeSubstring(FoundToken foundToken) {
+        tokenizeSubstring(foundToken.pattern, foundToken.from, foundToken.to);
+    }
+
+    /**
      * Wrapper for tokenizeSubstring that gets coordinates in string as parameters.
      *
      * @param pattern pattern to put into tokenized string

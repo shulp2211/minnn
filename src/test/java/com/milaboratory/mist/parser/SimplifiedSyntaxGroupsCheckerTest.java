@@ -8,18 +8,17 @@ import org.junit.rules.ExpectedException;
 
 import java.util.*;
 
-import static com.milaboratory.mist.parser.GroupsChecker.checkGroups;
-import static com.milaboratory.mist.parser.ParserFormat.*;
+import static com.milaboratory.mist.parser.SimplifiedSyntaxGroupsChecker.checkGroups;
 import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
-public class GroupsCheckerTest {
+public class SimplifiedSyntaxGroupsCheckerTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void simplifiedCorrectGroupsTest() throws Exception {
+    public void correctGroupsTest() throws Exception {
         Random rg = new Random();
         for (int i = 0; i < 100; i++) {
             PatternAligner patternAligner = getRandomPatternAligner();
@@ -66,33 +65,33 @@ public class GroupsCheckerTest {
                 groupCheckerQueries.add(orOperators.get(j).toString());
             }
             for (String query : groupCheckerQueries)
-                checkGroups(query, SIMPLIFIED);
+                checkGroups(query);
         }
     }
 
     @Test
-    public void simplifiedGroupEdgeWithoutPairTest() throws Exception {
+    public void groupEdgeWithoutPairTest() throws Exception {
         exception.expect(ParserException.class);
-        checkGroups("FuzzyMatchPattern(A, -1, -1, [GroupEdgePosition(GroupEdge('1', true), 0)])", SIMPLIFIED);
+        checkGroups("FuzzyMatchPattern(A, -1, -1, [GroupEdgePosition(GroupEdge('1', true), 0)])");
     }
 
     @Test
-    public void simplifiedGroupEdgesWrongOrderTest() throws Exception {
+    public void groupEdgesWrongOrderTest() throws Exception {
         exception.expect(ParserException.class);
         checkGroups("PlusPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
                 "GroupEdge('UMI', false), 2)]), FuzzyMatchPattern(ATTAGACA, -1, -1, [GroupEdgePosition(" +
-                "GroupEdge('UMI', true), 0)])])", SIMPLIFIED);
+                "GroupEdge('UMI', true), 0)])])");
     }
 
     @Test
-    public void simplifiedGroupInvalidOuterObjectTest() throws Exception {
+    public void groupInvalidOuterObjectTest() throws Exception {
         exception.expect(ParserException.class);
         checkGroups("NotOperator(MultiPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
-                "GroupEdge('UMI', true), 2), GroupEdgePosition(GroupEdge('UMI', false), 4)])]))", SIMPLIFIED);
+                "GroupEdge('UMI', true), 2), GroupEdgePosition(GroupEdge('UMI', false), 4)])]))");
     }
 
     @Test
-    public void simplifiedGroupPartInvalidNonCommonObjectTest() throws Exception {
+    public void groupPartInvalidNonCommonObjectTest() throws Exception {
         String randomGroupName = getRandomString(new Random().nextInt(10) + 1, "", true);
         ArrayList<GroupEdgePosition> groupEdgePositions1 = new ArrayList<>();
         ArrayList<GroupEdgePosition> groupEdgePositions2 = new ArrayList<>();
@@ -105,11 +104,11 @@ public class GroupsCheckerTest {
         Pattern invalidPattern = getRandomPatternNotInList(validGroupPartNotCommonObjectNames,
                 fuzzyMatchPattern1, fuzzyMatchPattern2);
         exception.expect(ParserException.class);
-        checkGroups(invalidPattern.toString(), SIMPLIFIED);
+        checkGroups(invalidPattern.toString());
     }
 
     @Test
-    public void simplifiedGroupsWithSameNameTest() throws Exception {
+    public void groupsWithSameNameTest() throws Exception {
         SinglePattern basicPattern = getRandomBasicPattern(true);
         ArrayList<String> excludePatterns = new ArrayList<>(validDuplicateGroupsCommonAncestors);
         excludePatterns.addAll(Arrays.asList(FUZZY_MATCH_PATTERN_NAME, REPEAT_PATTERN_NAME, FILTER_PATTERN_NAME,
@@ -118,7 +117,7 @@ public class GroupsCheckerTest {
         String invalidPatternString = invalidPattern.toString().split("\\(")[0] + "([" + basicPattern.toString()
                 + ", " + basicPattern.toString() + "])";
         exception.expect(ParserException.class);
-        checkGroups(invalidPatternString, SIMPLIFIED);
+        checkGroups(invalidPatternString);
     }
 
     private Pattern getRandomPatternNotInList(List<String> list, SinglePattern... basicPatterns) {
