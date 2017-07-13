@@ -108,4 +108,49 @@ final class ParserUtils {
         if (!groupName.matches("[a-zA-Z0-9]*"))
             throw new ParserException("Group names must contain only letters and digits; invalid group name: " + groupName);
     }
+
+    /**
+     * Get nucleotide sequence from string or throw ParserException if failed.
+     *
+     * @param str string containing nucleotide sequence
+     * @return NucleotideSequence object
+     * @throws ParserException if NucleotideSequence constructor throws IllegalArgumentException
+     */
+    static NucleotideSequence toNSeq(String str) throws ParserException {
+        try {
+            return new NucleotideSequence(str);
+        } catch (IllegalArgumentException e) {
+            throw new ParserException("Failed to parse nucleotide sequence from " + str + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get integer from string or throw ParserException if failed.
+     *
+     * @param str string
+     * @param paramName parameter name for error message
+     * @return int value
+     */
+    static int toInt(String str, String paramName) throws ParserException {
+        try {
+            return Integer.parseInt(str);
+        } catch (NumberFormatException e) {
+            throw new ParserException("Failed to parse " + paramName + " from " + str + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get long from string or throw ParserException if failed.
+     *
+     * @param str string
+     * @param paramName parameter name for error message
+     * @return long value
+     */
+    static long toLong(String str, String paramName) throws ParserException {
+        try {
+            return Long.parseLong(str);
+        } catch (NumberFormatException e) {
+            throw new ParserException("Failed to parse " + paramName + " from " + str + ": " + e.getMessage());
+        }
+    }
 }

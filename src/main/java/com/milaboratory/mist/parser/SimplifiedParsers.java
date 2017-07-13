@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.milaboratory.mist.parser.BracketsDetector.*;
-import static com.milaboratory.mist.parser.ParserUtils.checkGroupName;
+import static com.milaboratory.mist.parser.ParserUtils.*;
 import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 
 /**
@@ -40,26 +40,10 @@ final class SimplifiedParsers {
             throw new ParserException("Missing second ', ' in FuzzyMatchPattern arguments: " + str);
         commaPositions[2] = nonQuotedIndexOf(quotesPairs, str, ", ", commaPositions[1] + 1);
 
-        try {
-            seq = new NucleotideSequence(str.substring(0, commaPositions[0]));
-        } catch (IllegalArgumentException e) {
-            throw new ParserException("Wrong nucleotide sequence in " + str + ": " + e);
-        }
-
-        String fixedLeftBorderSubstring = str.substring(commaPositions[0] + 2, commaPositions[1]);
-        try {
-            fixedLeftBorder = Integer.parseInt(fixedLeftBorderSubstring);
-        } catch (NumberFormatException e) {
-            throw new ParserException("Failed to parse fixedLeftBorder (" + fixedLeftBorderSubstring + ") in " + str);
-        }
-
-        String fixedRightBorderSubstring = str.substring(commaPositions[1] + 2, (commaPositions[2] == -1)
-                ? str.length() : commaPositions[2]);
-        try {
-            fixedRightBorder = Integer.parseInt(fixedRightBorderSubstring);
-        } catch (NumberFormatException e) {
-            throw new ParserException("Failed to parse fixedRightBorder (" + fixedRightBorderSubstring + ") in " + str);
-        }
+        seq = toNSeq(str.substring(0, commaPositions[0]));
+        fixedLeftBorder = toInt(str.substring(commaPositions[0] + 2, commaPositions[1]), "fixedLeftBorder");
+        fixedRightBorder = toInt(str.substring(commaPositions[1] + 2,
+                (commaPositions[2] == -1) ? str.length() : commaPositions[2]), "fixedRightBorder");
 
         if (commaPositions[2] != -1)
             if ((str.substring(commaPositions[2]).length() < 3)
@@ -100,40 +84,12 @@ final class SimplifiedParsers {
                         + " in RepeatPattern arguments (probably, insufficient arguments): " + str);
         }
 
-        try {
-            seq = new NucleotideSequence(str.substring(0, commaPositions[0]));
-        } catch (IllegalArgumentException e) {
-            throw new ParserException("Wrong nucleotide sequence in " + str + ": " + e);
-        }
-
-        String minRepeatsSubstring = str.substring(commaPositions[0] + 2, commaPositions[1]);
-        try {
-            minRepeats = Integer.parseInt(minRepeatsSubstring);
-        } catch (NumberFormatException e) {
-            throw new ParserException("Failed to parse minRepeats (" + minRepeatsSubstring + ") in " + str);
-        }
-
-        String maxRepeatsSubstring = str.substring(commaPositions[1] + 2, commaPositions[2]);
-        try {
-            maxRepeats = Integer.parseInt(maxRepeatsSubstring);
-        } catch (NumberFormatException e) {
-            throw new ParserException("Failed to parse maxRepeats (" + maxRepeatsSubstring + ") in " + str);
-        }
-
-        String fixedLeftBorderSubstring = str.substring(commaPositions[2] + 2, commaPositions[3]);
-        try {
-            fixedLeftBorder = Integer.parseInt(fixedLeftBorderSubstring);
-        } catch (NumberFormatException e) {
-            throw new ParserException("Failed to parse fixedLeftBorder (" + fixedLeftBorderSubstring + ") in " + str);
-        }
-
-        String fixedRightBorderSubstring = str.substring(commaPositions[3] + 2, (commaPositions[4] == -1)
-                ? str.length() : commaPositions[4]);
-        try {
-            fixedRightBorder = Integer.parseInt(fixedRightBorderSubstring);
-        } catch (NumberFormatException e) {
-            throw new ParserException("Failed to parse fixedRightBorder (" + fixedRightBorderSubstring + ") in " + str);
-        }
+        seq = toNSeq(str.substring(0, commaPositions[0]));
+        minRepeats = toInt(str.substring(commaPositions[0] + 2, commaPositions[1]), "minRepeats");
+        maxRepeats = toInt(str.substring(commaPositions[1] + 2, commaPositions[2]), "maxRepeats");
+        fixedLeftBorder = toInt(str.substring(commaPositions[2] + 2, commaPositions[3]), "fixedLeftBorder");
+        fixedRightBorder = toInt(str.substring(commaPositions[3] + 2,
+                (commaPositions[4] == -1) ? str.length() : commaPositions[4]), "fixedRightBorder");
 
         if (commaPositions[4] != -1)
             if ((str.substring(commaPositions[4]).length() < 3)
@@ -257,13 +213,8 @@ final class SimplifiedParsers {
         if (!str.substring(str.length() - 1).equals(")"))
             throw new ParserException("Missing closing parenthesis in " + str);
 
-        long scoreThreshold;
-        try {
-            scoreThreshold = Long.parseLong(str.substring(startingPart.length(), str.length() - 1));
-        } catch (NumberFormatException e) {
-            throw new ParserException("Failed to parse score threshold ("
-                    + str.substring(startingPart.length(), str.length() - 1) + ") in " + str);
-        }
+        long scoreThreshold = toLong(str.substring(startingPart.length(), str.length() - 1),
+                "score threshold");
 
         return new ScoreFilter(scoreThreshold);
     }
@@ -292,17 +243,10 @@ final class SimplifiedParsers {
 
         int secondCommaPosition = str.substring(firstCommaPosition + 1).indexOf(", ") + firstCommaPosition + 1;
         if (secondCommaPosition == -1) {
-            try {
-                seq = new NucleotideSequence(str.substring(firstCommaPosition + 2, str.length() - 1));
-            } catch (IllegalArgumentException e) {
-                throw new ParserException("Wrong nucleotide sequence in " + str + ": " + e);
-            }
+            seq = toNSeq(str.substring(firstCommaPosition + 2, str.length() - 1));
             return new BorderFilter(patternAligner, leftSide, seq);
-        } else try {
-            seq = new NucleotideSequence(str.substring(firstCommaPosition + 2, secondCommaPosition));
-        } catch (IllegalArgumentException e) {
-            throw new ParserException("Wrong nucleotide sequence in " + str + ": " + e);
-        }
+        } else
+            seq = toNSeq(str.substring(firstCommaPosition + 2, secondCommaPosition));
 
         int thirdCommaPosition = str.substring(secondCommaPosition + 1).indexOf(", ") + secondCommaPosition + 1;
         if (thirdCommaPosition == -1) {
@@ -310,20 +254,13 @@ final class SimplifiedParsers {
                 return new BorderFilter(patternAligner, leftSide, seq, true);
             else if (str.substring(secondCommaPosition + 2, str.length() - 1).equals("false"))
                 return new BorderFilter(patternAligner, leftSide, seq, false);
-            else try {
-                minNucleotides = Integer.parseInt(str.substring(secondCommaPosition + 2, str.length() - 1));
-            } catch (NumberFormatException e) {
-                throw new ParserException("Failed to parse minimum number of nucleotides ("
-                        + str.substring(secondCommaPosition + 2, str.length() - 1) + ") in " + str);
-            }
+            else
+                minNucleotides = toInt(str.substring(secondCommaPosition + 2, str.length() - 1),
+                        "minimum number of nucleotides");
             return new BorderFilter(patternAligner, leftSide, seq, minNucleotides);
         } else {
-            try {
-                minNucleotides = Integer.parseInt(str.substring(secondCommaPosition + 2, thirdCommaPosition));
-            } catch (NumberFormatException e) {
-                throw new ParserException("Failed to parse minimum number of nucleotides ("
-                        + str.substring(secondCommaPosition + 2, thirdCommaPosition) + ") in " + str);
-            }
+            minNucleotides = toInt(str.substring(secondCommaPosition + 2, thirdCommaPosition),
+                    "minimum number of nucleotides");
             if (str.substring(thirdCommaPosition + 2, str.length() - 1).equals("true"))
                 useTarget = true;
             else if (str.substring(thirdCommaPosition + 2, str.length() - 1).equals("false"))
@@ -368,13 +305,8 @@ final class SimplifiedParsers {
 
         if (!str.substring(str.length() - 1).equals(")"))
             throw new ParserException("Missing closing parenthesis in " + str);
-        int position;
-        try {
-            position = Integer.parseInt(str.substring(secondCommaPosition + 2, str.length() - 1));
-        } catch (NumberFormatException e) {
-            throw new ParserException("Failed to parse position ("
-                    + str.substring(secondCommaPosition + 2, str.length() - 1) + ") in " + str);
-        }
+
+        int position = toInt(str.substring(secondCommaPosition + 2, str.length() - 1), "position");
         if (position < 0)
             throw new ParserException("Position is negative in " + str);
 
