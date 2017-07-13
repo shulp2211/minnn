@@ -1,14 +1,31 @@
 package com.milaboratory.mist.parser;
 
+import com.milaboratory.core.sequence.NucleotideSequence;
+
 import java.util.*;
 
-import static com.milaboratory.mist.parser.BracketsDetector.getAllBrackets;
-import static com.milaboratory.mist.parser.BracketsDetector.getEndByStart;
+import static com.milaboratory.mist.parser.BracketsDetector.*;
 import static com.milaboratory.mist.parser.BracketsType.*;
 import static com.milaboratory.mist.parser.SimplifiedParsers.parseScoreFilter;
 import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 
 final class ParserUtils {
+    /**
+     * Find all non-quoted positions of specified token in string.
+     *
+     * @param str string in which we search tokens
+     * @param token token - string to search
+     * @param quotesPairs quotes pairs detected by getAllQuotes function
+     * @return list of all found token positions
+     */
+    static ArrayList<Integer> getTokenPositions(String str, String token, List<QuotesPair> quotesPairs) {
+        ArrayList<Integer> positions = new ArrayList<>();
+        for (int currentPosition = nonQuotedIndexOf(quotesPairs, str, token, 0); currentPosition >= 0;
+             currentPosition = nonQuotedIndexOf(quotesPairs, str, token, currentPosition + 1))
+            positions.add(currentPosition);
+        return positions;
+    }
+
     /**
      * Get object name at left of open parenthesis for simplified syntax.
      *

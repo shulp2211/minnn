@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.parser.BracketsType.*;
+import static com.milaboratory.mist.parser.ParserUtils.*;
 import static com.milaboratory.mist.parser.QuotesType.*;
 
 final class BracketsDetector {
@@ -168,42 +169,37 @@ final class BracketsDetector {
     }
 
     /**
-     * Get parentheses that used for setting number for BorderFilter (NORMAL syntax).
+     * Get braces that used for setting number for BorderFilter (NORMAL syntax).
      *
      * @param query query string as it came to the parser
-     * @param parenthesesPairs all parentheses pairs from the query
-     * @return list of parentheses that used for BorderFilter, with parameters for BorderFilter
+     * @param bracesPairs all braces pairs from the query
+     * @return list of braces that used for BorderFilter, with parameters for BorderFilter
      */
-    static List<BorderFilterParenthesesPair> getBorderFilterParentheses(String query,
-            List<BracketsPair> parenthesesPairs) throws ParserException {
-        ArrayList<BorderFilterParenthesesPair> borderFilterParenthesesPairs = new ArrayList<>();
-        for (BracketsPair parenthesesPair : parenthesesPairs)
-            if ((parenthesesPair.start > 0) && ("<>".contains(query.substring(parenthesesPair.start - 1,
-                    parenthesesPair.start)))) {
-                int numberOfRepeats;
-                try {
-                    numberOfRepeats = Integer.parseInt(query.substring(parenthesesPair.start + 1, parenthesesPair.end));
-                } catch (NumberFormatException e) {
-                    throw new ParserException("Failed to parse number of repeats for border filter ("
-                            + query.substring(parenthesesPair.start + 1, parenthesesPair.end) + ") in " + query);
-                }
-                borderFilterParenthesesPairs.add(new BorderFilterParenthesesPair(parenthesesPair,
-                        query.charAt(parenthesesPair.start - 1) == '<', numberOfRepeats));
+    static List<BorderFilterBracesPair> getBorderFilterBraces(String query,
+            List<BracketsPair> bracesPairs) throws ParserException {
+        ArrayList<BorderFilterBracesPair> borderFilterBracesPairs = new ArrayList<>();
+        for (BracketsPair bracesPair : bracesPairs)
+            if ((bracesPair.start > 0) && ("<>".contains(query.substring(bracesPair.start - 1,
+                    bracesPair.start)))) {
+                int numberOfRepeats = toInt(query.substring(bracesPair.start + 1, bracesPair.end),
+                        "number of repeats for border filter");
+                borderFilterBracesPairs.add(new BorderFilterBracesPair(bracesPair,
+                        query.charAt(bracesPair.start - 1) == '<', numberOfRepeats));
             }
-        return borderFilterParenthesesPairs;
+        return borderFilterBracesPairs;
     }
 
     /**
-     * Filter list of parentheses, return only that are used for groups (NORMAL syntax).
+     * Filter list of braces, return only that are used for repeat patterns (NORMAL syntax).
      *
-     * @param parenthesesPairs all parentheses pairs from the query
-     * @param borderFilterParenthesesPairs found list of BorderFilter parentheses pairs
-     * @return list of parentheses that used for groups
+     * @param bracesPairs all braces pairs from the query
+     * @param borderFilterBracesPairs found list of BorderFilter braces pairs
+     * @return list of braces that used for repeat patterns
      */
-    static List<BracketsPair> getGroupParentheses(List<BracketsPair> parenthesesPairs,
-            List<BorderFilterParenthesesPair> borderFilterParenthesesPairs) throws ParserException {
-        return parenthesesPairs.stream().filter(pp -> borderFilterParenthesesPairs.stream()
-                .noneMatch(bf -> bf.start == pp.start)).collect(Collectors.toList());
+    static List<BracketsPair> getRepeatPatternBraces(List<BracketsPair> bracesPairs,
+            List<BorderFilterBracesPair> borderFilterBracesPairs) throws ParserException {
+        return bracesPairs.stream().filter(bp -> borderFilterBracesPairs.stream()
+                .noneMatch(bf -> bf.start == bp.start)).collect(Collectors.toList());
     }
 
     /**

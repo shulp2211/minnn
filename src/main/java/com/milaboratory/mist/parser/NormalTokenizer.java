@@ -21,22 +21,24 @@ final class NormalTokenizer extends Tokenizer {
         List<BracketsPair> parenthesesPairs = getAllBrackets(PARENTHESES, fullString);
         List<BracketsPair> squareBracketsPairs = getAllBrackets(SQUARE, fullString);
         List<BracketsPair> bracesPairs = getAllBrackets(BRACES, fullString);
+        List<QuotesPair> quotesPairs = getAllQuotes(fullString);
+        ArrayList<Integer> startStickMarkers = getTokenPositions(fullString, "$", quotesPairs);
+        ArrayList<Integer> endStickMarkers = getTokenPositions(fullString, "^", quotesPairs);
         ArrayList<ScoreThreshold> scoreThresholds = getScoreThresholds(fullString, NORMAL);
-        List<BorderFilterParenthesesPair> borderFilterParenthesesPairs = getBorderFilterParentheses(fullString,
-                parenthesesPairs);
-        List<NormalSyntaxGroupName> groupNames = getGroupNames(fullString, getGroupParentheses(parenthesesPairs,
-                borderFilterParenthesesPairs));
+        List<BorderFilterBracesPair> borderFilterBracesPairs = getBorderFilterBraces(fullString,
+                bracesPairs);
+        List<NormalSyntaxGroupName> groupNames = getGroupNames(fullString, parenthesesPairs);
         groupNames.sort(Comparator.comparingInt(gn -> gn.start));
 
-        parseRepeatPatterns(patternAligner, fullString, bracesPairs, groupNames)
-                .forEach(tokenizedString::tokenizeSubstring);
+        parseRepeatPatterns(patternAligner, fullString, getRepeatPatternBraces(bracesPairs, borderFilterBracesPairs),
+                startStickMarkers, endStickMarkers, groupNames).forEach(tokenizedString::tokenizeSubstring);
     }
 
     /**
      * Get group names from group parentheses pairs.
      *
      * @param fullString full query string
-     * @param parenthesesPairs group parentheses pairs
+     * @param parenthesesPairs parentheses pairs
      * @return group names
      */
     private static ArrayList<NormalSyntaxGroupName> getGroupNames(String fullString, List<BracketsPair> parenthesesPairs)
