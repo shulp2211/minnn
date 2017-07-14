@@ -9,19 +9,22 @@ final class Token {
     private final String string;
     private final Pattern pattern;
     private final int length;
+    private final int startCoordinate;
 
-    Token(String string) {
+    Token(String string, int startCoordinate) {
         this.isString = true;
         this.string = string;
         this.pattern = null;
         this.length = string.length();
+        this.startCoordinate = startCoordinate;
     }
 
-    Token(Pattern pattern, int length) {
+    Token(Pattern pattern, int length, int startCoordinate) {
         this.isString = false;
         this.string = null;
         this.pattern = pattern;
         this.length = length;
+        this.startCoordinate = startCoordinate;
     }
 
     boolean isString() {
@@ -42,6 +45,10 @@ final class Token {
         return length;
     }
 
+    int getStartCoordinate() {
+        return startCoordinate;
+    }
+
     String getSubstring(int start) {
         return getString().substring(start);
     }
@@ -51,11 +58,11 @@ final class Token {
     }
 
     Token getSubstringToken(int start) {
-        return new Token(getSubstring(start));
+        return new Token(getSubstring(start), startCoordinate + start);
     }
 
     Token getSubstringToken(int start, int end) {
-        return new Token(getSubstring(start, end));
+        return new Token(getSubstring(start, end), startCoordinate + start);
     }
 
     SinglePattern getSinglePattern() throws ParserException {
@@ -80,6 +87,7 @@ final class Token {
 
     @Override
     public String toString() {
-        return "Token{" + "isString=" + isString + ", string=" + string + ", pattern=" + pattern + ", length=" + length + "}";
+        return "Token{" + "isString=" + isString + ", string=" + string + ", pattern=" + pattern + ", length=" + length
+                + ", startCoordinate=" + startCoordinate + "}";
     }
 }

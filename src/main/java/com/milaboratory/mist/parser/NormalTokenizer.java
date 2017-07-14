@@ -1,12 +1,11 @@
 package com.milaboratory.mist.parser;
 
-import com.milaboratory.mist.pattern.PatternAligner;
+import com.milaboratory.mist.pattern.*;
 
 import java.util.*;
 
 import static com.milaboratory.mist.parser.BracketsDetector.*;
 import static com.milaboratory.mist.parser.BracketsType.*;
-import static com.milaboratory.mist.parser.NormalParsers.*;
 import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.parser.ParserUtils.*;
 
@@ -30,8 +29,18 @@ final class NormalTokenizer extends Tokenizer {
         List<NormalSyntaxGroupName> groupNames = getGroupNames(fullString, parenthesesPairs);
         groupNames.sort(Comparator.comparingInt(gn -> gn.start));
 
-        parseRepeatPatterns(patternAligner, fullString, getRepeatPatternBraces(bracesPairs, borderFilterBracesPairs),
-                startStickMarkers, endStickMarkers, groupNames).forEach(tokenizedString::tokenizeSubstring);
+        NormalParsers normalParsers = new NormalParsers(patternAligner, fullString, parenthesesPairs,
+                squareBracketsPairs, bracesPairs, quotesPairs, startStickMarkers, endStickMarkers, scoreThresholds,
+                borderFilterBracesPairs, groupNames);
+
+        normalParsers.parseRepeatPatterns(getRepeatPatternBraces(bracesPairs, borderFilterBracesPairs))
+                .forEach(tokenizedString::tokenizeSubstring);
+        normalParsers.parseFuzzyMatchPatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+
+        Pattern finalPattern = tokenizedString.getFinalPattern();
+        boolean duplicateGroupsAllowed = OrPattern.class.isAssignableFrom(finalPattern.getClass())
+                || OrOperator.class.isAssignableFrom(finalPattern.getClass());
+        normalParsers.validateGroupEdges(finalPattern.getGroupEdges(), true, duplicateGroupsAllowed);
     }
 
     /**

@@ -2,10 +2,8 @@ package com.milaboratory.mist.parser;
 
 import com.milaboratory.mist.pattern.Pattern;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
+import java.util.stream.*;
 
 final class TokenizedString {
     private final LinkedList<Token> tokenizedString;
@@ -18,7 +16,7 @@ final class TokenizedString {
      */
     TokenizedString(String query) {
         this.tokenizedString = new LinkedList<>();
-        this.tokenizedString.add(new Token(query));
+        this.tokenizedString.add(new Token(query, 0));
         this.length = query.length();
     }
 
@@ -43,20 +41,22 @@ final class TokenizedString {
         int endIndex = getIndexByPosition(to - 1);
         int startIndexLastPosition;
         int endIndexFirstPosition;
-        if ((from == getLeftByIndex(startIndex)) && !tokenizedString.get(startIndex).isString())
+
+        Token startToken = tokenizedString.get(startIndex);
+        if ((from == startToken.getStartCoordinate()) && !startToken.isString())
             startIndexLastPosition = -1;
         else
-            if (tokenizedString.get(startIndex).isString())
-                startIndexLastPosition = from - getLeftByIndex(startIndex);
-            else throw new IllegalArgumentException("Trying to tokenize in the middle of "
-                    + tokenizedString.get(startIndex));
-        if ((to == getRightByIndex(endIndex)) && !tokenizedString.get(endIndex).isString())
+            if (startToken.isString())
+                startIndexLastPosition = from - startToken.getStartCoordinate();
+            else throw new IllegalArgumentException("Trying to tokenize in the middle of " + startToken);
+
+        Token endToken = tokenizedString.get(endIndex);
+        if ((to == endToken.getStartCoordinate() + endToken.getLength()) && !endToken.isString())
             endIndexFirstPosition = -1;
         else
-            if (tokenizedString.get(endIndex).isString())
-                endIndexFirstPosition = to - getLeftByIndex(endIndex);
-            else throw new IllegalArgumentException("Trying to tokenize in the middle of "
-                    + tokenizedString.get(endIndex));
+            if (endToken.isString())
+                endIndexFirstPosition = to - endToken.getStartCoordinate();
+            else throw new IllegalArgumentException("Trying to tokenize in the middle of " + endToken);
 
         tokenizeSubstring(pattern, startIndex, startIndexLastPosition, endIndex, endIndexFirstPosition);
     }
@@ -76,9 +76,11 @@ final class TokenizedString {
     private void tokenizeSubstring(Pattern pattern, int startIndex, int startIndexLastPosition,
                            int endIndex, int endIndexFirstPosition) {
         if ((startIndex >= tokenizedString.size()) || (startIndex < 0))
-            throw new IndexOutOfBoundsException("startIndex = " + startIndex + ", tokenizedString size = " + tokenizedString.size());
+            throw new IndexOutOfBoundsException("startIndex = " + startIndex
+                    + ", tokenizedString size = " + tokenizedString.size());
         if ((endIndex >= tokenizedString.size()) || (endIndex < 0))
-            throw new IndexOutOfBoundsException("endIndex = " + endIndex + ", tokenizedString size = " + tokenizedString.size());
+            throw new IndexOutOfBoundsException("endIndex = " + endIndex
+                    + ", tokenizedString size = " + tokenizedString.size());
         if (startIndex > endIndex)
             throw new IllegalArgumentException("startIndex = " + startIndex + ", endIndex = " + endIndex);
 
@@ -89,19 +91,22 @@ final class TokenizedString {
             String specifiedString = specifiedToken.getString();
 
             if ((startIndexLastPosition == -1) && (endIndexFirstPosition == -1)) {
-                Token patternToken = new Token(pattern, specifiedString.length());
+                Token patternToken = new Token(pattern, specifiedString.length(), specifiedToken.getStartCoordinate());
                 tokenizedString.set(startIndex, patternToken);
             } else if ((startIndexLastPosition >= 0) && (endIndexFirstPosition > startIndexLastPosition)) {
-                Token patternToken = new Token(pattern, endIndexFirstPosition - startIndexLastPosition);
+                int startCoordinate = specifiedToken.getStartCoordinate();
+                int patternLength = endIndexFirstPosition - startIndexLastPosition;
 
                 String leftPart = specifiedString.substring(0, startIndexLastPosition);
                 String rightPart = specifiedString.substring(endIndexFirstPosition);
                 tokenizedString.remove(startIndex);
                 if (rightPart.length() > 0)
-                    tokenizedString.add(startIndex, new Token(rightPart));
-                tokenizedString.add(startIndex, patternToken);
+                    tokenizedString.add(startIndex, new Token(rightPart, startCoordinate
+                            + leftPart.length() + patternLength));
+                tokenizedString.add(startIndex, new Token(pattern, patternLength, startCoordinate
+                        + leftPart.length()));
                 if (leftPart.length() > 0)
-                    tokenizedString.add(startIndex, new Token(leftPart));
+                    tokenizedString.add(startIndex, new Token(leftPart, startCoordinate));
             } else throw new IllegalArgumentException("startIndex = endIndex = " + startIndex
                     + ", startLast: " + startIndexLastPosition + ", endFirst: " + endIndexFirstPosition);
         } else {
@@ -133,8 +138,8 @@ final class TokenizedString {
                 patternLength += endIndexFirstPosition;
             }
 
-            Token patternToken = new Token(pattern, patternLength);
-            tokenizedString.add(startIndex + 1, patternToken);
+            tokenizedString.add(startIndex + 1, new Token(pattern, patternLength, (startIndexLastPosition == -1)
+                    ? startToken.getStartCoordinate() : startToken.getStartCoordinate() + startIndexLastPosition));
 
             if (startIndexLastPosition > 0) {
                 tokenizedString.set(startIndex, startToken.getSubstringToken(0, startIndexLastPosition));
@@ -151,7 +156,7 @@ final class TokenizedString {
                 tokenizedString.remove(i);
         }
 
-        assertLengthNotChanged();
+        assertChainNotBroken();
     }
 
     /**
@@ -163,29 +168,16 @@ final class TokenizedString {
      */
     int calculateLength(int start, int end) {
         if (start > end) throw new IllegalArgumentException("start = " + start + ", end = " + end);
-        if (start == end) return 0;
-
-        return tokenizedString.subList(start, end).stream().mapToInt(Token::getLength).sum();
+        return tokenizedString.get(end).getStartCoordinate() - tokenizedString.get(start).getStartCoordinate();
     }
 
     /**
-     * Get left coordinate of the specified token.
+     * Get length of full query string.
      *
-     * @param index index of token in the list
-     * @return left coordinate of the specified token, inclusive
+     * @return length of query string
      */
-    int getLeftByIndex(int index) {
-        return calculateLength(0, index);
-    }
-
-    /**
-     * Get right coordinate of the specified token.
-     *
-     * @param index index of token in the list
-     * @return right coordinate of the specified token, exclusive
-     */
-    int getRightByIndex(int index) {
-        return calculateLength(0, index + 1);
+    int getFullLength() {
+        return length;
     }
 
     /**
@@ -195,15 +187,12 @@ final class TokenizedString {
      * @return index of token in tokenizedString
      */
     int getIndexByPosition(int position) {
-        int currentPosition = 0;
-
-        for (int currentIndex = 0; currentIndex < tokenizedString.size(); currentIndex++) {
-            currentPosition += calculateLength(currentIndex, currentIndex + 1);
-            if (currentPosition > position)
-                return currentIndex;
-        }
-
-        throw new IllegalStateException("Reached the end of tokenizedString and didn't get index for position " + position);
+        if ((position < 0) || (position >= length))
+            throw new IllegalArgumentException("Position is outside of the string: position=" + position
+                    + ", length=" + length);
+        return IntStream.range(0, tokenizedString.size() - 1)
+                .filter(i -> tokenizedString.get(i + 1).getStartCoordinate() > position).findFirst()
+                .orElse(tokenizedString.size() - 1);
     }
 
     /**
@@ -218,8 +207,8 @@ final class TokenizedString {
         ArrayList<Token> tokens = new ArrayList<>();
         int lastIndex = getIndexByPosition(to - 1);
         int currentIndex = getIndexByPosition(from);
-        int currentLeft = getLeftByIndex(currentIndex);
         Token currentToken = tokenizedString.get(currentIndex);
+        int currentLeft = currentToken.getStartCoordinate();
 
         if (currentLeft == from)
             tokens.add(currentToken);
@@ -234,12 +223,12 @@ final class TokenizedString {
             while (currentIndex < lastIndex)
                 tokens.add(tokenizedString.get(currentIndex++));
 
-            int lastRight = getRightByIndex(lastIndex);
             Token lastToken = tokenizedString.get(lastIndex);
+            int lastRight = lastToken.getStartCoordinate() + lastToken.getLength();
             if (lastRight == to)
                 tokens.add(lastToken);
             else if (lastToken.isString())
-                tokens.add(lastToken.getSubstringToken(0, to - getLeftByIndex(lastIndex)));
+                tokens.add(lastToken.getSubstringToken(0, to - lastToken.getStartCoordinate()));
         }
         return tokens;
     }
@@ -295,9 +284,14 @@ final class TokenizedString {
             throw new IllegalStateException("After parsing, tokenizedString size is " + tokenizedString.size());
     }
 
-    private void assertLengthNotChanged() {
-        if (calculateLength(0, tokenizedString.size()) != length)
-            throw new IllegalStateException("Changed length: old " + length + ", new "
-                    + calculateLength(0, tokenizedString.size()));
+    private void assertChainNotBroken() {
+        for (int i = 0; i < tokenizedString.size(); i++) {
+            int expectedEnd = (i < tokenizedString.size() - 1) ? tokenizedString.get(i + 1).getStartCoordinate() : length;
+            Token currentToken = tokenizedString.get(i);
+            if (currentToken.getStartCoordinate() + currentToken.getLength() != expectedEnd)
+                throw new IllegalStateException("Broken chain on token " + i + " ("
+                        + currentToken.toString() + "): start coordinate = " + currentToken.getStartCoordinate()
+                        + ", length = " + currentToken.getLength() + ", expected end = " + expectedEnd);
+        }
     }
 }

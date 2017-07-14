@@ -268,8 +268,7 @@ final class SimplifiedTokenizer extends Tokenizer {
      * @param objectString string of the object for which we calculate score threshold
      * @return PatternAligner with updated score threshold for the specified object
      */
-    private PatternAligner getPatternAligner(ArrayList<ScoreThreshold> scoreThresholds, ObjectString objectString)
-            throws ParserException {
+    private PatternAligner getPatternAligner(ArrayList<ScoreThreshold> scoreThresholds, ObjectString objectString) {
         int currentNestedLevel = -1;
         long currentThreshold = 0;
         for (ScoreThreshold scoreThreshold : scoreThresholds)
