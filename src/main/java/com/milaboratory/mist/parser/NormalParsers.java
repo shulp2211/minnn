@@ -74,12 +74,12 @@ final class NormalParsers {
                             "maximum number of repeats");
             }
             ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
-            String leftGroupName = getGroupName(bracesPair.start - 1, true);
-            if (leftGroupName != null)
-                groupEdgePositions.add(new GroupEdgePosition(new GroupEdge(leftGroupName, true), 0));
-            String rightGroupName = getGroupName(bracesPair.end, false);
-            if (rightGroupName != null)
-                groupEdgePositions.add(new GroupEdgePosition(new GroupEdge(rightGroupName, false), maxRepeats));
+            groupEdgePositions.addAll(findGroupNames(bracesPair.start - 1, true).stream()
+                    .map(gn -> new GroupEdgePosition(new GroupEdge(gn, true), 0))
+                    .collect(Collectors.toList()));
+            groupEdgePositions.addAll(findGroupNames(bracesPair.end, false).stream()
+                    .map(gn -> new GroupEdgePosition(new GroupEdge(gn, false), MAX_REPEATS))
+                    .collect(Collectors.toList()));
 
             foundTokens.add(new FoundToken(new RepeatPattern(getPatternAligner(bracesPair.start - 1, bracesPair.end + 1),
                     patternSeq, minRepeats, maxRepeats, fixedLeftBorder, fixedRightBorder, groupEdgePositions),
@@ -174,24 +174,31 @@ final class NormalParsers {
     }
 
     /**
-     * Return the name of this group that has left edge on the left of this pattern (if onLeft == true)
-     * or has right edge on the right of this pattern (if onLeft == false), without any patterns between this pattern
-     * and group edge, otherwise return null.
+     * Return return list of names of groups that have their left edges on left of this pattern (if onLeft == true)
+     * or has their right edges on the right of this pattern (if onLeft == false), without any patterns between this
+     * pattern and group edges.
      *
      * @param position position where to start the search; exclusive
-     * @param onLeft true to search group name on the left from this pattern, false to search group closing parenthesis
+     * @param onLeft true to search group names on the left from this pattern, false to search group closing parentheses
      *               on the right from this pattern
-     * @return group name or null if there is no group edge
+     * @return list of names of groups for found group edges
      */
-    private String getGroupName(int position, boolean onLeft) {
+    private ArrayList<String> findGroupNames(int position, boolean onLeft) {
+        ArrayList<String> foundGroupNames = new ArrayList<>();
+        int currentPosition = position;
         int closestGroupIndex = getClosestGroupByPosition(position, onLeft);
-        if (closestGroupIndex == -1)
-            return null;
-        String intermediateSubstring = onLeft ? query.substring(groupNames.get(closestGroupIndex).end + 1, position)
-                : query.substring(position + 1, groupNames.get(closestGroupIndex).bracketsPair.end);
-        if (intermediateSubstring.matches(".*[a-zA-Z()].*"))
-            return null;
-        return groupNames.get(closestGroupIndex).name;
+        while (closestGroupIndex != -1) {
+            String intermediateSubstring = onLeft ? query.substring(groupNames.get(closestGroupIndex).end + 1,
+                    currentPosition) : query.substring(currentPosition + 1,
+                    groupNames.get(closestGroupIndex).bracketsPair.end);
+            if (intermediateSubstring.matches(".*[a-zA-Z()].*"))
+                break;
+            foundGroupNames.add(groupNames.get(closestGroupIndex).name);
+            currentPosition = onLeft ? groupNames.get(closestGroupIndex).start
+                    : groupNames.get(closestGroupIndex).bracketsPair.end;
+            closestGroupIndex = getClosestGroupByPosition(currentPosition, onLeft);
+        }
+        return foundGroupNames;
     }
 
     /**
@@ -247,13 +254,13 @@ final class NormalParsers {
             }
         }
 
-        String leftGroupName = getGroupName(start, true);
-        if (leftGroupName != null)
-            groupEdgePositions.add(new GroupEdgePosition(new GroupEdge(leftGroupName, true), 0));
-        String rightGroupName = getGroupName(end, false);
-        if (rightGroupName != null)
-            groupEdgePositions.add(new GroupEdgePosition(new GroupEdge(rightGroupName, false),
-                    end - start + 1 - ignoredCharactersCount));
+        groupEdgePositions.addAll(findGroupNames(start, true).stream()
+                .map(gn -> new GroupEdgePosition(new GroupEdge(gn, true), 0))
+                .collect(Collectors.toList()));
+        final int patternLength = end - start + 1 - ignoredCharactersCount;
+        groupEdgePositions.addAll(findGroupNames(end, false).stream()
+                .map(gn -> new GroupEdgePosition(new GroupEdge(gn, false), patternLength))
+                .collect(Collectors.toList()));
 
         return groupEdgePositions;
     }
