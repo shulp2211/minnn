@@ -1,8 +1,10 @@
 package com.milaboratory.mist.parser;
 
 import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.mist.pattern.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.parser.BracketsDetector.*;
 import static com.milaboratory.mist.parser.BracketsType.*;
@@ -124,6 +126,103 @@ final class ParserUtils {
             throw new ParserException("Group name must not be empty!");
         if (!groupName.matches("[a-zA-Z0-9]*"))
             throw new ParserException("Group names must contain only letters and digits; invalid group name: " + groupName);
+    }
+
+    /**
+     * Check that group edges in pattern operands are correct, otherwise throw ParserException.
+     *
+     * @param pairsRequired group starts and ends must come in pairs in each operand
+     * @param duplicatesAllowed duplicates of group edges are allowed in combined list from all operands
+     * @param groupsAllowed if false, operands must not contain any group edges
+     * @param operands pattern operands
+     */
+    static void validateGroupEdges(boolean pairsRequired, boolean duplicatesAllowed, boolean groupsAllowed,
+                                   Pattern... operands) throws ParserException {
+        ArrayList<GroupEdge> allGroupEdges = new ArrayList<>();
+        for (Pattern operand : operands) {
+            if (!groupsAllowed && (operand.getGroupEdges().size() > 0))
+                throw new ParserException("Found group edges inside pattern that doesn't allow group edges inside: "
+                        + operand.getGroupEdges());
+            if (pairsRequired)
+                validateGroupEdges(operand.getGroupEdges(), true, true);
+            if (!duplicatesAllowed)
+                allGroupEdges.addAll(operand.getGroupEdges());
+        }
+        if (!duplicatesAllowed) {
+            validateGroupEdges(allGroupEdges, false, false);
+
+            // check for group ends that are before starts
+            for (int i = 1; i < operands.length; i++)
+                for (int j = 0; j < i; j++) {
+                    final Pattern operand1 = operands[j];
+                    final Pattern operand2 = operands[i];
+                    if (operand1.getGroupEdges().stream().anyMatch(ge1 -> operand2.getGroupEdges().stream()
+                            .anyMatch(ge2 -> ge1.getGroupName().equals(ge2.getGroupName()) && ge2.isStart())))
+                        throw new ParserException("Pattern " + operand1
+                                + " contains group end that is before start of this group in pattern " + operand2);
+                }
+        }
+    }
+
+    /**
+     * Check that group edges are correct, otherwise throw ParserException.
+     *
+     * @param groupEdges list of group edges to check
+     * @param pairsRequired group starts and ends must come in pairs
+     * @param duplicatesAllowed duplicates of group edges are allowed in the list
+     */
+    static void validateGroupEdges(ArrayList<GroupEdge> groupEdges, boolean pairsRequired, boolean duplicatesAllowed)
+            throws ParserException {
+        if (!duplicatesAllowed)
+            for (int i = 1; i < groupEdges.size(); i++)
+                for (int j = 0; j < i; j++) {
+                    GroupEdge groupEdge1 = groupEdges.get(i);
+                    GroupEdge groupEdge2 = groupEdges.get(j);
+                    if (groupEdge1.getGroupName().equals(groupEdge2.getGroupName())
+                            && (groupEdge1.isStart() == groupEdge2.isStart()))
+                        throw new ParserException("Duplicate groups allowed only on different sides of || operator; "
+                                + "found invalid duplicate of group " + groupEdge1.getGroupName());
+                }
+        if (pairsRequired) {
+            HashSet<String> groupNames = groupEdges.stream().map(GroupEdge::getGroupName)
+                    .collect(Collectors.toCollection(HashSet::new));
+            for (String groupName : groupNames) {
+                long starts = groupEdges.stream().filter(ge -> ge.getGroupName().equals(groupName))
+                        .filter(GroupEdge::isStart).count();
+                long ends = groupEdges.stream().filter(ge -> ge.getGroupName().equals(groupName))
+                        .filter(ge -> !ge.isStart()).count();
+                if (starts != ends)
+                    throw new ParserException("Group " + groupName + " has " + starts + " start(s) and " + ends
+                            + " end(s) where expected equal number of starts and ends!");
+            }
+        }
+    }
+
+    /**
+     * Check that group edge positions are correct, otherwise throw ParserException.
+     *
+     * @param groupEdgePositions list of group edge positions to check
+     */
+    static void validateGroupEdgePositions(ArrayList<GroupEdgePosition> groupEdgePositions) throws ParserException {
+        for (int i = 1; i < groupEdgePositions.size(); i++)
+            for (int j = 0; j < i; j++) {
+                GroupEdgePosition groupEdgePosition1 = groupEdgePositions.get(i);
+                GroupEdgePosition groupEdgePosition2 = groupEdgePositions.get(j);
+                if (groupEdgePosition1.getGroupEdge().getGroupName()
+                        .equals(groupEdgePosition2.getGroupEdge().getGroupName())) {
+                    if (groupEdgePosition1.getGroupEdge().isStart() == groupEdgePosition2.getGroupEdge().isStart())
+                        throw new ParserException("Found duplicate" + (groupEdgePosition1.getGroupEdge().isStart()
+                                ? "start" : "end") + " of group " + groupEdgePosition1.getGroupEdge().getGroupName()
+                                + " in 1 sequence of nucleotides!");
+                    if ((groupEdgePosition1.getGroupEdge().isStart()
+                            && (groupEdgePosition1.getPosition() > groupEdgePosition2.getPosition()))
+                            || (groupEdgePosition2.getGroupEdge().isStart()
+                            && (groupEdgePosition2.getPosition() > groupEdgePosition1.getPosition())))
+                        throw new ParserException("Found end of group "
+                                + groupEdgePosition1.getGroupEdge().getGroupName()
+                                + " before start of group with the same name in 1 sequence of nucleotides!");
+                }
+            }
     }
 
     /**

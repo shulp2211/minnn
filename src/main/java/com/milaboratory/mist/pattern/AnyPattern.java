@@ -5,34 +5,48 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 public class AnyPattern extends SinglePattern {
+    private final ArrayList<GroupEdge> groupEdges;
+
     public AnyPattern(PatternAligner patternAligner) {
+        this(patternAligner, new ArrayList<>());
+    }
+
+    public AnyPattern(PatternAligner patternAligner, ArrayList<GroupEdge> groupEdges) {
         super(patternAligner);
+        this.groupEdges = groupEdges;
     }
 
     @Override
     public String toString() {
-        return "AnyPattern()";
+        if (groupEdges.size() > 0)
+            return "AnyPattern(" + groupEdges + ")";
+        else
+            return "AnyPattern()";
     }
 
     @Override
     public ArrayList<GroupEdge> getGroupEdges() {
-        return new ArrayList<>();
+        return groupEdges;
     }
 
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
-        return new AnyPatternMatchingResult(target, from, to, targetId);
+        return new AnyPatternMatchingResult(groupEdges, target, from, to, targetId);
     }
 
     private static class AnyPatternMatchingResult extends MatchingResult {
+        private final ArrayList<GroupEdge> groupEdges;
         private final NSequenceWithQuality target;
         private final int from;
         private final int to;
         private final byte targetId;
 
-        AnyPatternMatchingResult(NSequenceWithQuality target, int from, int to, byte targetId) {
+        AnyPatternMatchingResult(ArrayList<GroupEdge> groupEdges, NSequenceWithQuality target, int from, int to,
+                                 byte targetId) {
+            this.groupEdges = groupEdges;
             this.target = target;
             this.from = from;
             this.to = to;
@@ -41,17 +55,20 @@ public class AnyPattern extends SinglePattern {
 
         @Override
         public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
-            return new AnyPatternOutputPort(target, from, to, targetId);
+            return new AnyPatternOutputPort(groupEdges, target, from, to, targetId);
         }
 
         private static class AnyPatternOutputPort implements OutputPort<Match> {
+            private final ArrayList<GroupEdge> groupEdges;
             private final NSequenceWithQuality target;
             private final int from;
             private final int to;
             private final byte targetId;
             private boolean firstTake = true;
 
-            AnyPatternOutputPort(NSequenceWithQuality target, int from, int to, byte targetId) {
+            AnyPatternOutputPort(ArrayList<GroupEdge> groupEdges, NSequenceWithQuality target, int from, int to,
+                                 byte targetId) {
+                this.groupEdges = groupEdges;
                 this.target = target;
                 this.from = from;
                 this.to = to;
@@ -65,6 +82,8 @@ public class AnyPattern extends SinglePattern {
 
                 ArrayList<MatchedItem> matchedItems = new ArrayList<>();
                 matchedItems.add(new MatchedRange(target, targetId, 0, new Range(from, to)));
+                matchedItems.addAll(groupEdges.stream().map(ge -> new MatchedGroupEdge(target, targetId, 0,
+                        ge, ge.isStart() ? 0 : target.size())).collect(Collectors.toList()));
                 return new Match(1, 0, matchedItems);
             }
         }

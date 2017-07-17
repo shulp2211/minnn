@@ -10,7 +10,6 @@ import static com.milaboratory.mist.parser.BracketsType.*;
 import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.parser.ParserUtils.*;
 import static com.milaboratory.mist.parser.SimplifiedParsers.*;
-import static com.milaboratory.mist.parser.SimplifiedSyntaxGroupsChecker.checkGroups;
 import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 
 final class SimplifiedTokenizer extends Tokenizer {
@@ -29,7 +28,6 @@ final class SimplifiedTokenizer extends Tokenizer {
         List<BracketsPair> parenthesesPairs = getAllBrackets(PARENTHESES, fullString);
         List<BracketsPair> squareBracketsPairs = getAllBrackets(SQUARE, fullString);
         ArrayList<ScoreThreshold> scoreThresholds = getScoreThresholds(fullString, SIMPLIFIED);
-        checkGroups(fullString);
         ArrayList<ObjectString> objectStrings = new ArrayList<>();
 
         for (BracketsPair parenthesesPair : parenthesesPairs) {
@@ -94,9 +92,22 @@ final class SimplifiedTokenizer extends Tokenizer {
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
                 case ANY_PATTERN_NAME:
+                    ArrayList<GroupEdge> groupEdgesAny;
+                    List<BracketsPair> innerSquareBracketsAny = squareBracketsPairs.stream().
+                            filter(bp -> objectString.getParenthesesPair().contains(bp)).collect(Collectors.toList());
+                    switch (innerSquareBracketsAny.size()) {
+                        case 0:
+                            groupEdgesAny = new ArrayList<>();
+                            break;
+                        case 1:
+                            groupEdgesAny = parseArrayOfGroupEdges(tokenizedString, innerSquareBracketsAny.get(0));
+                            break;
+                        default:
+                            throw new ParserException("Found multiple square bracket pairs in AnyPattern!");
+                    }
                     String anyPatternString = tokenizedString.getOneString(
                             objectString.getDataStart(), objectString.getDataEnd());
-                    AnyPattern anyPattern = parseAnyPattern(currentPatternAligner, anyPatternString);
+                    AnyPattern anyPattern = parseAnyPattern(currentPatternAligner, anyPatternString, groupEdgesAny);
                     tokenizedString.tokenizeSubstring(anyPattern,
                             objectString.getFullStringStart(), objectString.getFullStringEnd());
                     break;
@@ -197,6 +208,11 @@ final class SimplifiedTokenizer extends Tokenizer {
                     throw new ParserException("Found wrong object name: " + objectString.getName());
             }
         }
+
+        Pattern finalPattern = tokenizedString.getFinalPattern();
+        boolean duplicateGroupsAllowed = OrPattern.class.isAssignableFrom(finalPattern.getClass())
+                || OrOperator.class.isAssignableFrom(finalPattern.getClass());
+        validateGroupEdges(finalPattern.getGroupEdges(), true, duplicateGroupsAllowed);
     }
 
     private <P extends Pattern> ArrayList<P> getPatternOperands(TokenizedString tokenizedString,
@@ -256,7 +272,38 @@ final class SimplifiedTokenizer extends Tokenizer {
             String lastToken = arrayString.substring(currentPosition);
             groupEdgePositions.add(parseGroupEdgePosition(lastToken));
 
+            validateGroupEdgePositions(groupEdgePositions);
             return groupEdgePositions;
+        }
+    }
+
+    private ArrayList<GroupEdge> parseArrayOfGroupEdges(TokenizedString tokenizedString, BracketsPair bracketsPair)
+            throws ParserException {
+        if (bracketsPair.bracketsType != SQUARE)
+            throw new IllegalArgumentException(
+                    "Array of group edges must be in square brackets; got brackets pair of type " + bracketsPair);
+        if (bracketsPair.end == bracketsPair.start + 1)
+            return new ArrayList<>();
+        else {
+            ArrayList<GroupEdge> groupEdges = new ArrayList<>();
+            String arrayString = tokenizedString.getOneString(bracketsPair.start + 1, bracketsPair.end);
+            List<QuotesPair> quotesPairs = getAllQuotes(arrayString);
+            int currentPosition = 0;
+            int foundTokenPosition;
+            do {
+                foundTokenPosition = nonQuotedIndexOf(quotesPairs, arrayString, ", " + GROUP_EDGE_START,
+                        currentPosition);
+                if (foundTokenPosition != -1) {
+                    String currentToken = arrayString.substring(currentPosition, foundTokenPosition);
+                    groupEdges.add(parseGroupEdge(currentToken));
+                    currentPosition = foundTokenPosition + 2;
+                }
+            } while (foundTokenPosition != -1);
+            String lastToken = arrayString.substring(currentPosition);
+            groupEdges.add(parseGroupEdge(lastToken));
+
+            validateGroupEdges(groupEdges, true, false);
+            return groupEdges;
         }
     }
 

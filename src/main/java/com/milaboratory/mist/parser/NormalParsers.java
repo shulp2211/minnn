@@ -113,67 +113,6 @@ final class NormalParsers {
     }
 
     /**
-     * Check that group edges are correct, otherwise throw ParserException.
-     *
-     * @param groupEdges list of group edges to check
-     * @param pairsRequired group starts and ends must come in pairs
-     * @param duplicatesAllowed duplicates of group edges are allowed in the list
-     */
-    void validateGroupEdges(ArrayList<GroupEdge> groupEdges, boolean pairsRequired, boolean duplicatesAllowed)
-            throws ParserException {
-        if (!duplicatesAllowed)
-            for (int i = 1; i < groupEdges.size(); i++)
-                for (int j = 0; j < i; j++) {
-                    GroupEdge groupEdge1 = groupEdges.get(i);
-                    GroupEdge groupEdge2 = groupEdges.get(j);
-                    if (groupEdge1.getGroupName().equals(groupEdge2.getGroupName())
-                            && (groupEdge1.isStart() == groupEdge2.isStart()))
-                        throw new ParserException("Duplicate groups allowed only on different sides of || operator; "
-                                + "found invalid duplicate of group " + groupEdge1.getGroupName());
-                }
-        if (pairsRequired) {
-            HashSet<String> groupNames = groupEdges.stream().map(GroupEdge::getGroupName)
-                    .collect(Collectors.toCollection(HashSet::new));
-            for (String groupName : groupNames) {
-                long starts = groupEdges.stream().filter(ge -> ge.getGroupName().equals(groupName))
-                        .filter(GroupEdge::isStart).count();
-                long ends = groupEdges.stream().filter(ge -> ge.getGroupName().equals(groupName))
-                        .filter(ge -> !ge.isStart()).count();
-                if (starts != ends)
-                    throw new ParserException("Group " + groupName + " has " + starts + " start(s) and " + ends
-                            + " end(s) where expected equal number of starts and ends!");
-            }
-        }
-    }
-
-    /**
-     * Check that group edge positions are correct, otherwise throw ParserException.
-     *
-     * @param groupEdgePositions list of group edge positions to check
-     */
-    private void validateGroupEdgePositions(ArrayList<GroupEdgePosition> groupEdgePositions) throws ParserException {
-        for (int i = 1; i < groupEdgePositions.size(); i++)
-            for (int j = 0; j < i; j++) {
-                GroupEdgePosition groupEdgePosition1 = groupEdgePositions.get(i);
-                GroupEdgePosition groupEdgePosition2 = groupEdgePositions.get(j);
-                if (groupEdgePosition1.getGroupEdge().getGroupName()
-                        .equals(groupEdgePosition2.getGroupEdge().getGroupName())) {
-                    if (groupEdgePosition1.getGroupEdge().isStart() == groupEdgePosition2.getGroupEdge().isStart())
-                        throw new ParserException("Found duplicate" + (groupEdgePosition1.getGroupEdge().isStart()
-                                ? "start" : "end") + " of group " + groupEdgePosition1.getGroupEdge().getGroupName()
-                                + " in 1 sequence of nucleotides!");
-                    if ((groupEdgePosition1.getGroupEdge().isStart()
-                            && (groupEdgePosition1.getPosition() > groupEdgePosition2.getPosition()))
-                            || (groupEdgePosition2.getGroupEdge().isStart()
-                            && (groupEdgePosition2.getPosition() > groupEdgePosition1.getPosition())))
-                        throw new ParserException("Found end of group "
-                                + groupEdgePosition1.getGroupEdge().getGroupName()
-                                + " before start of group with the same name in 1 sequence of nucleotides!");
-                }
-            }
-    }
-
-    /**
      * Return return list of names of groups that have their left edges on left of this pattern (if onLeft == true)
      * or has their right edges on the right of this pattern (if onLeft == false), without any patterns between this
      * pattern and group edges.

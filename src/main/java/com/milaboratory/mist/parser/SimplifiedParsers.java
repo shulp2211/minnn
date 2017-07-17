@@ -101,10 +101,11 @@ final class SimplifiedParsers {
                 groupEdgePositions);
     }
 
-    static AnyPattern parseAnyPattern(PatternAligner patternAligner, String str) throws ParserException {
-        if (!str.equals(""))
-            throw new ParserException("AnyPattern must not have arguments; found: " + str);
-        return new AnyPattern(patternAligner);
+    static AnyPattern parseAnyPattern(PatternAligner patternAligner, String str,
+                                      ArrayList<GroupEdge> groupEdges) throws ParserException {
+        if (!(str.equals("") || ((str.charAt(0) == '[') && (str.charAt(str.length() - 1) == ']'))))
+            throw new ParserException("Found unexpected tokens in AnyPattern: " + str);
+        return new AnyPattern(patternAligner, groupEdges);
     }
 
     /**
@@ -118,43 +119,57 @@ final class SimplifiedParsers {
     static AndPattern parseAndPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                       ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
-        return new AndPattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
+        SinglePattern[] operands = singlePatterns.toArray(new SinglePattern[singlePatterns.size()]);
+        validateGroupEdges(true, false, true, operands);
+        return new AndPattern(patternAligner, operands);
     }
 
     static PlusPattern parsePlusPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                         ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
-        return new PlusPattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
+        SinglePattern[] operands = singlePatterns.toArray(new SinglePattern[singlePatterns.size()]);
+        validateGroupEdges(false, false, true, operands);
+        return new PlusPattern(patternAligner, operands);
     }
 
     static SequencePattern parseSequencePattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                                 ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
-        return new SequencePattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
+        SinglePattern[] operands = singlePatterns.toArray(new SinglePattern[singlePatterns.size()]);
+        validateGroupEdges(false, false, true, operands);
+        return new SequencePattern(patternAligner, operands);
     }
 
     static OrPattern parseOrPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                     ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
-        return new OrPattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
+        SinglePattern[] operands = singlePatterns.toArray(new SinglePattern[singlePatterns.size()]);
+        validateGroupEdges(true, true, true, operands);
+        return new OrPattern(patternAligner, operands);
     }
 
     static MultiPattern parseMultiPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                           ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
-        return new MultiPattern(patternAligner, singlePatterns.toArray(new SinglePattern[singlePatterns.size()]));
+        SinglePattern[] operands = singlePatterns.toArray(new SinglePattern[singlePatterns.size()]);
+        validateGroupEdges(true, false, true, operands);
+        return new MultiPattern(patternAligner, operands);
     }
 
     static AndOperator parseAndOperator(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
-                                        ArrayList<MultipleReadsOperator> operands) throws ParserException {
+                                        ArrayList<MultipleReadsOperator> multiReadPatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
-        return new AndOperator(patternAligner, operands.toArray(new MultipleReadsOperator[operands.size()]));
+        MultipleReadsOperator[] operands = multiReadPatterns.toArray(new MultipleReadsOperator[multiReadPatterns.size()]);
+        validateGroupEdges(true, false, true, operands);
+        return new AndOperator(patternAligner, operands);
     }
 
     static OrOperator parseOrOperator(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
-                                      ArrayList<MultipleReadsOperator> operands) throws ParserException {
+                                      ArrayList<MultipleReadsOperator> multiReadPatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
-        return new OrOperator(patternAligner, operands.toArray(new MultipleReadsOperator[operands.size()]));
+        MultipleReadsOperator[] operands = multiReadPatterns.toArray(new MultipleReadsOperator[multiReadPatterns.size()]);
+        validateGroupEdges(true, true, true, operands);
+        return new OrOperator(patternAligner, operands);
     }
 
     static NotOperator parseNotOperator(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring)
@@ -162,8 +177,9 @@ final class SimplifiedParsers {
         if (tokenizedSubstring.size() != 1)
             throw new ParserException("Syntax not parsed correctly for Not operator; possibly missing operand: "
                     + tokenizedSubstring);
-
-        return new NotOperator(patternAligner, tokenizedSubstring.get(0).getMultipleReadsOperator());
+        MultipleReadsOperator operand = tokenizedSubstring.get(0).getMultipleReadsOperator();
+        validateGroupEdges(false, true, false, operand);
+        return new NotOperator(patternAligner, operand);
     }
 
     static Pattern parseFilterPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
@@ -294,8 +310,8 @@ final class SimplifiedParsers {
         int secondCommaPosition = nonQuotedIndexOf(quotesPairs, str, ", ", firstCommaPosition + 1);
         if (secondCommaPosition == -1)
             throw new ParserException("Missing second ', ' in " + str);
-        boolean isStart;
 
+        boolean isStart;
         if (str.substring(firstCommaPosition - 1, secondCommaPosition).equals("', true)"))
             isStart = true;
         else if (str.substring(firstCommaPosition - 1, secondCommaPosition).equals("', false)"))
@@ -311,6 +327,34 @@ final class SimplifiedParsers {
             throw new ParserException("Position is negative in " + str);
 
         return new GroupEdgePosition(new GroupEdge(groupName, isStart), position);
+    }
+
+    /**
+     * Parse group edge from string that represents it.
+     *
+     * @param str string representing 1 group edge
+     * @return parsed GroupEdge
+     */
+    static GroupEdge parseGroupEdge(String str) throws ParserException {
+        if (!str.substring(0, GROUP_EDGE_START.length()).equals(GROUP_EDGE_START))
+            throw new IllegalArgumentException("Incorrect string start in " + str + ", expected: " + GROUP_EDGE_START);
+        List<QuotesPair> quotesPairs = getAllQuotes(str);
+
+        int commaPosition = nonQuotedIndexOf(quotesPairs, str, ", ", 0);
+        if (commaPosition == -1)
+            throw new ParserException("Missing ', ' in " + str);
+        String groupName = str.substring(GROUP_EDGE_START.length(), commaPosition - 1);
+        checkGroupName(groupName);
+
+        boolean isStart;
+        if (str.substring(commaPosition - 1, str.length() - 1).equals("', true)"))
+            isStart = true;
+        else if (str.substring(commaPosition - 1, str.length() - 1).equals("', false)"))
+            isStart = false;
+        else
+            throw new ParserException("Failed to parse group edge from " + str);
+
+        return new GroupEdge(groupName, isStart);
     }
 
     private static void checkOperandArraySpelling(ArrayList<Token> tokenizedSubstring) throws ParserException {

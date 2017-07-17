@@ -8,19 +8,33 @@ import org.junit.rules.ExpectedException;
 
 import java.util.*;
 
-import static com.milaboratory.mist.parser.SimplifiedSyntaxGroupsChecker.checkGroups;
+import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
-import static org.junit.Assert.*;
 
-public class SimplifiedSyntaxGroupsCheckerTest {
+public class SimplifiedSyntaxGroupsTest {
+    private final PatternAligner patternAligner = getTestPatternAligner();
+    private final Parser parser = new Parser(patternAligner);
+
+    // pattern names that are valid as outer objects for group edges; this list doesn't include NOT_OPERATOR_NAME
+    private final List<String> validGroupEdgeOuterObjectNames = Arrays.asList(FUZZY_MATCH_PATTERN_NAME,
+            REPEAT_PATTERN_NAME, ANY_PATTERN_NAME, AND_PATTERN_NAME, PLUS_PATTERN_NAME, SEQUENCE_PATTERN_NAME,
+            OR_PATTERN_NAME, MULTI_PATTERN_NAME, AND_OPERATOR_NAME, OR_OPERATOR_NAME,
+            FILTER_PATTERN_NAME, BORDER_FILTER_NAME, SCORE_FILTER_NAME, MULTIPLE_READS_FILTER_PATTERN_NAME);
+    // object names that are valid as not common and closest common outer objects for edges of one group
+    private final List<String> validGroupPartNotCommonObjectNames = Arrays.asList(FUZZY_MATCH_PATTERN_NAME,
+            REPEAT_PATTERN_NAME, PLUS_PATTERN_NAME, SEQUENCE_PATTERN_NAME,
+            FILTER_PATTERN_NAME, BORDER_FILTER_NAME, SCORE_FILTER_NAME);
+    // object names that are valid as closed common ancestor of 2 groups with the same name
+    private final List<String> validDuplicateGroupsCommonAncestors = Arrays.asList(OR_PATTERN_NAME, OR_OPERATOR_NAME);
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
     public void correctGroupsTest() throws Exception {
         Random rg = new Random();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 30; i++) {
             PatternAligner patternAligner = getRandomPatternAligner();
             ArrayList<FuzzyMatchPattern> fuzzyMatchPatterns = new ArrayList<>();
             ArrayList<RepeatPattern> repeatPatterns = new ArrayList<>();
@@ -65,29 +79,29 @@ public class SimplifiedSyntaxGroupsCheckerTest {
                 groupCheckerQueries.add(orOperators.get(j).toString());
             }
             for (String query : groupCheckerQueries)
-                checkGroups(query);
+                parser.parseQuery(query, SIMPLIFIED);
         }
     }
 
     @Test
     public void groupEdgeWithoutPairTest() throws Exception {
         exception.expect(ParserException.class);
-        checkGroups("FuzzyMatchPattern(A, -1, -1, [GroupEdgePosition(GroupEdge('1', true), 0)])");
+        parser.parseQuery("FuzzyMatchPattern(A, -1, -1, [GroupEdgePosition(GroupEdge('1', true), 0)])", SIMPLIFIED);
     }
 
     @Test
     public void groupEdgesWrongOrderTest() throws Exception {
         exception.expect(ParserException.class);
-        checkGroups("PlusPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
+        parser.parseQuery("PlusPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
                 "GroupEdge('UMI', false), 2)]), FuzzyMatchPattern(ATTAGACA, -1, -1, [GroupEdgePosition(" +
-                "GroupEdge('UMI', true), 0)])])");
+                "GroupEdge('UMI', true), 0)])])", SIMPLIFIED);
     }
 
     @Test
     public void groupInvalidOuterObjectTest() throws Exception {
         exception.expect(ParserException.class);
-        checkGroups("NotOperator(MultiPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
-                "GroupEdge('UMI', true), 2), GroupEdgePosition(GroupEdge('UMI', false), 4)])]))");
+        parser.parseQuery("NotOperator(MultiPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
+                "GroupEdge('UMI', true), 2), GroupEdgePosition(GroupEdge('UMI', false), 4)])]))", SIMPLIFIED);
     }
 
     @Test
@@ -104,25 +118,27 @@ public class SimplifiedSyntaxGroupsCheckerTest {
         Pattern invalidPattern = getRandomPatternNotInList(validGroupPartNotCommonObjectNames,
                 fuzzyMatchPattern1, fuzzyMatchPattern2);
         exception.expect(ParserException.class);
-        checkGroups(invalidPattern.toString());
+        parser.parseQuery(invalidPattern.toString(), SIMPLIFIED);
     }
 
     @Test
     public void groupsWithSameNameTest() throws Exception {
-        SinglePattern basicPattern = getRandomBasicPattern(true);
-        ArrayList<String> excludePatterns = new ArrayList<>(validDuplicateGroupsCommonAncestors);
-        excludePatterns.addAll(Arrays.asList(FUZZY_MATCH_PATTERN_NAME, REPEAT_PATTERN_NAME, FILTER_PATTERN_NAME,
-                MULTIPLE_READS_FILTER_PATTERN_NAME));
-        Pattern invalidPattern = getRandomPatternNotInList(excludePatterns, getRandomBasicPattern());
-        String invalidPatternString = invalidPattern.toString().split("\\(")[0] + "([" + basicPattern.toString()
-                + ", " + basicPattern.toString() + "])";
-        exception.expect(ParserException.class);
-        checkGroups(invalidPatternString);
+        for (int i = 0; i < 100; i++) {
+            SinglePattern basicPattern = getRandomBasicPattern(true);
+            ArrayList<String> excludePatterns = new ArrayList<>(validDuplicateGroupsCommonAncestors);
+            excludePatterns.addAll(Arrays.asList(FUZZY_MATCH_PATTERN_NAME, REPEAT_PATTERN_NAME, FILTER_PATTERN_NAME,
+                    MULTIPLE_READS_FILTER_PATTERN_NAME));
+            Pattern invalidPattern = getRandomPatternNotInList(excludePatterns, getRandomBasicPattern());
+            String invalidPatternString = invalidPattern.toString().split("\\(")[0] + "([" + basicPattern.toString()
+                    + ", " + basicPattern.toString() + "])";
+            exception.expect(ParserException.class);
+            parser.parseQuery(invalidPatternString, SIMPLIFIED);
+        }
     }
 
     private Pattern getRandomPatternNotInList(List<String> list, SinglePattern... basicPatterns) {
         Random rg = new Random();
-        ArrayList<String> croppedList = new ArrayList<>(validGroupOuterObjectNames);
+        ArrayList<String> croppedList = new ArrayList<>(validGroupEdgeOuterObjectNames);
         croppedList.removeAll(list);
         Pattern resultPattern = null;
         String resultPatternName = "";

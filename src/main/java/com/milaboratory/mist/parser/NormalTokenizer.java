@@ -40,7 +40,7 @@ final class NormalTokenizer extends Tokenizer {
         Pattern finalPattern = tokenizedString.getFinalPattern();
         boolean duplicateGroupsAllowed = OrPattern.class.isAssignableFrom(finalPattern.getClass())
                 || OrOperator.class.isAssignableFrom(finalPattern.getClass());
-        normalParsers.validateGroupEdges(finalPattern.getGroupEdges(), true, duplicateGroupsAllowed);
+        validateGroupEdges(finalPattern.getGroupEdges(), true, duplicateGroupsAllowed);
     }
 
     /**
