@@ -259,7 +259,7 @@ final class NormalParsers {
     }
 
     /**
-     * Check is this pattern should stick to start (check "$" before the pattern).
+     * Check is this pattern should stick to start (check "^" before the pattern).
      *
      * @param position pattern start position, inclusive
      * @return true if this pattern should stick to target start
@@ -277,7 +277,7 @@ final class NormalParsers {
     }
 
     /**
-     * Check is this pattern should stick to end (check "^" after the pattern).
+     * Check is this pattern should stick to end (check "$" after the pattern).
      *
      * @param position pattern end position, inclusive
      * @return true if this pattern should stick to target end
