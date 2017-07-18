@@ -83,7 +83,7 @@ final class Token {
                 return (P)pattern;
             else throw new ParserException("Expected " + patternClass.getName() + ", but got " + pattern);
         } catch (ClassCastException e) {
-            throw new ParserException("Got pattern of unexpected class " + pattern + ": " + e);
+            throw new IllegalStateException("Unexpected class cast exception with " + pattern + ": " + e);
         }
     }
 
