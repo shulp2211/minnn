@@ -98,6 +98,13 @@ public class SimplifiedSyntaxGroupsTest {
     }
 
     @Test
+    public void groupEdgePositionsWrongOrderTest() throws Exception {
+        exception.expect(ParserException.class);
+        parser.parseQuery("FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
+                "GroupEdge('UMI', true), 2), GroupEdgePosition(GroupEdge('UMI', false), 0)])", SIMPLIFIED);
+    }
+
+    @Test
     public void groupInvalidOuterObjectTest() throws Exception {
         exception.expect(ParserException.class);
         parser.parseQuery("NotOperator(MultiPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
