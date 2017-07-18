@@ -347,9 +347,9 @@ final class SimplifiedParsers {
         checkGroupName(groupName);
 
         boolean isStart;
-        if (str.substring(commaPosition - 1, str.length() - 1).equals("', true)"))
+        if (str.substring(commaPosition - 1, str.length()).equals("', true)"))
             isStart = true;
-        else if (str.substring(commaPosition - 1, str.length() - 1).equals("', false)"))
+        else if (str.substring(commaPosition - 1, str.length()).equals("', false)"))
             isStart = false;
         else
             throw new ParserException("Failed to parse group edge from " + str);
