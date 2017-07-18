@@ -12,11 +12,13 @@ import com.milaboratory.mist.pattern.*;
 import com.milaboratory.test.TestUtil;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.PatternUtils.invertCoordinate;
 import static org.junit.Assert.*;
 
 public class CommonTestUtils {
+    private static final Random rg = new Random();
     private static final String LETTERS_AND_NUMBERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     public static int countPortValues(OutputPort<Match> port) {
@@ -27,13 +29,12 @@ public class CommonTestUtils {
     }
 
     public static NucleotideSequence makeRandomInsertions(NucleotideSequence seq, int number) {
-        Random randomGenerator = new Random();
         NucleotideSequence result = seq;
         int currentLength;
         int currentInsertPosition;
         for (int i = 0; i < number; i++) {
             currentLength = seq.size() + i;
-            currentInsertPosition = randomGenerator.nextInt(currentLength);
+            currentInsertPosition = rg.nextInt(currentLength);
             result = SequencesUtils.concatenate(result.getRange(0, currentInsertPosition),
                     TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1),
                     result.getRange(currentInsertPosition, currentLength));
@@ -43,13 +44,12 @@ public class CommonTestUtils {
 
     public static NucleotideSequence makeRandomDeletions(NucleotideSequence seq, int number) {
         assertTrue(seq.size() > number);
-        Random randomGenerator = new Random();
         NucleotideSequence result = seq;
         int currentLength;
         int currentDeletePosition;
         for (int i = 0; i < number; i++) {
             currentLength = seq.size() - i;
-            currentDeletePosition = randomGenerator.nextInt(currentLength);
+            currentDeletePosition = rg.nextInt(currentLength);
             result = SequencesUtils.concatenate(result.getRange(0, currentDeletePosition),
                     result.getRange(currentDeletePosition + 1, currentLength));
         }
@@ -57,11 +57,10 @@ public class CommonTestUtils {
     }
 
     public static NucleotideSequence makeRandomReplacements(NucleotideSequence seq, int number) {
-        Random randomGenerator = new Random();
         NucleotideSequence result = seq;
         int currentPosition;
         for (int i = 0; i < number; i++) {
-            currentPosition = randomGenerator.nextInt(seq.size());
+            currentPosition = rg.nextInt(seq.size());
             result = SequencesUtils.concatenate(result.getRange(0, currentPosition),
                     TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1),
                     result.getRange(currentPosition + 1, seq.size()));
@@ -70,10 +69,9 @@ public class CommonTestUtils {
     }
 
     public static NucleotideSequence makeRandomErrors(NucleotideSequence seq, int number) {
-        Random randomGenerator = new Random();
         NucleotideSequence result = seq;
         for (int i = 0; i < number; i++) {
-            switch (randomGenerator.nextInt(3)) {
+            switch (rg.nextInt(3)) {
                 case 0:
                     result = makeRandomInsertions(result, 1);
                     break;
@@ -91,9 +89,8 @@ public class CommonTestUtils {
 
     public static NucleotideSequence getRandomSubsequence(NucleotideSequence seq) {
         assertTrue(seq.size() > 0);
-        Random randomGenerator = new Random();
-        int position1 = randomGenerator.nextInt(seq.size());
-        int position2 = randomGenerator.nextInt(seq.size());
+        int position1 = rg.nextInt(seq.size());
+        int position2 = rg.nextInt(seq.size());
 
         return seq.getRange(Math.min(position1, position2), Math.max(position1, position2) + 1);
     }
@@ -228,14 +225,13 @@ public class CommonTestUtils {
 
     public static String getRandomString(int length, String exclude, boolean lettersAndNumbers) {
         StringBuilder sb = new StringBuilder();
-        Random r = new Random();
         for (int i = 0; i < length; i++) {
             char c;
             do {
                 if (lettersAndNumbers)
-                    c = LETTERS_AND_NUMBERS.charAt(r.nextInt(LETTERS_AND_NUMBERS.length()));
+                    c = LETTERS_AND_NUMBERS.charAt(rg.nextInt(LETTERS_AND_NUMBERS.length()));
                 else
-                    c = (char)(r.nextInt(r.nextInt(2) == 0 ? 128 : Character.MAX_VALUE));
+                    c = (char)(rg.nextInt(rg.nextInt(2) == 0 ? 128 : Character.MAX_VALUE));
             } while (exclude.contains(Character.toString(c)));
             sb.append(c);
         }
@@ -243,24 +239,23 @@ public class CommonTestUtils {
     }
 
     public static <T extends Enum<?>> T getRandomEnumItem(Class<T> enumClass) {
-        return enumClass.getEnumConstants()[new Random().nextInt(enumClass.getEnumConstants().length)];
+        return enumClass.getEnumConstants()[rg.nextInt(enumClass.getEnumConstants().length)];
     }
 
     public static ArrayList<GroupEdgePosition> getRandomGroupsForFuzzyMatch(int maxCoordinate) {
-         return getRandomGroupsForFuzzyMatch(maxCoordinate, new Random().nextInt(40) + 1);
+         return getRandomGroupsForFuzzyMatch(maxCoordinate, rg.nextInt(40) + 1);
     }
 
     public static ArrayList<GroupEdgePosition> getRandomGroupsForFuzzyMatch(int maxCoordinate, int numGroups) {
         if (maxCoordinate < 1)
             throw new IllegalArgumentException("maxCoordinate=" + maxCoordinate);
         ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
-        Random r = new Random();
         while (groupEdgePositions.size() < numGroups * 2) {
-            String groupName = getRandomString(r.nextInt(30) + 1, "", true);
+            String groupName = getRandomString(rg.nextInt(30) + 1, "", true);
             if (groupEdgePositions.stream().anyMatch(g -> g.getGroupEdge().getGroupName().equals(groupName)))
                 continue;
-            int leftPosition = r.nextInt(maxCoordinate);
-            int rightPosition = r.nextInt(maxCoordinate - leftPosition) + leftPosition + 1;
+            int leftPosition = rg.nextInt(maxCoordinate);
+            int rightPosition = rg.nextInt(maxCoordinate - leftPosition) + leftPosition + 1;
             groupEdgePositions.add(new GroupEdgePosition(new GroupEdge(groupName, true), leftPosition));
             groupEdgePositions.add(new GroupEdgePosition(new GroupEdge(groupName, false), rightPosition));
         }
@@ -268,26 +263,30 @@ public class CommonTestUtils {
     }
 
     public static PatternAligner getRandomPatternAligner() {
-        Random r = new Random();
-        return getTestPatternAligner(-r.nextInt(100), r.nextInt(4), -r.nextInt(4), -r.nextInt(3));
+        return getTestPatternAligner(-rg.nextInt(100), rg.nextInt(4), -rg.nextInt(4), -rg.nextInt(3));
     }
 
     public static FuzzyMatchPattern getRandomFuzzyPattern(PatternAligner patternAligner, boolean withGroups) {
-        Random rg = new Random();
         int length = rg.nextInt(63) + 1;
-        RandomBorders randomBorders = new RandomBorders(rg, length);
+        RandomBorders randomBorders = new RandomBorders(length);
         NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, length, length);
         return new FuzzyMatchPattern(patternAligner, seq, randomBorders.left, randomBorders.right,
                 withGroups ? getRandomGroupsForFuzzyMatch(length) : new ArrayList<>());
     }
 
     public static RepeatPattern getRandomRepeatPattern(PatternAligner patternAligner, boolean withGroups) {
-        Random rg = new Random();
-        RandomRepeats rr = new RandomRepeats(rg);
-        RandomBorders randomBorders = new RandomBorders(rg, rr.motifSize * rr.repeats);
+        RandomRepeats rr = new RandomRepeats();
+        RandomBorders randomBorders = new RandomBorders(rr.motifSize * rr.repeats);
         NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, rr.motifSize, rr.motifSize);
-        return new RepeatPattern(patternAligner, seq, rr.minRepeats, rr.maxRepeats, randomBorders.left, randomBorders.right,
+        return new RepeatPattern(patternAligner, seq, rr.minRepeats, rr.maxRepeats,
+                randomBorders.left, randomBorders.right,
                 withGroups ? getRandomGroupsForFuzzyMatch(rr.motifSize * rr.repeats) : new ArrayList<>());
+    }
+
+    public static AnyPattern getRandomAnyPattern(PatternAligner patternAligner, boolean withGroups) {
+        return new AnyPattern(patternAligner, withGroups ? getRandomGroupsForFuzzyMatch(1).stream()
+                .map(GroupEdgePosition::getGroupEdge).collect(Collectors.toCollection(ArrayList::new))
+                : new ArrayList<>());
     }
 
     public static SinglePattern getRandomBasicPattern() {
@@ -303,8 +302,14 @@ public class CommonTestUtils {
     }
 
     public static SinglePattern getRandomBasicPattern(PatternAligner patternAligner, boolean withGroups) {
-        return new Random().nextBoolean() ? getRandomFuzzyPattern(patternAligner, withGroups)
-                : getRandomRepeatPattern(patternAligner, withGroups);
+        switch (rg.nextInt(3)) {
+            case 0:
+                return getRandomFuzzyPattern(patternAligner, withGroups);
+            case 1:
+                return getRandomRepeatPattern(patternAligner, withGroups);
+            default:
+                return getRandomAnyPattern(patternAligner, withGroups);
+        }
     }
 
     public static SinglePattern getRandomSinglePattern(SinglePattern... patterns) {
@@ -312,16 +317,15 @@ public class CommonTestUtils {
     }
 
     public static SinglePattern getRandomSinglePattern(PatternAligner patternAligner, SinglePattern... singlePatterns) {
-        Random r = new Random();
         SinglePattern[] patterns;
         if (singlePatterns.length == 0) {
-            int numPatterns = r.nextInt(5) + 1;
+            int numPatterns = rg.nextInt(5) + 1;
             patterns = new SinglePattern[numPatterns];
             for (int i = 0; i < numPatterns; i++)
                 patterns[i] = getRandomBasicPattern(patternAligner);
         } else
             patterns = singlePatterns;
-        switch (r.nextInt(7)) {
+        switch (rg.nextInt(7)) {
             case 0:
                 return patterns[0];
             case 1:
@@ -333,12 +337,13 @@ public class CommonTestUtils {
             case 4:
                 return new OrPattern(patternAligner, patterns);
             case 5:
-                return new FilterPattern(patternAligner, new ScoreFilter(-r.nextInt(75)), patterns[0]);
+                return new FilterPattern(patternAligner, new ScoreFilter(-rg.nextInt(75)), patterns[0]);
             case 6:
             default:
-                int seqLength = r.nextInt(10) + 1;
+                int seqLength = rg.nextInt(10) + 1;
                 NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, seqLength, seqLength);
-                BorderFilter borderFilter = new BorderFilter(patternAligner, r.nextBoolean(), seq, seqLength, r.nextBoolean());
+                BorderFilter borderFilter = new BorderFilter(patternAligner, rg.nextBoolean(), seq, seqLength,
+                        rg.nextBoolean());
                 return new FilterPattern(patternAligner, borderFilter, patterns[0]);
         }
     }
@@ -349,18 +354,14 @@ public class CommonTestUtils {
 
     public static MultipleReadsOperator getRandomMultiReadPattern(PatternAligner patternAligner,
                                                                   MultipleReadsOperator... patterns) {
-        Random r = new Random();
         if (patterns.length == 0) {
-            int numPatterns = r.nextInt(5) + 1;
+            int numPatterns = rg.nextInt(5) + 1;
             SinglePattern[] basicPatterns = new SinglePattern[numPatterns];
             for (int i = 0; i < numPatterns; i++)
-                if (r.nextInt(10) == 0)
-                    basicPatterns[i] = new AnyPattern(patternAligner);
-                else
-                    basicPatterns[i] = getRandomBasicPattern(patternAligner);
+                basicPatterns[i] = getRandomBasicPattern(patternAligner);
             return new MultiPattern(patternAligner, basicPatterns);
         } else {
-            switch (r.nextInt(4)) {
+            switch (rg.nextInt(4)) {
                 case 0:
                     return new AndOperator(patternAligner, patterns);
                 case 1:
@@ -369,7 +370,8 @@ public class CommonTestUtils {
                     return new NotOperator(patternAligner, patterns[0]);
                 case 3:
                 default:
-                    return new MultipleReadsFilterPattern(patternAligner, new ScoreFilter(-r.nextInt(75)), patterns[0]);
+                    return new MultipleReadsFilterPattern(patternAligner,
+                            new ScoreFilter(-rg.nextInt(75)), patterns[0]);
             }
         }
     }
@@ -396,7 +398,7 @@ public class CommonTestUtils {
         public final int left;
         public final int right;
 
-        public RandomBorders(Random rg, int targetSize) {
+        public RandomBorders(int targetSize) {
             if (targetSize < 1)
                 throw new IllegalArgumentException("Cannot create RandomBorders for targetSize " + targetSize);
             int r = rg.nextInt(12);
@@ -427,7 +429,7 @@ public class CommonTestUtils {
         public final int minRepeats;
         public final int maxRepeats;
 
-        public RandomRepeats(Random rg) {
+        public RandomRepeats() {
             motifSize = rg.nextInt(60) + 1;
             repeats = Math.max(1, rg.nextInt(60 / motifSize + 1));
             minRepeats = repeats - rg.nextInt(repeats);

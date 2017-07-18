@@ -67,7 +67,7 @@ public class RepeatPatternTest {
     public void randomMatchTest() throws Exception {
         Random rg = new Random();
         for (int i = 0; i < 10000; i++) {
-            RandomRepeats rr = new RandomRepeats(rg);
+            RandomRepeats rr = new RandomRepeats();
             NucleotideSequence seqM = TestUtil.randomSequence(NucleotideSequence.ALPHABET, rr.motifSize, rr.motifSize);
             NucleotideSequence seqL = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, 40);
             NucleotideSequence seqR = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, 40);
@@ -86,7 +86,7 @@ public class RepeatPatternTest {
     public void randomTest() throws Exception {
         Random rg = new Random();
         for (int i = 0; i < 10000; i++) {
-            RandomRepeats rr = new RandomRepeats(rg);
+            RandomRepeats rr = new RandomRepeats();
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
             NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, rr.motifSize, rr.motifSize);
             NSequenceWithQuality targetQ = new NSequenceWithQuality(target.toString());
@@ -127,9 +127,8 @@ public class RepeatPatternTest {
 
     @Test
     public void groupEdgeOutsideOfMotifTest() throws Exception {
-        Random rg = new Random();
         for (int i = 0; i < 1000; i++) {
-            RandomRepeats rr = new RandomRepeats(rg);
+            RandomRepeats rr = new RandomRepeats();
             ArrayList<GroupEdgePosition> groups = getRandomGroupsForFuzzyMatch(100);
             NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, rr.motifSize, rr.motifSize);
             RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(), motif, rr.minRepeats, rr.maxRepeats, groups);
@@ -141,9 +140,8 @@ public class RepeatPatternTest {
 
     @Test
     public void masksTest() throws Exception {
-        Random rg = new Random();
         for (int i = 0; i < 10000; i++) {
-            RandomRepeats rr = new RandomRepeats(rg);
+            RandomRepeats rr = new RandomRepeats();
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
             NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, rr.motifSize, rr.motifSize,
                     false);
