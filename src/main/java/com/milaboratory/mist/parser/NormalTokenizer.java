@@ -30,12 +30,13 @@ final class NormalTokenizer extends Tokenizer {
         groupNames.sort(Comparator.comparingInt(gn -> gn.start));
 
         NormalParsers normalParsers = new NormalParsers(patternAligner, fullString, parenthesesPairs,
-                squareBracketsPairs, bracesPairs, quotesPairs, startStickMarkers, endStickMarkers, scoreThresholds,
+                squareBracketsPairs, bracesPairs, startStickMarkers, endStickMarkers, scoreThresholds,
                 borderFilterBracesPairs, groupNames);
 
         normalParsers.parseRepeatPatterns(getRepeatPatternBraces(bracesPairs, borderFilterBracesPairs))
                 .forEach(tokenizedString::tokenizeSubstring);
         normalParsers.parseFuzzyMatchPatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+        normalParsers.parseAnyPatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
 
         Pattern finalPattern = tokenizedString.getFinalPattern();
         boolean duplicateGroupsAllowed = OrPattern.class.isAssignableFrom(finalPattern.getClass())

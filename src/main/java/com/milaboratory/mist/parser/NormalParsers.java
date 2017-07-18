@@ -19,7 +19,6 @@ final class NormalParsers {
     private final List<BracketsPair> parenthesesPairs;
     private final List<BracketsPair> squareBracketsPairs;
     private final List<BracketsPair> bracesPairs;
-    private final List<QuotesPair> quotesPairs;
     private final ArrayList<Integer> startStickMarkers;
     private final ArrayList<Integer> endStickMarkers;
     private final ArrayList<ScoreThreshold> scoreThresholds;
@@ -28,15 +27,14 @@ final class NormalParsers {
 
     NormalParsers(PatternAligner patternAligner, String query, List<BracketsPair> parenthesesPairs,
                   List<BracketsPair> squareBracketsPairs, List<BracketsPair> bracesPairs,
-                  List<QuotesPair> quotesPairs, ArrayList<Integer> startStickMarkers,
-                  ArrayList<Integer> endStickMarkers, ArrayList<ScoreThreshold> scoreThresholds,
-                  List<BorderFilterBracesPair> borderFilterBracesPairs, List<NormalSyntaxGroupName> groupNames) {
+                  ArrayList<Integer> startStickMarkers, ArrayList<Integer> endStickMarkers,
+                  ArrayList<ScoreThreshold> scoreThresholds, List<BorderFilterBracesPair> borderFilterBracesPairs,
+                  List<NormalSyntaxGroupName> groupNames) {
         this.patternAligner = patternAligner;
         this.query = query;
         this.parenthesesPairs = parenthesesPairs;
         this.squareBracketsPairs = squareBracketsPairs;
         this.bracesPairs = bracesPairs;
-        this.quotesPairs = quotesPairs;
         this.startStickMarkers = startStickMarkers;
         this.endStickMarkers = endStickMarkers;
         this.scoreThresholds = scoreThresholds;
@@ -112,6 +110,36 @@ final class NormalParsers {
         return foundTokens;
     }
 
+    ArrayList<FoundToken> parseAnyPatterns(TokenizedString tokenizedString) throws ParserException {
+        ArrayList<FoundToken> foundTokens = new ArrayList<>();
+        List<Token> stringTokens = tokenizedString.getTokens(0, tokenizedString.getFullLength()).stream()
+                .filter(Token::isString).collect(Collectors.toList());
+        for (int i = 0; i < stringTokens.size(); i++) {
+            Token currentStringToken = stringTokens.get(i);
+            String currentString = currentStringToken.getString();
+            Matcher regexMatcher = Pattern.compile(": *\\* *\\)").matcher(currentString);
+            while (regexMatcher.find()) {
+                int start = currentString.indexOf("*", regexMatcher.start()) + currentStringToken.getStartCoordinate();
+                int end = start + 1;
+                if (((i != 0) && !currentString.substring(0, start).contains("\\"))
+                        || ((i != stringTokens.size() - 1) && !currentString.substring(end).contains("\\")))
+                    throw new ParserException("'*' pattern is invalid if there are other patterns in the same read, "
+                            + "use 'N{*}' instead!");
+
+                ArrayList<GroupEdge> groupEdges = new ArrayList<>();
+                groupEdges.addAll(findGroupNames(start, true).stream()
+                        .map(gn -> new GroupEdge(gn, true)).collect(Collectors.toList()));
+                groupEdges.addAll(findGroupNames(end, false).stream()
+                        .map(gn -> new GroupEdge(gn, false)).collect(Collectors.toList()));
+                validateGroupEdges(groupEdges, true, false);
+
+                foundTokens.add(new FoundToken(new AnyPattern(getPatternAligner(start, end), groupEdges), start, end));
+            }
+        }
+
+        return foundTokens;
+    }
+
     /**
      * Return return list of names of groups that have their left edges on left of this pattern (if onLeft == true)
      * or has their right edges on the right of this pattern (if onLeft == false), without any patterns between this
@@ -130,7 +158,7 @@ final class NormalParsers {
             String intermediateSubstring = onLeft ? query.substring(groupNames.get(closestGroupIndex).end + 1,
                     currentPosition) : query.substring(currentPosition + 1,
                     groupNames.get(closestGroupIndex).bracketsPair.end);
-            if (intermediateSubstring.matches(".*[a-zA-Z()].*"))
+            if (intermediateSubstring.matches(".*[a-zA-Z()*].*"))
                 break;
             foundGroupNames.add(groupNames.get(closestGroupIndex).name);
             currentPosition = onLeft ? groupNames.get(closestGroupIndex).start

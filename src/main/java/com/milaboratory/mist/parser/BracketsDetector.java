@@ -110,6 +110,25 @@ final class BracketsDetector {
     }
 
     /**
+     * Returns previous position in query that is not inside quotes; used for searching non-quoted tokens in string.
+     *
+     * @param quotesPairs all quotes pairs detected by getAllQuotes function
+     * @param currentPosition current position in string
+     * @return previous non-quoted position in string; string length is not checked
+     */
+    static int previousNonQuotedPosition(List<QuotesPair> quotesPairs, int currentPosition) {
+        for (int i = quotesPairs.size() - 1; i >= 0; i--) {
+            QuotesPair quotesPair = quotesPairs.get(i);
+            if (quotesPair.contains(currentPosition - 1))
+                if (!isInQuotes(quotesPairs, quotesPair.start - 1))
+                    return quotesPair.start - 1;
+                else
+                    currentPosition = quotesPair.start;
+        }
+        return currentPosition - 1;
+    }
+
+    /**
      * Get list of all bracket pairs of the specified type.
      *
      * @param bracketsType brackets type

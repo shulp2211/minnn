@@ -29,6 +29,45 @@ final class ParserUtils {
     }
 
     /**
+     * Check is there any specific character in substring from position to stop character.
+     *
+     * @param str string where to search characters
+     * @param position start position in string, exclusive
+     * @param toLeft true if search to the left from position, false if to the right
+     * @param includeQuoted true if quoted characters should not be skipped
+     * @param specificChars string of specific characters
+     * @param stopChars string of stop characters
+     * @param quotesPairs quotes pairs detected by getAllQuotes function; may be null if includeQuoted is true
+     * @return true if specific character is found, false if not
+     */
+    static boolean isSpecificCharBeforeStopChar(String str, int position, boolean toLeft, boolean includeQuoted,
+            String specificChars, String stopChars, List<QuotesPair> quotesPairs) {
+        StringBuilder intermediateCharacters = new StringBuilder();
+        String currentChar;
+        if (toLeft)
+            for (int currentPosition = includeQuoted ? position - 1 : previousNonQuotedPosition(quotesPairs, position);
+                 currentPosition >= 0; currentPosition = includeQuoted ? currentPosition - 1
+                    : previousNonQuotedPosition(quotesPairs, currentPosition)) {
+                currentChar = str.substring(currentPosition, currentPosition + 1);
+                if (stopChars.contains(currentChar))
+                    break;
+                else
+                    intermediateCharacters.append(currentChar);
+            }
+        else
+            for (int currentPosition = includeQuoted ? position + 1 : nextNonQuotedPosition(quotesPairs, position);
+                 currentPosition < str.length(); currentPosition = includeQuoted ? currentPosition + 1
+                    : nextNonQuotedPosition(quotesPairs, currentPosition)) {
+                currentChar = str.substring(currentPosition, currentPosition + 1);
+                if (stopChars.contains(currentChar))
+                    break;
+                else
+                    intermediateCharacters.append(currentChar);
+            }
+        return intermediateCharacters.chars().anyMatch(ic -> specificChars.chars().anyMatch(sc -> ic == sc));
+    }
+
+    /**
      * Get object name at left of open parenthesis for simplified syntax.
      *
      * @param leftParenthesisPosition position of open parenthesis in string
