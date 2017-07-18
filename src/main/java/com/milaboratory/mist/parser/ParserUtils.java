@@ -236,7 +236,8 @@ final class ParserUtils {
         try {
             return new NucleotideSequence(str);
         } catch (IllegalArgumentException e) {
-            throw new ParserException("Failed to parse nucleotide sequence from " + str + ": " + e.getMessage());
+            throw new ParserException("Failed to parse nucleotide sequence from string \"" + str + "\": "
+                    + e.getMessage());
         }
     }
 
@@ -251,7 +252,7 @@ final class ParserUtils {
         try {
             return Integer.parseInt(str);
         } catch (NumberFormatException e) {
-            throw new ParserException("Failed to parse " + paramName + " from " + str + ": " + e.getMessage());
+            throw new ParserException("Failed to parse " + paramName + " from string \"" + str + "\"");
         }
     }
 
@@ -266,7 +267,7 @@ final class ParserUtils {
         try {
             return Long.parseLong(str);
         } catch (NumberFormatException e) {
-            throw new ParserException("Failed to parse " + paramName + " from " + str + ": " + e.getMessage());
+            throw new ParserException("Failed to parse " + paramName + " from string \"" + str + "\"");
         }
     }
 }
