@@ -34,7 +34,7 @@ public class SimplifiedSyntaxGroupsTest {
     @Test
     public void correctGroupsTest() throws Exception {
         Random rg = new Random();
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 50; i++) {
             PatternAligner patternAligner = getRandomPatternAligner();
             ArrayList<FuzzyMatchPattern> fuzzyMatchPatterns = new ArrayList<>();
             ArrayList<RepeatPattern> repeatPatterns = new ArrayList<>();

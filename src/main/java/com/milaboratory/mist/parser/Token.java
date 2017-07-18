@@ -77,9 +77,11 @@ final class Token {
         else throw new ParserException("Expected MultipleReadsOperator, but got " + pattern);
     }
 
-    <P extends Pattern> P getSpecificPattern() throws ParserException {
+    <P extends Pattern> P getSpecificPattern(Class<P> patternClass) throws ParserException {
         try {
-            return (P)getPattern();
+            if (patternClass.isAssignableFrom(getPattern().getClass()))
+                return (P)pattern;
+            else throw new ParserException("Expected " + patternClass.getName() + ", but got " + pattern);
         } catch (ClassCastException e) {
             throw new ParserException("Got pattern of unexpected class " + pattern + ": " + e);
         }

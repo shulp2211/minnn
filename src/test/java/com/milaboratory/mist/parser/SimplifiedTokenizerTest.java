@@ -89,4 +89,12 @@ public class SimplifiedTokenizerTest {
             assertEquals(multiPatterns.get(multiPatterns.size() - 1).toString(), parseResult.toString());
         }
     }
+
+    @Test
+    public void wrongOperandClassTest() throws Exception {
+        Parser parser = new Parser(getTestPatternAligner());
+        exception.expect(ParserException.class);
+        parser.parseQuery("AndOperator([FuzzyMatchPattern(GATCACGTCGGGCTTCGT, -1, -1, []), "
+                + "FuzzyMatchPattern(GATCACGTCGGGCTTCGT, -1, -1, [])])", SIMPLIFIED);
+    }
 }
