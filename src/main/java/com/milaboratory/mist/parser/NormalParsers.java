@@ -72,16 +72,22 @@ final class NormalParsers {
                             "maximum number of repeats");
             }
             ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
-            groupEdgePositions.addAll(findGroupNames(bracesPair.start - 1, true).stream()
-                    .map(gn -> new GroupEdgePosition(new GroupEdge(gn, true), 0))
+            ArrayList<FoundGroupName> groupNamesLeft = findGroupNames(bracesPair.start - 1, true);
+            ArrayList<FoundGroupName> groupNamesRight = findGroupNames(bracesPair.end, false);
+            groupEdgePositions.addAll(groupNamesLeft.stream()
+                    .map(gn -> new GroupEdgePosition(new GroupEdge(gn.name, true), 0))
                     .collect(Collectors.toList()));
-            groupEdgePositions.addAll(findGroupNames(bracesPair.end, false).stream()
-                    .map(gn -> new GroupEdgePosition(new GroupEdge(gn, false), MAX_REPEATS))
+            groupEdgePositions.addAll(groupNamesRight.stream()
+                    .map(gn -> new GroupEdgePosition(new GroupEdge(gn.name, false), MAX_REPEATS))
                     .collect(Collectors.toList()));
+            int tokenStart = groupNamesLeft.stream().mapToInt(fgn -> fgn.edgeCoordinate).min()
+                    .orElse(bracesPair.start - 1);
+            int tokenEnd = groupNamesRight.stream().mapToInt(fgn -> fgn.edgeCoordinate).max()
+                    .orElse(bracesPair.end) + 1;
 
             foundTokens.add(new FoundToken(new RepeatPattern(getPatternAligner(bracesPair.start - 1, bracesPair.end + 1),
                     patternSeq, minRepeats, maxRepeats, fixedLeftBorder, fixedRightBorder, groupEdgePositions),
-                    bracesPair.start - 1, bracesPair.end + 1));
+                    tokenStart, tokenEnd));
         }
 
         return foundTokens;
@@ -96,14 +102,15 @@ final class NormalParsers {
             while (regexMatcher.find()) {
                 int start = regexMatcher.start() + currentStringToken.getStartCoordinate();
                 int end = regexMatcher.end() + currentStringToken.getStartCoordinate();
-                ArrayList<GroupEdgePosition> groupEdgePositions = getGroupEdgePositions(start, end);
-                validateGroupEdgePositions(groupEdgePositions);
+                FoundGroupEdgePositions foundGroupEdgePositions = findGroupEdgePositions(start, end);
+                validateGroupEdgePositions(foundGroupEdgePositions.groupEdgePositions);
                 int fixedLeftBorder = startStick(start) ? 0 : -1;
                 int fixedRightBorder = endStick(end - 1) ? -2 : -1;
                 NucleotideSequence patternSeq = toNSeq(cutGroupsAndSpaces(start, end));
 
                 foundTokens.add(new FoundToken(new FuzzyMatchPattern(getPatternAligner(start, end), patternSeq,
-                        fixedLeftBorder, fixedRightBorder, groupEdgePositions), start, end));
+                        fixedLeftBorder, fixedRightBorder, foundGroupEdgePositions.groupEdgePositions),
+                        foundGroupEdgePositions.leftEdgeCoordinate, foundGroupEdgePositions.rightEdgeCoordinate));
             }
         }
 
@@ -127,13 +134,18 @@ final class NormalParsers {
                             + "use 'N{*}' instead!");
 
                 ArrayList<GroupEdge> groupEdges = new ArrayList<>();
-                groupEdges.addAll(findGroupNames(start, true).stream()
-                        .map(gn -> new GroupEdge(gn, true)).collect(Collectors.toList()));
-                groupEdges.addAll(findGroupNames(end, false).stream()
-                        .map(gn -> new GroupEdge(gn, false)).collect(Collectors.toList()));
+                ArrayList<FoundGroupName> groupNamesLeft = findGroupNames(start, true);
+                ArrayList<FoundGroupName> groupNamesRight = findGroupNames(end, false);
+                groupEdges.addAll(groupNamesLeft.stream()
+                        .map(gn -> new GroupEdge(gn.name, true)).collect(Collectors.toList()));
+                groupEdges.addAll(groupNamesRight.stream()
+                        .map(gn -> new GroupEdge(gn.name, false)).collect(Collectors.toList()));
                 validateGroupEdges(groupEdges, true, false);
+                int tokenStart = groupNamesLeft.stream().mapToInt(fgn -> fgn.edgeCoordinate).min().orElse(start);
+                int tokenEnd = groupNamesRight.stream().mapToInt(fgn -> fgn.edgeCoordinate).max().orElse(end - 1) + 1;
 
-                foundTokens.add(new FoundToken(new AnyPattern(getPatternAligner(start, end), groupEdges), start, end));
+                foundTokens.add(new FoundToken(new AnyPattern(getPatternAligner(start, end), groupEdges),
+                        tokenStart, tokenEnd));
             }
         }
 
@@ -148,21 +160,20 @@ final class NormalParsers {
      * @param position position where to start the search; exclusive
      * @param onLeft true to search group names on the left from this pattern, false to search group closing parentheses
      *               on the right from this pattern
-     * @return list of names of groups for found group edges
+     * @return list of names of groups for found group edges, and their coordinates
      */
-    private ArrayList<String> findGroupNames(int position, boolean onLeft) {
-        ArrayList<String> foundGroupNames = new ArrayList<>();
+    private ArrayList<FoundGroupName> findGroupNames(int position, boolean onLeft) {
+        ArrayList<FoundGroupName> foundGroupNames = new ArrayList<>();
         int currentPosition = position;
         int closestGroupIndex = getClosestGroupByPosition(position, onLeft);
         while (closestGroupIndex != -1) {
-            String intermediateSubstring = onLeft ? query.substring(groupNames.get(closestGroupIndex).end + 1,
-                    currentPosition) : query.substring(currentPosition + 1,
-                    groupNames.get(closestGroupIndex).bracketsPair.end);
+            NormalSyntaxGroupName currentGroupName = groupNames.get(closestGroupIndex);
+            String intermediateSubstring = onLeft ? query.substring(currentGroupName.end + 1,
+                    currentPosition) : query.substring(currentPosition + 1, currentGroupName.bracketsPair.end);
             if (intermediateSubstring.matches(".*[a-zA-Z()*].*"))
                 break;
-            foundGroupNames.add(groupNames.get(closestGroupIndex).name);
-            currentPosition = onLeft ? groupNames.get(closestGroupIndex).start
-                    : groupNames.get(closestGroupIndex).bracketsPair.end;
+            currentPosition = onLeft ? currentGroupName.start : currentGroupName.bracketsPair.end;
+            foundGroupNames.add(new FoundGroupName(currentGroupName.name, currentPosition));
             closestGroupIndex = getClosestGroupByPosition(currentPosition, onLeft);
         }
         return foundGroupNames;
@@ -191,13 +202,13 @@ final class NormalParsers {
 
     /**
      * Get group edge positions for FuzzyMatchPattern from specified range in query string, including groups on left
-     * and right edges.
+     * and right edges; and coordinates of leftmost and rightmost edges if there are groups on the left or right.
      *
      * @param start start of FuzzyMatchPattern, inclusive
      * @param end end of FuzzyMatchPattern, exclusive
-     * @return list of group edge positions
+     * @return found group edge positions and edge coordinates
      */
-    private ArrayList<GroupEdgePosition> getGroupEdgePositions(int start, int end) {
+    private FoundGroupEdgePositions findGroupEdgePositions(int start, int end) {
         ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
         int ignoredCharactersCount = query.substring(start, end + 1).length()
                 - query.substring(start, end + 1).replace(" ", "").length();
@@ -221,15 +232,20 @@ final class NormalParsers {
             }
         }
 
-        groupEdgePositions.addAll(findGroupNames(start, true).stream()
-                .map(gn -> new GroupEdgePosition(new GroupEdge(gn, true), 0))
+        ArrayList<FoundGroupName> groupNamesLeft = findGroupNames(start, true);
+        ArrayList<FoundGroupName> groupNamesRight = findGroupNames(end, false);
+        groupEdgePositions.addAll(groupNamesLeft.stream()
+                .map(gn -> new GroupEdgePosition(new GroupEdge(gn.name, true), 0))
                 .collect(Collectors.toList()));
         final int patternLength = end - start + 1 - ignoredCharactersCount;
-        groupEdgePositions.addAll(findGroupNames(end, false).stream()
-                .map(gn -> new GroupEdgePosition(new GroupEdge(gn, false), patternLength))
+        groupEdgePositions.addAll(groupNamesRight.stream()
+                .map(gn -> new GroupEdgePosition(new GroupEdge(gn.name, false), patternLength))
                 .collect(Collectors.toList()));
+        int leftEdgeCoordinate = groupNamesLeft.stream().mapToInt(fgn -> fgn.edgeCoordinate).min().orElse(start);
+        int rightEdgeCoordinate = groupNamesRight.stream().mapToInt(fgn -> fgn.edgeCoordinate).max()
+                .orElse(end - 1) + 1;
 
-        return groupEdgePositions;
+        return new FoundGroupEdgePositions(groupEdgePositions, leftEdgeCoordinate, rightEdgeCoordinate);
     }
 
     /**
@@ -323,5 +339,44 @@ final class NormalParsers {
             return patternAligner;
         else
             return patternAligner.overridePenaltyThreshold(currentThreshold);
+    }
+
+    private static class FoundGroupName {
+        final String name;
+        final int edgeCoordinate;
+
+        /**
+         * Return list item for findGroupNames(): group name and edge coordinate - open parenthesis for left group edge
+         * or closed parenthesis for right group edge; both inclusive.
+         *
+         * @param name found group name
+         * @param edgeCoordinate group edge coordinate, inclusive
+         */
+        FoundGroupName(String name, int edgeCoordinate) {
+            this.name = name;
+            this.edgeCoordinate = edgeCoordinate;
+        }
+    }
+
+    private static class FoundGroupEdgePositions {
+        final ArrayList<GroupEdgePosition> groupEdgePositions;
+        final int leftEdgeCoordinate;
+        final int rightEdgeCoordinate;
+
+        /**
+         * Return values for findGroupEdgePositions(): list of group edge positions; leftmost group left edge coordinate
+         * if there are group edges on the left from current pattern or pattern left edge if there are no group edges
+         * on the left; and similarly right edge coordinate.
+         *
+         * @param groupEdgePositions list of group edge positions
+         * @param leftEdgeCoordinate left edge coordinate, inclusive
+         * @param rightEdgeCoordinate right edge coordinate, exclusive
+         */
+        FoundGroupEdgePositions(ArrayList<GroupEdgePosition> groupEdgePositions, int leftEdgeCoordinate,
+                                int rightEdgeCoordinate) {
+            this.groupEdgePositions = groupEdgePositions;
+            this.leftEdgeCoordinate = leftEdgeCoordinate;
+            this.rightEdgeCoordinate = rightEdgeCoordinate;
+        }
     }
 }
