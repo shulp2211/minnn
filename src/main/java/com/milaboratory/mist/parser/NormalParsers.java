@@ -98,7 +98,8 @@ final class NormalParsers {
         List<Token> stringTokens = tokenizedString.getTokens(0, tokenizedString.getFullLength()).stream()
                 .filter(Token::isString).collect(Collectors.toList());
         for (Token currentStringToken : stringTokens) {
-            Matcher regexMatcher = Pattern.compile("[a-zA-Z :()]*").matcher(currentStringToken.getString());
+            Matcher regexMatcher = Pattern.compile("[a-zA-Z]([a-zA-Z :()]*[a-zA-Z]+)*")
+                    .matcher(currentStringToken.getString());
             while (regexMatcher.find()) {
                 int start = regexMatcher.start() + currentStringToken.getStartCoordinate();
                 int end = regexMatcher.end() + currentStringToken.getStartCoordinate();
