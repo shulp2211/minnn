@@ -1,8 +1,8 @@
 package com.milaboratory.mist.parser;
 
 final class ScoreThreshold {
-    private final int start;
-    private final int end;
+    final int start;
+    final int end;
     final long threshold;
     final int nestedLevel;
 

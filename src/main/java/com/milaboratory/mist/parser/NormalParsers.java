@@ -17,7 +17,7 @@ final class NormalParsers {
     private final PatternAligner patternAligner;
     private final String query;
     private final List<BracketsPair> parenthesesPairs;
-    private final List<BracketsPair> squareBracketsPairs;
+    private final ArrayList<NormalSyntaxSquareBrackets> squareBracketsPairs;
     private final List<BracketsPair> bracesPairs;
     private final ArrayList<Integer> startStickMarkers;
     private final ArrayList<Integer> endStickMarkers;
@@ -26,7 +26,7 @@ final class NormalParsers {
     private final List<NormalSyntaxGroupName> groupNames;
 
     NormalParsers(PatternAligner patternAligner, String query, List<BracketsPair> parenthesesPairs,
-                  List<BracketsPair> squareBracketsPairs, List<BracketsPair> bracesPairs,
+                  ArrayList<NormalSyntaxSquareBrackets> squareBracketsPairs, List<BracketsPair> bracesPairs,
                   ArrayList<Integer> startStickMarkers, ArrayList<Integer> endStickMarkers,
                   ArrayList<ScoreThreshold> scoreThresholds, List<BorderFilterBracesPair> borderFilterBracesPairs,
                   List<NormalSyntaxGroupName> groupNames) {
@@ -149,6 +149,156 @@ final class NormalParsers {
                         tokenStart, tokenEnd));
             }
         }
+
+        return foundTokens;
+    }
+
+    /**
+     * This parser launches 2 times: once for left border filters and then for right border filters. On first pass it
+     * expects nucleotide sequences to be FuzzyMatchPattern only, on second pass they can be FilterPattern
+     * from 1st pass.
+     *
+     * @param tokenizedString tokenized string object for query string
+     * @param left true when running for left border filters, false for right border filters
+     * @return list of found tokens
+     */
+    ArrayList<FoundToken> parseBorderFilters(TokenizedString tokenizedString, boolean left) throws ParserException {
+        ArrayList<FoundToken> foundTokens = new ArrayList<>();
+        if (left) {
+            Matcher leftMatcher = Pattern.compile("(<\\{\\d+}|<+)[a-zA-Z]+").matcher(query);
+            while (leftMatcher.find()) {
+                int start = leftMatcher.start();
+                int end = leftMatcher.end();
+                NucleotideSequence seq;
+                int minNucleotides;
+                if (leftMatcher.group().contains("{")) {
+                    BorderFilterBracesPair borderFilterBracesPair = borderFilterBracesPairs.stream()
+                            .filter(bp -> bp.leftBorder)
+                            .filter(bp -> (bp.bracesPair.start > start) && (bp.bracesPair.end < end))
+                            .findFirst().orElseThrow(() -> new IllegalStateException(
+                                    "BorderFilterBracesPair not found for " + leftMatcher.group()));
+
+                    seq = toNSeq(query.substring(borderFilterBracesPair.bracesPair.end + 1, end));
+                    minNucleotides = seq.size() - borderFilterBracesPair.numberOfRepeats;
+                } else {
+                    String foundString = leftMatcher.group();
+                    seq = toNSeq(foundString.replace("<", ""));
+                    minNucleotides = seq.size() - (foundString.length()
+                            - foundString.replace("<", "").length());
+                }
+                if (minNucleotides < 0)
+                    throw new ParserException("Invalid border filter, not enough nucleotides: " + leftMatcher.group());
+                boolean useTarget = !isSpecificCharBeforeStopChar(query, start, true, true,
+                        "[]", "\\", null);
+                BorderFilter filter = new BorderFilter(getPatternAligner(start, end), true, seq, minNucleotides,
+                        useTarget);
+                Token fuzzyMatchPatternToken = tokenizedString.getTokens(start, end).stream()
+                        .filter(t -> !t.isString()).findFirst().orElseThrow(() -> new IllegalStateException(
+                                "Parsed FuzzyMatchPattern not found for BorderFilter: " + leftMatcher.group()));
+                FuzzyMatchPattern fuzzyMatchPattern = fuzzyMatchPatternToken.getSpecificPattern(FuzzyMatchPattern.class);
+                foundTokens.add(new FoundToken(new FilterPattern(getPatternAligner(start, end), filter,
+                        fuzzyMatchPattern), start, fuzzyMatchPatternToken.getStartCoordinate()
+                        + fuzzyMatchPatternToken.getLength()));
+            }
+        } else {
+            Matcher rightMatcher = Pattern.compile("[a-zA-Z]+(>\\{\\d+}|>+)").matcher(query);
+            while (rightMatcher.find()) {
+                int start = rightMatcher.start();
+                int end = rightMatcher.end();
+                NucleotideSequence seq;
+                int minNucleotides;
+                if (rightMatcher.group().contains("{")) {
+                    BorderFilterBracesPair borderFilterBracesPair = borderFilterBracesPairs.stream()
+                            .filter(bp -> !bp.leftBorder)
+                            .filter(bp -> (bp.bracesPair.start > start) && (bp.bracesPair.end < end))
+                            .findFirst().orElseThrow(() -> new IllegalStateException(
+                                    "BorderFilterBracesPair not found for " + rightMatcher.group()));
+
+                    seq = toNSeq(query.substring(start, borderFilterBracesPair.bracesPair.start - 1));
+                    minNucleotides = seq.size() - borderFilterBracesPair.numberOfRepeats;
+                } else {
+                    String foundString = rightMatcher.group();
+                    seq = toNSeq(foundString.replace(">", ""));
+                    minNucleotides = seq.size() - (foundString.length()
+                            - foundString.replace(">", "").length());
+                }
+                if (minNucleotides < 0)
+                    throw new ParserException("Invalid border filter, not enough nucleotides: " + rightMatcher.group());
+                boolean useTarget = !isSpecificCharBeforeStopChar(query, end - 1, false, true,
+                        "[]", "\\", null);
+                BorderFilter filter = new BorderFilter(getPatternAligner(start, end), false, seq, minNucleotides,
+                        useTarget);
+                Token patternToken = tokenizedString.getTokens(start, end).stream()
+                        .filter(t -> !t.isString()).findFirst().orElseThrow(() -> new IllegalStateException(
+                                "Parsed pattern not found for BorderFilter: " + rightMatcher.group()));
+                SinglePattern singlePattern = patternToken.getSinglePattern();
+                if (!FuzzyMatchPattern.class.isAssignableFrom(singlePattern.getClass())
+                        && !FilterPattern.class.isAssignableFrom(singlePattern.getClass()))
+                    throw new IllegalStateException("Unexpected class for BorderFilter operand: "
+                            + singlePattern.getClass().getName());
+                foundTokens.add(new FoundToken(new FilterPattern(getPatternAligner(start, end), filter,
+                        singlePattern), patternToken.getStartCoordinate(), end));
+            }
+        }
+
+        return foundTokens;
+    }
+
+    /**
+     * This function will parse sequences of already parsed patterns. It will be called multiple times.
+     *
+     * @param tokenizedString tokenized string object for query string
+     * @return list of found tokens
+     */
+    ArrayList<FoundToken> parseSequencePatterns(TokenizedString tokenizedString) throws ParserException {
+        ArrayList<FoundToken> foundTokens = new ArrayList<>();
+
+        return foundTokens;
+    }
+
+    /**
+     * This function will parse operators inside single read that are in brackets with specified nested level.
+     * It will be called from loop with decreasing nested level. Nested level -1 means to parse operators outside
+     * of brackets.
+     *
+     * @param tokenizedString tokenized string object for query string
+     * @param nestedLevel current nested level of brackets where to parse; -1 means to parse outside of brackets
+     * @return list of found tokens
+     */
+    ArrayList<FoundToken> parseSingleReadOperators(TokenizedString tokenizedString, int nestedLevel)
+            throws ParserException {
+        ArrayList<FoundToken> foundTokens = new ArrayList<>();
+        ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
+        List<NormalSyntaxSquareBrackets> bracketsWithThisNestedLevel = squareBracketsPairs.stream()
+                .filter(bp -> bp.bracketsPair.nestedLevel == nestedLevel).collect(Collectors.toList());
+
+
+        return foundTokens;
+    }
+
+    ArrayList<FoundToken> parseMultiPatterns(TokenizedString tokenizedString) throws ParserException {
+        ArrayList<FoundToken> foundTokens = new ArrayList<>();
+        ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
+
+        return foundTokens;
+    }
+
+    /**
+     * This function will parse multiple read operators that are in brackets with specified nested level.
+     * It will be called from loop with decreasing nested level. Nested level -1 means to parse operators outside
+     * of brackets.
+     *
+     * @param tokenizedString tokenized string object for query string
+     * @param nestedLevel current nested level of brackets where to parse; -1 means to parse outside of brackets
+     * @return list of found tokens
+     */
+    ArrayList<FoundToken> parseMultiReadOperators(TokenizedString tokenizedString, int nestedLevel)
+            throws ParserException {
+        ArrayList<FoundToken> foundTokens = new ArrayList<>();
+        ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
+        List<NormalSyntaxSquareBrackets> bracketsWithThisNestedLevel = squareBracketsPairs.stream()
+                .filter(bp -> bp.bracketsPair.nestedLevel == nestedLevel).collect(Collectors.toList());
+
 
         return foundTokens;
     }
@@ -318,6 +468,14 @@ final class NormalParsers {
                 result.append(query.charAt(position));
         }
         return result.toString();
+    }
+
+    private SinglePattern wrapWithScoreFilter(SinglePattern singlePattern, long scoreThreshold) {
+        return new FilterPattern(patternAligner, new ScoreFilter(scoreThreshold), singlePattern);
+    }
+
+    private MultipleReadsOperator wrapWithScoreFilter(MultipleReadsOperator multiReadPattern, long scoreThreshold) {
+        return new MultipleReadsFilterPattern(patternAligner, new ScoreFilter(scoreThreshold), multiReadPattern);
     }
 
     /**
