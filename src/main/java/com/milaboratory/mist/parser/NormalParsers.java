@@ -8,6 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.milaboratory.mist.parser.BracketsType.*;
 import static com.milaboratory.mist.parser.ParserUtils.*;
 
 /**
@@ -16,25 +17,20 @@ import static com.milaboratory.mist.parser.ParserUtils.*;
 final class NormalParsers {
     private final PatternAligner patternAligner;
     private final String query;
-    private final List<BracketsPair> parenthesesPairs;
-    private final ArrayList<NormalSyntaxSquareBrackets> squareBracketsPairs;
-    private final List<BracketsPair> bracesPairs;
+    private final List<BracketsPair> squareBracketsPairs;
     private final ArrayList<Integer> startStickMarkers;
     private final ArrayList<Integer> endStickMarkers;
     private final ArrayList<ScoreThreshold> scoreThresholds;
     private final List<BorderFilterBracesPair> borderFilterBracesPairs;
     private final List<NormalSyntaxGroupName> groupNames;
 
-    NormalParsers(PatternAligner patternAligner, String query, List<BracketsPair> parenthesesPairs,
-                  ArrayList<NormalSyntaxSquareBrackets> squareBracketsPairs, List<BracketsPair> bracesPairs,
+    NormalParsers(PatternAligner patternAligner, String query, List<BracketsPair> squareBracketsPairs,
                   ArrayList<Integer> startStickMarkers, ArrayList<Integer> endStickMarkers,
                   ArrayList<ScoreThreshold> scoreThresholds, List<BorderFilterBracesPair> borderFilterBracesPairs,
                   List<NormalSyntaxGroupName> groupNames) {
         this.patternAligner = patternAligner;
         this.query = query;
-        this.parenthesesPairs = parenthesesPairs;
         this.squareBracketsPairs = squareBracketsPairs;
-        this.bracesPairs = bracesPairs;
         this.startStickMarkers = startStickMarkers;
         this.endStickMarkers = endStickMarkers;
         this.scoreThresholds = scoreThresholds;
@@ -165,7 +161,7 @@ final class NormalParsers {
     ArrayList<FoundToken> parseBorderFilters(TokenizedString tokenizedString, boolean left) throws ParserException {
         ArrayList<FoundToken> foundTokens = new ArrayList<>();
         if (left) {
-            Matcher leftMatcher = Pattern.compile("(<\\{\\d+}|<+)[a-zA-Z]+").matcher(query);
+            Matcher leftMatcher = Pattern.compile("(<\\{ *\\d+ *}|<+)[a-zA-Z]+").matcher(query);
             while (leftMatcher.find()) {
                 int start = leftMatcher.start();
                 int end = leftMatcher.end();
@@ -201,7 +197,7 @@ final class NormalParsers {
                         + fuzzyMatchPatternToken.getLength()));
             }
         } else {
-            Matcher rightMatcher = Pattern.compile("[a-zA-Z]+(>\\{\\d+}|>+)").matcher(query);
+            Matcher rightMatcher = Pattern.compile("[a-zA-Z]+(>\\{ *\\d+ *}|>+)").matcher(query);
             while (rightMatcher.find()) {
                 int start = rightMatcher.start();
                 int end = rightMatcher.end();
@@ -312,30 +308,125 @@ final class NormalParsers {
     }
 
     /**
-     * This function will parse operators with specified sign inside single read that are in brackets with specified
-     * nested level. It will be called from loop with decreasing nested level, once for each operator on every nested
-     * level, starting from operators with higher priority. Nested level -1 means to parse operators outside
-     * of brackets.
+     * Parse score filters and remove square brackets around completely parsed patterns by merging them into patterns.
+     * It will parse score filters only around completely parsed patterns, and it will be called multiple times.
      *
      * @param tokenizedString tokenized string object for query string
-     * @param operator operator sign
-     * @param nestedLevel current nested level of brackets where to parse; -1 means to parse outside of brackets
      * @return list of found tokens
      */
-    ArrayList<FoundToken> parseSingleReadOperators(TokenizedString tokenizedString, String operator, int nestedLevel)
-            throws ParserException {
+    ArrayList<FoundToken> parseScoreFilters(TokenizedString tokenizedString) throws ParserException {
         ArrayList<FoundToken> foundTokens = new ArrayList<>();
         ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
-        List<NormalSyntaxSquareBrackets> bracketsWithThisNestedLevel = squareBracketsPairs.stream()
-                .filter(bp -> bp.bracketsPair.nestedLevel == nestedLevel).collect(Collectors.toList());
-
+        for (int i = 1; i < tokens.size() - 1; i++) {
+            Token previousToken = tokens.get(i - 1);
+            Token currentToken = tokens.get(i);
+            Token nextToken = tokens.get(i + 1);
+            if (!currentToken.isString() && previousToken.isString() && nextToken.isString()) {
+                String previousString = previousToken.getString();
+                String nextString = nextToken.getString();
+                boolean bracketsFound = false;
+                int bracketsRelativeStart = 0;
+                int bracketsRelativeEnd = 0;
+                boolean noMoreNestedBrackets = false;
+                while (!noMoreNestedBrackets) {
+                    Matcher previousMatcher = Pattern.compile(" *\\[ *(-?\\d+ *:)? *$").matcher(previousString);
+                    if (previousMatcher.find()) {
+                        Matcher nextMatcher = Pattern.compile("^ *] *").matcher(nextString);
+                        if (nextMatcher.find()) {
+                            bracketsFound = true;
+                            bracketsRelativeStart = previousMatcher.start();
+                            bracketsRelativeEnd = nextMatcher.end();
+                            previousString = previousString.substring(0, bracketsRelativeStart);
+                            nextString = nextString.substring(bracketsRelativeEnd);
+                        } else
+                            noMoreNestedBrackets = true;
+                    } else
+                        noMoreNestedBrackets = true;
+                }
+                if (bracketsFound) {
+                    int tokenStart = bracketsRelativeStart + previousToken.getStartCoordinate();
+                    int tokenEnd = bracketsRelativeEnd + nextToken.getStartCoordinate();
+                    FoundToken foundToken;
+                    List<ScoreThreshold> foundScoreThresholds = scoreThresholds.stream()
+                            .filter(st -> (st.start >= tokenStart) && (st.start < currentToken.getStartCoordinate()))
+                            .collect(Collectors.toList());
+                    if (!foundScoreThresholds.isEmpty()) {
+                        long scoreThreshold = foundScoreThresholds.stream().mapToLong(st -> st.threshold).max()
+                                .orElseThrow(IllegalStateException::new);
+                        foundToken = new FoundToken(SinglePattern.class.isAssignableFrom(
+                                currentToken.getPattern().getClass())
+                                ? wrapWithScoreFilter(currentToken.getSinglePattern(), scoreThreshold)
+                                : wrapWithScoreFilter(currentToken.getMultipleReadsOperator(), scoreThreshold),
+                                tokenStart, tokenEnd);
+                    } else
+                        foundToken = new FoundToken(currentToken.getPattern(), tokenStart, tokenEnd);
+                    foundTokens.add(foundToken);
+                }
+            }
+        }
 
         return foundTokens;
     }
 
-    ArrayList<FoundToken> parseMultiPatterns(TokenizedString tokenizedString) throws ParserException {
+    /**
+     * This function will parse operators with specified sign that are in brackets with specified nested level.
+     * It will be called from loop with decreasing nested level, once for each operator on every nested
+     * level, starting from operators with higher priority. Nested level -1 means to parse operators outside
+     * of brackets. Then this function will be called once more for each nested level to parse MultiPatterns.
+     *
+     * @param tokenizedString tokenized string object for query string
+     * @param operatorRegexp regular expression for operator sign
+     * @param nestedLevel current nested level of brackets where to parse; -1 means to parse outside of brackets
+     * @return list of found tokens
+     */
+    ArrayList<FoundToken> parseSingleReadOperators(TokenizedString tokenizedString, String operatorRegexp,
+            int nestedLevel) throws ParserException {
         ArrayList<FoundToken> foundTokens = new ArrayList<>();
-        ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
+        List<BracketsPair> bracketsWithThisNestedLevel = (nestedLevel == -1)
+                ? Collections.singletonList(new BracketsPair(SQUARE, -1, query.length(), -1))
+                : squareBracketsPairs.stream().filter(bp -> bp.nestedLevel == nestedLevel).collect(Collectors.toList());
+        for (BracketsPair currentBrackets : bracketsWithThisNestedLevel) {
+            ArrayList<Token> tokens = tokenizedString.getTokens(getBracketsContentStart(currentBrackets),
+                    currentBrackets.end);
+            boolean sequenceStarted = false;
+            int sequenceStart = 0;
+            for (int i = 0; i <= tokens.size(); i++) {
+                if ((i == tokens.size()) || (tokens.get(i).isString()
+                        && !tokens.get(i).getString().matches(operatorRegexp))) {
+                    if (sequenceStarted) {
+                        if (sequenceStart < i - 2) {
+                            int numOperands = (i - sequenceStart + 1) / 2;
+                            SinglePattern[] operands = new SinglePattern[numOperands];
+                            for (int j = 0; j < numOperands; j++)
+                                operands[j] = tokens.get(sequenceStart + j * 2).getSinglePattern();
+                            int sequenceTokenStart = tokens.get(sequenceStart).getStartCoordinate();
+                            int sequenceTokenEnd = tokens.get(i - 1).getStartCoordinate()
+                                    + tokens.get(i - 1).getLength();
+                            FoundToken foundToken;
+                            if (operatorRegexp.contains("+"))
+                                foundToken = new FoundToken(new PlusPattern(getPatternAligner(sequenceTokenStart,
+                                        sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd);
+                            else if (operatorRegexp.contains("&"))
+                                foundToken = new FoundToken(new AndPattern(getPatternAligner(sequenceTokenStart,
+                                        sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd);
+                            else if (operatorRegexp.contains("|"))
+                                foundToken = new FoundToken(new OrPattern(getPatternAligner(sequenceTokenStart,
+                                        sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd);
+                            else if (operatorRegexp.contains("\\\\"))
+                                foundToken = new FoundToken(new MultiPattern(getPatternAligner(sequenceTokenStart,
+                                        sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd);
+                            else
+                                throw new IllegalArgumentException("Invalid operator regexp: " + operatorRegexp);
+                            foundTokens.add(foundToken);
+                        }
+                        sequenceStarted = false;
+                    }
+                } else if (!sequenceStarted && !tokens.get(i).isString()) {
+                    sequenceStart = i;
+                    sequenceStarted = true;
+                }
+            }
+        }
 
         return foundTokens;
     }
@@ -347,17 +438,63 @@ final class NormalParsers {
      * of brackets.
      *
      * @param tokenizedString tokenized string object for query string
-     * @param operator operator sign
+     * @param operatorRegexp regular expression for operator sign
      * @param nestedLevel current nested level of brackets where to parse; -1 means to parse outside of brackets
      * @return list of found tokens
      */
-    ArrayList<FoundToken> parseMultiReadOperators(TokenizedString tokenizedString, String operator, int nestedLevel)
-            throws ParserException {
+    ArrayList<FoundToken> parseMultiReadOperators(TokenizedString tokenizedString, String operatorRegexp,
+            int nestedLevel) throws ParserException {
         ArrayList<FoundToken> foundTokens = new ArrayList<>();
-        ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
-        List<NormalSyntaxSquareBrackets> bracketsWithThisNestedLevel = squareBracketsPairs.stream()
-                .filter(bp -> bp.bracketsPair.nestedLevel == nestedLevel).collect(Collectors.toList());
-
+        List<BracketsPair> bracketsWithThisNestedLevel = (nestedLevel == -1)
+                ? Collections.singletonList(new BracketsPair(SQUARE, 0, query.length(), -1))
+                : squareBracketsPairs.stream().filter(bp -> bp.nestedLevel == nestedLevel).collect(Collectors.toList());
+        for (BracketsPair currentBrackets : bracketsWithThisNestedLevel) {
+            ArrayList<Token> tokens = tokenizedString.getTokens(getBracketsContentStart(currentBrackets),
+                    currentBrackets.end);
+            boolean sequenceStarted = false;
+            int sequenceStart = 0;
+            for (int i = 0; i <= tokens.size(); i++) {
+                /* for NotOperator, every single pattern will be treated as sequence, and then it will be checked
+                   that previous token matches operatorRegexp */
+                if ((i == tokens.size()) || (tokens.get(i).isString()
+                        && !tokens.get(i).getString().matches(operatorRegexp))
+                        || (sequenceStarted && operatorRegexp.contains("~"))) {
+                    if (sequenceStarted) {
+                        if (operatorRegexp.contains("~")) {
+                            if ((i > 1) && tokens.get(i - 2).isString() &&
+                                    tokens.get(i - 2).getString().matches(operatorRegexp)) {
+                                int tokenStart = tokens.get(i - 2).getStartCoordinate();
+                                int tokenEnd = tokens.get(i - 1).getStartCoordinate() + tokens.get(i - 1).getLength();
+                                foundTokens.add(new FoundToken(new NotOperator(getPatternAligner(tokenStart, tokenEnd),
+                                        tokens.get(i - 1).getMultipleReadsOperator()), tokenStart, tokenEnd));
+                            }
+                        } else if (sequenceStart < i - 2) {
+                            int numOperands = (i - sequenceStart + 1) / 2;
+                            MultipleReadsOperator[] operands = new MultipleReadsOperator[numOperands];
+                            for (int j = 0; j < numOperands; j++)
+                                operands[j] = tokens.get(sequenceStart + j * 2).getMultipleReadsOperator();
+                            int sequenceTokenStart = tokens.get(sequenceStart).getStartCoordinate();
+                            int sequenceTokenEnd = tokens.get(i - 1).getStartCoordinate()
+                                    + tokens.get(i - 1).getLength();
+                            MultipleReadsOperator multipleReadsOperator;
+                            if (operatorRegexp.contains("&"))
+                                multipleReadsOperator = new AndOperator(getPatternAligner(sequenceTokenStart,
+                                        sequenceTokenEnd), operands);
+                            else if (operatorRegexp.contains("|"))
+                                multipleReadsOperator = new OrOperator(getPatternAligner(sequenceTokenStart,
+                                        sequenceTokenEnd), operands);
+                            else
+                                throw new IllegalArgumentException("Invalid operator regexp: " + operatorRegexp);
+                            foundTokens.add(new FoundToken(multipleReadsOperator, sequenceTokenStart, sequenceTokenEnd));
+                        }
+                        sequenceStarted = false;
+                    }
+                } else if (!sequenceStarted && !tokens.get(i).isString()) {
+                    sequenceStart = i;
+                    sequenceStarted = true;
+                }
+            }
+        }
 
         return foundTokens;
     }
@@ -535,6 +672,30 @@ final class NormalParsers {
 
     private MultipleReadsOperator wrapWithScoreFilter(MultipleReadsOperator multiReadPattern, long scoreThreshold) {
         return new MultipleReadsFilterPattern(patternAligner, new ScoreFilter(scoreThreshold), multiReadPattern);
+    }
+
+    /**
+     * Returns start coordinate of contents of square brackets pair. If there is score filter, it will return
+     * the position after colon.
+     *
+     * @param bracketsPair square brackets pair; can start with -1 if this is virtual brackets pair that includes
+     *                     the entire query
+     * @return start coordinate of contents of square brackets pair
+     */
+    private int getBracketsContentStart(BracketsPair bracketsPair) {
+        if (bracketsPair.bracketsType != SQUARE)
+            throw new IllegalArgumentException("getBracketContentStart called with brackets of type "
+                    + bracketsPair.bracketsType);
+        boolean isScoreThreshold = scoreThresholds.stream().anyMatch(st -> st.start == bracketsPair.start);
+        if (isScoreThreshold) {
+            int colonPosition = query.substring(bracketsPair.start + 1, bracketsPair.end).indexOf(":");
+            if (colonPosition == -1)
+                throw new IllegalStateException("No colon inside brackets with score threshold: "
+                        + query.substring(bracketsPair.start + 1, bracketsPair.end));
+            else
+                return bracketsPair.start + colonPosition + 2;
+        } else
+            return bracketsPair.start + 1;
     }
 
     /**

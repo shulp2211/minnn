@@ -113,8 +113,8 @@ final class ParserUtils {
                         }
                     }
                     if (isScoreLimit) {
-                        long scoreThreshold = toLong(query.substring(bracketsPair.start + 1, colonPosition),
-                                "score threshold");
+                        long scoreThreshold = toLong(query.substring(bracketsPair.start + 1, colonPosition)
+                                        .replace(" ", ""), "score threshold");
                         int currentNestedLevel = 0;
                         for (ScoreThreshold currentScoreThreshold : scoreThresholds)
                             if (currentScoreThreshold.contains(bracketsPair.start, bracketsPair.end))
