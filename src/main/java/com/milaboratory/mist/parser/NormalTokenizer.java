@@ -39,20 +39,25 @@ final class NormalTokenizer extends Tokenizer {
         normalParsers.parseAnyPatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         for (boolean left : new boolean[] {true, false})
             normalParsers.parseBorderFilters(tokenizedString, left).forEach(tokenizedString::tokenizeSubstring);
+        normalParsers.removeSpaceStrings(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         normalParsers.parseSequencePatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
 
         int maxBracketsNestedLevel = squareBracketsPairs.stream().mapToInt(bp -> bp.bracketsPair.nestedLevel)
                 .max().orElse(0);
         for (int currentNestedLevel = maxBracketsNestedLevel; currentNestedLevel >= -1; currentNestedLevel--) {
-            normalParsers.parseSingleReadOperators(tokenizedString, currentNestedLevel)
-                    .forEach(tokenizedString::tokenizeSubstring);
+            for (String operator : new String[] {"+", "&", "||"})
+                normalParsers.parseSingleReadOperators(tokenizedString, operator, currentNestedLevel)
+                        .forEach(tokenizedString::tokenizeSubstring);
+            normalParsers.removeSpaceStrings(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
             normalParsers.parseSequencePatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         }
 
         normalParsers.parseMultiPatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         for (int currentNestedLevel = maxBracketsNestedLevel; currentNestedLevel >= -1; currentNestedLevel--)
-            normalParsers.parseMultiReadOperators(tokenizedString, currentNestedLevel)
-                    .forEach(tokenizedString::tokenizeSubstring);
+            for (String operator : new String[] {"~", "&&", "||"})
+                normalParsers.parseMultiReadOperators(tokenizedString, operator, currentNestedLevel)
+                        .forEach(tokenizedString::tokenizeSubstring);
+        normalParsers.removeSpaceStrings(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
 
         Pattern finalPattern = tokenizedString.getFinalPattern();
         boolean duplicateGroupsAllowed = OrPattern.class.isAssignableFrom(finalPattern.getClass())

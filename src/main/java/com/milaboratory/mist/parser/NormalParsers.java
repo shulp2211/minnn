@@ -245,6 +245,38 @@ final class NormalParsers {
     }
 
     /**
+     * This function will remove space strings by merging them into neighbor patterns.
+     *
+     * @param tokenizedString tokenized string object for query string
+     * @return list of enlarged pattern tokens that will overwrite neighbor space strings
+     */
+    ArrayList<FoundToken> removeSpaceStrings(TokenizedString tokenizedString) {
+        ArrayList<FoundToken> foundTokens = new ArrayList<>();
+        ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
+        boolean firstTokenIsSpaceString = tokens.get(0).isString()
+                && tokens.get(0).getString().replace(" ", "").equals("");
+        if (firstTokenIsSpaceString && (tokens.size() == 2))
+            foundTokens.add(new FoundToken(tokens.get(1).getPattern(), 0, tokenizedString.getFullLength()));
+        else
+            for (int i = 1; i < tokens.size(); i++) {
+                Token currentToken = tokens.get(i);
+                if (currentToken.isString()
+                        && currentToken.getString().replace(" ", "").equals("")) {
+                    if ((i == 2) && firstTokenIsSpaceString)
+                        foundTokens.add(new FoundToken(tokens.get(1).getPattern(),
+                                0, currentToken.getStartCoordinate() + currentToken.getLength()));
+                    else {
+                        Token previousToken = tokens.get(i - 1);
+                        foundTokens.add(new FoundToken(previousToken.getPattern(), previousToken.getStartCoordinate(),
+                                currentToken.getStartCoordinate() + currentToken.getLength()));
+                    }
+                }
+            }
+
+        return foundTokens;
+    }
+
+    /**
      * This function will parse sequences of already parsed patterns. It will be called multiple times.
      *
      * @param tokenizedString tokenized string object for query string
@@ -252,20 +284,45 @@ final class NormalParsers {
      */
     ArrayList<FoundToken> parseSequencePatterns(TokenizedString tokenizedString) throws ParserException {
         ArrayList<FoundToken> foundTokens = new ArrayList<>();
+        ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
+        boolean sequenceStarted = false;
+        int sequenceStart = 0;
+        for (int i = 0; i <= tokens.size(); i++) {
+            if ((i == tokens.size()) || tokens.get(i).isString()) {
+                if (sequenceStarted) {
+                    if (sequenceStart < i - 1) {
+                        SinglePattern[] operands = new SinglePattern[i - sequenceStart];
+                        for (int j = sequenceStart; j < i; j++)
+                            operands[j - sequenceStart] = tokens.get(j).getSinglePattern();
+                        int sequenceTokenStart = tokens.get(sequenceStart).getStartCoordinate();
+                        int sequenceTokenEnd = (i == tokens.size()) ? tokenizedString.getFullLength()
+                                : tokens.get(i).getStartCoordinate();
+                        foundTokens.add(new FoundToken(new SequencePattern(getPatternAligner(sequenceTokenStart,
+                                sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd));
+                    }
+                    sequenceStarted = false;
+                }
+            } else if (!sequenceStarted) {
+                sequenceStart = i;
+                sequenceStarted = true;
+            }
+        }
 
         return foundTokens;
     }
 
     /**
-     * This function will parse operators inside single read that are in brackets with specified nested level.
-     * It will be called from loop with decreasing nested level. Nested level -1 means to parse operators outside
+     * This function will parse operators with specified sign inside single read that are in brackets with specified
+     * nested level. It will be called from loop with decreasing nested level, once for each operator on every nested
+     * level, starting from operators with higher priority. Nested level -1 means to parse operators outside
      * of brackets.
      *
      * @param tokenizedString tokenized string object for query string
+     * @param operator operator sign
      * @param nestedLevel current nested level of brackets where to parse; -1 means to parse outside of brackets
      * @return list of found tokens
      */
-    ArrayList<FoundToken> parseSingleReadOperators(TokenizedString tokenizedString, int nestedLevel)
+    ArrayList<FoundToken> parseSingleReadOperators(TokenizedString tokenizedString, String operator, int nestedLevel)
             throws ParserException {
         ArrayList<FoundToken> foundTokens = new ArrayList<>();
         ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
@@ -284,15 +341,17 @@ final class NormalParsers {
     }
 
     /**
-     * This function will parse multiple read operators that are in brackets with specified nested level.
-     * It will be called from loop with decreasing nested level. Nested level -1 means to parse operators outside
+     * This function will parse multiple read operators with specified sign that are in brackets with specified
+     * nested level. It will be called from loop with decreasing nested level, once for each operator on every nested
+     * level, starting from operators with higher priority. Nested level -1 means to parse operators outside
      * of brackets.
      *
      * @param tokenizedString tokenized string object for query string
+     * @param operator operator sign
      * @param nestedLevel current nested level of brackets where to parse; -1 means to parse outside of brackets
      * @return list of found tokens
      */
-    ArrayList<FoundToken> parseMultiReadOperators(TokenizedString tokenizedString, int nestedLevel)
+    ArrayList<FoundToken> parseMultiReadOperators(TokenizedString tokenizedString, String operator, int nestedLevel)
             throws ParserException {
         ArrayList<FoundToken> foundTokens = new ArrayList<>();
         ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
