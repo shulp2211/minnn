@@ -5,10 +5,12 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
+import static com.milaboratory.mist.parser.BracketsDetector.*;
 import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.parser.ParserUtils.*;
-import static com.milaboratory.mist.util.CommonTestUtils.getRandomString;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class ParserUtilsTest {
@@ -18,25 +20,24 @@ public class ParserUtilsTest {
     @Test
     public void getScoreThresholdsSimplifiedSyntaxTest() throws Exception {
         final String start = "FilterPattern(ScoreFilter(";
-        Random randomGenerator = new Random();
-        for (int i = 0; i < randomGenerator.nextInt(500) + 500; i++) {
-            int repeats = randomGenerator.nextInt(10) + 1;
-            int nested = randomGenerator.nextInt(10) + 1;
+        for (int i = 0; i < rg.nextInt(500) + 500; i++) {
+            int repeats = rg.nextInt(10) + 1;
+            int nested = rg.nextInt(10) + 1;
             ArrayList<ArrayList<Integer>> scores = new ArrayList<>();
             StringBuilder target = new StringBuilder();
             for (int r = 0; r < repeats; r++) {
                 scores.add(new ArrayList<>());
-                target.append(getRandomString(randomGenerator.nextInt(100), "(){}[]\"\'\\"));
+                target.append(getRandomString(rg.nextInt(100), "(){}[]\"\'\\"));
                 for (int n = 0; n < nested; n++) {
-                    scores.get(r).add(-randomGenerator.nextInt(100));
+                    scores.get(r).add(-rg.nextInt(100));
                     target.append(start);
                     target.append(scores.get(r).get(n));
                     target.append("), ");
-                    target.append(getRandomString(randomGenerator.nextInt(100) + 10, "(){}[]\"\'\\"));
+                    target.append(getRandomString(rg.nextInt(100) + 10, "(){}[]\"\'\\"));
                 }
                 for (int n = 0; n < nested; n++) {
                     target.append(")");
-                    target.append(getRandomString(randomGenerator.nextInt(100), "(){}[]\"\'\\"));
+                    target.append(getRandomString(rg.nextInt(100), "(){}[]\"\'\\"));
                 }
             }
             ArrayList<ScoreThreshold> scoreThresholds = getScoreThresholds(target.toString(), SIMPLIFIED);
@@ -49,5 +50,93 @@ public class ParserUtilsTest {
         }
         exception.expect(ParserException.class);
         getScoreThresholds(start, SIMPLIFIED);
+    }
+
+    @Test
+    public void getScoreThresholdsNormalSyntaxTest() throws Exception {
+        String query = "[][0:AT] + (GC & [-16:GC || [-9:AT]]) \\ GGG || [[-1:A][-2:[-3:T]]] \\ [-1:[-2:[[[-3:[-4:]]]]]]";
+        ArrayList<ScoreThreshold> scoreThresholds = getScoreThresholds(query, NORMAL);
+        assertEquals(10, scoreThresholds.size());
+
+        assertEquals(2, scoreThresholds.get(0).start);
+        assertEquals(8, scoreThresholds.get(0).end);
+        assertEquals(0, scoreThresholds.get(0).threshold);
+        assertEquals(0, scoreThresholds.get(0).nestedLevel);
+
+        assertEquals(17, scoreThresholds.get(1).start);
+        assertEquals(36, scoreThresholds.get(1).end);
+        assertEquals(-16, scoreThresholds.get(1).threshold);
+        assertEquals(0, scoreThresholds.get(1).nestedLevel);
+
+        assertEquals(28, scoreThresholds.get(2).start);
+        assertEquals(35, scoreThresholds.get(2).end);
+        assertEquals(-9, scoreThresholds.get(2).threshold);
+        assertEquals(1, scoreThresholds.get(2).nestedLevel);
+
+        assertEquals(48, scoreThresholds.get(3).start);
+        assertEquals(54, scoreThresholds.get(3).end);
+        assertEquals(-1, scoreThresholds.get(3).threshold);
+        assertEquals(0, scoreThresholds.get(3).nestedLevel);
+
+        assertEquals(54, scoreThresholds.get(4).start);
+        assertEquals(65, scoreThresholds.get(4).end);
+        assertEquals(-2, scoreThresholds.get(4).threshold);
+        assertEquals(0, scoreThresholds.get(4).nestedLevel);
+
+        assertEquals(58, scoreThresholds.get(5).start);
+        assertEquals(64, scoreThresholds.get(5).end);
+        assertEquals(-3, scoreThresholds.get(5).threshold);
+        assertEquals(1, scoreThresholds.get(5).nestedLevel);
+
+        assertEquals(83, scoreThresholds.get(9).start);
+        assertEquals(88, scoreThresholds.get(9).end);
+        assertEquals(-4, scoreThresholds.get(9).threshold);
+        assertEquals(3, scoreThresholds.get(9).nestedLevel);
+
+        assertEquals(16, getScoreThresholds("[-2:A \\ T[-3:G]]", NORMAL).get(0).end);
+        assertEquals(0, getScoreThresholds("[(ATTA)-5:GACA]", NORMAL).size());
+    }
+
+    @Test
+    public void getTokenPositionsTest() throws Exception {
+        String str1 = "$ $ \"$\"$";
+        ArrayList<Integer> tokenPositions1 = getTokenPositions(str1, "$", getAllQuotes(str1));
+        assertEquals(0, (int)tokenPositions1.get(0));
+        assertEquals(2, (int)tokenPositions1.get(1));
+        assertEquals(7, (int)tokenPositions1.get(2));
+        assertEquals(3, tokenPositions1.size());
+        String str2 = "\"^\"\"\"'''^'''^'\\\"'\"\"";
+        ArrayList<Integer> tokenPositions2 = getTokenPositions(str2, "^", getAllQuotes(str2));
+        assertEquals(12, (int)tokenPositions2.get(0));
+        assertEquals(1, tokenPositions2.size());
+    }
+
+    @Test
+    public void specificCharDetectorTest() throws Exception {
+        ArrayList<String> strings = new ArrayList<String>() {{
+            add("ACBCCADC'C3dD");
+            add("12124121'3'\"3\"212122112412");
+            add("()()]\"{}()%@$%^&[{}5#$%!#$'\"34][");
+        }};
+        List<List<QuotesPair>> quotesPairs = strings.stream().map(orNull(BracketsDetector::getAllQuotes))
+                .collect(Collectors.toList());
+        for (int i = 0; i < 300; i++) {
+            assertTrue(isSpecificCharBeforeStopChar(strings.get(0), 10, true, true,
+                    "D", "B", null));
+            assertFalse(isSpecificCharBeforeStopChar(strings.get(0), 10, true, true,
+                    "B", "D", null));
+            assertTrue(isSpecificCharBeforeStopChar(strings.get(0), 10, true, true,
+                    "B", "\\", null));
+            assertTrue(isSpecificCharBeforeStopChar(strings.get(1), 3, false, true,
+                    "3", "5", null));
+            assertFalse(isSpecificCharBeforeStopChar(strings.get(1), 3, false, false,
+                    "3", "5", quotesPairs.get(1)));
+            assertTrue(isSpecificCharBeforeStopChar(strings.get(1), 7, rg.nextBoolean(), rg.nextBoolean(),
+                    "34", "5\\{}[]", quotesPairs.get(1)));
+            assertFalse(isSpecificCharBeforeStopChar(strings.get(2), 14, rg.nextBoolean(), false,
+                    "{}", "()", quotesPairs.get(2)));
+            assertTrue(isSpecificCharBeforeStopChar(strings.get(2), 14, rg.nextBoolean(), true,
+                    "{}", "]\\", quotesPairs.get(2)));
+        }
     }
 }
