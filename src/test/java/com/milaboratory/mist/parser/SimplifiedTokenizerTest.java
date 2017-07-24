@@ -8,7 +8,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Random;
 
 import static com.milaboratory.mist.parser.ParserFormat.SIMPLIFIED;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
@@ -58,10 +57,9 @@ public class SimplifiedTokenizerTest {
 
     @Test
     public void randomTest() throws Exception {
-        Random r = new Random();
-        for (int i = 0; i < r.nextInt(50) + 300; i++) {
-            int nestedSingleLevel = r.nextInt(7) + 1;
-            int nestedMultiLevel = r.nextInt(7) + 1;
+        for (int i = 0; i < rg.nextInt(50) + 300; i++) {
+            int nestedSingleLevel = rg.nextInt(7) + 1;
+            int nestedMultiLevel = rg.nextInt(7) + 1;
             ArrayList<SinglePattern> singlePatterns = new ArrayList<>();
             for (int j = 0; j < nestedSingleLevel; j++) {
                 singlePatterns.add(getRandomSinglePattern(singlePatterns.toArray(new SinglePattern[singlePatterns.size()])));

@@ -12,13 +12,14 @@ import com.milaboratory.mist.pattern.*;
 import com.milaboratory.test.TestUtil;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.PatternUtils.invertCoordinate;
 import static org.junit.Assert.*;
 
 public class CommonTestUtils {
-    private static final Random rg = new Random();
+    public static final Random rg = new Random();
     private static final String LETTERS_AND_NUMBERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     public static int countPortValues(OutputPort<Match> port) {
@@ -392,6 +393,31 @@ public class CommonTestUtils {
 
     public static String bestToString(MatchingResult matchingResult, boolean fairSorting) {
         return matchingResult.getBestMatch(fairSorting).getValue().getSequence().toString();
+    }
+
+    @FunctionalInterface
+    public interface ThrowingFunction<T, R, E extends Exception> {
+        R apply(T t) throws E;
+    }
+
+    public static <T, R> Function<T, R> rethrow(ThrowingFunction<T, R, Exception> function) {
+        return t -> {
+            try {
+                return function.apply(t);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
+
+    public static <T, R> Function<T, R> orNull(ThrowingFunction<T, R, Exception> function) {
+        return t -> {
+            try {
+                return function.apply(t);
+            } catch (Exception e) {
+                return null;
+            }
+        };
     }
 
     public static class RandomBorders {

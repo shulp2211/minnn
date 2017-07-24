@@ -7,15 +7,13 @@ import com.milaboratory.test.TestUtil;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Random;
 
-import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class AnyPatternTest {
     @Test
     public void randomGroupsTest() throws Exception {
-        Random rg = new Random();
         for (int i = 0; i < 30000; i++) {
             PatternAligner patternAligner = getTestPatternAligner(rg.nextInt(10));
             ArrayList<GroupEdge> groupEdges = new ArrayList<>();

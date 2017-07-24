@@ -11,8 +11,7 @@ import com.milaboratory.test.TestUtil;
 import java.util.*;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
-import static com.milaboratory.mist.util.CommonTestUtils.countPortValues;
-import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 class CommonTestTemplates {
@@ -252,28 +251,27 @@ class CommonTestTemplates {
 
     static void randomMatchesApproximateSorterTest(boolean sortByScore, boolean fairSorting) throws Exception {
         ApproximateSorter sorter;
-        Random randomGenerator = new Random();
         int its = TestUtil.its(300, 500);
         for (int i = 0; i < its; ++i) {
-            PatternAligner patternAligner = getTestPatternAligner(-10000, randomGenerator.nextInt(1000),
-                    -randomGenerator.nextInt(1000), -randomGenerator.nextInt(1000));
-            int numberOfMatches = randomGenerator.nextInt(10) + 1;
+            PatternAligner patternAligner = getTestPatternAligner(-10000, rg.nextInt(1000),
+                    -rg.nextInt(1000), -rg.nextInt(1000));
+            int numberOfMatches = rg.nextInt(10) + 1;
             Match[] matches = new Match[numberOfMatches];
             if (sortByScore)
-                sorter = new SorterByScore(patternAligner, false, randomGenerator.nextBoolean(),
+                sorter = new SorterByScore(patternAligner, false, rg.nextBoolean(),
                         fairSorting, INTERSECTION);
             else
-                sorter = new SorterByCoordinate(patternAligner, false, randomGenerator.nextBoolean(),
+                sorter = new SorterByCoordinate(patternAligner, false, rg.nextBoolean(),
                         fairSorting, INTERSECTION);
 
             NSequenceWithQuality target = new NSequenceWithQuality(TestUtil.randomSequence(NucleotideSequence.ALPHABET,
-                    numberOfMatches, numberOfMatches + randomGenerator.nextInt(100)).toString());
+                    numberOfMatches, numberOfMatches + rg.nextInt(100)).toString());
             for (int j = 0; j < numberOfMatches; j++) {
                 final int currentRangeLeft = j;
                 ArrayList<MatchedItem> testItems = new ArrayList<MatchedItem>() {{
-                    add(new MatchedRange(target, (byte)randomGenerator.nextInt(200), 0,
+                    add(new MatchedRange(target, (byte)rg.nextInt(200), 0,
                             new Range(currentRangeLeft, currentRangeLeft + 1))); }};
-                matches[j] = new Match(1, -randomGenerator.nextInt(1000), testItems);
+                matches[j] = new Match(1, -rg.nextInt(1000), testItems);
             }
 
             TestMatchesOutputPort testPort = new TestMatchesOutputPort(matches);
@@ -290,21 +288,21 @@ class CommonTestTemplates {
 
     static void randomMatchesFromOperatorsApproximateSorterTest(boolean sortByScore) throws Exception {
         ApproximateSorter sorter;
-        Random randomGenerator = new Random();
         int its = TestUtil.its(300, 500);
         for (int i = 0; i < its; ++i) {
-            int singleOverlapPenalty = -randomGenerator.nextInt(1000);
+            int singleOverlapPenalty = -rg.nextInt(1000);
             PatternAligner patternAligner = getTestPatternAligner(500 * singleOverlapPenalty,
-                    0, -randomGenerator.nextInt(1000), singleOverlapPenalty);
-            int numberOfFragments = randomGenerator.nextInt(3) + 4;
-            int expectedMatchesNum = numberOfFragments * (numberOfFragments - 1) * (numberOfFragments - 2) * (numberOfFragments - 3);
-            int spaceLength = randomGenerator.nextInt(3);
+                    0, -rg.nextInt(1000), singleOverlapPenalty);
+            int numberOfFragments = rg.nextInt(3) + 4;
+            int expectedMatchesNum = numberOfFragments * (numberOfFragments - 1) * (numberOfFragments - 2)
+                    * (numberOfFragments - 3);
+            int spaceLength = rg.nextInt(3);
             if (sortByScore)
-                sorter = new SorterByScore(patternAligner, false, randomGenerator.nextBoolean(),
-                        randomGenerator.nextBoolean(), INTERSECTION);
+                sorter = new SorterByScore(patternAligner, false, rg.nextBoolean(), rg.nextBoolean(),
+                        INTERSECTION);
             else
-                sorter = new SorterByCoordinate(patternAligner, false, randomGenerator.nextBoolean(),
-                        randomGenerator.nextBoolean(), INTERSECTION);
+                sorter = new SorterByCoordinate(patternAligner, false, rg.nextBoolean(), rg.nextBoolean(),
+                        INTERSECTION);
 
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, spaceLength);
             NucleotideSequence fragment = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 50, 63);

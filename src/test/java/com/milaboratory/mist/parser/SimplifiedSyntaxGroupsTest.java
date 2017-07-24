@@ -2,15 +2,18 @@ package com.milaboratory.mist.parser;
 
 import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.mist.pattern.*;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
+import static org.junit.Assert.*;
 
 public class SimplifiedSyntaxGroupsTest {
     private final PatternAligner patternAligner = getTestPatternAligner();
@@ -33,7 +36,6 @@ public class SimplifiedSyntaxGroupsTest {
 
     @Test
     public void correctGroupsTest() throws Exception {
-        Random rg = new Random();
         for (int i = 0; i < 50; i++) {
             PatternAligner patternAligner = getRandomPatternAligner();
             ArrayList<FuzzyMatchPattern> fuzzyMatchPatterns = new ArrayList<>();
@@ -113,7 +115,7 @@ public class SimplifiedSyntaxGroupsTest {
 
     @Test
     public void groupPartInvalidNonCommonObjectTest() throws Exception {
-        String randomGroupName = getRandomString(new Random().nextInt(10) + 1, "", true);
+        String randomGroupName = getRandomString(rg.nextInt(10) + 1, "", true);
         ArrayList<GroupEdgePosition> groupEdgePositions1 = new ArrayList<>();
         ArrayList<GroupEdgePosition> groupEdgePositions2 = new ArrayList<>();
         groupEdgePositions1.add(new GroupEdgePosition(new GroupEdge(randomGroupName, true), 0));
@@ -130,7 +132,7 @@ public class SimplifiedSyntaxGroupsTest {
 
     @Test
     public void groupsWithSameNameTest() throws Exception {
-        for (int i = 0; i < 100; i++) {
+        IntStream.range(0, 100).boxed().map(orNull((dummy) -> {
             SinglePattern basicPattern = getRandomBasicPattern(true);
             ArrayList<String> excludePatterns = new ArrayList<>(validDuplicateGroupsCommonAncestors);
             excludePatterns.addAll(Arrays.asList(FUZZY_MATCH_PATTERN_NAME, REPEAT_PATTERN_NAME, FILTER_PATTERN_NAME,
@@ -138,13 +140,13 @@ public class SimplifiedSyntaxGroupsTest {
             Pattern invalidPattern = getRandomPatternNotInList(excludePatterns, getRandomBasicPattern());
             String invalidPatternString = invalidPattern.toString().split("\\(")[0] + "([" + basicPattern.toString()
                     + ", " + basicPattern.toString() + "])";
-            exception.expect(ParserException.class);
+            // this ParseQuery must always throw ParserException
             parser.parseQuery(invalidPatternString, SIMPLIFIED);
-        }
+            return dummy;
+        })).forEach(Assert::assertNull);
     }
 
     private Pattern getRandomPatternNotInList(List<String> list, SinglePattern... basicPatterns) {
-        Random rg = new Random();
         ArrayList<String> croppedList = new ArrayList<>(validGroupEdgeOuterObjectNames);
         croppedList.removeAll(list);
         Pattern resultPattern = null;

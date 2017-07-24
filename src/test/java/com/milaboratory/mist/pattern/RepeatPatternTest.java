@@ -11,7 +11,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Random;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
@@ -65,7 +64,6 @@ public class RepeatPatternTest {
 
     @Test
     public void randomMatchTest() throws Exception {
-        Random rg = new Random();
         for (int i = 0; i < 10000; i++) {
             RandomRepeats rr = new RandomRepeats();
             NucleotideSequence seqM = TestUtil.randomSequence(NucleotideSequence.ALPHABET, rr.motifSize, rr.motifSize);
@@ -84,7 +82,6 @@ public class RepeatPatternTest {
 
     @Test
     public void randomTest() throws Exception {
-        Random rg = new Random();
         for (int i = 0; i < 10000; i++) {
             RandomRepeats rr = new RandomRepeats();
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);

@@ -92,7 +92,6 @@ public class FuzzyMatchPatternTest {
 
     @Test
     public void randomMatchTest() throws Exception {
-        Random rg = new Random();
         for (int i = 0; i < 30000; i++) {
             NucleotideSequence seqM = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 10, 60);
             NucleotideSequence seqL = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, 40);
@@ -108,7 +107,6 @@ public class FuzzyMatchPatternTest {
 
     @Test
     public void randomTest() throws Exception {
-        Random rg = new Random();
         for (int i = 0; i < 10000; i++) {
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
             NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 50);
@@ -204,7 +202,6 @@ public class FuzzyMatchPatternTest {
 
     @Test
     public void randomGroupsTest() throws Exception {
-        Random rg = new Random();
         for (int i = 0; i < 30000; i++) {
             int numErrors = rg.nextInt(4);
             PatternAligner patternAligner = getTestPatternAligner(numErrors);

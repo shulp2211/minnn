@@ -9,10 +9,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
-import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class MultiPatternTest {
@@ -146,7 +145,7 @@ public class MultiPatternTest {
     public void randomTest() throws Exception {
         int its = TestUtil.its(500, 1000);
         for (int i = 0; i < its; ++i) {
-            int sequencesNum = new Random().nextInt(9) + 1;
+            int sequencesNum = rg.nextInt(9) + 1;
             NSequenceWithQuality[] sequences = new NSequenceWithQuality[sequencesNum];
             FuzzyMatchPattern[] patterns = new FuzzyMatchPattern[sequencesNum];
             boolean isMatching = true;

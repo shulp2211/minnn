@@ -1,7 +1,5 @@
 package com.milaboratory.mist.pattern;
 
-import com.milaboratory.core.alignment.Alignment;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 import org.junit.Rule;
 import org.junit.Test;
@@ -10,7 +8,6 @@ import org.junit.rules.ExpectedException;
 import java.util.ArrayList;
 
 import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
-import static org.junit.Assert.*;
 
 public class MultiplePatternsOperatorTest {
     @Rule

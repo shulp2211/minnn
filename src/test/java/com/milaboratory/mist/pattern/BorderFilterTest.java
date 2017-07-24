@@ -10,10 +10,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Random;
-
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
-import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class BorderFilterTest {
@@ -90,14 +88,12 @@ public class BorderFilterTest {
 
     @Test
     public void randomTest() throws Exception {
-        Random randomGenerator = new Random();
-        int its = TestUtil.its(500, 1000);
-        for (int i = 0; i < its; ++i) {
-            boolean leftSide = randomGenerator.nextBoolean();
-            int motifSize = randomGenerator.nextInt(10) + 1;
-            int cutSize = randomGenerator.nextInt(motifSize) + 1;
-            int minMatchSize = randomGenerator.nextInt(cutSize) + 1;
-            boolean useTarget = randomGenerator.nextBoolean();
+        for (int i = 0; i < 1000; i++) {
+            boolean leftSide = rg.nextBoolean();
+            int motifSize = rg.nextInt(10) + 1;
+            int cutSize = rg.nextInt(motifSize) + 1;
+            int minMatchSize = rg.nextInt(cutSize) + 1;
+            boolean useTarget = rg.nextBoolean();
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
             NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, motifSize, motifSize);
             NucleotideSequence edgeMotif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, cutSize, cutSize);
@@ -113,7 +109,8 @@ public class BorderFilterTest {
                     String targetStr = useTarget ? target.toString() : motif.toString();
                     String targetEdge = leftSide ? targetStr.substring(0, j)
                             : targetStr.substring(targetStr.length() - j, targetStr.length());
-                    String requiredEdge = leftSide ? edgeMotif.toString().substring(cutSize - j, cutSize)
+                    String requiredEdge = leftSide
+                            ? edgeMotif.toString().substring(cutSize - j, cutSize)
                             : edgeMotif.toString().substring(0, j);
                     if (requiredEdge.equals(targetEdge))
                         isMatching = true;
@@ -123,10 +120,11 @@ public class BorderFilterTest {
             assertTrue(countMatches(pattern.match(targetQ)) >= countMatches(filterPattern.match(targetQ)));
             Match currentMatch;
             for (OutputPort<Match> filteredPort = filterPattern.match(targetQ).getMatches(
-                    randomGenerator.nextBoolean(), randomGenerator.nextBoolean()); (currentMatch = filteredPort.take()) != null;)
-                assertTrue((useTarget ? target.toString() : currentMatch.getValue().getSequence().toString()).contains(leftSide
-                        ? edgeMotif.toString().substring(cutSize - minMatchSize, cutSize)
-                        : edgeMotif.toString().substring(0, minMatchSize)));
+                    rg.nextBoolean(), rg.nextBoolean()); (currentMatch = filteredPort.take()) != null;)
+                assertTrue((useTarget ? target.toString() : currentMatch.getValue().getSequence().toString())
+                        .contains(leftSide
+                                ? edgeMotif.toString().substring(cutSize - minMatchSize, cutSize)
+                                : edgeMotif.toString().substring(0, minMatchSize)));
         }
     }
 }

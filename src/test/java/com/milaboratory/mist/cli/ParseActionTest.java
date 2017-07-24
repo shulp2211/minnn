@@ -6,8 +6,7 @@ import org.junit.Test;
 import java.io.File;
 
 import static com.milaboratory.mist.util.CommonTestUtils.inQuotes;
-import static com.milaboratory.mist.util.SystemUtils.exitOnError;
-import static com.milaboratory.mist.util.SystemUtils.exitWithError;
+import static com.milaboratory.mist.util.SystemUtils.*;
 import static com.milaboratory.mist.util.TestSettings.*;
 import static com.milaboratory.mist.Main.main;
 import static org.junit.Assert.*;

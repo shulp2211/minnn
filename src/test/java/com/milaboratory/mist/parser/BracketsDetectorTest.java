@@ -9,7 +9,7 @@ import java.util.*;
 import static com.milaboratory.mist.parser.BracketsDetector.*;
 import static com.milaboratory.mist.parser.BracketsType.*;
 import static com.milaboratory.mist.parser.QuotesType.*;
-import static com.milaboratory.mist.util.CommonTestUtils.getRandomEnumItem;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class BracketsDetectorTest {
@@ -102,25 +102,24 @@ public class BracketsDetectorTest {
 
     @Test
     public void getEndByStartTest() throws Exception {
-        Random randomGenerator = new Random();
         for (int i = 0; i < 500; i++) {
             BracketsType bracketsType = getRandomEnumItem(BracketsType.class);
             List<BracketsPair> bracketsPairs = new ArrayList<>();
-            for (int j = 0; j < randomGenerator.nextInt(30); j++) {
-                int start = randomGenerator.nextInt(100);
-                int end = start + randomGenerator.nextInt(100) + 1;
-                bracketsPairs.add(new BracketsPair(bracketsType, start, end, randomGenerator.nextInt(30)));
+            for (int j = 0; j < rg.nextInt(30); j++) {
+                int start = rg.nextInt(100);
+                int end = start + rg.nextInt(100) + 1;
+                bracketsPairs.add(new BracketsPair(bracketsType, start, end, rg.nextInt(30)));
             }
             int newPairStart;
             while (true) {
-                final int randomValue = randomGenerator.nextInt(100);
+                final int randomValue = rg.nextInt(100);
                 if (bracketsPairs.stream().noneMatch(bp -> bp.start == randomValue)) {
                     newPairStart = randomValue;
                     break;
                 }
             }
             BracketsPair newBracketsPair = new BracketsPair(bracketsType, newPairStart,
-                    newPairStart + 1 + randomGenerator.nextInt(100), randomGenerator.nextInt(30));
+                    newPairStart + 1 + rg.nextInt(100), rg.nextInt(30));
             bracketsPairs.add(newBracketsPair);
             Collections.shuffle(bracketsPairs);
             assertEquals(newBracketsPair.end, getEndByStart(bracketsPairs, newBracketsPair.start));

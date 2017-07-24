@@ -2,7 +2,7 @@ package com.milaboratory.mist.output;
 
 import org.junit.BeforeClass;
 
-import static com.milaboratory.mist.util.SystemUtils.exitOnError;
+import static com.milaboratory.mist.util.SystemUtils.*;
 import static org.junit.Assert.*;
 
 public class ResultWriterTest {

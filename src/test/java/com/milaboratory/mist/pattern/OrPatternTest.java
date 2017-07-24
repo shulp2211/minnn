@@ -12,11 +12,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
-import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
-import static com.milaboratory.mist.util.CommonTestUtils.makeRandomErrors;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class OrPatternTest {
@@ -182,15 +180,14 @@ public class OrPatternTest {
     @Test
     public void maxErrorsRandomTest() throws Exception {
         int its = TestUtil.its(1000, 2000);
-        Random randomGenerator = new Random();
         for (int i = 0; i < its; ++i) {
-            int targetLength = randomGenerator.nextInt(100) + 1;
+            int targetLength = rg.nextInt(100) + 1;
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, targetLength, targetLength);
             NucleotideSequence motif1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 50);
             NucleotideSequence motif2 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 50);
             NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
                     SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
-            int maxErrors = randomGenerator.nextInt(10);
+            int maxErrors = rg.nextInt(10);
             NucleotideSequence motif1WithErrors = makeRandomErrors(motif1, maxErrors);
             NucleotideSequence motif2WithErrors = makeRandomErrors(motif2, maxErrors);
             FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(maxErrors), motif1WithErrors);

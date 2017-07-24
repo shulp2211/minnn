@@ -12,7 +12,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
@@ -66,7 +65,6 @@ public class PlusPatternTest {
 
     @Test
     public void randomMatchTest() throws Exception {
-        Random randomGenerator = new Random();
         int its = TestUtil.its(1000, 10000);
         for (int i = 0; i < its; ++i) {
             NucleotideSequence seqLeft = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, 40);
@@ -79,7 +77,7 @@ public class PlusPatternTest {
                     SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, fullSeq.getSequence().size()));
             FuzzyMatchPattern patternMotif1 = new FuzzyMatchPattern(getTestPatternAligner(), seqMotif1);
             FuzzyMatchPattern patternMotif2 = new FuzzyMatchPattern(getTestPatternAligner(), seqMotif2);
-            PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(randomGenerator.nextBoolean()),
+            PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(rg.nextBoolean()),
                     patternMotif1, patternMotif2);
             assertTrue(plusPattern.match(target).isFound());
             assertNotNull(plusPattern.match(target).getBestMatch(false));
@@ -130,7 +128,7 @@ public class PlusPatternTest {
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("TAT"));
         PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(true), pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("ATATATATTATA");
-        OutputPort<Match> matches = plusPattern.match(nseq).getMatches(false, true);
+        plusPattern.match(nseq).getMatches(false, true);
         assertEquals(6, countMatches(plusPattern.match(nseq), true));
     }
 
@@ -198,10 +196,9 @@ public class PlusPatternTest {
     @Test
     public void maxErrorsRandomTest() throws Exception {
         int its = TestUtil.its(1000, 2000);
-        Random randomGenerator = new Random();
         for (int i = 0; i < its; ++i) {
-            int maxErrors = randomGenerator.nextInt(10);
-            int targetLength = randomGenerator.nextInt(63 - maxErrors) + 1;
+            int maxErrors = rg.nextInt(10);
+            int targetLength = rg.nextInt(63 - maxErrors) + 1;
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, targetLength, targetLength);
             NucleotideSequence motif1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 50);
             NucleotideSequence motif2 = getRandomSubsequence(target);
@@ -217,19 +214,18 @@ public class PlusPatternTest {
 
             if (targetContainsPattern1) {
                 assertTrue(pattern1.match(targetQ).isFound());
-                assertTrue(pattern1.match(targetQ).getBestMatch(randomGenerator.nextBoolean()) != null);
-                assertTrue(pattern1.match(targetQ).getMatches(randomGenerator.nextBoolean(),
-                        randomGenerator.nextBoolean()).take() != null);
+                assertTrue(pattern1.match(targetQ).getBestMatch(rg.nextBoolean()) != null);
+                assertTrue(pattern1.match(targetQ).getMatches(rg.nextBoolean(), rg.nextBoolean())
+                        .take() != null);
             }
 
             assertTrue(pattern2.match(targetQ).isFound());
-            assertTrue(pattern2.match(targetQ).getBestMatch(randomGenerator.nextBoolean()) != null);
-            assertTrue(pattern2.match(targetQ).getMatches(randomGenerator.nextBoolean(),
-                    randomGenerator.nextBoolean()).take() != null);
+            assertTrue(pattern2.match(targetQ).getBestMatch(rg.nextBoolean()) != null);
+            assertTrue(pattern2.match(targetQ).getMatches(rg.nextBoolean(), rg.nextBoolean()).take() != null);
 
             for (Boolean fairSorting: new Boolean[] {false, true}) {
-                long errorScorePenalty = -randomGenerator.nextInt(50) - 1;
-                int maxOverlap = randomGenerator.nextInt(5) - 1;
+                long errorScorePenalty = -rg.nextInt(50) - 1;
+                int maxOverlap = rg.nextInt(5) - 1;
                 long plusPenaltyThreshold;
                 boolean misplacedPatterns = false;
                 if (isMatchingPattern1) {
@@ -251,8 +247,8 @@ public class PlusPatternTest {
                     plusPenaltyThreshold = Long.MIN_VALUE;
                     ArrayList<Range> ranges1 = new ArrayList<>();
                     ArrayList<Range> ranges2 = new ArrayList<>();
-                    OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(randomGenerator.nextBoolean(), fairSorting);
-                    OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(randomGenerator.nextBoolean(), fairSorting);
+                    OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(rg.nextBoolean(), fairSorting);
+                    OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(rg.nextBoolean(), fairSorting);
                     Match match;
                     while ((match = port1.take()) != null)
                         ranges1.add(match.getRange());
@@ -277,7 +273,7 @@ public class PlusPatternTest {
                 if (!fairSorting)
                     assertEquals(plusMustBeFound, plusPattern.match(targetQ).isFound());
                 assertEquals(plusMustBeFound, plusPattern.match(targetQ).getBestMatch(fairSorting) != null);
-                assertEquals(plusMustBeFound, plusPattern.match(targetQ).getMatches(randomGenerator.nextBoolean(),
+                assertEquals(plusMustBeFound, plusPattern.match(targetQ).getMatches(rg.nextBoolean(),
                         fairSorting).take() != null);
             }
         }
@@ -286,9 +282,8 @@ public class PlusPatternTest {
     @Test
     public void scoringRandomTest() throws Exception {
         int its = TestUtil.its(100, 200);
-        Random randomGenerator = new Random();
         for (int i = 0; i < its; ++i) {
-            int errorScorePenalty = -randomGenerator.nextInt(1000) - 1;
+            int errorScorePenalty = -rg.nextInt(1000) - 1;
             NucleotideSequence leftPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
             NucleotideSequence middleLetter = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1);
             NucleotideSequence rightPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
