@@ -218,7 +218,8 @@ final class SimplifiedParsers {
         }
 
         if (multipleReads)
-            return new MultipleReadsFilterPattern(patternAligner, filter, tokenizedSubstring.get(1).getMultipleReadsOperator());
+            return new MultipleReadsFilterPattern(patternAligner, filter,
+                    tokenizedSubstring.get(1).getMultipleReadsOperator());
         else
             return new FilterPattern(patternAligner, filter, tokenizedSubstring.get(1).getSinglePattern());
     }
@@ -250,12 +251,16 @@ final class SimplifiedParsers {
         int firstCommaPosition = str.indexOf(", ");
         if (firstCommaPosition == -1)
             throw new ParserException("Missing ', ' in " + str);
-        if (str.substring(startingPart.length(), firstCommaPosition).equals("true"))
-            leftSide = true;
-        else if (str.substring(startingPart.length(), firstCommaPosition).equals("false"))
-            leftSide = false;
-        else
-            throw new ParserException("Failed to parse left/right side flag from " + str);
+        switch (str.substring(startingPart.length(), firstCommaPosition)) {
+            case "true":
+                leftSide = true;
+                break;
+            case "false":
+                leftSide = false;
+                break;
+            default:
+                throw new ParserException("Failed to parse left/right side flag from " + str);
+        }
 
         int secondCommaPosition = str.substring(firstCommaPosition + 1).indexOf(", ") + firstCommaPosition + 1;
         if (secondCommaPosition == -1) {
@@ -266,24 +271,31 @@ final class SimplifiedParsers {
 
         int thirdCommaPosition = str.substring(secondCommaPosition + 1).indexOf(", ") + secondCommaPosition + 1;
         if (thirdCommaPosition == -1) {
-            if (str.substring(secondCommaPosition + 2, str.length() - 1).equals("true"))
-                return new BorderFilter(patternAligner, leftSide, seq, true);
-            else if (str.substring(secondCommaPosition + 2, str.length() - 1).equals("false"))
-                return new BorderFilter(patternAligner, leftSide, seq, false);
-            else
-                minNucleotides = toInt(str.substring(secondCommaPosition + 2, str.length() - 1),
-                        "minimum number of nucleotides");
+            switch (str.substring(secondCommaPosition + 2, str.length() - 1)) {
+                case "true":
+                    return new BorderFilter(patternAligner, leftSide, seq, true);
+                case "false":
+                    return new BorderFilter(patternAligner, leftSide, seq, false);
+                default:
+                    minNucleotides = toInt(str.substring(secondCommaPosition + 2, str.length() - 1),
+                            "minimum number of nucleotides");
+                    break;
+            }
             return new BorderFilter(patternAligner, leftSide, seq, minNucleotides);
         } else {
             minNucleotides = toInt(str.substring(secondCommaPosition + 2, thirdCommaPosition),
                     "minimum number of nucleotides");
-            if (str.substring(thirdCommaPosition + 2, str.length() - 1).equals("true"))
-                useTarget = true;
-            else if (str.substring(thirdCommaPosition + 2, str.length() - 1).equals("false"))
-                useTarget = false;
-            else
-                throw new ParserException("Failed to parse use motif/target flag from "
-                        + str.substring(thirdCommaPosition + 2, str.length() - 1) + " in " + str);
+            switch (str.substring(thirdCommaPosition + 2, str.length() - 1)) {
+                case "true":
+                    useTarget = true;
+                    break;
+                case "false":
+                    useTarget = false;
+                    break;
+                default:
+                    throw new ParserException("Failed to parse use motif/target flag from "
+                            + str.substring(thirdCommaPosition + 2, str.length() - 1) + " in " + str);
+            }
         }
 
         return new BorderFilter(patternAligner, leftSide, seq, minNucleotides, useTarget);
@@ -312,12 +324,16 @@ final class SimplifiedParsers {
             throw new ParserException("Missing second ', ' in " + str);
 
         boolean isStart;
-        if (str.substring(firstCommaPosition - 1, secondCommaPosition).equals("', true)"))
-            isStart = true;
-        else if (str.substring(firstCommaPosition - 1, secondCommaPosition).equals("', false)"))
-            isStart = false;
-        else
-            throw new ParserException("Failed to parse group edge position from " + str);
+        switch (str.substring(firstCommaPosition - 1, secondCommaPosition)) {
+            case "', true)":
+                isStart = true;
+                break;
+            case "', false)":
+                isStart = false;
+                break;
+            default:
+                throw new ParserException("Failed to parse group edge position from " + str);
+        }
 
         if (!str.substring(str.length() - 1).equals(")"))
             throw new ParserException("Missing closing parenthesis in " + str);
@@ -347,12 +363,16 @@ final class SimplifiedParsers {
         checkGroupName(groupName);
 
         boolean isStart;
-        if (str.substring(commaPosition - 1, str.length()).equals("', true)"))
-            isStart = true;
-        else if (str.substring(commaPosition - 1, str.length()).equals("', false)"))
-            isStart = false;
-        else
-            throw new ParserException("Failed to parse group edge from " + str);
+        switch (str.substring(commaPosition - 1, str.length())) {
+            case "', true)":
+                isStart = true;
+                break;
+            case "', false)":
+                isStart = false;
+                break;
+            default:
+                throw new ParserException("Failed to parse group edge from " + str);
+        }
 
         return new GroupEdge(groupName, isStart);
     }
