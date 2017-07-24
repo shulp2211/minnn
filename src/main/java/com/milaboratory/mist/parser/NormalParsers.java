@@ -293,6 +293,7 @@ final class NormalParsers {
                         int sequenceTokenStart = tokens.get(sequenceStart).getStartCoordinate();
                         int sequenceTokenEnd = (i == tokens.size()) ? tokenizedString.getFullLength()
                                 : tokens.get(i).getStartCoordinate();
+                        validateGroupEdges(false, false, true, operands);
                         foundTokens.add(new FoundToken(new SequencePattern(getPatternAligner(sequenceTokenStart,
                                 sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd));
                     }
@@ -403,19 +404,23 @@ final class NormalParsers {
                             int sequenceTokenEnd = tokens.get(i - 1).getStartCoordinate()
                                     + tokens.get(i - 1).getLength();
                             FoundToken foundToken;
-                            if (operatorRegexp.contains("+"))
+                            if (operatorRegexp.contains("+")) {
+                                validateGroupEdges(false, false, true, operands);
                                 foundToken = new FoundToken(new PlusPattern(getPatternAligner(sequenceTokenStart,
                                         sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd);
-                            else if (operatorRegexp.contains("&"))
+                            } else if (operatorRegexp.contains("&")) {
+                                validateGroupEdges(true, false, true, operands);
                                 foundToken = new FoundToken(new AndPattern(getPatternAligner(sequenceTokenStart,
                                         sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd);
-                            else if (operatorRegexp.contains("|"))
+                            } else if (operatorRegexp.contains("|")) {
+                                validateGroupEdges(true, true, true, operands);
                                 foundToken = new FoundToken(new OrPattern(getPatternAligner(sequenceTokenStart,
                                         sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd);
-                            else if (operatorRegexp.contains("\\\\"))
+                            } else if (operatorRegexp.contains("\\\\")) {
+                                validateGroupEdges(true, false, true, operands);
                                 foundToken = new FoundToken(new MultiPattern(getPatternAligner(sequenceTokenStart,
                                         sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd);
-                            else
+                            } else
                                 throw new IllegalArgumentException("Invalid operator regexp: " + operatorRegexp);
                             foundTokens.add(foundToken);
                         }
@@ -465,8 +470,10 @@ final class NormalParsers {
                                     tokens.get(i - 2).getString().matches(operatorRegexp)) {
                                 int tokenStart = tokens.get(i - 2).getStartCoordinate();
                                 int tokenEnd = tokens.get(i - 1).getStartCoordinate() + tokens.get(i - 1).getLength();
+                                MultipleReadsOperator operand = tokens.get(i - 1).getMultipleReadsOperator();
+                                validateGroupEdges(false, true, false, operand);
                                 foundTokens.add(new FoundToken(new NotOperator(getPatternAligner(tokenStart, tokenEnd),
-                                        tokens.get(i - 1).getMultipleReadsOperator()), tokenStart, tokenEnd));
+                                        operand), tokenStart, tokenEnd));
                             }
                         } else if (sequenceStart < i - 2) {
                             int numOperands = (i - sequenceStart + 1) / 2;
@@ -477,13 +484,15 @@ final class NormalParsers {
                             int sequenceTokenEnd = tokens.get(i - 1).getStartCoordinate()
                                     + tokens.get(i - 1).getLength();
                             MultipleReadsOperator multipleReadsOperator;
-                            if (operatorRegexp.contains("&"))
+                            if (operatorRegexp.contains("&")) {
+                                validateGroupEdges(true, false, true, operands);
                                 multipleReadsOperator = new AndOperator(getPatternAligner(sequenceTokenStart,
                                         sequenceTokenEnd), operands);
-                            else if (operatorRegexp.contains("|"))
+                            } else if (operatorRegexp.contains("|")) {
+                                validateGroupEdges(true, true, true, operands);
                                 multipleReadsOperator = new OrOperator(getPatternAligner(sequenceTokenStart,
                                         sequenceTokenEnd), operands);
-                            else
+                            } else
                                 throw new IllegalArgumentException("Invalid operator regexp: " + operatorRegexp);
                             foundTokens.add(new FoundToken(multipleReadsOperator, sequenceTokenStart, sequenceTokenEnd));
                         }
