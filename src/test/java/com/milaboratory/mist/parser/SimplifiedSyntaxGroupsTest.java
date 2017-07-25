@@ -2,18 +2,15 @@ package com.milaboratory.mist.parser;
 
 import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.mist.pattern.*;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.*;
-import java.util.stream.IntStream;
 
 import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
-import static org.junit.Assert.*;
 
 public class SimplifiedSyntaxGroupsTest {
     private final PatternAligner patternAligner = getTestPatternAligner();
@@ -132,7 +129,7 @@ public class SimplifiedSyntaxGroupsTest {
 
     @Test
     public void groupsWithSameNameTest() throws Exception {
-        IntStream.range(0, 100).boxed().map(orNull((dummy) -> {
+        repeatAndExpectExceptionEveryTime(100, ParserException.class, () -> {
             SinglePattern basicPattern = getRandomBasicPattern(true);
             ArrayList<String> excludePatterns = new ArrayList<>(validDuplicateGroupsCommonAncestors);
             excludePatterns.addAll(Arrays.asList(FUZZY_MATCH_PATTERN_NAME, REPEAT_PATTERN_NAME, FILTER_PATTERN_NAME,
@@ -142,8 +139,8 @@ public class SimplifiedSyntaxGroupsTest {
                     + ", " + basicPattern.toString() + "])";
             // this ParseQuery must always throw ParserException
             parser.parseQuery(invalidPatternString, SIMPLIFIED);
-            return dummy;
-        })).forEach(Assert::assertNull);
+            return null;
+        });
     }
 
     private Pattern getRandomPatternNotInList(List<String> list, SinglePattern... basicPatterns) {

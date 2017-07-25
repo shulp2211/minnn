@@ -12,6 +12,7 @@ import com.milaboratory.mist.pattern.*;
 import com.milaboratory.test.TestUtil;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -418,6 +419,33 @@ public class CommonTestUtils {
                 return null;
             }
         };
+    }
+
+    public static <T, R> R untilSuccess(T inputValue, ThrowingFunction<T, R, Exception> function) {
+        while (true) {
+            R returnValue;
+            try {
+                returnValue = function.apply(inputValue);
+            } catch (Exception e) {
+                continue;
+            }
+            return returnValue;
+        }
+    }
+
+    public static void repeatAndExpectExceptionEveryTime(int iterations, Class exceptionClass, Callable<Void> f) {
+        for (int i = 0; i < iterations; i++) {
+            boolean exceptionThrown = false;
+            try {
+                f.call();
+            } catch (Exception e) {
+                if (e.getClass().equals(exceptionClass))
+                    exceptionThrown = true;
+                else
+                    throw new RuntimeException(e);
+            }
+            assertTrue(exceptionThrown);
+        }
     }
 
     public static class RandomBorders {
