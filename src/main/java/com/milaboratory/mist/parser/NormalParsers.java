@@ -94,7 +94,7 @@ final class NormalParsers {
         List<Token> stringTokens = tokenizedString.getTokens(0, tokenizedString.getFullLength()).stream()
                 .filter(Token::isString).collect(Collectors.toList());
         for (Token currentStringToken : stringTokens) {
-            Matcher regexMatcher = Pattern.compile("[a-zA-Z]([a-zA-Z :()]*[a-zA-Z]+)*")
+            Matcher regexMatcher = Pattern.compile("[a-zA-Z]((\\( *\\w *: *[a-zA-Z ]+ *\\))*[a-zA-Z]+)*")
                     .matcher(currentStringToken.getString());
             while (regexMatcher.find()) {
                 int start = regexMatcher.start() + currentStringToken.getStartCoordinate();
@@ -179,8 +179,7 @@ final class NormalParsers {
                 } else {
                     String foundString = leftMatcher.group();
                     seq = toNSeq(foundString.replace("<", ""));
-                    minNucleotides = seq.size() - (foundString.length()
-                            - foundString.replace("<", "").length());
+                    minNucleotides = seq.size() - countCharacters(foundString, '<');
                 }
                 if (minNucleotides < 0)
                     throw new ParserException("Invalid border filter, not enough nucleotides: " + leftMatcher.group());
@@ -215,8 +214,7 @@ final class NormalParsers {
                 } else {
                     String foundString = rightMatcher.group();
                     seq = toNSeq(foundString.replace(">", ""));
-                    minNucleotides = seq.size() - (foundString.length()
-                            - foundString.replace(">", "").length());
+                    minNucleotides = seq.size() - countCharacters(foundString, '>');
                 }
                 if (minNucleotides < 0)
                     throw new ParserException("Invalid border filter, not enough nucleotides: " + rightMatcher.group());
@@ -521,7 +519,7 @@ final class NormalParsers {
     private ArrayList<FoundGroupName> findGroupNames(int position, boolean onLeft) {
         ArrayList<FoundGroupName> foundGroupNames = new ArrayList<>();
         int currentPosition = position;
-        int closestGroupIndex = getClosestGroupByPosition(position, onLeft);
+        int closestGroupIndex = getClosestGroupByPosition(onLeft ? position : position + 1, onLeft);
         while (closestGroupIndex != -1) {
             NormalSyntaxGroupName currentGroupName = groupNames.get(closestGroupIndex);
             String intermediateSubstring = onLeft ? query.substring(currentGroupName.end + 1,
@@ -530,7 +528,7 @@ final class NormalParsers {
                 break;
             currentPosition = onLeft ? currentGroupName.start : currentGroupName.bracketsPair.end;
             foundGroupNames.add(new FoundGroupName(currentGroupName.name, currentPosition));
-            closestGroupIndex = getClosestGroupByPosition(currentPosition, onLeft);
+            closestGroupIndex = getClosestGroupByPosition(onLeft ? currentPosition : currentPosition + 1, onLeft);
         }
         return foundGroupNames;
     }
@@ -566,34 +564,42 @@ final class NormalParsers {
      */
     private FoundGroupEdgePositions findGroupEdgePositions(int start, int end) {
         ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
-        int ignoredCharactersCount = query.substring(start, end + 1).length()
-                - query.substring(start, end + 1).replace(" ", "").length();
+        int patternStringLength = end - start;
+        int ignoredCharactersCount = 0;
+        int ignoredCharactersSearchPosition = start;
         for (NormalSyntaxGroupName groupName : groupNames) {
-            int groupStart = groupName.start;
-            int groupNameEnd = groupName.end;
-            int groupEnd = groupName.bracketsPair.end;
-            if (groupStart > start) {
-                if (groupNameEnd < end - 1) {
+            int groupStart = groupName.start - start;
+            int groupNameEnd = groupName.end - start;
+            int groupEnd = groupName.bracketsPair.end - start;
+            if ((groupStart > 0) && (groupStart < patternStringLength - 1)) {
+                if (groupNameEnd < patternStringLength - 1) {
+                    ignoredCharactersCount += countCharacters(query.substring(ignoredCharactersSearchPosition,
+                            groupName.start), ' ');
+                    ignoredCharactersSearchPosition = groupName.end;
                     groupEdgePositions.add(new GroupEdgePosition(new GroupEdge(groupName.name, true),
-                            groupStart - start - ignoredCharactersCount));
+                            groupStart - ignoredCharactersCount));
                     ignoredCharactersCount += groupNameEnd - groupStart + 1;
                 } else
                     throw new IllegalStateException("FuzzyMatchPattern: start=" + start + ", end=" + end
-                            + ", group name: start=" + groupStart + ", end=" + groupNameEnd);
+                            + ", group name: start=" + groupName.start + ", end=" + groupName.end);
             }
-            if ((groupEnd > start) && (groupEnd < end - 1)) {
+            if ((groupEnd > 0) && (groupEnd < patternStringLength - 1)) {
+                ignoredCharactersCount += countCharacters(query.substring(ignoredCharactersSearchPosition,
+                        groupName.bracketsPair.end), ' ');
+                ignoredCharactersSearchPosition = groupName.bracketsPair.end;
                 groupEdgePositions.add(new GroupEdgePosition(new GroupEdge(groupName.name, false),
-                        groupEnd - start - ignoredCharactersCount));
+                        groupEnd - ignoredCharactersCount));
                 ignoredCharactersCount++;
             }
         }
+        ignoredCharactersCount += countCharacters(query.substring(ignoredCharactersSearchPosition, end), ' ');
 
         ArrayList<FoundGroupName> groupNamesLeft = findGroupNames(start, true);
-        ArrayList<FoundGroupName> groupNamesRight = findGroupNames(end, false);
+        ArrayList<FoundGroupName> groupNamesRight = findGroupNames(end - 1, false);
         groupEdgePositions.addAll(groupNamesLeft.stream()
                 .map(gn -> new GroupEdgePosition(new GroupEdge(gn.name, true), 0))
                 .collect(Collectors.toList()));
-        final int patternLength = end - start + 1 - ignoredCharactersCount;
+        final int patternLength = end - start - ignoredCharactersCount;
         groupEdgePositions.addAll(groupNamesRight.stream()
                 .map(gn -> new GroupEdgePosition(new GroupEdge(gn.name, false), patternLength))
                 .collect(Collectors.toList()));

@@ -168,7 +168,8 @@ final class TokenizedString {
      */
     int calculateLength(int start, int end) {
         if (start > end) throw new IllegalArgumentException("start = " + start + ", end = " + end);
-        return tokenizedString.get(end).getStartCoordinate() - tokenizedString.get(start).getStartCoordinate();
+        return ((end == tokenizedString.size()) ? length : tokenizedString.get(end).getStartCoordinate())
+                - tokenizedString.get(start).getStartCoordinate();
     }
 
     /**

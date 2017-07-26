@@ -304,4 +304,15 @@ final class ParserUtils {
             throw new ParserException("Failed to parse " + paramName + " from string \"" + str + "\"");
         }
     }
+
+    /**
+     * Count number of occurrences of character in string.
+     *
+     * @param str string
+     * @param c character to search
+     * @return number of occurrences of character in string
+     */
+    static int countCharacters(String str, char c) {
+        return str.length() - str.replace(Character.toString(c), "").length();
+    }
 }
