@@ -161,11 +161,15 @@ final class NormalParsers {
     ArrayList<FoundToken> parseBorderFilters(TokenizedString tokenizedString, boolean left) throws ParserException {
         ArrayList<FoundToken> foundTokens = new ArrayList<>();
         if (left) {
-            Matcher leftMatcher = Pattern.compile("(<\\{ *\\d+ *}|<+)[a-zA-Z]+").matcher(query);
+            Matcher leftMatcher =
+                    Pattern.compile("(<\\{ *\\d+ *}|<+)([ \\[]|(\\[ *-?\\d+\\.?\\d* *:)|(\\( *\\w *:))*[a-zA-Z]+")
+                    .matcher(query);
             while (leftMatcher.find()) {
                 int start = leftMatcher.start();
                 int end = leftMatcher.end();
-                NucleotideSequence seq;
+                Token operandToken = tokenizedString.getToken(tokenizedString.getIndexByPosition(end - 1));
+                FuzzyMatchPattern operandPattern = operandToken.getSpecificPattern(FuzzyMatchPattern.class);
+                NucleotideSequence seq = operandPattern.getPatternSeq();
                 int minNucleotides;
                 if (leftMatcher.group().contains("{")) {
                     BorderFilterBracesPair borderFilterBracesPair = borderFilterBracesPairs.stream()
@@ -174,33 +178,27 @@ final class NormalParsers {
                             .findFirst().orElseThrow(() -> new IllegalStateException(
                                     "BorderFilterBracesPair not found for " + leftMatcher.group()));
 
-                    seq = toNSeq(query.substring(borderFilterBracesPair.bracesPair.end + 1, end));
                     minNucleotides = seq.size() - borderFilterBracesPair.numberOfRepeats;
-                } else {
-                    String foundString = leftMatcher.group();
-                    seq = toNSeq(foundString.replace("<", ""));
-                    minNucleotides = seq.size() - countCharacters(foundString, '<');
-                }
+                } else
+                    minNucleotides = seq.size() - countCharacters(leftMatcher.group(), '<');
                 if (minNucleotides < 0)
                     throw new ParserException("Invalid border filter, not enough nucleotides: " + leftMatcher.group());
                 boolean useTarget = !isSpecificCharBeforeStopChar(query, start, true, true,
                         "[]", "\\", null);
                 BorderFilter filter = new BorderFilter(getPatternAligner(start, end), true, seq, minNucleotides,
                         useTarget);
-                Token fuzzyMatchPatternToken = tokenizedString.getTokens(start, end).stream()
-                        .filter(t -> !t.isString()).findFirst().orElseThrow(() -> new IllegalStateException(
-                                "Parsed FuzzyMatchPattern not found for BorderFilter: " + leftMatcher.group()));
-                FuzzyMatchPattern fuzzyMatchPattern = fuzzyMatchPatternToken.getSpecificPattern(FuzzyMatchPattern.class);
+                int tokenStart = Math.min(start, operandToken.getStartCoordinate());
+                int tokenEnd = operandToken.getStartCoordinate() + operandToken.getLength();
                 foundTokens.add(new FoundToken(new FilterPattern(getPatternAligner(start, end), filter,
-                        fuzzyMatchPattern), start, fuzzyMatchPatternToken.getStartCoordinate()
-                        + fuzzyMatchPatternToken.getLength()));
+                        operandPattern), tokenStart, tokenEnd));
             }
         } else {
-            Matcher rightMatcher = Pattern.compile("[a-zA-Z]+(>\\{ *\\d+ *}|>+)").matcher(query);
+            Matcher rightMatcher = Pattern.compile("[a-zA-Z]+[ \\])]*(>\\{ *\\d+ *}|>+)").matcher(query);
             while (rightMatcher.find()) {
                 int start = rightMatcher.start();
                 int end = rightMatcher.end();
-                NucleotideSequence seq;
+                Token operandToken = tokenizedString.getToken(tokenizedString.getIndexByPosition(start));
+                NucleotideSequence seq = operandToken.getSpecificPattern(BorderFilterOperand.class).getPatternSeq();
                 int minNucleotides;
                 if (rightMatcher.group().contains("{")) {
                     BorderFilterBracesPair borderFilterBracesPair = borderFilterBracesPairs.stream()
@@ -209,29 +207,19 @@ final class NormalParsers {
                             .findFirst().orElseThrow(() -> new IllegalStateException(
                                     "BorderFilterBracesPair not found for " + rightMatcher.group()));
 
-                    seq = toNSeq(query.substring(start, borderFilterBracesPair.bracesPair.start - 1));
                     minNucleotides = seq.size() - borderFilterBracesPair.numberOfRepeats;
-                } else {
-                    String foundString = rightMatcher.group();
-                    seq = toNSeq(foundString.replace(">", ""));
-                    minNucleotides = seq.size() - countCharacters(foundString, '>');
-                }
+                } else
+                    minNucleotides = seq.size() - countCharacters(rightMatcher.group(), '>');
                 if (minNucleotides < 0)
                     throw new ParserException("Invalid border filter, not enough nucleotides: " + rightMatcher.group());
                 boolean useTarget = !isSpecificCharBeforeStopChar(query, end - 1, false, true,
                         "[]", "\\", null);
                 BorderFilter filter = new BorderFilter(getPatternAligner(start, end), false, seq, minNucleotides,
                         useTarget);
-                Token patternToken = tokenizedString.getTokens(start, end).stream()
-                        .filter(t -> !t.isString()).findFirst().orElseThrow(() -> new IllegalStateException(
-                                "Parsed pattern not found for BorderFilter: " + rightMatcher.group()));
-                SinglePattern singlePattern = patternToken.getSinglePattern();
-                if (!FuzzyMatchPattern.class.isAssignableFrom(singlePattern.getClass())
-                        && !FilterPattern.class.isAssignableFrom(singlePattern.getClass()))
-                    throw new IllegalStateException("Unexpected class for BorderFilter operand: "
-                            + singlePattern.getClass().getName());
+                int tokenStart = operandToken.getStartCoordinate();
+                int tokenEnd = Math.max(end, operandToken.getStartCoordinate() + operandToken.getLength());
                 foundTokens.add(new FoundToken(new FilterPattern(getPatternAligner(start, end), filter,
-                        singlePattern), patternToken.getStartCoordinate(), end));
+                        operandToken.getSinglePattern()), tokenStart, tokenEnd));
             }
         }
 
@@ -328,7 +316,7 @@ final class NormalParsers {
                 int bracketsRelativeEnd = 0;
                 boolean noMoreNestedBrackets = false;
                 while (!noMoreNestedBrackets) {
-                    Matcher previousMatcher = Pattern.compile(" *\\[ *(-?\\d+ *:)? *$").matcher(previousString);
+                    Matcher previousMatcher = Pattern.compile(" *\\[ *(-?\\d+\\.?\\d* *:)? *$").matcher(previousString);
                     if (previousMatcher.find()) {
                         Matcher nextMatcher = Pattern.compile("^ *] *").matcher(nextString);
                         if (nextMatcher.find()) {

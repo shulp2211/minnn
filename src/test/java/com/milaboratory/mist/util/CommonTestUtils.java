@@ -433,19 +433,22 @@ public class CommonTestUtils {
         }
     }
 
-    public static void repeatAndExpectExceptionEveryTime(int iterations, Class exceptionClass, Callable<Void> f) {
-        for (int i = 0; i < iterations; i++) {
-            boolean exceptionThrown = false;
-            try {
-                f.call();
-            } catch (Exception e) {
-                if (e.getClass().equals(exceptionClass))
-                    exceptionThrown = true;
-                else
-                    throw new RuntimeException(e);
-            }
-            assertTrue(exceptionThrown);
+    public static void assertException(Class exceptionClass, Callable<Void> f) {
+        boolean exceptionThrown = false;
+        try {
+            f.call();
+        } catch (Exception e) {
+            if (e.getClass().equals(exceptionClass))
+                exceptionThrown = true;
+            else
+                throw new RuntimeException(e);
         }
+        assertTrue(exceptionThrown);
+    }
+
+    public static void repeatAndExpectExceptionEveryTime(int iterations, Class exceptionClass, Callable<Void> f) {
+        for (int i = 0; i < iterations; i++)
+            assertException(exceptionClass, f);
     }
 
     public static class RandomBorders {

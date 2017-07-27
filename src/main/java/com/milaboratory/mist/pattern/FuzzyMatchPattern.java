@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.PatternUtils.invertCoordinate;
 
-public final class FuzzyMatchPattern extends SinglePattern {
+public final class FuzzyMatchPattern extends SinglePattern implements BorderFilterOperand {
     private final NucleotideSequence patternSeq;
     private final Motif<NucleotideSequence> motif;
     private final int fixedLeftBorder;
@@ -91,6 +91,11 @@ public final class FuzzyMatchPattern extends SinglePattern {
         int toWithBorder = (fixedRightBorder == -1) ? to : Math.min(to, fixedRightBorder + 1);
         return new FuzzyMatchingResult(patternAligner, patternSeq, motif, fixedLeftBorder, fixedRightBorder,
                 groupEdgePositions, target, fromWithBorder, toWithBorder, targetId);
+    }
+
+    @Override
+    public NucleotideSequence getPatternSeq() {
+        return patternSeq;
     }
 
     private static class FuzzyMatchingResult extends MatchingResult {

@@ -48,7 +48,8 @@ final class TokenizedString {
         else
             if (startToken.isString())
                 startIndexLastPosition = from - startToken.getStartCoordinate();
-            else throw new IllegalArgumentException("Trying to tokenize in the middle of " + startToken);
+            else throw new IllegalArgumentException("Trying to tokenize in the middle of " + startToken
+                    + ": from=" + from + ", to=" + to);
 
         Token endToken = tokenizedString.get(endIndex);
         if ((to == endToken.getStartCoordinate() + endToken.getLength()) && !endToken.isString())
@@ -56,7 +57,8 @@ final class TokenizedString {
         else
             if (endToken.isString())
                 endIndexFirstPosition = to - endToken.getStartCoordinate();
-            else throw new IllegalArgumentException("Trying to tokenize in the middle of " + endToken);
+            else throw new IllegalArgumentException("Trying to tokenize in the middle of " + endToken
+                    + ": from=" + from + ", to=" + to);
 
         tokenizeSubstring(pattern, startIndex, startIndexLastPosition, endIndex, endIndexFirstPosition);
     }
@@ -86,29 +88,32 @@ final class TokenizedString {
 
         if (startIndex == endIndex) {
             Token specifiedToken = tokenizedString.get(startIndex);
-            if (!specifiedToken.isString())
-                throw new IllegalArgumentException("startIndex = endIndex = " + startIndex + " and this is not a string!");
-            String specifiedString = specifiedToken.getString();
-
             if ((startIndexLastPosition == -1) && (endIndexFirstPosition == -1)) {
-                Token patternToken = new Token(pattern, specifiedString.length(), specifiedToken.getStartCoordinate());
+                Token patternToken = new Token(pattern, specifiedToken.getLength(), specifiedToken.getStartCoordinate());
                 tokenizedString.set(startIndex, patternToken);
-            } else if ((startIndexLastPosition >= 0) && (endIndexFirstPosition > startIndexLastPosition)) {
-                int startCoordinate = specifiedToken.getStartCoordinate();
-                int patternLength = endIndexFirstPosition - startIndexLastPosition;
+            } else {
+                if (!specifiedToken.isString())
+                    throw new IllegalArgumentException("startIndex = endIndex = " + startIndex +
+                            ", startLast = " + startIndexLastPosition + ", endFirst = " + endIndexFirstPosition
+                            + ", and specified token is not a string: " + specifiedToken);
+                if ((startIndexLastPosition >= 0) && (endIndexFirstPosition > startIndexLastPosition)) {
+                    String specifiedString = specifiedToken.getString();
+                    int startCoordinate = specifiedToken.getStartCoordinate();
+                    int patternLength = endIndexFirstPosition - startIndexLastPosition;
 
-                String leftPart = specifiedString.substring(0, startIndexLastPosition);
-                String rightPart = specifiedString.substring(endIndexFirstPosition);
-                tokenizedString.remove(startIndex);
-                if (rightPart.length() > 0)
-                    tokenizedString.add(startIndex, new Token(rightPart, startCoordinate
-                            + leftPart.length() + patternLength));
-                tokenizedString.add(startIndex, new Token(pattern, patternLength, startCoordinate
-                        + leftPart.length()));
-                if (leftPart.length() > 0)
-                    tokenizedString.add(startIndex, new Token(leftPart, startCoordinate));
-            } else throw new IllegalArgumentException("startIndex = endIndex = " + startIndex
-                    + ", startLast: " + startIndexLastPosition + ", endFirst: " + endIndexFirstPosition);
+                    String leftPart = specifiedString.substring(0, startIndexLastPosition);
+                    String rightPart = specifiedString.substring(endIndexFirstPosition);
+                    tokenizedString.remove(startIndex);
+                    if (rightPart.length() > 0)
+                        tokenizedString.add(startIndex, new Token(rightPart, startCoordinate
+                                + leftPart.length() + patternLength));
+                    tokenizedString.add(startIndex, new Token(pattern, patternLength, startCoordinate
+                            + leftPart.length()));
+                    if (leftPart.length() > 0)
+                        tokenizedString.add(startIndex, new Token(leftPart, startCoordinate));
+                } else throw new IllegalArgumentException("startIndex = endIndex = " + startIndex
+                        + ", startLast = " + startIndexLastPosition + ", endFirst = " + endIndexFirstPosition);
+            }
         } else {
             Token startToken = tokenizedString.get(startIndex);
             Token endToken = tokenizedString.get(endIndex);
@@ -194,6 +199,10 @@ final class TokenizedString {
         return IntStream.range(0, tokenizedString.size() - 1)
                 .filter(i -> tokenizedString.get(i + 1).getStartCoordinate() > position).findFirst()
                 .orElse(tokenizedString.size() - 1);
+    }
+
+    Token getToken(int index) {
+        return tokenizedString.get(index);
     }
 
     /**

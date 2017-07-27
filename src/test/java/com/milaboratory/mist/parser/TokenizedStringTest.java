@@ -31,7 +31,7 @@ public class TokenizedStringTest {
         assertEquals(3, ts2.calculateLength(0, 2));
         assertEquals("AGACA", ts2.getTokens(0, 8).get(2).getString());
         exception.expect(IllegalArgumentException.class);
-        ts2.tokenizeSubstring(testPattern1, 1, 3);
+        ts2.tokenizeSubstring(testPattern1, 1, 2);
     }
 
     @Test
