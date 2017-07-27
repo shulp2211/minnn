@@ -36,7 +36,8 @@ public final class ParseAction implements Action {
         Parser patternParser = new Parser(patternAligner);
         Pattern pattern = null;
         try {
-            pattern = patternParser.parseQuery(params.query, SIMPLIFIED);
+            pattern = params.simplifiedSyntax ? patternParser.parseQuery(params.query, SIMPLIFIED)
+                    : patternParser.parseQuery(params.query);
         } catch (ParserException e) {
             System.err.println("Error while parsing the pattern!");
             exitWithError(e.getMessage());
@@ -105,6 +106,10 @@ public final class ParseAction implements Action {
         @Parameter(description = "Use fair sorting and fair best match by score for all patterns.",
                 names = {"--fair-sorting"})
         boolean fairSorting = false;
+
+        @Parameter(description = "Use \"simplified\" parser syntax with class names and their arguments in parentheses",
+                names = {"--devel-parser-syntax"})
+        boolean simplifiedSyntax = false;
 
         @Parameter(description = "First read number, default is 1.",
                 names = {"--first-read-number"})

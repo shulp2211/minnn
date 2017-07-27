@@ -9,7 +9,6 @@ import static com.milaboratory.mist.util.CommonTestUtils.inQuotes;
 import static com.milaboratory.mist.util.SystemUtils.*;
 import static com.milaboratory.mist.util.TestSettings.*;
 import static com.milaboratory.mist.Main.main;
-import static org.junit.Assert.*;
 
 public class ParseActionTest {
     @BeforeClass
@@ -33,9 +32,9 @@ public class ParseActionTest {
                 inQuotes("MultiPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
                         "GroupEdge('UMI', true), 2), GroupEdgePosition(GroupEdge('UMI', false), 4)]), " +
                         "FuzzyMatchPattern(AA, -1, -1)])"),
-                "--input", testInputR1, testInputR2, "--output", testOutputR1, testOutputR2};
+                "--input", testInputR1, testInputR2, "--output", testOutputR1, testOutputR2, "--devel-parser-syntax"};
         main(args1);
-        String[] args2 = {"parse", "--match-score", "0", "--oriented", "--pattern", inQuotes(
+        String[] args2 = {"parse", "--devel-parser-syntax", "--match-score", "0", "--oriented", "--pattern", inQuotes(
                 "FuzzyMatchPattern(ATTAGACA, -1, -1)") , "--input", testInputR1, "--output", testOutputSingle};
         main(args2);
     }
