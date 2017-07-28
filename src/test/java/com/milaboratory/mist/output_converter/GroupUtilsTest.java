@@ -9,7 +9,8 @@ import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 
-import static com.milaboratory.mist.output_converter.GroupUtils.getGroupsFromMatch;
+import static com.milaboratory.mist.output_converter.GroupUtils.*;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class GroupUtilsTest {
@@ -91,5 +92,54 @@ public class GroupUtilsTest {
 
         exception.expect(IllegalStateException.class);
         getGroupsFromMatch(testMatch);
+    }
+
+    @Test
+    public void groupsInsideMainTest() throws Exception {
+        Range mainRange = new Range(1, 5);
+        ArrayList<MatchedGroup> matchedGroups = new ArrayList<MatchedGroup>() {{
+           add(generateMatchedGroup(new Range(0, 10), true));
+           add(generateMatchedGroup(new Range(1, 5), true));
+           add(generateMatchedGroup(new Range(0, 4), true));
+           add(generateMatchedGroup(new Range(3, 8), true));
+           add(generateMatchedGroup(new Range(2, 3), true));
+        }};
+        ArrayList<MatchedGroup> groupsInsideMain = getGroupsInsideMain(matchedGroups, mainRange, true);
+        ArrayList<MatchedGroup> groupsNotInsideMain = getGroupsInsideMain(matchedGroups, mainRange, false);
+        assertEquals(new Range(0, 10), groupsNotInsideMain.get(0).getRange());
+        assertEquals(new Range(1, 5), groupsInsideMain.get(0).getRange());
+        assertEquals(new Range(0, 4), groupsNotInsideMain.get(1).getRange());
+        assertEquals(new Range(3, 8), groupsNotInsideMain.get(2).getRange());
+        assertEquals(new Range(2, 3), groupsInsideMain.get(1).getRange());
+
+        groupsNotInsideMain.forEach(g -> assertEquals(new Range(-1, -1), g.getRelativeRange()));
+        assertEquals(new Range(0, 4), groupsInsideMain.get(0).getRelativeRange());
+        assertEquals(new Range(1, 2), groupsInsideMain.get(1).getRelativeRange());
+    }
+
+    @Test
+    public void groupsToReadDescriptionTest() throws Exception {
+        Range mainRange = new Range(1, 5);
+        ArrayList<MatchedGroup> matchedGroups = new ArrayList<MatchedGroup>() {{
+            add(generateMatchedGroup(new Range(0, 10), false));
+            add(generateMatchedGroup(new Range(1, 5), false));
+            add(generateMatchedGroup(new Range(0, 4), false));
+            add(generateMatchedGroup(new Range(3, 8), false));
+            add(generateMatchedGroup(new Range(2, 3), false));
+        }};
+        String insideMain = groupsToReadDescription(getGroupsInsideMain(matchedGroups, mainRange, true),
+                "MainGroup", true);
+        String notInsideMain = groupsToReadDescription(getGroupsInsideMain(matchedGroups, mainRange, false),
+                null, false);
+        assertEquals("group~GroupName~TTAG~CCCC{MainGroup~0~4}~group~GroupName~T~C{MainGroup~1~2}",
+                insideMain);
+        assertEquals("group~GroupName~ATTAGACATT~CCCCCCCCCC~group~GroupName~ATTA~CCCC~group~GroupName~AGACA~CCCCC",
+                notInsideMain);
+    }
+
+    private MatchedGroup generateMatchedGroup(Range range, boolean random) {
+        return new MatchedGroup(random ? getRandomString(rg.nextInt(30) + 1, "", true)
+                : "GroupName", new NSequenceWithQuality("ATTAGACATT"), (byte)(random ? rg.nextInt(20) - 10 : 1),
+                random ? rg.nextInt(10) : 2, range);
     }
 }
