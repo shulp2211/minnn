@@ -53,7 +53,7 @@ public final class GroupUtils {
             return groups.stream()
                     .filter(g -> mainRange.contains(g.getRange()))
                     .map(g -> new MatchedGroup(g.getGroupName(), g.getTarget(), g.getTargetId(),
-                            g.getPatternIndex(), g.getRange(), g.getRange().move(mainRange.getLower())))
+                            g.getPatternIndex(), g.getRange(), g.getRange().move(-mainRange.getLower())))
                     .collect(Collectors.toCollection(ArrayList::new));
         else
             return groups.stream()
@@ -70,7 +70,7 @@ public final class GroupUtils {
             descriptionBuilder.append('~');
             descriptionBuilder.append(currentGroup.getValue().getSequence().toString());
             descriptionBuilder.append('~');
-            descriptionBuilder.append(currentGroup.getValue().getQuality().toString().replaceAll("\\{|}|~|\\|", "z"));
+            descriptionBuilder.append(currentGroup.getValue().getQuality().toString().replaceAll("[{}~|]", "z"));
             if (insideMain) {
                 descriptionBuilder.append('{');
                 descriptionBuilder.append(mainGroupName);
