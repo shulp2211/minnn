@@ -14,7 +14,7 @@ public class ParseActionTest {
     @BeforeClass
     public static void init() {
         exitOnError = false;
-        File outputFilesDirectory = new File(TEST_OUTPUT_FILES_PATH);
+        File outputFilesDirectory = new File(TEST_RESOURCES_PATH);
         if (!outputFilesDirectory.exists())
             if (!outputFilesDirectory.mkdir())
                 exitWithError("Cannot create directory for output files!");
@@ -22,11 +22,11 @@ public class ParseActionTest {
 
     @Test
     public void simpleTest() throws Exception {
-        String testInputR1 = TEST_INPUT_FILES_PATH + "sample_r1.fastq";
-        String testInputR2 = TEST_INPUT_FILES_PATH + "sample_r2.fastq";
-        String testOutputR1 = TEST_OUTPUT_FILES_PATH + "output_r1.fastq";
-        String testOutputR2 = TEST_OUTPUT_FILES_PATH + "output_r2.fastq";
-        String testOutputSingle = TEST_OUTPUT_FILES_PATH + "output_single.fastq";
+        String testInputR1 = TEST_RESOURCES_PATH + "sample_r1.fastq";
+        String testInputR2 = TEST_RESOURCES_PATH + "sample_r2.fastq";
+        String testOutputR1 = TEST_RESOURCES_PATH + "output_r1.fastq";
+        String testOutputR2 = TEST_RESOURCES_PATH + "output_r2.fastq";
+        String testOutputSingle = TEST_RESOURCES_PATH + "output_single.fastq";
 
         String[] args1 = {"parse", "--pattern",
                 inQuotes("MultiPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +

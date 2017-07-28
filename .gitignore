@@ -5,5 +5,4 @@ doc/_build
 .floo
 .flooignore
 out
-test_target
-test_output
+src/test/resources/output*
