@@ -2,14 +2,13 @@ package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.mist.util.ApproximateSorter;
-import com.milaboratory.mist.util.SorterByCoordinate;
-import com.milaboratory.mist.util.SorterByScore;
+import com.milaboratory.mist.util.*;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.FIRST;
+import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
 
 /**
  * This pattern takes multiple SinglePattern arguments and matches best of them that is found, or not matches
@@ -50,11 +49,7 @@ public final class OrPattern extends MultiplePatternsOperator {
 
         @Override
         public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
-            ArrayList<OutputPort<Match>> operandPorts = new ArrayList<>();
             ApproximateSorter sorter;
-
-            for (SinglePattern operandPattern : operandPatterns)
-                operandPorts.add(operandPattern.match(target, from, to, targetId).getMatches(byScore, fairSorting));
 
             if (byScore)
                 sorter = new SorterByScore(patternAligner, false, false, fairSorting,
@@ -63,7 +58,9 @@ public final class OrPattern extends MultiplePatternsOperator {
                 sorter = new SorterByCoordinate(patternAligner, false, false, fairSorting,
                         FIRST);
 
-            return sorter.getOutputPort(operandPorts);
+            return sorter.getOutputPort(Arrays.stream(operandPatterns).map(pattern -> new ApproximateSorterOperandPort(
+                    pattern.match(target, from, to, targetId).getMatches(byScore, fairSorting),
+                    unfairSorterPortLimits.get(pattern.getClass()))).collect(Collectors.toList()));
         }
     }
 }

@@ -223,59 +223,55 @@ public class PlusPatternTest {
             assertTrue(pattern2.match(targetQ).getBestMatch(rg.nextBoolean()) != null);
             assertTrue(pattern2.match(targetQ).getMatches(rg.nextBoolean(), rg.nextBoolean()).take() != null);
 
-            for (Boolean fairSorting: new Boolean[] {false, true}) {
-                long errorScorePenalty = -rg.nextInt(50) - 1;
-                int maxOverlap = rg.nextInt(5) - 1;
-                long plusPenaltyThreshold;
-                boolean misplacedPatterns = false;
-                if (isMatchingPattern1) {
-                    Match match1 = pattern1.match(targetQ).getBestMatch(fairSorting);
-                    Match match2 = pattern2.match(targetQ).getBestMatch(fairSorting);
-                    plusPenaltyThreshold = match1.getScore() + match2.getScore()
-                            + errorScorePenalty * getIntersectionLength(match1.getRange(), match2.getRange());
-                    misplacedPatterns = (match1.getRange().getLower() >= match2.getRange().getLower())
-                            || checkFullIntersection(match1.getRange(), match2.getRange()) || ((maxOverlap != -1)
-                            && (getIntersectionLength(match1.getRange(), match2.getRange()) > maxOverlap));
-                } else {
-                    plusPenaltyThreshold = pattern2.match(targetQ).getBestMatch(fairSorting).getScore();
-                    if ((targetLength <= maxErrors) || (motif1WithErrors.size() <= maxErrors))
-                        plusPenaltyThreshold = 0;
-                }
-
-                boolean plusMustBeFound = isMatchingPattern1;
-                if (misplacedPatterns) {
-                    plusPenaltyThreshold = Long.MIN_VALUE;
-                    ArrayList<Range> ranges1 = new ArrayList<>();
-                    ArrayList<Range> ranges2 = new ArrayList<>();
-                    OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(rg.nextBoolean(), fairSorting);
-                    OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(rg.nextBoolean(), fairSorting);
-                    Match match;
-                    while ((match = port1.take()) != null)
-                        ranges1.add(match.getRange());
-                    while ((match = port2.take()) != null)
-                        ranges2.add(match.getRange());
-
-                    plusMustBeFound = false;
-                    OUTER:
-                    for (Range range1: ranges1)
-                        for (Range range2: ranges2)
-                            if (!((range1.getLower() >= range2.getLower())
-                                    || checkFullIntersection(range1, range2) || ((maxOverlap != -1)
-                                    && (getIntersectionLength(range1, range2) > maxOverlap)))) {
-                                plusMustBeFound = true;
-                                break OUTER;
-                            }
-                }
-
-                PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(plusPenaltyThreshold, 0,
-                        0, errorScorePenalty, true, maxOverlap), pattern1, pattern2);
-
-                if (!fairSorting)
-                    assertEquals(plusMustBeFound, plusPattern.match(targetQ).isFound());
-                assertEquals(plusMustBeFound, plusPattern.match(targetQ).getBestMatch(fairSorting) != null);
-                assertEquals(plusMustBeFound, plusPattern.match(targetQ).getMatches(rg.nextBoolean(),
-                        fairSorting).take() != null);
+            long errorScorePenalty = -rg.nextInt(50) - 1;
+            int maxOverlap = rg.nextInt(5) - 1;
+            long plusPenaltyThreshold;
+            boolean misplacedPatterns = false;
+            if (isMatchingPattern1) {
+                Match match1 = pattern1.match(targetQ).getBestMatch(true);
+                Match match2 = pattern2.match(targetQ).getBestMatch(true);
+                plusPenaltyThreshold = match1.getScore() + match2.getScore()
+                        + errorScorePenalty * getIntersectionLength(match1.getRange(), match2.getRange());
+                misplacedPatterns = (match1.getRange().getLower() >= match2.getRange().getLower())
+                        || checkFullIntersection(match1.getRange(), match2.getRange()) || ((maxOverlap != -1)
+                        && (getIntersectionLength(match1.getRange(), match2.getRange()) > maxOverlap));
+            } else {
+                plusPenaltyThreshold = pattern2.match(targetQ).getBestMatch(true).getScore();
+                if ((targetLength <= maxErrors) || (motif1WithErrors.size() <= maxErrors))
+                    plusPenaltyThreshold = 0;
             }
+
+            boolean plusMustBeFound = isMatchingPattern1;
+            if (misplacedPatterns) {
+                plusPenaltyThreshold = Long.MIN_VALUE;
+                ArrayList<Range> ranges1 = new ArrayList<>();
+                ArrayList<Range> ranges2 = new ArrayList<>();
+                OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(rg.nextBoolean(), true);
+                OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(rg.nextBoolean(), true);
+                Match match;
+                while ((match = port1.take()) != null)
+                    ranges1.add(match.getRange());
+                while ((match = port2.take()) != null)
+                    ranges2.add(match.getRange());
+
+                plusMustBeFound = false;
+                OUTER:
+                for (Range range1: ranges1)
+                    for (Range range2: ranges2)
+                        if (!((range1.getLower() >= range2.getLower())
+                                || checkFullIntersection(range1, range2) || ((maxOverlap != -1)
+                                && (getIntersectionLength(range1, range2) > maxOverlap)))) {
+                            plusMustBeFound = true;
+                            break OUTER;
+                        }
+            }
+
+            PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(plusPenaltyThreshold, 0,
+                    0, errorScorePenalty, true, maxOverlap), pattern1, pattern2);
+
+            assertEquals(plusMustBeFound, plusPattern.match(targetQ).getBestMatch(true) != null);
+            assertEquals(plusMustBeFound, plusPattern.match(targetQ).getMatches(rg.nextBoolean(),
+                    true).take() != null);
         }
     }
 
@@ -346,5 +342,22 @@ public class PlusPatternTest {
         assertEquals(5, match.getMatchedGroupEdge("C", false).getPosition());
         assertEquals(5, match.getMatchedGroupEdge("D", true).getPosition());
         assertEquals(8, match.getMatchedGroupEdge("D", false).getPosition());
+    }
+
+    @Test
+    public void specialCaseTest1() throws Exception {
+        PatternAligner patternAligner = getTestPatternAligner(-100, 2, 0,
+                -1);
+        NSequenceWithQuality target = new NSequenceWithQuality("TAATCATCCATTAGACATTTTTTTA");
+        FuzzyMatchPattern andOperand1 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("A"));
+        FuzzyMatchPattern andOperand2 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("G"));
+        AndPattern andPattern = new AndPattern(patternAligner, andOperand1, andOperand2);
+        FuzzyMatchPattern plusOperand1 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("ATTA"));
+        FuzzyMatchPattern plusOperand2 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("GACA"));
+        FuzzyMatchPattern plusOperand4 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("T"));
+        PlusPattern plusPattern = new PlusPattern(patternAligner, plusOperand1, plusOperand2, andPattern, plusOperand4);
+        MatchingResult matchingResult = plusPattern.match(target);
+        assertEquals(7253, countMatches(matchingResult,true));
+        assertNotNull(matchingResult.getBestMatch(false));
     }
 }

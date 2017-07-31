@@ -224,57 +224,53 @@ public class AndPatternTest {
             assertTrue(pattern2.match(targetQ).getBestMatch(rg.nextBoolean()) != null);
             assertTrue(pattern2.match(targetQ).getMatches(rg.nextBoolean(), rg.nextBoolean()).take() != null);
 
-            for (Boolean fairSorting: new Boolean[] {false, true}) {
-                long errorScorePenalty = -rg.nextInt(50) - 1;
-                int maxOverlap = rg.nextInt(5) - 1;
-                long andPenaltyThreshold;
-                boolean tooBigOverlap = false;
-                if (isMatchingPattern1) {
-                    Match match1 = pattern1.match(targetQ).getBestMatch(fairSorting);
-                    Match match2 = pattern2.match(targetQ).getBestMatch(fairSorting);
-                    andPenaltyThreshold = match1.getScore() + match2.getScore()
-                            + errorScorePenalty * getIntersectionLength(match1.getRange(), match2.getRange());
-                    tooBigOverlap = checkFullIntersection(match1.getRange(), match2.getRange()) || ((maxOverlap != -1)
-                            && (getIntersectionLength(match1.getRange(), match2.getRange()) > maxOverlap));
-                } else {
-                    andPenaltyThreshold = pattern2.match(targetQ).getBestMatch(fairSorting).getScore();
-                    if ((targetLength <= maxErrors) || (motif1WithErrors.size() <= maxErrors))
-                        andPenaltyThreshold = 0;
-                }
-
-                boolean andMustBeFound = isMatchingPattern1;
-                if (tooBigOverlap) {
-                    andPenaltyThreshold = Long.MIN_VALUE;
-                    ArrayList<Range> ranges1 = new ArrayList<>();
-                    ArrayList<Range> ranges2 = new ArrayList<>();
-                    OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(rg.nextBoolean(), fairSorting);
-                    OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(rg.nextBoolean(), fairSorting);
-                    Match match;
-                    while ((match = port1.take()) != null)
-                        ranges1.add(match.getRange());
-                    while ((match = port2.take()) != null)
-                        ranges2.add(match.getRange());
-
-                    andMustBeFound = false;
-                    OUTER:
-                    for (Range range1: ranges1)
-                        for (Range range2: ranges2)
-                            if (!(checkFullIntersection(range1, range2) || ((maxOverlap != -1)
-                                    && (getIntersectionLength(range1, range2) > maxOverlap)))) {
-                                andMustBeFound = true;
-                                break OUTER;
-                            }
-                }
-
-                AndPattern andPattern = new AndPattern(getTestPatternAligner(andPenaltyThreshold, 0,
-                        0, errorScorePenalty, true, maxOverlap), pattern1, pattern2);
-
-                if (!fairSorting)
-                    assertEquals(andMustBeFound, andPattern.match(targetQ).isFound());
-                assertEquals(andMustBeFound, andPattern.match(targetQ).getBestMatch(fairSorting) != null);
-                assertEquals(andMustBeFound, andPattern.match(targetQ).getMatches(rg.nextBoolean(),
-                        fairSorting).take() != null);
+            long errorScorePenalty = -rg.nextInt(50) - 1;
+            int maxOverlap = rg.nextInt(5) - 1;
+            long andPenaltyThreshold;
+            boolean tooBigOverlap = false;
+            if (isMatchingPattern1) {
+                Match match1 = pattern1.match(targetQ).getBestMatch(true);
+                Match match2 = pattern2.match(targetQ).getBestMatch(true);
+                andPenaltyThreshold = match1.getScore() + match2.getScore()
+                        + errorScorePenalty * getIntersectionLength(match1.getRange(), match2.getRange());
+                tooBigOverlap = checkFullIntersection(match1.getRange(), match2.getRange()) || ((maxOverlap != -1)
+                        && (getIntersectionLength(match1.getRange(), match2.getRange()) > maxOverlap));
+            } else {
+                andPenaltyThreshold = pattern2.match(targetQ).getBestMatch(true).getScore();
+                if ((targetLength <= maxErrors) || (motif1WithErrors.size() <= maxErrors))
+                    andPenaltyThreshold = 0;
             }
+
+            boolean andMustBeFound = isMatchingPattern1;
+            if (tooBigOverlap) {
+                andPenaltyThreshold = Long.MIN_VALUE;
+                ArrayList<Range> ranges1 = new ArrayList<>();
+                ArrayList<Range> ranges2 = new ArrayList<>();
+                OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(rg.nextBoolean(), true);
+                OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(rg.nextBoolean(), true);
+                Match match;
+                while ((match = port1.take()) != null)
+                    ranges1.add(match.getRange());
+                while ((match = port2.take()) != null)
+                    ranges2.add(match.getRange());
+
+                andMustBeFound = false;
+                OUTER:
+                for (Range range1: ranges1)
+                    for (Range range2: ranges2)
+                        if (!(checkFullIntersection(range1, range2) || ((maxOverlap != -1)
+                                && (getIntersectionLength(range1, range2) > maxOverlap)))) {
+                            andMustBeFound = true;
+                            break OUTER;
+                        }
+            }
+
+            AndPattern andPattern = new AndPattern(getTestPatternAligner(andPenaltyThreshold, 0,
+                    0, errorScorePenalty, true, maxOverlap), pattern1, pattern2);
+
+            assertEquals(andMustBeFound, andPattern.match(targetQ).getBestMatch(true) != null);
+            assertEquals(andMustBeFound, andPattern.match(targetQ).getMatches(rg.nextBoolean(),
+                    true).take() != null);
         }
     }
 

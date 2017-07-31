@@ -116,8 +116,9 @@ public class BorderFilterTest {
                         isMatching = true;
                 }
 
-            assertEquals(isMatching, filterPattern.match(targetQ).isFound());
-            assertTrue(countMatches(pattern.match(targetQ)) >= countMatches(filterPattern.match(targetQ)));
+            assertEquals(isMatching, filterPattern.match(targetQ).getBestMatch(true) != null);
+            assertTrue(countMatches(pattern.match(targetQ), true)
+                    >= countMatches(filterPattern.match(targetQ), true));
             Match currentMatch;
             for (OutputPort<Match> filteredPort = filterPattern.match(targetQ).getMatches(
                     rg.nextBoolean(), rg.nextBoolean()); (currentMatch = filteredPort.take()) != null;)

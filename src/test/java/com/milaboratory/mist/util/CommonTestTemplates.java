@@ -9,6 +9,7 @@ import com.milaboratory.mist.pattern.*;
 import com.milaboratory.test.TestUtil;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
@@ -154,55 +155,78 @@ class CommonTestTemplates {
         TestMatchesOutputPort testPortMulti4 = new TestMatchesOutputPort(testMatchMulti4, testMatchMulti5, testMatchMulti4);
         TestMatchesOutputPort testPortEmpty = new TestMatchesOutputPort();
 
-        assertEquals(1, countPortValues(sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }})));
-        assertEquals(1, countPortValues(sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }})));
-        assertEquals(0, countPortValues(sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); add(testPortSingle3.getCopy()); }})));
-        assertEquals(3, countPortValues(sorterSingle2.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }})));
-        assertEquals(0, countPortValues(sorterSingle3.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }})));
-        assertEquals(1, countPortValues(sorterSingle3.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-            add(testPortSingle2.getCopy()); add(testPortSingle1.getCopy()); }})));
-        assertEquals(1, countPortValues(sorterSingle6.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-            add(testPortSingle2.getCopy()); add(testPortSingle1.getCopy()); }})));
-        assertEquals(1, countPortValues(sorterSingle4.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortSingle4.getCopy()); add(testPortSingle1.getCopy()); }})));
-        assertEquals(1, countPortValues(sorterSingle5.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortSingle4.getCopy()); add(testPortSingle4.getCopy()); }})));
-        assertEquals(3, countPortValues(sorterSingle5.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortSingle1.getCopy()); add(testPortEmpty); add(testPortSingle4.getCopy()); }})));
-        assertEquals(3, countPortValues(sorterMulti1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }})));
-        assertEquals(3, countPortValues(sorterMulti1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }})));
-        assertEquals(3, countPortValues(sorterMulti2.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }})));
-        assertEquals(0, countPortValues(sorterMulti3.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }})));
-        assertEquals(3, countPortValues(sorterMulti3.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortMulti1.getCopy()); add(testPortMulti2.getCopy()); }})));
-        assertEquals(9, countPortValues(sorterMulti3.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortMulti1.getCopy()); add(testPortMulti2.getCopy()); add(testPortMulti3.getCopy()); }})));
-        assertEquals(3, countPortValues(sorterMulti3.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortMulti4.getCopy()); }})));
+        assertEquals(1, countPortValues(sorterSingle1.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }}))));
+        assertEquals(1, countPortValues(sorterSingle1.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }}))));
+        assertEquals(0, countPortValues(sorterSingle1.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); add(testPortSingle3.getCopy()); }}))));
+        assertEquals(3, countPortValues(sorterSingle2.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }}))));
+        assertEquals(0, countPortValues(sorterSingle3.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }}))));
+        assertEquals(1, countPortValues(sorterSingle3.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle2.getCopy()); add(testPortSingle1.getCopy()); }}))));
+        assertEquals(1, countPortValues(sorterSingle6.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle2.getCopy()); add(testPortSingle1.getCopy()); }}))));
+        assertEquals(1, countPortValues(sorterSingle4.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle4.getCopy()); add(testPortSingle1.getCopy()); }}))));
+        assertEquals(1, countPortValues(sorterSingle5.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle4.getCopy()); add(testPortSingle4.getCopy()); }}))));
+        assertEquals(3, countPortValues(sorterSingle5.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle1.getCopy()); add(testPortEmpty); add(testPortSingle4.getCopy()); }}))));
+        assertEquals(3, countPortValues(sorterMulti1.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }}))));
+        assertEquals(3, countPortValues(sorterMulti1.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }}))));
+        assertEquals(3, countPortValues(sorterMulti2.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }}))));
+        assertEquals(0, countPortValues(sorterMulti3.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }}))));
+        assertEquals(3, countPortValues(sorterMulti3.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortMulti1.getCopy()); add(testPortMulti2.getCopy()); }}))));
+        assertEquals(9, countPortValues(sorterMulti3.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortMulti1.getCopy()); add(testPortMulti2.getCopy()); add(testPortMulti3.getCopy()); }}))));
+        assertEquals(3, countPortValues(sorterMulti3.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortMulti4.getCopy()); }}))));
 
         if (sortByScore) {
-            assertEquals(-9, sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                    add(testPortSingle1.getCopy()); add(testPortSingle4.getCopy()); }}).take().getScore());
+            assertEquals(-9, sorterSingle1.getOutputPort(addInfiniteLimits(
+                    new ArrayList<OutputPort<Match>>() {{
+                        add(testPortSingle1.getCopy()); add(testPortSingle4.getCopy()); }})).take().getScore());
             if (fairSorting) {
-                assertEquals(-12, sorterMulti1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                    add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }}).take().getScore());
-                assertEquals(-9, sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                    add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }}).take().getScore());
-                assertEquals(-4, sorterSingle2.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                    add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }}).take().getScore());
+                assertEquals(-12, sorterMulti1.getOutputPort(addInfiniteLimits(
+                        new ArrayList<OutputPort<Match>>() {{
+                            add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }}))
+                        .take().getScore());
+                assertEquals(-9, sorterSingle1.getOutputPort(addInfiniteLimits(
+                        new ArrayList<OutputPort<Match>>() {{
+                            add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }})).take().getScore());
+                assertEquals(-4, sorterSingle2.getOutputPort(addInfiniteLimits(
+                        new ArrayList<OutputPort<Match>>() {{
+                            add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }})).take().getScore());
             }
 
-            OutputPort<Match> testPort1 = sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                    add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }});
+            OutputPort<Match> testPort1 = sorterSingle1.getOutputPort(addInfiniteLimits(
+                    new ArrayList<OutputPort<Match>>() {{
+                        add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }}));
             assertNotNull(testPort1.take());
             /* with fair sorting there must be combinations match1+match2, match2+match1, match2+match1;
              with penalty for 2 intersections */
@@ -213,20 +237,25 @@ class CommonTestTemplates {
                     assertNotNull(testPort1.take());
             assertNull(testPort1.take());
         } else {
-            assertEquals(new Range(1, 9), sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                        add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }}).take().getRange());
-            assertEquals(new Range(0, 8), sorterMulti1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                        add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }})
-                        .take().getMatchedRange(1).getRange());
+            assertEquals(new Range(1, 9), sorterSingle1.getOutputPort(addInfiniteLimits(
+                    new ArrayList<OutputPort<Match>>() {{
+                        add(testPortSingle1.getCopy()); add(testPortSingle2.getCopy()); }})).take().getRange());
+            assertEquals(new Range(0, 8), sorterMulti1.getOutputPort(addInfiniteLimits(
+                    new ArrayList<OutputPort<Match>>() {{
+                        add(testPortMulti1.getCopy()); add(testPortEmpty); add(testPortMulti2.getCopy()); }}))
+                    .take().getMatchedRange(1).getRange());
             if (fairSorting) {
-                assertEquals(new Range(0, 9), sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                    add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }}).take().getRange());
-                assertEquals(new Range(0, 9), sorterSingle3.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                    add(testPortSingle3.getCopy()); add(testPortSingle1.getCopy()); }}).take().getRange());
+                assertEquals(new Range(0, 9), sorterSingle1.getOutputPort(addInfiniteLimits(
+                        new ArrayList<OutputPort<Match>>() {{
+                            add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }})).take().getRange());
+                assertEquals(new Range(0, 9), sorterSingle3.getOutputPort(addInfiniteLimits(
+                        new ArrayList<OutputPort<Match>>() {{
+                            add(testPortSingle3.getCopy()); add(testPortSingle1.getCopy()); }})).take().getRange());
             }
 
-            OutputPort<Match> testPort1 = sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                    add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }});
+            OutputPort<Match> testPort1 = sorterSingle1.getOutputPort(addInfiniteLimits(
+                    new ArrayList<OutputPort<Match>>() {{
+                        add(testPortSingle1.getCopy()); add(testPortSingle3.getCopy()); }}));
             if (fairSorting) {
                 // match1+match2, match2+match1, match2+match1, match1+match4
                 for (int i = 0; i < 3; i++)
@@ -238,14 +267,11 @@ class CommonTestTemplates {
             assertNull(testPort1.take());
         }
 
-        OutputPort<Match> testPort2 = sorterSingle1.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPortSingle3.getCopy()); add(testPortSingle3.getCopy()); }});
-        System.out.println();
-        for (int i = 0; i < 4; i++) {
-            Match currentMatch = testPort2.take();
-            System.out.println(currentMatch.getScore() + ", " + currentMatch.getRange());
-        }
-        System.out.println();
+        OutputPort<Match> testPort2 = sorterSingle1.getOutputPort(addInfiniteLimits(
+                new ArrayList<OutputPort<Match>>() {{
+                    add(testPortSingle3.getCopy()); add(testPortSingle3.getCopy()); }}));
+        for (int i = 0; i < 4; i++)
+            testPort2.take();
         assertNull(testPort2.take());
     }
 
@@ -277,12 +303,9 @@ class CommonTestTemplates {
             TestMatchesOutputPort testPort = new TestMatchesOutputPort(matches);
             int expectedMatchesNum = numberOfMatches * (numberOfMatches - 1);
 
-            if (expectedMatchesNum != countPortValues(sorter.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                    add(testPort.getCopy()); add(testPort.getCopy()); }}))) {
-                System.out.println(numberOfMatches);
-            }
-            assertEquals(expectedMatchesNum, countPortValues(sorter.getOutputPort(new ArrayList<OutputPort<Match>>() {{
-                add(testPort.getCopy()); add(testPort.getCopy()); }})));
+            assertEquals(expectedMatchesNum, countPortValues(sorter.getOutputPort(addInfiniteLimits(
+                    new ArrayList<OutputPort<Match>>() {{
+                        add(testPort.getCopy()); add(testPort.getCopy()); }}))));
         }
     }
 
@@ -315,11 +338,15 @@ class CommonTestTemplates {
 
             FuzzyMatchPattern pattern = new FuzzyMatchPattern(patternAligner, fragment);
 
-            OutputPort<Match> testPort = sorter.getOutputPort(new ArrayList<OutputPort<Match>>() {{
+            OutputPort<Match> testPort = sorter.getOutputPort(addInfiniteLimits(new ArrayList<OutputPort<Match>>() {{
                 add(pattern.match(finalTarget).getMatches()); add(pattern.match(finalTarget).getMatches());
-                add(pattern.match(finalTarget).getMatches()); add(pattern.match(finalTarget).getMatches()); }});
+                add(pattern.match(finalTarget).getMatches()); add(pattern.match(finalTarget).getMatches()); }}));
 
             assertEquals(expectedMatchesNum, countPortValues(testPort));
         }
+    }
+
+    static List<ApproximateSorterOperandPort> addInfiniteLimits(ArrayList<OutputPort<Match>> ports) {
+        return ports.stream().map(p -> new ApproximateSorterOperandPort(p, Integer.MAX_VALUE)).collect(Collectors.toList());
     }
 }

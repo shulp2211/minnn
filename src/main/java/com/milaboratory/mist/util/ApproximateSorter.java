@@ -45,10 +45,10 @@ public abstract class ApproximateSorter {
     /**
      * Get output port for sorted combined matches.
      *
-     * @param inputPorts ports for input matches; we assume that they are already sorted, maybe approximately
+     * @param inputPorts operand ports, with limits for unfair sorter
      * @return output port
      */
-    public abstract OutputPort<Match> getOutputPort(ArrayList<OutputPort<Match>> inputPorts);
+    public abstract OutputPort<Match> getOutputPort(List<ApproximateSorterOperandPort> inputPorts);
 
     /**
      * Get combined match from a group of input matches. It uses multipleReads flag to determine how to combine matches
@@ -175,7 +175,8 @@ public abstract class ApproximateSorter {
      *                       it used as argument for combineMatches
      * @return array for fair sorting
      */
-    protected Match[] fillArrayForFairSorting(ArrayList<OutputPort<Match>> inputPorts, int numberOfPorts, boolean sortingByScore) {
+    protected Match[] fillArrayForFairSorting(List<ApproximateSorterOperandPort> inputPorts, int numberOfPorts,
+                                              boolean sortingByScore) {
         ArrayList<ArrayList<Match>> allMatches = new ArrayList<>();
         ArrayList<Match> allMatchesFiltered = new ArrayList<>();
         TableOfIterations tableOfIterations = new TableOfIterations(numberOfPorts);
@@ -186,7 +187,7 @@ public abstract class ApproximateSorter {
         for (int i = 0; i < numberOfPorts; i++) {
             allMatches.add(new ArrayList<>());
             do {
-                currentMatch = inputPorts.get(i).take();
+                currentMatch = inputPorts.get(i).outputPort.take();
                 if ((currentMatch != null) || (areNullMatchesAllowed() && (allMatches.get(i).size() == 0)))
                     allMatches.get(i).add(currentMatch);
             } while (currentMatch != null);

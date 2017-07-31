@@ -4,14 +4,13 @@ import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.mist.util.ApproximateSorter;
-import com.milaboratory.mist.util.SorterByCoordinate;
-import com.milaboratory.mist.util.SorterByScore;
+import com.milaboratory.mist.util.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.LOGICAL_AND;
+import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
 
 public final class MultiPattern extends MultipleReadsOperator {
     public MultiPattern(PatternAligner patternAligner, SinglePattern... singlePatterns) {
@@ -56,13 +55,14 @@ public final class MultiPattern extends MultipleReadsOperator {
 
         @Override
         public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
-            ArrayList<OutputPort<Match>> operandPorts = new ArrayList<>();
+            ArrayList<ApproximateSorterOperandPort> operandPorts = new ArrayList<>();
             NSequenceWithQuality currentTarget;
             Range currentRange;
             byte currentTargetId;
             ApproximateSorter sorter;
 
             for (int patternIndex = 0; patternIndex < singlePatterns.length; patternIndex++) {
+                SinglePattern currentPattern = singlePatterns[patternIndex];
                 if (reverseComplements[patternIndex]) {
                     currentTarget = target.get(patternIndex).getReverseComplement();
                     currentRange = ranges[patternIndex].inverse();
@@ -72,8 +72,9 @@ public final class MultiPattern extends MultipleReadsOperator {
                     currentRange = ranges[patternIndex];
                     currentTargetId = (byte) (patternIndex + 1);
                 }
-                operandPorts.add(singlePatterns[patternIndex].match(currentTarget, currentRange, currentTargetId)
-                        .getMatches(byScore, fairSorting));
+                operandPorts.add(new ApproximateSorterOperandPort(currentPattern.match(currentTarget, currentRange,
+                        currentTargetId).getMatches(byScore, fairSorting),
+                        unfairSorterPortLimits.get(currentPattern.getClass())));
             }
 
             if (byScore)

@@ -143,8 +143,7 @@ public class MultiPatternTest {
 
     @Test
     public void randomTest() throws Exception {
-        int its = TestUtil.its(500, 1000);
-        for (int i = 0; i < its; ++i) {
+        for (int i = 0; i < 1000; i++) {
             int sequencesNum = rg.nextInt(9) + 1;
             NSequenceWithQuality[] sequences = new NSequenceWithQuality[sequencesNum];
             FuzzyMatchPattern[] patterns = new FuzzyMatchPattern[sequencesNum];
@@ -174,14 +173,6 @@ public class MultiPatternTest {
             assertEquals(isMatching, multiPattern.match(mseq).getBestMatch() != null);
             assertEquals(isMatching, multiPattern.match(mseq).getMatches(true, false).take() != null);
             assertEquals(isMatching, multiPattern.match(mseq).getMatches(false, false).take() != null);
-
-            /* do fair test sorting only for variants with no more than 10000 combinations
-               (because big arrays sorting is too slow) */
-            long totalNumberOfCombinations = 1;
-            for (int s = 0; s < sequencesNum; s++)
-                totalNumberOfCombinations *= countMatches(patterns[s].match(sequences[s]));
-            if (totalNumberOfCombinations <= 10000)
-                assertEquals(isMatching, multiPattern.match(mseq).getBestMatch(true) != null);
         }
     }
 

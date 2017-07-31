@@ -3,14 +3,13 @@ package com.milaboratory.mist.pattern;
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
-import com.milaboratory.mist.util.ApproximateSorter;
-import com.milaboratory.mist.util.SorterByCoordinate;
-import com.milaboratory.mist.util.SorterByScore;
+import com.milaboratory.mist.util.*;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.LOGICAL_OR;
+import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
 
 public final class OrOperator extends MultipleReadsOperator {
     public OrOperator(PatternAligner patternAligner, MultipleReadsOperator... operandPatterns) {
@@ -45,11 +44,7 @@ public final class OrOperator extends MultipleReadsOperator {
 
         @Override
         public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
-            ArrayList<OutputPort<Match>> operandPorts = new ArrayList<>();
             ApproximateSorter sorter;
-
-            for (MultipleReadsOperator operandPattern : operandPatterns)
-                operandPorts.add(operandPattern.match(target, ranges, reverseComplements).getMatches(byScore, fairSorting));
 
             if (byScore)
                 sorter = new SorterByScore(patternAligner, true, false, fairSorting,
@@ -58,7 +53,9 @@ public final class OrOperator extends MultipleReadsOperator {
                 sorter = new SorterByCoordinate(patternAligner, true, false, fairSorting,
                         LOGICAL_OR);
 
-            return sorter.getOutputPort(operandPorts);
+            return sorter.getOutputPort(Arrays.stream(operandPatterns).map(pattern -> new ApproximateSorterOperandPort(
+                    pattern.match(target, ranges, reverseComplements).getMatches(byScore, fairSorting),
+                    unfairSorterPortLimits.get(pattern.getClass()))).collect(Collectors.toList()));
         }
     }
 }

@@ -3,9 +3,7 @@ package com.milaboratory.mist.util;
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.mist.pattern.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
 
@@ -27,7 +25,7 @@ public final class SorterByCoordinate extends ApproximateSorter {
     }
 
     @Override
-    public OutputPort<Match> getOutputPort(ArrayList<OutputPort<Match>> inputPorts) {
+    public OutputPort<Match> getOutputPort(List<ApproximateSorterOperandPort> inputPorts) {
         int numberOfPorts = inputPorts.size();
         if (numberOfPorts == 0)
             throw new IllegalArgumentException("List of input ports is empty!");
@@ -36,7 +34,7 @@ public final class SorterByCoordinate extends ApproximateSorter {
 
     private class MatchesOutputPort implements OutputPort<Match> {
         private final ArrayList<ArrayList<Match>> takenMatches;
-        private final ArrayList<OutputPort<Match>> inputPorts;
+        private final List<ApproximateSorterOperandPort> inputPorts;
         private final int numberOfPorts;
         private final int[] currentIndexes;
         private final Match[] currentMatches;
@@ -49,7 +47,7 @@ public final class SorterByCoordinate extends ApproximateSorter {
         private int nextFairSortedMatch = 0;
         private boolean sortingPerformed = false;
 
-        MatchesOutputPort(ArrayList<OutputPort<Match>> inputPorts, int numberOfPorts) {
+        MatchesOutputPort(List<ApproximateSorterOperandPort> inputPorts, int numberOfPorts) {
             this.takenMatches = new ArrayList<>();
             for (int i = 0; i < numberOfPorts; i++)
                 this.takenMatches.add(new ArrayList<>());
@@ -78,7 +76,7 @@ public final class SorterByCoordinate extends ApproximateSorter {
                 for (int i = 0; i < numberOfPorts; i++) {
                     // if we didn't take the needed match before, take it now
                     if (currentIndexes[i] == takenMatches.get(i).size()) {
-                        Match takenMatch = inputPorts.get(i).take();
+                        Match takenMatch = inputPorts.get(i).outputPort.take();
                         if (takenMatch == null)
                             if (takenMatches.get(i).size() == 0) {
                                 if (areNullMatchesAllowed()) {
@@ -94,8 +92,11 @@ public final class SorterByCoordinate extends ApproximateSorter {
                                 currentIndexes[i]--;
                                 calculateNextIndexes();
                                 continue GET_NEXT_COMBINATION;
-                        } else
+                        } else {
                             takenMatches.get(i).add(takenMatch);
+                            if (takenMatches.get(i).size() == inputPorts.get(i).unfairSorterPortLimit)
+                                tableOfIterations.setPortEndReached(i, inputPorts.get(i).unfairSorterPortLimit);
+                        }
                     }
                     currentMatches[i] = takenMatches.get(i).get(currentIndexes[i]);
                 }

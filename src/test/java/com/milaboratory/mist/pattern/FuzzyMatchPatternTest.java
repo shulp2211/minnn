@@ -87,7 +87,7 @@ public class FuzzyMatchPatternTest {
         NSequenceWithQuality target1 = new NSequenceWithQuality("TTT");
         MatchingResult result1 = pattern1.match(target1);
         assertTrue(result1.isFound());
-        assertEquals(1, countMatches(result1));
+        assertEquals(1, countMatches(result1, false));
     }
 
     @Test
