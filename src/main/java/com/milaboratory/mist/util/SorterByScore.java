@@ -62,13 +62,15 @@ public final class SorterByScore extends ApproximateSorter {
                 }
 
                 for (int i = 0; i < numberOfPorts; i++) {
+                    ArrayList<Match> currentPortMatches = takenMatches.get(i);
+                    ApproximateSorterOperandPort currentPort = inputPorts.get(i);
                     // if we didn't take the needed match before, take it now
-                    if (currentIndexes[i] == takenMatches.get(i).size()) {
-                        Match takenMatch = inputPorts.get(i).outputPort.take();
+                    if (currentIndexes[i] == currentPortMatches.size()) {
+                        Match takenMatch = currentPort.outputPort.take();
                         if (takenMatch == null)
-                            if (takenMatches.get(i).size() == 0) {
+                            if (currentPortMatches.size() == 0) {
                                 if (areNullMatchesAllowed()) {
-                                    takenMatches.get(i).add(null);
+                                    currentPortMatches.add(null);
                                     tableOfIterations.setPortEndReached(i, 1);
                                     currentIndexes[i] = 0;
                                 } else {
@@ -82,12 +84,12 @@ public final class SorterByScore extends ApproximateSorter {
                                 calculateNextIndexes();
                                 continue GET_NEXT_COMBINATION;
                         } else {
-                            takenMatches.get(i).add(takenMatch);
-                            if (takenMatches.get(i).size() == inputPorts.get(i).unfairSorterPortLimit)
-                                tableOfIterations.setPortEndReached(i, inputPorts.get(i).unfairSorterPortLimit);
+                            currentPortMatches.add(takenMatch);
+                            if (currentPortMatches.size() == currentPort.unfairSorterPortLimit)
+                                tableOfIterations.setPortEndReached(i, currentPort.unfairSorterPortLimit);
                         }
                     }
-                    currentMatches[i] = takenMatches.get(i).get(currentIndexes[i]);
+                    currentMatches[i] = currentPortMatches.get(currentIndexes[i]);
                 }
 
                 IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, currentIndexes);
@@ -161,11 +163,12 @@ public final class SorterByScore extends ApproximateSorter {
                     int bestDeltaPort = 0;
                     long bestDelta = Long.MIN_VALUE;
                     for (int i = 0; i < numberOfPorts; i++) {
+                        ArrayList<Match> currentPortMatches = takenMatches.get(i);
                         if (tableOfIterations.isPortEndReached(i)) continue;
                         int match1Number = (currentIndexes[i] == 0) ? 0 : currentIndexes[i] - 1;
                         int match2Number = (currentIndexes[i] == 0) ? 1 : currentIndexes[i];
-                        Match match1 = takenMatches.get(i).get(match1Number);
-                        Match match2 = takenMatches.get(i).get(match2Number);
+                        Match match1 = currentPortMatches.get(match1Number);
+                        Match match2 = currentPortMatches.get(match2Number);
                         long currentDelta = match2.getScore() - match1.getScore();
                         if (currentDelta > bestDelta) {
                             bestDelta = currentDelta;

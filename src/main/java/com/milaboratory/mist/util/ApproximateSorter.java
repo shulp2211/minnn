@@ -6,6 +6,7 @@ import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.mist.pattern.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
 import static com.milaboratory.mist.util.RangeTools.*;
@@ -408,13 +409,17 @@ public abstract class ApproximateSorter {
         }
 
         boolean isCombinationReturned(int... indexes) {
-            if (indexes.length != numberOfPorts)
-                throw new IllegalArgumentException("Number of indexes: " + indexes.length + ", number of ports: "
-                    + numberOfPorts + "; they should be equal!");
-            ArrayList<Integer> indexesCombination = new ArrayList<>();
+            ArrayList<Integer> indexesList = new ArrayList<>();
             for (int i : indexes)
-                indexesCombination.add(i);
-            return returnedCombinations.contains(indexesCombination);
+                indexesList.add(i);
+            return isCombinationReturned(indexesList);
+        }
+
+        boolean isCombinationReturned(ArrayList<Integer> indexes) {
+            if (indexes.size() != numberOfPorts)
+                throw new IllegalArgumentException("Number of indexes: " + indexes.size() + ", number of ports: "
+                        + numberOfPorts + "; they should be equal!");
+            return returnedCombinations.contains(indexes);
         }
 
         /**
@@ -423,12 +428,12 @@ public abstract class ApproximateSorter {
          * @param indexes indexes of matches to register as returned
          */
         void addReturnedCombination(int... indexes) {
-            if (isCombinationReturned(indexes))
-                throw new IllegalStateException("Trying to add already returned combination!");
-            ArrayList<Integer> indexesCombination = new ArrayList<>();
+            ArrayList<Integer> indexesList = new ArrayList<>();
             for (int i : indexes)
-                indexesCombination.add(i);
-            returnedCombinations.add(indexesCombination);
+                indexesList.add(i);
+            if (isCombinationReturned(indexesList))
+                throw new IllegalStateException("Trying to add already returned combination!");
+            returnedCombinations.add(indexesList);
         }
 
         /**

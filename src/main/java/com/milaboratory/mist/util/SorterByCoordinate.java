@@ -74,13 +74,15 @@ public final class SorterByCoordinate extends ApproximateSorter {
                 }
 
                 for (int i = 0; i < numberOfPorts; i++) {
+                    ArrayList<Match> currentPortMatches = takenMatches.get(i);
+                    ApproximateSorterOperandPort currentPort = inputPorts.get(i);
                     // if we didn't take the needed match before, take it now
-                    if (currentIndexes[i] == takenMatches.get(i).size()) {
-                        Match takenMatch = inputPorts.get(i).outputPort.take();
+                    if (currentIndexes[i] == currentPortMatches.size()) {
+                        Match takenMatch = currentPort.outputPort.take();
                         if (takenMatch == null)
-                            if (takenMatches.get(i).size() == 0) {
+                            if (currentPortMatches.size() == 0) {
                                 if (areNullMatchesAllowed()) {
-                                    takenMatches.get(i).add(null);
+                                    currentPortMatches.add(null);
                                     tableOfIterations.setPortEndReached(i, 1);
                                     currentIndexes[i] = 0;
                                 } else {
@@ -93,12 +95,12 @@ public final class SorterByCoordinate extends ApproximateSorter {
                                 calculateNextIndexes();
                                 continue GET_NEXT_COMBINATION;
                         } else {
-                            takenMatches.get(i).add(takenMatch);
-                            if (takenMatches.get(i).size() == inputPorts.get(i).unfairSorterPortLimit)
-                                tableOfIterations.setPortEndReached(i, inputPorts.get(i).unfairSorterPortLimit);
+                            currentPortMatches.add(takenMatch);
+                            if (currentPortMatches.size() == currentPort.unfairSorterPortLimit)
+                                tableOfIterations.setPortEndReached(i, currentPort.unfairSorterPortLimit);
                         }
                     }
-                    currentMatches[i] = takenMatches.get(i).get(currentIndexes[i]);
+                    currentMatches[i] = currentPortMatches.get(currentIndexes[i]);
                 }
 
                 IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, currentIndexes);
