@@ -23,7 +23,7 @@ public final class SorterByScore extends ApproximateSorter {
         private final ArrayList<ArrayList<Match>> takenMatches;
         private final List<ApproximateSorterOperandPort> inputPorts;
         private final int numberOfPorts;
-        private final int[] currentIndexes;
+        private ArrayList<Integer> currentIndexes;
         private final Match[] currentMatches;
         private final TableOfIterations tableOfIterations;
         private boolean alwaysReturnNull = false;
@@ -41,7 +41,7 @@ public final class SorterByScore extends ApproximateSorter {
                 this.takenMatches.add(new ArrayList<>());
             this.inputPorts = inputPorts;
             this.numberOfPorts = numberOfPorts;
-            this.currentIndexes = new int[numberOfPorts];
+            this.currentIndexes = new ArrayList<>(Collections.nCopies(numberOfPorts, 0));
             this.currentMatches = new Match[numberOfPorts];
             this.tableOfIterations = new TableOfIterations(numberOfPorts);
         }
@@ -65,31 +65,33 @@ public final class SorterByScore extends ApproximateSorter {
                     ArrayList<Match> currentPortMatches = takenMatches.get(i);
                     ApproximateSorterOperandPort currentPort = inputPorts.get(i);
                     // if we didn't take the needed match before, take it now
-                    if (currentIndexes[i] == currentPortMatches.size()) {
+                    if (currentIndexes.get(i) == currentPortMatches.size()) {
                         Match takenMatch = currentPort.outputPort.take();
-                        if (takenMatch == null)
+                        if (takenMatch == null) {
                             if (currentPortMatches.size() == 0) {
                                 if (areNullMatchesAllowed()) {
                                     currentPortMatches.add(null);
                                     tableOfIterations.setPortEndReached(i, 1);
-                                    currentIndexes[i] = 0;
+                                    currentIndexes.set(i, 0);
                                 } else {
                                     alwaysReturnNull = true;
                                     return null;
                                 }
                             } else {
-                                tableOfIterations.setPortEndReached(i, currentIndexes[i]);
-                                currentIndexes[i]--;
+                                int currentIndex = currentIndexes.get(i);
+                                tableOfIterations.setPortEndReached(i, currentIndex);
+                                currentIndexes.set(i, currentIndex - 1);
                                 numberOfSkippedIterations++;
                                 calculateNextIndexes();
                                 continue GET_NEXT_COMBINATION;
+                            }
                         } else {
                             currentPortMatches.add(takenMatch);
                             if (currentPortMatches.size() == currentPort.unfairSorterPortLimit)
                                 tableOfIterations.setPortEndReached(i, currentPort.unfairSorterPortLimit);
                         }
                     }
-                    currentMatches[i] = currentPortMatches.get(currentIndexes[i]);
+                    currentMatches[i] = currentPortMatches.get(currentIndexes.get(i));
                 }
 
                 IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, currentIndexes);
@@ -144,11 +146,11 @@ public final class SorterByScore extends ApproximateSorter {
                     if (i == tableOfIterations.getNumberOfReturnedCombinations() + numberOfSkippedIterations - 1)
                         if (areNullMatchesAllowed() && (takenMatches.get(i).get(0) == null)) {
                             numberOfSkippedIterations++;
-                            currentIndexes[i] = 0;
+                            currentIndexes.set(i, 0);
                         } else
-                            currentIndexes[i] = 1;
+                            currentIndexes.set(i, 1);
                     else
-                        currentIndexes[i] = 0;
+                        currentIndexes.set(i, 0);
 
                 // if we found valid combination, return it, otherwise continue search
                 if (tableOfIterations.isCompatible(false, currentIndexes)
@@ -164,9 +166,10 @@ public final class SorterByScore extends ApproximateSorter {
                     long bestDelta = Long.MIN_VALUE;
                     for (int i = 0; i < numberOfPorts; i++) {
                         ArrayList<Match> currentPortMatches = takenMatches.get(i);
+                        int currentIndex = currentIndexes.get(i);
                         if (tableOfIterations.isPortEndReached(i)) continue;
-                        int match1Number = (currentIndexes[i] == 0) ? 0 : currentIndexes[i] - 1;
-                        int match2Number = (currentIndexes[i] == 0) ? 1 : currentIndexes[i];
+                        int match1Number = (currentIndex == 0) ? 0 : currentIndex - 1;
+                        int match2Number = (currentIndex == 0) ? 1 : currentIndex;
                         Match match1 = currentPortMatches.get(match1Number);
                         Match match2 = currentPortMatches.get(match2Number);
                         long currentDelta = match2.getScore() - match1.getScore();
@@ -175,19 +178,19 @@ public final class SorterByScore extends ApproximateSorter {
                             bestDeltaPort = i;
                         }
                     }
-                    currentIndexes[bestDeltaPort] += 1;
+                    currentIndexes.set(bestDeltaPort, currentIndexes.get(bestDeltaPort) + 1);
                 } else {
                     int bestScorePort = 0;
                     long bestScore = Long.MIN_VALUE;
                     for (int i = 0; i < numberOfPorts; i++) {
                         if (tableOfIterations.isPortEndReached(i)) continue;
-                        Match currentMatch = takenMatches.get(i).get(currentIndexes[i]);
+                        Match currentMatch = takenMatches.get(i).get(currentIndexes.get(i));
                         if (currentMatch.getScore() > bestScore) {
                             bestScore = currentMatch.getScore();
                             bestScorePort = i;
                         }
                     }
-                    currentIndexes[bestScorePort] += 1;
+                    currentIndexes.set(bestScorePort, currentIndexes.get(bestScorePort) + 1);
                 }
 
                 // if we found valid combination, return it, otherwise continue search
@@ -197,22 +200,23 @@ public final class SorterByScore extends ApproximateSorter {
             }
 
             /* Stage 3: iterate over all remaining combinations of ports */
-            int[] innerArrayIndexes = new int[numberOfPorts];
+            ArrayList<Integer> innerArrayIndexes = new ArrayList<>(Collections.nCopies(numberOfPorts, 0));
             while (true) {
                 if (!tableOfIterations.isCombinationReturned(innerArrayIndexes)
                         && tableOfIterations.isCompatible(false, innerArrayIndexes)) {
-                    System.arraycopy(innerArrayIndexes, 0, currentIndexes, 0, numberOfPorts);
+                    currentIndexes = innerArrayIndexes;
                     return;
                 }
 
                 // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
                 for (int i = 0; i < numberOfPorts; i++) {
-                    if (innerArrayIndexes[i] + 1 < tableOfIterations.getPortMatchesQuantity(i)) {
-                        innerArrayIndexes[i]++;
+                    int currentIndex = innerArrayIndexes.get(i);
+                    if (currentIndex + 1 < tableOfIterations.getPortMatchesQuantity(i)) {
+                        innerArrayIndexes.set(i, currentIndex + 1);
                         break;
                     }
                     // we need to update next index and reset current index to zero
-                    innerArrayIndexes[i] = 0;
+                    innerArrayIndexes.set(i, 0);
                     // if we looped through all combinations, stop the search
                     if (i == numberOfPorts - 1) {
                         alwaysReturnNull = true;
