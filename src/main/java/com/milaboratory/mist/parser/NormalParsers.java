@@ -94,16 +94,20 @@ final class NormalParsers {
         List<Token> stringTokens = tokenizedString.getTokens(0, tokenizedString.getFullLength()).stream()
                 .filter(Token::isString).collect(Collectors.toList());
         for (Token currentStringToken : stringTokens) {
-            Matcher regexMatcher = Pattern.compile("[a-zA-Z]((\\( *\\w *: *[a-zA-Z ]+ *\\))*[a-zA-Z]+)*")
+            Matcher regexMatcher = Pattern.compile("[a-zA-Z]+((\\( *\\w *: *[a-zA-Z ]+ *\\))*[a-zA-Z]+)*")
                     .matcher(currentStringToken.getString());
             while (regexMatcher.find()) {
                 int start = regexMatcher.start() + currentStringToken.getStartCoordinate();
                 int end = regexMatcher.end() + currentStringToken.getStartCoordinate();
+                String nucleotideString = cutGroupsAndSpaces(start, end);
+                // ignore group names that matched as nucleotide sequences
+                if (nucleotideString.isEmpty())
+                    continue;
                 FoundGroupEdgePositions foundGroupEdgePositions = findGroupEdgePositions(start, end);
                 validateGroupEdgePositions(foundGroupEdgePositions.groupEdgePositions);
                 int fixedLeftBorder = startStick(start) ? 0 : -1;
                 int fixedRightBorder = endStick(end - 1) ? -2 : -1;
-                NucleotideSequence patternSeq = toNSeq(cutGroupsAndSpaces(start, end));
+                NucleotideSequence patternSeq = toNSeq(nucleotideString);
 
                 foundTokens.add(new FoundToken(new FuzzyMatchPattern(getPatternAligner(start, end), patternSeq,
                         fixedLeftBorder, fixedRightBorder, foundGroupEdgePositions.groupEdgePositions),
@@ -656,7 +660,7 @@ final class NormalParsers {
      *
      * @param start FuzzyMatchPattern start, inclusive
      * @param end FuzzyMatchPattern end, exclusive
-     * @return cutted string that contains only nucleotide sequence for FuzzyMatchPattern
+     * @return cut string that contains only nucleotide sequence for FuzzyMatchPattern
      */
     private String cutGroupsAndSpaces(int start, int end) {
         StringBuilder result = new StringBuilder();

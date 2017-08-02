@@ -264,11 +264,14 @@ final class ParserUtils {
      *
      * @param str string containing nucleotide sequence
      * @return NucleotideSequence object
-     * @throws ParserException if NucleotideSequence constructor throws IllegalArgumentException
+     * @throws ParserException if NucleotideSequence constructor throws IllegalArgumentException, or if sequence is empty
      */
     static NucleotideSequence toNSeq(String str) throws ParserException {
         try {
-            return new NucleotideSequence(str);
+            NucleotideSequence seq = new NucleotideSequence(str);
+            if (seq.size() < 1)
+                throw new ParserException("Failed to parse nucleotide sequence from string \"" + str + "\"");
+            return seq;
         } catch (IllegalArgumentException e) {
             throw new ParserException("Failed to parse nucleotide sequence from string \"" + str + "\": "
                     + e.getMessage());
