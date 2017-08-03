@@ -3,6 +3,7 @@ package com.milaboratory.mist.parser;
 import com.milaboratory.mist.pattern.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.parser.BracketsDetector.*;
 import static com.milaboratory.mist.parser.BracketsType.*;
@@ -24,20 +25,18 @@ final class NormalTokenizer extends Tokenizer {
         ArrayList<Integer> startStickMarkers = getTokenPositions(fullString, "^", quotesPairs);
         ArrayList<Integer> endStickMarkers = getTokenPositions(fullString, "$", quotesPairs);
         ArrayList<ScoreThreshold> scoreThresholds = getScoreThresholds(fullString, NORMAL);
-        List<BorderFilterBracesPair> borderFilterBracesPairs = getBorderFilterBraces(fullString,
-                bracesPairs);
+        List<BorderBracesPair> borderBracesPairs = getBorderBraces(fullString, bracesPairs);
+        ArrayList<BorderToken> borderTokens = getBorderTokens(fullString, borderBracesPairs);
         List<NormalSyntaxGroupName> groupNames = getGroupNames(fullString, parenthesesPairs);
         groupNames.sort(Comparator.comparingInt(gn -> gn.start));
 
         NormalParsers normalParsers = new NormalParsers(patternAligner, fullString, squareBracketsPairs,
-                startStickMarkers, endStickMarkers, scoreThresholds, borderFilterBracesPairs, groupNames);
+                startStickMarkers, endStickMarkers, scoreThresholds, borderTokens, groupNames);
 
-        normalParsers.parseRepeatPatterns(getRepeatPatternBraces(bracesPairs, borderFilterBracesPairs))
+        normalParsers.parseRepeatPatterns(getRepeatPatternBraces(bracesPairs, borderBracesPairs))
                 .forEach(tokenizedString::tokenizeSubstring);
         normalParsers.parseFuzzyMatchPatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         normalParsers.parseAnyPatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
-        for (boolean left : new boolean[] {true, false})
-            normalParsers.parseBorderFilters(tokenizedString, left).forEach(tokenizedString::tokenizeSubstring);
         normalParsers.removeSpaceStrings(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         normalParsers.parseSequencePatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
@@ -87,8 +86,8 @@ final class NormalTokenizer extends Tokenizer {
      * @param parenthesesPairs parentheses pairs
      * @return group names
      */
-    private static ArrayList<NormalSyntaxGroupName> getGroupNames(String fullString, List<BracketsPair> parenthesesPairs)
-            throws ParserException {
+    private static ArrayList<NormalSyntaxGroupName> getGroupNames(String fullString,
+            List<BracketsPair> parenthesesPairs) throws ParserException {
         ArrayList<NormalSyntaxGroupName> groupNames = new ArrayList<>();
         for (BracketsPair parenthesesPair : parenthesesPairs) {
             int colonPosition = fullString.indexOf(":", parenthesesPair.start + 1);
@@ -99,5 +98,66 @@ final class NormalTokenizer extends Tokenizer {
                     colonPosition)));
         }
         return groupNames;
+    }
+
+    /**
+     * Get border tokens from border braces pairs and '<<<'/'>>>' syntax constructions.
+     *
+     * @param fullString full query string
+     * @param borderBracesPairs border braces pairs
+     * @return border tokens
+     */
+    private static ArrayList<BorderToken> getBorderTokens(String fullString, List<BorderBracesPair> borderBracesPairs)
+            throws ParserException {
+        ArrayList<BorderToken> borderTokens = borderBracesPairs.stream()
+                .map(bp -> new BorderToken(bp.leftBorder, bp.numberOfRepeats, bp.start - 1, bp.end + 1))
+                .collect(Collectors.toCollection(ArrayList::new));
+        char lastTokenChar = '-';   // '<' means left chain, '>' - right chain, '-' - no chain
+        int tokenStart = 0;
+        int tokenRepeats = 0;
+        for (int currentPosition = 0; currentPosition < fullString.length(); currentPosition++) {
+            switch (fullString.charAt(currentPosition)) {
+                case '<':
+                    if (lastTokenChar == '<')
+                        tokenRepeats++;
+                    else if (lastTokenChar == '>')
+                        throw new ParserException("Unexpected '>' character after '<'!");
+                    else {
+                        tokenStart = currentPosition;
+                        tokenRepeats = 1;
+                        lastTokenChar = '<';
+                    }
+                    break;
+                case '>':
+                    if (lastTokenChar == '>')
+                        tokenRepeats++;
+                    else if (lastTokenChar == '<')
+                        throw new ParserException("Unexpected '<' character after '>'!");
+                    else {
+                        tokenStart = currentPosition;
+                        tokenRepeats = 1;
+                        lastTokenChar = '>';
+                    }
+                    break;
+                case '{':
+                    if (tokenRepeats > 1)
+                        throw new ParserException("Found multiple '" + lastTokenChar + "' characters before braces!");
+                    tokenRepeats = 0;
+                    lastTokenChar = '-';
+                    break;
+                default:
+                    if (lastTokenChar == '<') {
+                        borderTokens.add(new BorderToken(true, tokenRepeats, tokenStart, currentPosition));
+                        tokenRepeats = 0;
+                        lastTokenChar = '-';
+                    } else if (lastTokenChar == '>') {
+                        borderTokens.add(new BorderToken(false, tokenRepeats, tokenStart, currentPosition));
+                        tokenRepeats = 0;
+                        lastTokenChar = '-';
+                    }
+            }
+        }
+        borderTokens.sort(Comparator.comparingInt(bt -> bt.start));
+        return borderTokens;
     }
 }

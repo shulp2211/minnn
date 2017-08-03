@@ -185,32 +185,32 @@ public class BracketsDetectorTest {
             add("A{:}");
         }};
         ArrayList<List<BracketsPair>> bracesPairs = new ArrayList<>();
-        ArrayList<List<BorderFilterBracesPair>> borderFilterBracesPairs = new ArrayList<>();
+        ArrayList<List<BorderBracesPair>> borderBracesPairs = new ArrayList<>();
         ArrayList<List<BracketsPair>> repeatPatternBracesPairs = new ArrayList<>();
         for (int i = 0; i < testStrings.size(); i++) {
             bracesPairs.add(getAllBrackets(BRACES, testStrings.get(i)));
-            borderFilterBracesPairs.add(getBorderFilterBraces(testStrings.get(i), bracesPairs.get(i)));
-            repeatPatternBracesPairs.add(getRepeatPatternBraces(bracesPairs.get(i), borderFilterBracesPairs.get(i)));
+            borderBracesPairs.add(getBorderBraces(testStrings.get(i), bracesPairs.get(i)));
+            repeatPatternBracesPairs.add(getRepeatPatternBraces(bracesPairs.get(i), borderBracesPairs.get(i)));
         }
 
-        assertEquals(3, borderFilterBracesPairs.get(0).size());
+        assertEquals(3, borderBracesPairs.get(0).size());
         assertEquals(2, repeatPatternBracesPairs.get(0).size());
-        assertEquals(1, borderFilterBracesPairs.get(1).size());
+        assertEquals(1, borderBracesPairs.get(1).size());
         assertEquals(7, repeatPatternBracesPairs.get(1).size());
-        assertEquals(3, borderFilterBracesPairs.get(2).size());
+        assertEquals(3, borderBracesPairs.get(2).size());
         assertEquals(2, repeatPatternBracesPairs.get(2).size());
-        assertEquals(0, borderFilterBracesPairs.get(3).size());
+        assertEquals(0, borderBracesPairs.get(3).size());
         assertEquals(1, repeatPatternBracesPairs.get(3).size());
 
-        assertFalse(borderFilterBracesPairs.get(0).get(0).leftBorder);
-        assertTrue(borderFilterBracesPairs.get(0).get(1).leftBorder);
-        assertFalse(borderFilterBracesPairs.get(0).get(2).leftBorder);
-        assertFalse(borderFilterBracesPairs.get(1).get(0).leftBorder);
-        IntStream.range(0, 3).forEach(i -> assertTrue(borderFilterBracesPairs.get(2).get(i).leftBorder));
+        assertFalse(borderBracesPairs.get(0).get(0).leftBorder);
+        assertTrue(borderBracesPairs.get(0).get(1).leftBorder);
+        assertFalse(borderBracesPairs.get(0).get(2).leftBorder);
+        assertFalse(borderBracesPairs.get(1).get(0).leftBorder);
+        IntStream.range(0, 3).forEach(i -> assertTrue(borderBracesPairs.get(2).get(i).leftBorder));
 
-        assertEquals(5, borderFilterBracesPairs.get(0).get(1).numberOfRepeats);
-        assertEquals(3, borderFilterBracesPairs.get(1).get(0).numberOfRepeats);
-        assertEquals(4, borderFilterBracesPairs.get(2).get(2).numberOfRepeats);
+        assertEquals(5, borderBracesPairs.get(0).get(1).numberOfRepeats);
+        assertEquals(3, borderBracesPairs.get(1).get(0).numberOfRepeats);
+        assertEquals(4, borderBracesPairs.get(2).get(2).numberOfRepeats);
 
         assertEquals(48, repeatPatternBracesPairs.get(0).get(1).end);
         assertEquals(44, repeatPatternBracesPairs.get(1).get(4).start);

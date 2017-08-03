@@ -35,17 +35,17 @@ public class SimplifiedTokenizerTest {
         PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(), andPattern, fuzzyMatchPattern2);
         OrPattern orPattern = new OrPattern(getTestPatternAligner(), plusPattern, andPattern);
         ScoreFilter scoreFilter = new ScoreFilter(-3);
-        FilterPattern borderFilterPattern = new FilterPattern(getTestPatternAligner(), scoreFilter, plusPattern);
-        MultiPattern multiPattern1 = new MultiPattern(getTestPatternAligner(), orPattern, borderFilterPattern,
+        FilterPattern scoreFilterPatternS = new FilterPattern(getTestPatternAligner(), scoreFilter, plusPattern);
+        MultiPattern multiPattern1 = new MultiPattern(getTestPatternAligner(), orPattern, scoreFilterPatternS,
                 fuzzyMatchPattern1, andPattern);
-        MultiPattern multiPattern2 = new MultiPattern(getTestPatternAligner(), borderFilterPattern,
+        MultiPattern multiPattern2 = new MultiPattern(getTestPatternAligner(), scoreFilterPatternS,
                 fuzzyMatchPattern2, andPattern);
         AndOperator andOperator1 = new AndOperator(getTestPatternAligner(), multiPattern1, multiPattern2);
         AndOperator andOperator2 = new AndOperator(getTestPatternAligner(), multiPattern2, multiPattern2);
-        MultipleReadsFilterPattern scoreFilterPattern = new MultipleReadsFilterPattern(getTestPatternAligner(),
+        MultipleReadsFilterPattern scoreFilterPatternM = new MultipleReadsFilterPattern(getTestPatternAligner(),
                 scoreFilter, andOperator2);
-        NotOperator notOperator = new NotOperator(getTestPatternAligner(), scoreFilterPattern);
-        OrOperator orOperator = new OrOperator(getTestPatternAligner(), andOperator1, notOperator, scoreFilterPattern);
+        NotOperator notOperator = new NotOperator(getTestPatternAligner(), scoreFilterPatternM);
+        OrOperator orOperator = new OrOperator(getTestPatternAligner(), andOperator1, notOperator, scoreFilterPatternM);
 
         Parser parser = new Parser(getTestPatternAligner());
         Pattern parseResult = parser.parseQuery(orOperator.toString(), SIMPLIFIED);

@@ -21,12 +21,12 @@ final class NormalParsers {
     private final ArrayList<Integer> startStickMarkers;
     private final ArrayList<Integer> endStickMarkers;
     private final ArrayList<ScoreThreshold> scoreThresholds;
-    private final List<BorderFilterBracesPair> borderFilterBracesPairs;
+    private final ArrayList<BorderToken> borderTokens;
     private final List<NormalSyntaxGroupName> groupNames;
 
     NormalParsers(PatternAligner patternAligner, String query, List<BracketsPair> squareBracketsPairs,
                   ArrayList<Integer> startStickMarkers, ArrayList<Integer> endStickMarkers,
-                  ArrayList<ScoreThreshold> scoreThresholds, List<BorderFilterBracesPair> borderFilterBracesPairs,
+                  ArrayList<ScoreThreshold> scoreThresholds, ArrayList<BorderToken> borderTokens,
                   List<NormalSyntaxGroupName> groupNames) {
         this.patternAligner = patternAligner;
         this.query = query;
@@ -34,7 +34,7 @@ final class NormalParsers {
         this.startStickMarkers = startStickMarkers;
         this.endStickMarkers = endStickMarkers;
         this.scoreThresholds = scoreThresholds;
-        this.borderFilterBracesPairs = borderFilterBracesPairs;
+        this.borderTokens = borderTokens;
         this.groupNames = groupNames;
     }
 
@@ -50,8 +50,10 @@ final class NormalParsers {
             NucleotideSequence patternSeq = toNSeq(query.substring(bracesPair.start - 1, bracesPair.start));
             int minRepeats = 1;
             int maxRepeats = MAX_REPEATS;
-            int fixedLeftBorder = startStick(bracesPair.start - 1) ? 0 : -1;
-            int fixedRightBorder = endStick(bracesPair.end) ? -2 : -1;
+            int startStickPosition = findStartStick(bracesPair.start - 1);
+            int endStickPosition = findEndStick(bracesPair.end);
+            int fixedLeftBorder = (startStickPosition == -1) ? -1 : 0;
+            int fixedRightBorder = (endStickPosition == -1) ? -1 : -2;
             if (arguments.length() == 0)
                 throw new ParserException("Missing number of repeats in " + query.substring(bracesPair.start - 1,
                         bracesPair.end + 1));
@@ -80,6 +82,10 @@ final class NormalParsers {
                     .orElse(bracesPair.start - 1);
             int tokenEnd = groupNamesRight.stream().mapToInt(fgn -> fgn.edgeCoordinate).max()
                     .orElse(bracesPair.end) + 1;
+            if (startStickPosition != -1)
+                tokenStart = Math.min(tokenStart, startStickPosition);
+            if (endStickPosition != -1)
+                tokenEnd = Math.max(tokenEnd, endStickPosition + 1);
 
             foundTokens.add(new FoundToken(new RepeatPattern(getPatternAligner(bracesPair.start - 1, bracesPair.end + 1),
                     patternSeq, minRepeats, maxRepeats, fixedLeftBorder, fixedRightBorder, groupEdgePositions),
@@ -105,13 +111,28 @@ final class NormalParsers {
                     continue;
                 FoundGroupEdgePositions foundGroupEdgePositions = findGroupEdgePositions(start, end);
                 validateGroupEdgePositions(foundGroupEdgePositions.groupEdgePositions);
-                int fixedLeftBorder = startStick(start) ? 0 : -1;
-                int fixedRightBorder = endStick(end - 1) ? -2 : -1;
+                FoundCut foundLeftCut = findLeftCut(start);
+                FoundCut foundRightCut = findRightCut(end - 1);
+                int startStickPosition = findStartStick(start);
+                int endStickPosition = findEndStick(end - 1);
+                int fixedLeftBorder = (startStickPosition == -1) ? -1 : 0;
+                int fixedRightBorder = (endStickPosition == -1) ? -1 : -2;
                 NucleotideSequence patternSeq = toNSeq(nucleotideString);
 
+                int tokenStart = foundGroupEdgePositions.leftEdgeCoordinate;
+                int tokenEnd = foundGroupEdgePositions.rightEdgeCoordinate;
+                if (startStickPosition != -1)
+                    tokenStart = Math.min(tokenStart, startStickPosition);
+                if (endStickPosition != -1)
+                    tokenEnd = Math.max(tokenEnd, endStickPosition + 1);
+                if (foundLeftCut.tokenPosition != -1)
+                    tokenStart = Math.min(tokenStart, foundLeftCut.tokenPosition);
+                if (foundRightCut.tokenPosition != -1)
+                    tokenEnd = Math.max(tokenEnd, foundRightCut.tokenPosition);
+
                 foundTokens.add(new FoundToken(new FuzzyMatchPattern(getPatternAligner(start, end), patternSeq,
-                        0, 0, fixedLeftBorder, fixedRightBorder, foundGroupEdgePositions.groupEdgePositions),
-                        foundGroupEdgePositions.leftEdgeCoordinate, foundGroupEdgePositions.rightEdgeCoordinate));
+                        foundLeftCut.cut, foundRightCut.cut, fixedLeftBorder, fixedRightBorder,
+                        foundGroupEdgePositions.groupEdgePositions), tokenStart, tokenEnd));
             }
         }
 
@@ -151,84 +172,6 @@ final class NormalParsers {
         }
 
         return foundTokens;
-    }
-
-    /**
-     * This parser launches 2 times: once for left border filters and then for right border filters. On first pass it
-     * expects nucleotide sequences to be FuzzyMatchPattern only, on second pass they can be FilterPattern
-     * from 1st pass.
-     *
-     * @param tokenizedString tokenized string object for query string
-     * @param left true when running for left border filters, false for right border filters
-     * @return list of found tokens
-     */
-    ArrayList<FoundToken> parseBorderFilters(TokenizedString tokenizedString, boolean left) throws ParserException {
-//        ArrayList<FoundToken> foundTokens = new ArrayList<>();
-//        if (left) {
-//            Matcher leftMatcher =
-//                    Pattern.compile("(<\\{ *\\d+ *}|<+)([ \\[]|(\\[ *-?\\d+\\.?\\d* *:)|(\\( *\\w *:))*[a-zA-Z]+")
-//                    .matcher(query);
-//            while (leftMatcher.find()) {
-//                int start = leftMatcher.start();
-//                int end = leftMatcher.end();
-//                Token operandToken = tokenizedString.getToken(tokenizedString.getIndexByPosition(end - 1));
-//                FuzzyMatchPattern operandPattern = operandToken.getSpecificPattern(FuzzyMatchPattern.class);
-//                NucleotideSequence seq = operandPattern.getPatternSeq();
-//                int minNucleotides;
-//                if (leftMatcher.group().contains("{")) {
-//                    BorderFilterBracesPair borderFilterBracesPair = borderFilterBracesPairs.stream()
-//                            .filter(bp -> bp.leftBorder)
-//                            .filter(bp -> (bp.bracesPair.start > start) && (bp.bracesPair.end < end))
-//                            .findFirst().orElseThrow(() -> new IllegalStateException(
-//                                    "BorderFilterBracesPair not found for " + leftMatcher.group()));
-//
-//                    minNucleotides = seq.size() - borderFilterBracesPair.numberOfRepeats;
-//                } else
-//                    minNucleotides = seq.size() - countCharacters(leftMatcher.group(), '<');
-//                if (minNucleotides < 0)
-//                    throw new ParserException("Invalid border filter, not enough nucleotides: " + leftMatcher.group());
-//                boolean useTarget = !isSpecificCharBeforeStopChar(query, start, true, true,
-//                        "[]", "\\", null);
-//                BorderFilter filter = new BorderFilter(getPatternAligner(start, end), true, seq, minNucleotides,
-//                        useTarget);
-//                int tokenStart = Math.min(start, operandToken.getStartCoordinate());
-//                int tokenEnd = operandToken.getStartCoordinate() + operandToken.getLength();
-//                foundTokens.add(new FoundToken(new FilterPattern(getPatternAligner(start, end), filter,
-//                        operandPattern), tokenStart, tokenEnd));
-//            }
-//        } else {
-//            Matcher rightMatcher = Pattern.compile("[a-zA-Z]+[ \\])]*(>\\{ *\\d+ *}|>+)").matcher(query);
-//            while (rightMatcher.find()) {
-//                int start = rightMatcher.start();
-//                int end = rightMatcher.end();
-//                Token operandToken = tokenizedString.getToken(tokenizedString.getIndexByPosition(start));
-//                NucleotideSequence seq = operandToken.getSpecificPattern(BorderFilterOperand.class).getPatternSeq();
-//                int minNucleotides;
-//                if (rightMatcher.group().contains("{")) {
-//                    BorderFilterBracesPair borderFilterBracesPair = borderFilterBracesPairs.stream()
-//                            .filter(bp -> !bp.leftBorder)
-//                            .filter(bp -> (bp.bracesPair.start > start) && (bp.bracesPair.end < end))
-//                            .findFirst().orElseThrow(() -> new IllegalStateException(
-//                                    "BorderFilterBracesPair not found for " + rightMatcher.group()));
-//
-//                    minNucleotides = seq.size() - borderFilterBracesPair.numberOfRepeats;
-//                } else
-//                    minNucleotides = seq.size() - countCharacters(rightMatcher.group(), '>');
-//                if (minNucleotides < 0)
-//                    throw new ParserException("Invalid border filter, not enough nucleotides: " + rightMatcher.group());
-//                boolean useTarget = !isSpecificCharBeforeStopChar(query, end - 1, false, true,
-//                        "[]", "\\", null);
-//                BorderFilter filter = new BorderFilter(getPatternAligner(start, end), false, seq, minNucleotides,
-//                        useTarget);
-//                int tokenStart = operandToken.getStartCoordinate();
-//                int tokenEnd = Math.max(end, operandToken.getStartCoordinate() + operandToken.getLength());
-//                foundTokens.add(new FoundToken(new FilterPattern(getPatternAligner(start, end), filter,
-//                        operandToken.getSinglePattern()), tokenStart, tokenEnd));
-//            }
-//        }
-//
-//        return foundTokens;
-        return new ArrayList<>();
     }
 
     /**
@@ -607,9 +550,9 @@ final class NormalParsers {
      * Check is this pattern should stick to start (check "^" before the pattern).
      *
      * @param position pattern start position, inclusive
-     * @return true if this pattern should stick to target start
+     * @return "^" marker position if this pattern should stick to target start, otherwise -1
      */
-    private boolean startStick(int position) {
+    private int findStartStick(int position) {
         int markerPosition = -1;
         for (int i = 0; i < startStickMarkers.size(); i++) {
             if ((position > startStickMarkers.get(i)) && ((i == startStickMarkers.size() - 1)
@@ -617,17 +560,20 @@ final class NormalParsers {
                 markerPosition = startStickMarkers.get(i);
         }
 
-        return (markerPosition != -1) && !query.substring(markerPosition + 1, position).matches(".*\\\\.*")
-                && !isAnyNucleotide(markerPosition + 1, position);
+        if ((markerPosition != -1) && !query.substring(markerPosition + 1, position).matches(".*\\\\.*")
+                && !isAnyNucleotide(markerPosition + 1, position))
+            return markerPosition;
+        else
+            return -1;
     }
 
     /**
      * Check is this pattern should stick to end (check "$" after the pattern).
      *
      * @param position pattern end position, inclusive
-     * @return true if this pattern should stick to target end
+     * @return "$" marker position if this pattern should stick to target end, otherwise -1
      */
-    private boolean endStick(int position) {
+    private int findEndStick(int position) {
         int markerPosition = -1;
         for (int i = 0; i < endStickMarkers.size(); i++) {
             if ((position < endStickMarkers.get(i)) && ((i == 0) || (position > endStickMarkers.get(i - 1)))
@@ -635,8 +581,65 @@ final class NormalParsers {
                 markerPosition = endStickMarkers.get(i);
         }
 
-        return (markerPosition != -1) && !query.substring(position + 1, markerPosition).matches(".*\\\\.*")
-                && !isAnyNucleotide(position + 1, markerPosition);
+        if ((markerPosition != -1) && !query.substring(position + 1, markerPosition).matches(".*\\\\.*")
+                && !isAnyNucleotide(position + 1, markerPosition))
+            return markerPosition;
+        else
+            return -1;
+    }
+
+    /**
+     * Search for left BorderToken on the left of this FuzzyMatchPattern.
+     *
+     * @param position pattern start position, inclusive
+     * @return FoundCut structure, details are in comments for its constructor
+     */
+    private FoundCut findLeftCut(int position) {
+        List<BorderToken> leftBorderTokens = borderTokens.stream()
+                .filter(bt -> bt.leftBorder).collect(Collectors.toList());
+        int tokenPosition = -1;
+        int numberOfRepeats = 0;
+        for (int i = 0; i < leftBorderTokens.size(); i++) {
+            BorderToken currentToken = leftBorderTokens.get(i);
+            if ((position >= currentToken.end) && ((i == leftBorderTokens.size() - 1)
+                    || (position < leftBorderTokens.get(i + 1).start))) {
+                tokenPosition = currentToken.start;
+                numberOfRepeats = currentToken.numberOfRepeats;
+            }
+        }
+
+        if ((tokenPosition != -1) && !query.substring(tokenPosition, position).matches(".*\\\\.*")
+                && !isAnyNucleotide(tokenPosition, position))
+            return new FoundCut(numberOfRepeats, tokenPosition);
+        else
+            return new FoundCut(0, -1);
+    }
+
+    /**
+     * Search for right BorderToken on the right of this FuzzyMatchPattern.
+     *
+     * @param position pattern end position, inclusive
+     * @return FoundCut structure, details are in comments for its constructor
+     */
+    private FoundCut findRightCut(int position) {
+        List<BorderToken> rightBorderTokens = borderTokens.stream()
+                .filter(bt -> !bt.leftBorder).collect(Collectors.toList());
+        int tokenPosition = -1;
+        int numberOfRepeats = 0;
+        for (int i = 0; i < rightBorderTokens.size(); i++) {
+            BorderToken currentToken = rightBorderTokens.get(i);
+            if ((position < currentToken.start) && ((i == 0) || (position > rightBorderTokens.get(i - 1).end))
+                    && ((i != 0) || (rightBorderTokens.size() == 1))) {
+                tokenPosition = currentToken.end;
+                numberOfRepeats = currentToken.numberOfRepeats;
+            }
+        }
+
+        if ((tokenPosition != -1) && !query.substring(position + 1, tokenPosition).matches(".*\\\\.*")
+                && !isAnyNucleotide(position + 1, tokenPosition))
+            return new FoundCut(numberOfRepeats, tokenPosition);
+        else
+            return new FoundCut(0, -1);
     }
 
     /**
@@ -764,6 +767,23 @@ final class NormalParsers {
             this.groupEdgePositions = groupEdgePositions;
             this.leftEdgeCoordinate = leftEdgeCoordinate;
             this.rightEdgeCoordinate = rightEdgeCoordinate;
+        }
+    }
+
+    private static class FoundCut {
+        final int cut;
+        final int tokenPosition;
+
+        /**
+         * Return values for findLeftCut() and findRightCut().
+         *
+         * @param cut if border token found, number of repeats for this border token, otherwise 0
+         * @param tokenPosition inclusive left position for left border token, or exclusive right position for right
+         *                      border token, or -1 if border token not found
+         */
+        FoundCut(int cut, int tokenPosition) {
+            this.cut = cut;
+            this.tokenPosition = tokenPosition;
         }
     }
 }

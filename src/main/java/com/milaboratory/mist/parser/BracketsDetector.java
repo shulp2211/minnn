@@ -188,36 +188,36 @@ final class BracketsDetector {
     }
 
     /**
-     * Get braces that used for setting number for BorderFilter (NORMAL syntax).
+     * Get braces that used for setting number for cutting FuzzyMatchPattern (NORMAL syntax).
      *
      * @param query query string as it came to the parser
      * @param bracesPairs all braces pairs from the query
-     * @return list of braces that used for BorderFilter, with parameters for BorderFilter
+     * @return list of braces that used for cutting FuzzyMatchPattern, with sides (left/right) and numbers in braces
      */
-    static List<BorderFilterBracesPair> getBorderFilterBraces(String query,
+    static List<BorderBracesPair> getBorderBraces(String query,
             List<BracketsPair> bracesPairs) throws ParserException {
-        ArrayList<BorderFilterBracesPair> borderFilterBracesPairs = new ArrayList<>();
+        ArrayList<BorderBracesPair> borderBracesPairs = new ArrayList<>();
         for (BracketsPair bracesPair : bracesPairs)
             if ((bracesPair.start > 0) && ("<>".contains(query.substring(bracesPair.start - 1,
                     bracesPair.start)))) {
                 int numberOfRepeats = toInt(query.substring(bracesPair.start + 1, bracesPair.end),
                         "number of repeats for border filter");
-                borderFilterBracesPairs.add(new BorderFilterBracesPair(bracesPair,
+                borderBracesPairs.add(new BorderBracesPair(bracesPair,
                         query.charAt(bracesPair.start - 1) == '<', numberOfRepeats));
             }
-        return borderFilterBracesPairs;
+        return borderBracesPairs;
     }
 
     /**
      * Filter list of braces, return only that are used for repeat patterns (NORMAL syntax).
      *
      * @param bracesPairs all braces pairs from the query
-     * @param borderFilterBracesPairs found list of BorderFilter braces pairs
+     * @param borderBracesPairs found list of border braces pairs
      * @return list of braces that used for repeat patterns
      */
     static List<BracketsPair> getRepeatPatternBraces(List<BracketsPair> bracesPairs,
-            List<BorderFilterBracesPair> borderFilterBracesPairs) throws ParserException {
-        return bracesPairs.stream().filter(bp -> borderFilterBracesPairs.stream()
+            List<BorderBracesPair> borderBracesPairs) throws ParserException {
+        return bracesPairs.stream().filter(bp -> borderBracesPairs.stream()
                 .noneMatch(bf -> bf.start == bp.start)).collect(Collectors.toList());
     }
 
