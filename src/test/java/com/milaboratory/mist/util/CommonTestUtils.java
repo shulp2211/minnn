@@ -271,8 +271,10 @@ public class CommonTestUtils {
     public static FuzzyMatchPattern getRandomFuzzyPattern(PatternAligner patternAligner, boolean withGroups) {
         int length = rg.nextInt(63) + 1;
         RandomBorders randomBorders = new RandomBorders(length);
+        RandomCuts randomCuts = new RandomCuts(length);
         NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, length, length);
-        return new FuzzyMatchPattern(patternAligner, seq, randomBorders.left, randomBorders.right,
+        return new FuzzyMatchPattern(patternAligner, seq, randomCuts.left, randomCuts.right,
+                randomBorders.left, randomBorders.right,
                 withGroups ? getRandomGroupsForFuzzyMatch(length) : new ArrayList<>());
     }
 
@@ -327,7 +329,7 @@ public class CommonTestUtils {
                 patterns[i] = getRandomBasicPattern(patternAligner);
         } else
             patterns = singlePatterns;
-        switch (rg.nextInt(7)) {
+        switch (rg.nextInt(6)) {
             case 0:
                 return patterns[0];
             case 1:
@@ -339,14 +341,8 @@ public class CommonTestUtils {
             case 4:
                 return new OrPattern(patternAligner, patterns);
             case 5:
-                return new FilterPattern(patternAligner, new ScoreFilter(-rg.nextInt(75)), patterns[0]);
-            case 6:
             default:
-                int seqLength = rg.nextInt(10) + 1;
-                NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, seqLength, seqLength);
-                BorderFilter borderFilter = new BorderFilter(patternAligner, rg.nextBoolean(), seq, seqLength,
-                        rg.nextBoolean());
-                return new FilterPattern(patternAligner, borderFilter, patterns[0]);
+                return new FilterPattern(patternAligner, new ScoreFilter(-rg.nextInt(75)), patterns[0]);
         }
     }
 
@@ -477,6 +473,23 @@ public class CommonTestUtils {
                 right = minRight + rg.nextInt(targetSize - minRight);
             else
                 right = invertCoordinate(targetSize - 1 - minRight - rg.nextInt(targetSize - minRight));
+        }
+    }
+
+    public static class RandomCuts {
+        public final int left;
+        public final int right;
+
+        public RandomCuts(int motifSize) {
+            int leftCut = 0;
+            int rightCut = 0;
+            if (motifSize > 1)
+                do {
+                    leftCut = rg.nextInt(motifSize);
+                    rightCut = rg.nextInt(motifSize);
+                } while (leftCut + rightCut >= motifSize);
+            this.left = leftCut;
+            this.right = rightCut;
         }
     }
 

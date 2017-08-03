@@ -339,11 +339,12 @@ public class FuzzyMatchPatternTest {
     public void fixedBordersTest() throws Exception {
         PatternAligner patternAligner = getTestPatternAligner(1);
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("ATTAGACA"),
-                2, -1, getRandomGroupsForFuzzyMatch(8));
+                0, 0, 2, -1, getRandomGroupsForFuzzyMatch(8));
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("ATTAGACA"),
-                -1, 11, getRandomGroupsForFuzzyMatch(4));
+                0, 0, -1, 11, getRandomGroupsForFuzzyMatch(4));
         FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("ATTAGACA"),
-                3, 9, getRandomGroupsForFuzzyMatch(6, 15));
+                0, 0, 3, 9,
+                getRandomGroupsForFuzzyMatch(6, 15));
         NSequenceWithQuality target1_1 = new NSequenceWithQuality("GATTAGACA");
         NSequenceWithQuality target1_2 = new NSequenceWithQuality("ATTAGACA");
         NSequenceWithQuality target2_1 = new NSequenceWithQuality("GTTCAATTAGACATTA");

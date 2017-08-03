@@ -7,7 +7,7 @@ import java.util.HashMap;
 public final class UnfairSorterConfiguration {
     public static final HashMap<Class, Integer> unfairSorterPortLimits = new HashMap<>();
     static {
-        unfairSorterPortLimits.put(FuzzyMatchPattern.class, 50);
+        unfairSorterPortLimits.put(FuzzyMatchPattern.class, 500);
         unfairSorterPortLimits.put(RepeatPattern.class, 500);
         unfairSorterPortLimits.put(AnyPattern.class, 1);
         unfairSorterPortLimits.put(FilterPattern.class, 50);

@@ -10,7 +10,6 @@ final class SimplifiedSyntaxStrings {
     final static String GROUP_EDGE_NAME = "GroupEdge";
     final static String GROUP_EDGE_POSITION_NAME = "GroupEdgePosition";
     final static String SCORE_FILTER_NAME = "ScoreFilter";
-    final static String BORDER_FILTER_NAME = "BorderFilter";
     final static String FUZZY_MATCH_PATTERN_NAME = "FuzzyMatchPattern";
     final static String REPEAT_PATTERN_NAME = "RepeatPattern";
     final static String ANY_PATTERN_NAME = "AnyPattern";

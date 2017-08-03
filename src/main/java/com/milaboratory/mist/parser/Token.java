@@ -1,6 +1,5 @@
 package com.milaboratory.mist.parser;
 
-import com.milaboratory.mist.pattern.BorderFilterOperand;
 import com.milaboratory.mist.pattern.MultipleReadsOperator;
 import com.milaboratory.mist.pattern.Pattern;
 import com.milaboratory.mist.pattern.SinglePattern;
@@ -78,7 +77,7 @@ final class Token {
         else throw new ParserException("Expected MultipleReadsOperator, but got " + pattern);
     }
 
-    <P> P getSpecificPattern(Class<P> patternClass) throws ParserException {
+    <P extends Pattern> P getSpecificPattern(Class<P> patternClass) throws ParserException {
         try {
             if (patternClass.isAssignableFrom(getPattern().getClass()))
                 return (P)pattern;

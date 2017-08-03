@@ -4,7 +4,6 @@ import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
 
 import java.util.ArrayList;
 
@@ -13,7 +12,7 @@ import java.util.ArrayList;
  * and multiple patterns. It filters matches from pattern with specified Filter. For usage with MultipleReadsOperator
  * patterns, it must be wrapped with MultipleReadsFilterPattern.
  */
-public final class FilterPattern extends SinglePattern implements BorderFilterOperand {
+public final class FilterPattern extends SinglePattern {
     private final Filter filter;
     private final Pattern pattern;
 
@@ -46,15 +45,6 @@ public final class FilterPattern extends SinglePattern implements BorderFilterOp
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
         return new FilterMatchingResult(filter, pattern, target, from, to, targetId);
-    }
-
-    @Override
-    public NucleotideSequence getPatternSeq() {
-        if (BorderFilterOperand.class.isAssignableFrom(pattern.getClass()))
-            return ((BorderFilterOperand)pattern).getPatternSeq();
-        else
-            throw new IllegalStateException("getPatternSeq() called for FilterPattern, but operand pattern " +
-                    "is not BorderFilterOperand: " + pattern);
     }
 
     private static class FilterMatchingResult extends MatchingResult {

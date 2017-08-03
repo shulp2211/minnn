@@ -29,13 +29,13 @@ public class ParseActionTest {
         String testOutputSingle = TEST_RESOURCES_PATH + "output_single.fastq";
 
         String[] args1 = {"parse", "--pattern",
-                inQuotes("MultiPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
+                inQuotes("MultiPattern([FuzzyMatchPattern(GAAGCA, 1, 0, -1, -1, [GroupEdgePosition(" +
                         "GroupEdge('UMI', true), 2), GroupEdgePosition(GroupEdge('UMI', false), 4)]), " +
-                        "FuzzyMatchPattern(AA, -1, -1)])"),
+                        "FuzzyMatchPattern(AA, 0, 0, -1, -1)])"),
                 "--input", testInputR1, testInputR2, "--output", testOutputR1, testOutputR2, "--devel-parser-syntax"};
         main(args1);
         String[] args2 = {"parse", "--devel-parser-syntax", "--match-score", "0", "--oriented", "--pattern", inQuotes(
-                "FuzzyMatchPattern(ATTAGACA, -1, -1)") , "--input", testInputR1, "--output", testOutputSingle};
+                "FuzzyMatchPattern(ATTAGACA, 0, 0, -1, -1)") , "--input", testInputR1, "--output", testOutputSingle};
         main(args2);
     }
 }

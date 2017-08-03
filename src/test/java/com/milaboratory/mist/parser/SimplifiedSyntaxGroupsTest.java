@@ -20,11 +20,11 @@ public class SimplifiedSyntaxGroupsTest {
     private final List<String> validGroupEdgeOuterObjectNames = Arrays.asList(FUZZY_MATCH_PATTERN_NAME,
             REPEAT_PATTERN_NAME, ANY_PATTERN_NAME, AND_PATTERN_NAME, PLUS_PATTERN_NAME, SEQUENCE_PATTERN_NAME,
             OR_PATTERN_NAME, MULTI_PATTERN_NAME, AND_OPERATOR_NAME, OR_OPERATOR_NAME,
-            FILTER_PATTERN_NAME, BORDER_FILTER_NAME, SCORE_FILTER_NAME, MULTIPLE_READS_FILTER_PATTERN_NAME);
+            FILTER_PATTERN_NAME, SCORE_FILTER_NAME, MULTIPLE_READS_FILTER_PATTERN_NAME);
     // object names that are valid as not common and closest common outer objects for edges of one group
     private final List<String> validGroupPartNotCommonObjectNames = Arrays.asList(FUZZY_MATCH_PATTERN_NAME,
             REPEAT_PATTERN_NAME, PLUS_PATTERN_NAME, SEQUENCE_PATTERN_NAME,
-            FILTER_PATTERN_NAME, BORDER_FILTER_NAME, SCORE_FILTER_NAME);
+            FILTER_PATTERN_NAME, SCORE_FILTER_NAME);
     // object names that are valid as closed common ancestor of 2 groups with the same name
     private final List<String> validDuplicateGroupsCommonAncestors = Arrays.asList(OR_PATTERN_NAME, OR_OPERATOR_NAME);
 
@@ -70,8 +70,8 @@ public class SimplifiedSyntaxGroupsTest {
                         new FilterPattern(patternAligner, new ScoreFilter(0), fuzzyMatchPattern),
                         getRandomBasicPattern(patternAligner));
                 PlusPattern plusPattern2 = new PlusPattern(patternAligner, getRandomBasicPattern(patternAligner),
-                        new FilterPattern(patternAligner, new BorderFilter(patternAligner, true,
-                                new NucleotideSequence("A")), repeatPattern), getRandomBasicPattern(patternAligner));
+                        new FilterPattern(patternAligner, new ScoreFilter(-1), repeatPattern),
+                        getRandomBasicPattern(patternAligner));
 
                 groupCheckerQueries.add(new SequencePattern(patternAligner, plusPattern1, plusPattern2).toString());
                 groupCheckerQueries.add(orPatterns.get(j).toString());

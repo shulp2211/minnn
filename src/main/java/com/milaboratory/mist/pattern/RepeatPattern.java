@@ -13,7 +13,7 @@ public final class RepeatPattern extends SinglePattern {
     private final int maxRepeats;
     private final int fixedLeftBorder;
     private final int fixedRightBorder;
-    private final ArrayList<GroupEdgePosition> groupEdgePositions;
+    private final List<GroupEdgePosition> groupEdgePositions;
 
     public RepeatPattern(PatternAligner patternAligner, NucleotideSequence patternSeq, int minRepeats, int maxRepeats) {
         this(patternAligner, patternSeq, minRepeats, maxRepeats, new ArrayList<>());
@@ -26,7 +26,7 @@ public final class RepeatPattern extends SinglePattern {
     }
 
     public RepeatPattern(PatternAligner patternAligner, NucleotideSequence patternSeq, int minRepeats, int maxRepeats,
-                         ArrayList<GroupEdgePosition> groupEdgePositions) {
+                         List<GroupEdgePosition> groupEdgePositions) {
         this(patternAligner, patternSeq, minRepeats, maxRepeats, -1, -1, groupEdgePositions);
     }
 
@@ -44,7 +44,7 @@ public final class RepeatPattern extends SinglePattern {
      *                           Group edges beyond the right border of motif will be moved to the right border.
      */
     public RepeatPattern(PatternAligner patternAligner, NucleotideSequence patternSeq, int minRepeats, int maxRepeats,
-                         int fixedLeftBorder, int fixedRightBorder, ArrayList<GroupEdgePosition> groupEdgePositions) {
+                         int fixedLeftBorder, int fixedRightBorder, List<GroupEdgePosition> groupEdgePositions) {
         super(patternAligner);
         this.patternSeq = patternSeq;
         if ((minRepeats < 1) || (maxRepeats < minRepeats))
@@ -90,7 +90,7 @@ public final class RepeatPattern extends SinglePattern {
         private final int maxRepeats;
         private final int fixedLeftBorder;
         private final int fixedRightBorder;
-        private final ArrayList<GroupEdgePosition> groupEdgePositions;
+        private final List<GroupEdgePosition> groupEdgePositions;
         private final NSequenceWithQuality target;
         private final int from;
         private final int to;
@@ -98,7 +98,7 @@ public final class RepeatPattern extends SinglePattern {
 
         RepeatPatternMatchingResult(PatternAligner patternAligner, NucleotideSequence patternSeq,
                                     int minRepeats, int maxRepeats, int fixedLeftBorder, int fixedRightBorder,
-                                    ArrayList<GroupEdgePosition> groupEdgePositions,
+                                    List<GroupEdgePosition> groupEdgePositions,
                                     NSequenceWithQuality target, int from, int to, byte targetId) {
             this.patternAligner = patternAligner;
             this.patternSeq = patternSeq;
@@ -126,7 +126,7 @@ public final class RepeatPattern extends SinglePattern {
             private final int maxRepeats;
             private final int fixedLeftBorder;
             private final int fixedRightBorder;
-            private final ArrayList<GroupEdgePosition> groupEdgePositions;
+            private final List<GroupEdgePosition> groupEdgePositions;
             private final NSequenceWithQuality target;
             private final int from;
             private final int to;
@@ -148,7 +148,7 @@ public final class RepeatPattern extends SinglePattern {
 
             RepeatPatternOutputPort(PatternAligner patternAligner, NucleotideSequence patternSeq,
                                     int minRepeats, int maxRepeats, int fixedLeftBorder, int fixedRightBorder,
-                                    ArrayList<GroupEdgePosition> groupEdgePositions,
+                                    List<GroupEdgePosition> groupEdgePositions,
                                     NSequenceWithQuality target, int from, int to, byte targetId,
                                     boolean byScore, boolean fairSorting) {
                 this.patternAligner = patternAligner;
@@ -180,8 +180,8 @@ public final class RepeatPattern extends SinglePattern {
                         Arrays.fill(sequencesToConcatenate, patternSeq);
                         NucleotideSequence currentSequence = SequencesUtils.concatenate(sequencesToConcatenate);
                         currentPort = new FuzzyMatchPattern(patternAligner, currentSequence,
-                                fixedLeftBorder, fixedRightBorder,
-                                fixGroupEdgePositions(groupEdgePositions, patternSeqLength * currentRepeats))
+                                0, 0, fixedLeftBorder, fixedRightBorder, fixGroupEdgePositions(
+                                        groupEdgePositions, 0, patternSeqLength * currentRepeats))
                                 .match(target, from, to, targetId)
                                 .getMatches(byScore, false);
                         currentPortEmpty = false;
@@ -204,8 +204,8 @@ public final class RepeatPattern extends SinglePattern {
                         Arrays.fill(sequencesToConcatenate, patternSeq);
                         NucleotideSequence currentSequence = SequencesUtils.concatenate(sequencesToConcatenate);
                         currentPort = new FuzzyMatchPattern(patternAligner, currentSequence,
-                                fixedLeftBorder, fixedRightBorder,
-                                fixGroupEdgePositions(groupEdgePositions, patternSeqLength * repeats))
+                                0, 0, fixedLeftBorder, fixedRightBorder, fixGroupEdgePositions(
+                                        groupEdgePositions, 0, patternSeqLength * repeats))
                                 .match(target, from, to, targetId)
                                 .getMatches(byScore, true);
                         Match currentMatch;
@@ -231,20 +231,6 @@ public final class RepeatPattern extends SinglePattern {
 
                 if (takenValues == allMatches.length) return null;
                 return allMatches[takenValues++];
-            }
-
-            /**
-             * Fix group edge positions to make them not get beyond the right border of pattern sequence.
-             *
-             * @param groupEdgePositions group edge positions
-             * @param maxPosition maximum allowed position for group edge; this is size of current sequence
-             * @return group edge positions that fixed to not get beyond the right border of pattern sequence
-             */
-            private ArrayList<GroupEdgePosition> fixGroupEdgePositions(ArrayList<GroupEdgePosition> groupEdgePositions,
-                                                                       int maxPosition) {
-                return groupEdgePositions.stream().map(gp -> (gp.getPosition() <= maxPosition) ? gp
-                        : new GroupEdgePosition(gp.getGroupEdge(), maxPosition))
-                        .collect(Collectors.toCollection(ArrayList::new));
             }
 
             private Match overrideMatchScore(Match match, int repeats) {

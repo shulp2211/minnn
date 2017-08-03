@@ -4,6 +4,9 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 public abstract class SinglePattern extends Pattern {
     SinglePattern(PatternAligner patternAligner) {
         super(patternAligner);
@@ -56,4 +59,23 @@ public abstract class SinglePattern extends Pattern {
      * @return matching result
      */
     public abstract MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId);
+
+    /**
+     * Fix group edge positions to make them not get beyond the right border of pattern sequence; and move group
+     * edge positions if specified.
+     *
+     * @param groupEdgePositions group edge positions
+     * @param move if not 0, add this value to all group edge positions; but never move positions below 0
+     * @param maxPosition maximum allowed position for group edge; this is size of current sequence
+     * @return new group edge positions
+     */
+    protected static List<GroupEdgePosition> fixGroupEdgePositions(List<GroupEdgePosition> groupEdgePositions,
+                                                                   int move, int maxPosition) {
+        return groupEdgePositions.stream()
+                .map(gp -> (move == 0) ? gp : new GroupEdgePosition(gp.getGroupEdge(),
+                        (gp.getPosition() + move >= 0) ? gp.getPosition() + move : 0))
+                .map(gp -> (gp.getPosition() <= maxPosition) ? gp
+                        : new GroupEdgePosition(gp.getGroupEdge(), maxPosition))
+                .collect(Collectors.toList());
+    }
 }

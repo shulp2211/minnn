@@ -34,16 +34,14 @@ public class SimplifiedTokenizerTest {
         AndPattern andPattern = new AndPattern(getTestPatternAligner(), fuzzyMatchPattern2, fuzzyMatchPattern2);
         PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(), andPattern, fuzzyMatchPattern2);
         OrPattern orPattern = new OrPattern(getTestPatternAligner(), plusPattern, andPattern);
-        BorderFilter borderFilter = new BorderFilter(getTestPatternAligner(), true,
-                new NucleotideSequence("ATTA"), false);
-        FilterPattern borderFilterPattern = new FilterPattern(getTestPatternAligner(), borderFilter, plusPattern);
+        ScoreFilter scoreFilter = new ScoreFilter(-3);
+        FilterPattern borderFilterPattern = new FilterPattern(getTestPatternAligner(), scoreFilter, plusPattern);
         MultiPattern multiPattern1 = new MultiPattern(getTestPatternAligner(), orPattern, borderFilterPattern,
                 fuzzyMatchPattern1, andPattern);
         MultiPattern multiPattern2 = new MultiPattern(getTestPatternAligner(), borderFilterPattern,
                 fuzzyMatchPattern2, andPattern);
         AndOperator andOperator1 = new AndOperator(getTestPatternAligner(), multiPattern1, multiPattern2);
         AndOperator andOperator2 = new AndOperator(getTestPatternAligner(), multiPattern2, multiPattern2);
-        ScoreFilter scoreFilter = new ScoreFilter(-3);
         MultipleReadsFilterPattern scoreFilterPattern = new MultipleReadsFilterPattern(getTestPatternAligner(),
                 scoreFilter, andOperator2);
         NotOperator notOperator = new NotOperator(getTestPatternAligner(), scoreFilterPattern);

@@ -25,33 +25,36 @@ final class SimplifiedParsers {
     static FuzzyMatchPattern parseFuzzyMatchPattern(PatternAligner patternAligner, String str,
                                                     ArrayList<GroupEdgePosition> groupEdgePositions) throws ParserException {
         List<QuotesPair> quotesPairs = getAllQuotes(str);
-        int commaPositions[] = new int[3];
-        NucleotideSequence seq;
-        int fixedLeftBorder;
-        int fixedRightBorder;
+        int commaPositions[] = new int[5];
 
         commaPositions[0] = nonQuotedIndexOf(quotesPairs, str, ", ", 0);
         if (commaPositions[0] == -1)
             throw new ParserException("Missing first ', ' in FuzzyMatchPattern arguments: " + str);
         else if (commaPositions[0] == 0)
             throw new ParserException("Missing nucleotide sequence in FuzzyMatchPattern: " + str);
-        commaPositions[1] = nonQuotedIndexOf(quotesPairs, str, ", ", commaPositions[0] + 1);
-        if (commaPositions[1] == -1)
-            throw new ParserException("Missing second ', ' in FuzzyMatchPattern arguments: " + str);
-        commaPositions[2] = nonQuotedIndexOf(quotesPairs, str, ", ", commaPositions[1] + 1);
+        for (int i = 1; i <= 4; i++) {
+            commaPositions[i] = nonQuotedIndexOf(quotesPairs, str, ", ", commaPositions[i - 1] + 1);
+            if ((i < 4) && (commaPositions[i] == -1))
+                throw new ParserException("Missing ', ' with index " + i
+                        + " in FuzzyMatchPattern arguments (probably, insufficient arguments): " + str);
+        }
 
-        seq = toNSeq(str.substring(0, commaPositions[0]));
-        fixedLeftBorder = toInt(str.substring(commaPositions[0] + 2, commaPositions[1]), "fixedLeftBorder");
-        fixedRightBorder = toInt(str.substring(commaPositions[1] + 2,
-                (commaPositions[2] == -1) ? str.length() : commaPositions[2]), "fixedRightBorder");
+        NucleotideSequence seq = toNSeq(str.substring(0, commaPositions[0]));
+        int leftCut = toInt(str.substring(commaPositions[0] + 2, commaPositions[1]), "leftCut");
+        int rightCut = toInt(str.substring(commaPositions[1] + 2, commaPositions[2]), "rightCut");
+        int fixedLeftBorder = toInt(str.substring(commaPositions[2] + 2, commaPositions[3]),
+                "fixedLeftBorder");
+        int fixedRightBorder = toInt(str.substring(commaPositions[3] + 2,
+                (commaPositions[4] == -1) ? str.length() : commaPositions[4]), "fixedRightBorder");
 
-        if (commaPositions[2] != -1)
-            if ((str.substring(commaPositions[2]).length() < 3)
-                    || (!str.substring(commaPositions[2], commaPositions[2] + 3).equals(", [")))
+        if (commaPositions[4] != -1)
+            if ((str.substring(commaPositions[4]).length() < 3)
+                    || (!str.substring(commaPositions[4], commaPositions[4] + 3).equals(", [")))
                 throw new ParserException("Error while parsing " + str + ": expected ', [', found '"
-                        + str.substring(commaPositions[2]) + "'");
+                        + str.substring(commaPositions[4]) + "'");
 
-        return new FuzzyMatchPattern(patternAligner, seq, fixedLeftBorder, fixedRightBorder, groupEdgePositions);
+        return new FuzzyMatchPattern(patternAligner, seq, leftCut, rightCut, fixedLeftBorder, fixedRightBorder,
+                groupEdgePositions);
     }
 
     /**
@@ -66,11 +69,6 @@ final class SimplifiedParsers {
                                             ArrayList<GroupEdgePosition> groupEdgePositions) throws ParserException {
         List<QuotesPair> quotesPairs = getAllQuotes(str);
         int commaPositions[] = new int[5];
-        NucleotideSequence seq;
-        int minRepeats;
-        int maxRepeats;
-        int fixedLeftBorder;
-        int fixedRightBorder;
 
         commaPositions[0] = nonQuotedIndexOf(quotesPairs, str, ", ", 0);
         if (commaPositions[0] == -1)
@@ -84,11 +82,12 @@ final class SimplifiedParsers {
                         + " in RepeatPattern arguments (probably, insufficient arguments): " + str);
         }
 
-        seq = toNSeq(str.substring(0, commaPositions[0]));
-        minRepeats = toInt(str.substring(commaPositions[0] + 2, commaPositions[1]), "minRepeats");
-        maxRepeats = toInt(str.substring(commaPositions[1] + 2, commaPositions[2]), "maxRepeats");
-        fixedLeftBorder = toInt(str.substring(commaPositions[2] + 2, commaPositions[3]), "fixedLeftBorder");
-        fixedRightBorder = toInt(str.substring(commaPositions[3] + 2,
+        NucleotideSequence seq = toNSeq(str.substring(0, commaPositions[0]));
+        int minRepeats = toInt(str.substring(commaPositions[0] + 2, commaPositions[1]), "minRepeats");
+        int maxRepeats = toInt(str.substring(commaPositions[1] + 2, commaPositions[2]), "maxRepeats");
+        int fixedLeftBorder = toInt(str.substring(commaPositions[2] + 2, commaPositions[3]),
+                "fixedLeftBorder");
+        int fixedRightBorder = toInt(str.substring(commaPositions[3] + 2,
                 (commaPositions[4] == -1) ? str.length() : commaPositions[4]), "fixedRightBorder");
 
         if (commaPositions[4] != -1)
@@ -208,11 +207,6 @@ final class SimplifiedParsers {
             case SCORE_FILTER_NAME:
                 filter = parseScoreFilter(filterString, filterStartingPart);
                 break;
-            case BORDER_FILTER_NAME:
-                if (multipleReads)
-                    throw new ParserException("BorderFilter must not be used with multiple reads!");
-                filter = parseBorderFilter(patternAligner, filterString, filterStartingPart);
-                break;
             default:
                 throw new ParserException("Wrong filter name: " + filterName);
         }
@@ -234,71 +228,6 @@ final class SimplifiedParsers {
                 "score threshold");
 
         return new ScoreFilter(scoreThreshold);
-    }
-
-    private static BorderFilter parseBorderFilter(PatternAligner patternAligner, String str, String startingPart)
-            throws ParserException {
-        if (!str.substring(0, startingPart.length()).equals(startingPart))
-            throw new ParserException("Incorrect BorderFilter start in " + str + ", expected: " + startingPart);
-        if (!str.substring(str.length() - 1).equals(")"))
-            throw new ParserException("Missing closing parenthesis in " + str);
-
-        boolean leftSide;
-        NucleotideSequence seq;
-        int minNucleotides;
-        boolean useTarget;
-
-        int firstCommaPosition = str.indexOf(", ");
-        if (firstCommaPosition == -1)
-            throw new ParserException("Missing ', ' in " + str);
-        switch (str.substring(startingPart.length(), firstCommaPosition)) {
-            case "true":
-                leftSide = true;
-                break;
-            case "false":
-                leftSide = false;
-                break;
-            default:
-                throw new ParserException("Failed to parse left/right side flag from " + str);
-        }
-
-        int secondCommaPosition = str.substring(firstCommaPosition + 1).indexOf(", ") + firstCommaPosition + 1;
-        if (secondCommaPosition == -1) {
-            seq = toNSeq(str.substring(firstCommaPosition + 2, str.length() - 1));
-            return new BorderFilter(patternAligner, leftSide, seq);
-        } else
-            seq = toNSeq(str.substring(firstCommaPosition + 2, secondCommaPosition));
-
-        int thirdCommaPosition = str.substring(secondCommaPosition + 1).indexOf(", ") + secondCommaPosition + 1;
-        if (thirdCommaPosition == -1) {
-            switch (str.substring(secondCommaPosition + 2, str.length() - 1)) {
-                case "true":
-                    return new BorderFilter(patternAligner, leftSide, seq, true);
-                case "false":
-                    return new BorderFilter(patternAligner, leftSide, seq, false);
-                default:
-                    minNucleotides = toInt(str.substring(secondCommaPosition + 2, str.length() - 1),
-                            "minimum number of nucleotides");
-                    break;
-            }
-            return new BorderFilter(patternAligner, leftSide, seq, minNucleotides);
-        } else {
-            minNucleotides = toInt(str.substring(secondCommaPosition + 2, thirdCommaPosition),
-                    "minimum number of nucleotides");
-            switch (str.substring(thirdCommaPosition + 2, str.length() - 1)) {
-                case "true":
-                    useTarget = true;
-                    break;
-                case "false":
-                    useTarget = false;
-                    break;
-                default:
-                    throw new ParserException("Failed to parse use motif/target flag from "
-                            + str.substring(thirdCommaPosition + 2, str.length() - 1) + " in " + str);
-            }
-        }
-
-        return new BorderFilter(patternAligner, leftSide, seq, minNucleotides, useTarget);
     }
 
     /**
