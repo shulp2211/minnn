@@ -12,6 +12,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
@@ -370,6 +371,64 @@ public class FuzzyMatchPatternTest {
             assertNull(pattern3.match(target3_1, 4, 10).getBestMatch(fairSorting));
             assertNull(pattern3.match(target3_1, 3, 9).getBestMatch(fairSorting));
             assertNull(pattern3.match(target3_1, 4, 9).getBestMatch(fairSorting));
+        }
+    }
+
+    @Test
+    public void borderCutsTest() throws Exception {
+        PatternAligner patternAligner = getTestPatternAligner(true);
+        NucleotideSequence seq = new NucleotideSequence("ATTAGACA");
+        NSequenceWithQuality target = new NSequenceWithQuality("TAGAC");
+        FuzzyMatchPattern[] patterns = {
+                new FuzzyMatchPattern(patternAligner, seq, 2, 1, -1, -1),
+                new FuzzyMatchPattern(patternAligner, seq, 3, 3, -1, -1),
+                new FuzzyMatchPattern(patternAligner, seq, 2, 1, 0, -2),
+                new FuzzyMatchPattern(patternAligner, seq, 3, 3, 0, -2),
+                new FuzzyMatchPattern(patternAligner, seq, 1, 1, -1, -1),
+                new FuzzyMatchPattern(patternAligner, seq, 0, 0, -1, -1),
+                new FuzzyMatchPattern(patternAligner, seq, 1, 1, 0, -2),
+                new FuzzyMatchPattern(patternAligner, seq, 0, 0, 0, -2)
+        };
+        for (int i = 0; i < 8; i++)
+            assertEquals(i < 4, patterns[i].match(target).isFound());
+    }
+
+    @Test
+    public void groupEdgeMovementTest() throws Exception {
+        for (int i = 0; i < 1000; i++) {
+            int length = rg.nextInt(63) + 1;
+            PatternAligner patternAligner = getTestPatternAligner(true);
+            RandomCuts randomCuts = new RandomCuts(length);
+            List<GroupEdgePosition> randomGroupEdges = getRandomGroupsForFuzzyMatch(length);
+            NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, length, length);
+            FuzzyMatchPattern pattern = new FuzzyMatchPattern(patternAligner, seq, randomCuts.left, randomCuts.right,
+                    rg.nextBoolean() ? 0 : -1, rg.nextBoolean() ? -2 : -1, randomGroupEdges);
+            int targetCutLeft = (randomCuts.left == 0) ? 0 : rg.nextInt(randomCuts.left);
+            int targetCutRight = (randomCuts.right == 0) ? 0 : rg.nextInt(randomCuts.right);
+            NSequenceWithQuality target = new NSequenceWithQuality(seq.toString()
+                    .substring(targetCutLeft, seq.size() - targetCutRight));
+            Match bestMatch = pattern.match(target).getMatches(true, rg.nextBoolean()).take();
+            if (bestMatch != null) {
+                boolean duplicateMatches = (countMatches(new FuzzyMatchPattern(patternAligner, bestMatch.getValue()
+                        .getSequence()).match(new NSequenceWithQuality(seq.toString())), true) > 1);
+                ArrayList<MatchedGroupEdge> matchedGroupEdges = bestMatch.getMatchedGroupEdges();
+                randomGroupEdges.forEach(groupEdgePosition -> {
+                    int originalPosition = groupEdgePosition.getPosition();
+                    int finalPosition = matchedGroupEdges.parallelStream()
+                            .filter(mge -> mge.getGroupEdge().equals(groupEdgePosition.getGroupEdge()))
+                            .findFirst().orElseThrow(IllegalStateException::new).getPosition();
+                    assertTrue(finalPosition >= 0);
+                    assertTrue(finalPosition <= target.size());
+                    if (!duplicateMatches) {
+                        if (originalPosition < targetCutLeft)
+                            assertEquals(0, finalPosition);
+                        else if (originalPosition > seq.size() - targetCutRight)
+                            assertEquals(target.size(), finalPosition);
+                        else
+                            assertEquals(originalPosition - targetCutLeft, finalPosition);
+                    }
+                });
+            }
         }
     }
 }
