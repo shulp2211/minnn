@@ -12,6 +12,11 @@ public final class MatchedGroupEdge extends MatchedItem {
         this.position = position;
     }
 
+    @Override
+    public String toString() {
+        return "MatchedGroupEdge{" + groupEdge + ", " + position + "}";
+    }
+
     public GroupEdge getGroupEdge() {
         return groupEdge;
     }
