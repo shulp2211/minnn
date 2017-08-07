@@ -222,6 +222,7 @@ public final class RepeatPattern extends SinglePattern {
                     }
                     allMatches = new Match[matchesWithUniqueRanges.size()];
                     matchesWithUniqueRanges.values().toArray(allMatches);
+                    Arrays.sort(allMatches, Comparator.comparingInt((Match match) -> match.getRange().length()).reversed());
                     if (byScore)
                         Arrays.sort(allMatches, Comparator.comparingLong(Match::getScore).reversed());
                     else
