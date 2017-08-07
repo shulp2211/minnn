@@ -187,6 +187,15 @@ final class TokenizedString {
     }
 
     /**
+     * Get size of the token list.
+     *
+     * @return size of the token list
+     */
+    int getSize() {
+        return tokenizedString.size();
+    }
+
+    /**
      * Calculate token index in tokenizedString that contains the specified position in query string.
      *
      * @param position position in query string

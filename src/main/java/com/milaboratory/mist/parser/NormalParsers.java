@@ -58,7 +58,7 @@ final class NormalParsers {
                 throw new ParserException("Missing number of repeats in " + query.substring(bracesPair.start - 1,
                         bracesPair.end + 1));
             else if (arguments.equals("*"))
-                minRepeats = MAX_REPEATS;
+                minRepeats = 1;
             else if (!arguments.contains(":"))
                 minRepeats = toInt(arguments, "number of repeats");
             else {
@@ -146,28 +146,30 @@ final class NormalParsers {
         for (int i = 0; i < stringTokens.size(); i++) {
             Token currentStringToken = stringTokens.get(i);
             String currentString = currentStringToken.getString();
-            Matcher regexMatcher = Pattern.compile(": *\\* *\\)").matcher(currentString);
-            while (regexMatcher.find()) {
-                int start = currentString.indexOf("*", regexMatcher.start()) + currentStringToken.getStartCoordinate();
-                int end = start + 1;
+            int asteriskPosition = currentString.indexOf("*");
+            if (asteriskPosition != -1) {
+                int start = asteriskPosition + currentStringToken.getStartCoordinate();
+                int index = tokenizedString.getIndexByPosition(start);
                 if (((i != 0) && !currentString.substring(0, start).contains("\\"))
-                        || ((i != stringTokens.size() - 1) && !currentString.substring(end).contains("\\")))
+                        || ((i != stringTokens.size() - 1) && !currentString.substring(start).contains("\\"))
+                        || ((i == 0) && (index != 0))
+                        || ((i == stringTokens.size() - 1) && (index != tokenizedString.getSize() - 1))
+                        || (currentString.indexOf("*", start + 1) != -1))
                     throw new ParserException("'*' pattern is invalid if there are other patterns in the same read, "
                             + "use 'N{*}' instead!");
 
                 ArrayList<GroupEdge> groupEdges = new ArrayList<>();
                 ArrayList<FoundGroupName> groupNamesLeft = findGroupNames(start, true);
-                ArrayList<FoundGroupName> groupNamesRight = findGroupNames(end, false);
+                ArrayList<FoundGroupName> groupNamesRight = findGroupNames(start, false);
                 groupEdges.addAll(groupNamesLeft.stream()
                         .map(gn -> new GroupEdge(gn.name, true)).collect(Collectors.toList()));
                 groupEdges.addAll(groupNamesRight.stream()
                         .map(gn -> new GroupEdge(gn.name, false)).collect(Collectors.toList()));
                 validateGroupEdges(groupEdges, true, false);
                 int tokenStart = groupNamesLeft.stream().mapToInt(fgn -> fgn.edgeCoordinate).min().orElse(start);
-                int tokenEnd = groupNamesRight.stream().mapToInt(fgn -> fgn.edgeCoordinate).max().orElse(end - 1) + 1;
+                int tokenEnd = groupNamesRight.stream().mapToInt(fgn -> fgn.edgeCoordinate).max().orElse(start) + 1;
 
-                foundTokens.add(new FoundToken(new AnyPattern(getPatternAligner(start, end), groupEdges),
-                        tokenStart, tokenEnd));
+                foundTokens.add(new FoundToken(new AnyPattern(patternAligner, groupEdges), tokenStart, tokenEnd));
             }
         }
 
@@ -264,7 +266,7 @@ final class NormalParsers {
                 int bracketsRelativeEnd = 0;
                 boolean noMoreNestedBrackets = false;
                 while (!noMoreNestedBrackets) {
-                    Matcher previousMatcher = Pattern.compile(" *\\[ *(-?\\d+\\.?\\d* *:)? *$").matcher(previousString);
+                    Matcher previousMatcher = Pattern.compile(" *\\[( *-?\\d+ *:)? *$").matcher(previousString);
                     if (previousMatcher.find()) {
                         Matcher nextMatcher = Pattern.compile("^ *] *").matcher(nextString);
                         if (nextMatcher.find()) {
@@ -279,7 +281,9 @@ final class NormalParsers {
                         noMoreNestedBrackets = true;
                 }
                 if (bracketsFound) {
-                    int tokenStart = bracketsRelativeStart + previousToken.getStartCoordinate();
+                    int lastFoundTokenEnd = (foundTokens.size() > 0) ? foundTokens.get(foundTokens.size() - 1).to : 0;
+                    int tokenStart = Math.max(bracketsRelativeStart + previousToken.getStartCoordinate(),
+                            lastFoundTokenEnd);
                     int tokenEnd = bracketsRelativeEnd + nextToken.getStartCoordinate();
                     FoundToken foundToken;
                     List<ScoreThreshold> foundScoreThresholds = scoreThresholds.stream()
@@ -385,7 +389,7 @@ final class NormalParsers {
             int nestedLevel) throws ParserException {
         ArrayList<FoundToken> foundTokens = new ArrayList<>();
         List<BracketsPair> bracketsWithThisNestedLevel = (nestedLevel == -1)
-                ? Collections.singletonList(new BracketsPair(SQUARE, 0, query.length(), -1))
+                ? Collections.singletonList(new BracketsPair(SQUARE, -1, query.length(), -1))
                 : squareBracketsPairs.stream().filter(bp -> bp.nestedLevel == nestedLevel).collect(Collectors.toList());
         for (BracketsPair currentBrackets : bracketsWithThisNestedLevel) {
             ArrayList<Token> tokens = tokenizedString.getTokens(getBracketsContentStart(currentBrackets),
@@ -576,8 +580,7 @@ final class NormalParsers {
     private int findEndStick(int position) {
         int markerPosition = -1;
         for (int i = 0; i < endStickMarkers.size(); i++) {
-            if ((position < endStickMarkers.get(i)) && ((i == 0) || (position > endStickMarkers.get(i - 1)))
-                    && ((i != 0) || (endStickMarkers.size() == 1)))
+            if ((position < endStickMarkers.get(i)) && ((i == 0) || (position > endStickMarkers.get(i - 1))))
                 markerPosition = endStickMarkers.get(i);
         }
 
@@ -628,8 +631,7 @@ final class NormalParsers {
         int numberOfRepeats = 0;
         for (int i = 0; i < rightBorderTokens.size(); i++) {
             BorderToken currentToken = rightBorderTokens.get(i);
-            if ((position < currentToken.start) && ((i == 0) || (position > rightBorderTokens.get(i - 1).end))
-                    && ((i != 0) || (rightBorderTokens.size() == 1))) {
+            if ((position < currentToken.start) && ((i == 0) || (position > rightBorderTokens.get(i - 1).end))) {
                 tokenPosition = currentToken.end;
                 numberOfRepeats = currentToken.numberOfRepeats;
             }
