@@ -20,7 +20,7 @@ final class NormalSyntaxGroupName extends CharPair {
             throw new IllegalStateException("Trying to create NormalSyntaxGroupName with brackets of type "
                     + bracketsPair.bracketsType);
         this.bracketsPair = bracketsPair;
-        checkGroupName(name);
-        this.name = name;
+        this.name = name.replace(" ", "");
+        checkGroupName(this.name);
     }
 }

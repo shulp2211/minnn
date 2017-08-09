@@ -37,8 +37,9 @@ final class NormalTokenizer extends Tokenizer {
                 .forEach(tokenizedString::tokenizeSubstring);
         normalParsers.parseFuzzyMatchPatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         normalParsers.parseAnyPatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
-        normalParsers.removeSpaceStrings(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+        clearGarbageTokens(normalParsers, tokenizedString, false);
         normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+        clearGarbageTokens(normalParsers, tokenizedString, false);
         normalParsers.parseSequencePatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
 
@@ -51,10 +52,11 @@ final class NormalTokenizer extends Tokenizer {
                         .forEach(tokenizedString::tokenizeSubstring);
                 normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
             }
-            normalParsers.removeSpaceStrings(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+            clearGarbageTokens(normalParsers, tokenizedString, false);
             normalParsers.parseSequencePatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
             normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         }
+        tokenizedString.assertNoNullPatterns();
 
         // MultiPatterns
         for (int currentNestedLevel = maxBracketsNestedLevel; currentNestedLevel >= -1; currentNestedLevel--) {
@@ -70,13 +72,37 @@ final class NormalTokenizer extends Tokenizer {
                         .forEach(tokenizedString::tokenizeSubstring);
                 normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
             }
-            normalParsers.removeSpaceStrings(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+            clearGarbageTokens(normalParsers, tokenizedString, true);
         }
 
         Pattern finalPattern = tokenizedString.getFinalPattern();
         boolean duplicateGroupsAllowed = OrPattern.class.isAssignableFrom(finalPattern.getClass())
                 || OrOperator.class.isAssignableFrom(finalPattern.getClass());
         validateGroupEdges(finalPattern.getGroupEdges(), true, duplicateGroupsAllowed);
+    }
+
+    /**
+     * Run procedures for cleaning space string tokens and null pattern tokens multiple times, while they
+     * actually clean tokens.
+     *
+     * @param normalParsers initialized object of NormalParsers class
+     * @param tokenizedString tokenized string to clean from garbage tokens
+     * @param spaceStringsOnly true if search only for space strings, false if also search for null patterns
+     */
+    private static void clearGarbageTokens(NormalParsers normalParsers, TokenizedString tokenizedString,
+            boolean spaceStringsOnly) throws ParserException {
+        int sizeBeforeCleanup;
+        int sizeAfterCleanup;
+        do {
+            sizeBeforeCleanup = tokenizedString.getSize();
+            normalParsers.removeSpaceStringsLeft(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+            normalParsers.removeSpaceStringsRight(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+            if (!spaceStringsOnly) {
+                normalParsers.removeNullPatternsLeft(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+                normalParsers.removeNullPatternsRight(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+            }
+            sizeAfterCleanup = tokenizedString.getSize();
+        } while (sizeAfterCleanup < sizeBeforeCleanup);
     }
 
     /**

@@ -288,6 +288,12 @@ final class TokenizedString {
         return tokenizedString.get(0).getPattern();
     }
 
+    void assertNoNullPatterns() {
+        if (tokenizedString.stream().anyMatch(t -> !t.isString() && (t.getPattern() == null)))
+            throw new IllegalStateException("TokenizedString must not contain null patterns on this stage! "
+                    + tokenizedString);
+    }
+
     private void assertNotTokenized() {
         if ((tokenizedString.size() != 1) || !tokenizedString.get(0).isString())
             throw new IllegalStateException("Expected to find one string, found: " + tokenizedString);

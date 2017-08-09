@@ -48,12 +48,22 @@ final class NormalParsers {
                 throw new ParserException("Found '{' without nucleotide in the start of query!");
             String arguments = query.substring(bracesPair.start + 1, bracesPair.end);
             NucleotideSequence patternSeq = toNSeq(query.substring(bracesPair.start - 1, bracesPair.start));
-            int minRepeats = 1;
-            int maxRepeats = MAX_REPEATS;
+
             int startStickPosition = findStartStick(bracesPair.start - 1);
             int endStickPosition = findEndStick(bracesPair.end);
-            int fixedLeftBorder = (startStickPosition == -1) ? -1 : 0;
-            int fixedRightBorder = (endStickPosition == -1) ? -1 : -2;
+            int fixedLeftBorder = -1;
+            int fixedRightBorder = -1;
+            if (startStickPosition != -1) {
+                foundTokens.add(new FoundToken(null, startStickPosition, startStickPosition + 1));
+                fixedLeftBorder = 0;
+            }
+            if (endStickPosition != -1) {
+                foundTokens.add(new FoundToken(null, endStickPosition, endStickPosition + 1));
+                fixedRightBorder = -2;
+            }
+
+            int minRepeats = 1;
+            int maxRepeats = MAX_REPEATS;
             if (arguments.length() == 0)
                 throw new ParserException("Missing number of repeats in " + query.substring(bracesPair.start - 1,
                         bracesPair.end + 1));
@@ -69,27 +79,18 @@ final class NormalParsers {
                     maxRepeats = toInt(arguments.substring(arguments.indexOf(":") + 1),
                             "maximum number of repeats");
             }
-            ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
-            ArrayList<FoundGroupName> groupNamesLeft = findGroupNames(bracesPair.start - 1, true);
-            ArrayList<FoundGroupName> groupNamesRight = findGroupNames(bracesPair.end, false);
-            groupEdgePositions.addAll(groupNamesLeft.stream()
-                    .map(gn -> new GroupEdgePosition(new GroupEdge(gn.name, true), 0))
-                    .collect(Collectors.toList()));
-            groupEdgePositions.addAll(groupNamesRight.stream()
-                    .map(gn -> new GroupEdgePosition(new GroupEdge(gn.name, false), MAX_REPEATS))
-                    .collect(Collectors.toList()));
-            int tokenStart = groupNamesLeft.stream().mapToInt(fgn -> fgn.edgeCoordinate).min()
-                    .orElse(bracesPair.start - 1);
-            int tokenEnd = groupNamesRight.stream().mapToInt(fgn -> fgn.edgeCoordinate).max()
-                    .orElse(bracesPair.end) + 1;
-            if (startStickPosition != -1)
-                tokenStart = Math.min(tokenStart, startStickPosition);
-            if (endStickPosition != -1)
-                tokenEnd = Math.max(tokenEnd, endStickPosition + 1);
+
+            List<FoundGroupEdgePosition> foundGroupEdgePositions = new ArrayList<>();
+            foundGroupEdgePositions.addAll(findGroupsOnBorder(bracesPair.start - 1, true, MAX_REPEATS));
+            foundGroupEdgePositions.addAll(findGroupsOnBorder(bracesPair.end, false, MAX_REPEATS));
+            foundGroupEdgePositions.forEach(fe -> foundTokens.add(new FoundToken(null, fe.start, fe.end)));
+            ArrayList<GroupEdgePosition> groupEdgePositions = foundGroupEdgePositions.stream()
+                    .map(fe -> fe.groupEdgePosition).collect(Collectors.toCollection(ArrayList::new));
+            validateGroupEdgePositions(groupEdgePositions);
 
             foundTokens.add(new FoundToken(new RepeatPattern(getPatternAligner(bracesPair.start - 1, bracesPair.end + 1),
                     patternSeq, minRepeats, maxRepeats, fixedLeftBorder, fixedRightBorder, groupEdgePositions),
-                    tokenStart, tokenEnd));
+                    bracesPair.start - 1, bracesPair.end + 1));
         }
 
         return foundTokens;
@@ -109,30 +110,46 @@ final class NormalParsers {
                 // ignore group names that matched as nucleotide sequences
                 if (nucleotideString.isEmpty())
                     continue;
-                FoundGroupEdgePositions foundGroupEdgePositions = findGroupEdgePositions(start, end);
-                validateGroupEdgePositions(foundGroupEdgePositions.groupEdgePositions);
-                FoundCut foundLeftCut = findLeftCut(start);
-                FoundCut foundRightCut = findRightCut(end - 1);
-                int startStickPosition = findStartStick(start);
-                int endStickPosition = findEndStick(end - 1);
-                int fixedLeftBorder = (startStickPosition == -1) ? -1 : 0;
-                int fixedRightBorder = (endStickPosition == -1) ? -1 : -2;
                 NucleotideSequence patternSeq = toNSeq(nucleotideString);
 
-                int tokenStart = foundGroupEdgePositions.leftEdgeCoordinate;
-                int tokenEnd = foundGroupEdgePositions.rightEdgeCoordinate;
-                if (startStickPosition != -1)
-                    tokenStart = Math.min(tokenStart, startStickPosition);
-                if (endStickPosition != -1)
-                    tokenEnd = Math.max(tokenEnd, endStickPosition + 1);
-                if (foundLeftCut.tokenPosition != -1)
-                    tokenStart = Math.min(tokenStart, foundLeftCut.tokenPosition);
-                if (foundRightCut.tokenPosition != -1)
-                    tokenEnd = Math.max(tokenEnd, foundRightCut.tokenPosition);
+                List<FoundGroupEdgePosition> foundGroupEdgePositions = findGroupsForFuzzyPattern(start, end);
+                foundGroupEdgePositions.stream().filter(fe -> (fe.start != -1) && (fe.end != -1))
+                        .forEach(fe -> foundTokens.add(new FoundToken(null, fe.start, fe.end)));
+                ArrayList<GroupEdgePosition> groupEdgePositions = foundGroupEdgePositions.stream()
+                        .map(fe -> fe.groupEdgePosition).collect(Collectors.toCollection(ArrayList::new));
+                validateGroupEdgePositions(groupEdgePositions);
+
+                int foundLeftCutIndex = findLeftCut(start);
+                int foundRightCutIndex = findRightCut(end - 1);
+                int foundLeftCut = 0;
+                int foundRightCut = 0;
+                if (foundLeftCutIndex != -1) {
+                    BorderToken leftBorderToken = borderTokens.get(foundLeftCutIndex);
+                    foundTokens.add(new FoundToken(null, leftBorderToken.start, leftBorderToken.end));
+                    foundLeftCut = leftBorderToken.numberOfRepeats;
+                }
+                if (foundRightCutIndex != -1) {
+                    BorderToken rightBorderToken = borderTokens.get(foundRightCutIndex);
+                    foundTokens.add(new FoundToken(null, rightBorderToken.start, rightBorderToken.end));
+                    foundRightCut = rightBorderToken.numberOfRepeats;
+                }
+
+                int startStickPosition = findStartStick(start);
+                int endStickPosition = findEndStick(end - 1);
+                int fixedLeftBorder = -1;
+                int fixedRightBorder = -1;
+                if (startStickPosition != -1) {
+                    foundTokens.add(new FoundToken(null, startStickPosition, startStickPosition + 1));
+                    fixedLeftBorder = 0;
+                }
+                if (endStickPosition != -1) {
+                    foundTokens.add(new FoundToken(null, endStickPosition, endStickPosition + 1));
+                    fixedRightBorder = -2;
+                }
 
                 foundTokens.add(new FoundToken(new FuzzyMatchPattern(getPatternAligner(start, end), patternSeq,
-                        foundLeftCut.cut, foundRightCut.cut, fixedLeftBorder, fixedRightBorder,
-                        foundGroupEdgePositions.groupEdgePositions), tokenStart, tokenEnd));
+                        foundLeftCut, foundRightCut, fixedLeftBorder, fixedRightBorder, groupEdgePositions),
+                        start, end));
             }
         }
 
@@ -158,18 +175,16 @@ final class NormalParsers {
                     throw new ParserException("'*' pattern is invalid if there are other patterns in the same read, "
                             + "use 'N{*}' instead!");
 
-                ArrayList<GroupEdge> groupEdges = new ArrayList<>();
-                ArrayList<FoundGroupName> groupNamesLeft = findGroupNames(start, true);
-                ArrayList<FoundGroupName> groupNamesRight = findGroupNames(start, false);
-                groupEdges.addAll(groupNamesLeft.stream()
-                        .map(gn -> new GroupEdge(gn.name, true)).collect(Collectors.toList()));
-                groupEdges.addAll(groupNamesRight.stream()
-                        .map(gn -> new GroupEdge(gn.name, false)).collect(Collectors.toList()));
+                List<FoundGroupEdgePosition> foundGroupEdgePositions = new ArrayList<>();
+                foundGroupEdgePositions.addAll(findGroupsOnBorder(start, true, 0));
+                foundGroupEdgePositions.addAll(findGroupsOnBorder(start, false, 0));
+                ArrayList<GroupEdge> groupEdges = foundGroupEdgePositions.stream()
+                        .map(fe -> fe.groupEdgePosition.getGroupEdge())
+                        .collect(Collectors.toCollection(ArrayList::new));
                 validateGroupEdges(groupEdges, true, false);
-                int tokenStart = groupNamesLeft.stream().mapToInt(fgn -> fgn.edgeCoordinate).min().orElse(start);
-                int tokenEnd = groupNamesRight.stream().mapToInt(fgn -> fgn.edgeCoordinate).max().orElse(start) + 1;
+                foundGroupEdgePositions.forEach(fe -> foundTokens.add(new FoundToken(null, fe.start, fe.end)));
 
-                foundTokens.add(new FoundToken(new AnyPattern(patternAligner, groupEdges), tokenStart, tokenEnd));
+                foundTokens.add(new FoundToken(new AnyPattern(patternAligner, groupEdges), start, start + 1));
             }
         }
 
@@ -177,33 +192,95 @@ final class NormalParsers {
     }
 
     /**
-     * This function will remove space strings by merging them into neighbor patterns.
+     * This function will remove space strings on the left by merging them into patterns on the right from them.
      *
      * @param tokenizedString tokenized string object for query string
      * @return list of enlarged pattern tokens that will overwrite neighbor space strings
      */
-    ArrayList<FoundToken> removeSpaceStrings(TokenizedString tokenizedString) {
+    ArrayList<FoundToken> removeSpaceStringsLeft(TokenizedString tokenizedString) {
         ArrayList<FoundToken> foundTokens = new ArrayList<>();
         ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
-        boolean firstTokenIsSpaceString = tokens.get(0).isString()
-                && tokens.get(0).getString().replace(" ", "").equals("");
-        if (firstTokenIsSpaceString && (tokens.size() == 2))
-            foundTokens.add(new FoundToken(tokens.get(1).getPattern(), 0, tokenizedString.getFullLength()));
-        else
-            for (int i = 1; i < tokens.size(); i++) {
-                Token currentToken = tokens.get(i);
-                if (currentToken.isString()
-                        && currentToken.getString().replace(" ", "").equals("")) {
-                    if ((i == 2) && firstTokenIsSpaceString)
-                        foundTokens.add(new FoundToken(tokens.get(1).getPattern(),
-                                0, currentToken.getStartCoordinate() + currentToken.getLength()));
-                    else {
-                        Token previousToken = tokens.get(i - 1);
-                        foundTokens.add(new FoundToken(previousToken.getPattern(), previousToken.getStartCoordinate(),
-                                currentToken.getStartCoordinate() + currentToken.getLength()));
-                    }
-                }
+        for (int i = 0; i < tokens.size() - 1; i++) {
+            Token currentToken = tokens.get(i);
+            if (currentToken.isString()
+                    && currentToken.getString().replace(" ", "").equals("")) {
+                Token nextToken = tokens.get(i + 1);
+                foundTokens.add(new FoundToken(nextToken.getPattern(), currentToken.getStartCoordinate(),
+                        nextToken.getStartCoordinate() + nextToken.getLength()));
             }
+        }
+
+        return foundTokens;
+    }
+
+    /**
+     * This function will remove space strings on the right by merging them into patterns on the left from them.
+     *
+     * @param tokenizedString tokenized string object for query string
+     * @return list of enlarged pattern tokens that will overwrite neighbor space strings
+     */
+    ArrayList<FoundToken> removeSpaceStringsRight(TokenizedString tokenizedString) {
+        ArrayList<FoundToken> foundTokens = new ArrayList<>();
+        ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
+        for (int i = 1; i < tokens.size(); i++) {
+            Token currentToken = tokens.get(i);
+            if (currentToken.isString()
+                    && currentToken.getString().replace(" ", "").equals("")) {
+                Token previousToken = tokens.get(i - 1);
+                foundTokens.add(new FoundToken(previousToken.getPattern(), previousToken.getStartCoordinate(),
+                        currentToken.getStartCoordinate() + currentToken.getLength()));
+            }
+        }
+
+        return foundTokens;
+    }
+
+    /**
+     * This function will remove null patterns on the left by merging them into neighbor patterns on the right.
+     * Null patterns are used for substrings that are parts of already parsed tokens, but are not placed
+     * directly near them.
+     *
+     * @param tokenizedString tokenized string object for query string
+     * @return list of enlarged pattern tokens that will overwrite neighbor null patterns
+     */
+    ArrayList<FoundToken> removeNullPatternsLeft(TokenizedString tokenizedString) {
+        ArrayList<FoundToken> foundTokens = new ArrayList<>();
+        ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
+        for (int i = 0; i < tokens.size() - 1; i++) {
+            Token currentToken = tokens.get(i);
+            if (!currentToken.isString() && (currentToken.getPattern() == null)) {
+                Token nextToken = tokens.get(i + 1);
+                if (!nextToken.isString() && (nextToken.getPattern() != null))
+                    foundTokens.add(new FoundToken(nextToken.getPattern(),
+                            currentToken.getStartCoordinate(),
+                            nextToken.getStartCoordinate() + nextToken.getLength()));
+            }
+        }
+
+        return foundTokens;
+    }
+
+    /**
+     * This function will remove null patterns on the right by merging them into neighbor patterns on the left.
+     * Null patterns are used for substrings that are parts of already parsed tokens, but are not placed
+     * directly near them.
+     *
+     * @param tokenizedString tokenized string object for query string
+     * @return list of enlarged pattern tokens that will overwrite neighbor null patterns
+     */
+    ArrayList<FoundToken> removeNullPatternsRight(TokenizedString tokenizedString) {
+        ArrayList<FoundToken> foundTokens = new ArrayList<>();
+        ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
+        for (int i = 1; i < tokens.size(); i++) {
+            Token currentToken = tokens.get(i);
+            if (!currentToken.isString() && (currentToken.getPattern() == null)) {
+                Token previousToken = tokens.get(i - 1);
+                if (!previousToken.isString() && (previousToken.getPattern() != null))
+                    foundTokens.add(new FoundToken(previousToken.getPattern(),
+                            previousToken.getStartCoordinate(),
+                            currentToken.getStartCoordinate() + currentToken.getLength()));
+            }
+        }
 
         return foundTokens;
     }
@@ -264,6 +341,8 @@ final class NormalParsers {
                 boolean bracketsFound = false;
                 int bracketsRelativeStart = 0;
                 int bracketsRelativeEnd = 0;
+                int leftTokenizedCharactersNum = 0;
+                int rightTokenizedCharactersNum = 0;
                 boolean noMoreNestedBrackets = false;
                 while (!noMoreNestedBrackets) {
                     Matcher previousMatcher = Pattern.compile(" *\\[( *-?\\d+ *:)? *$").matcher(previousString);
@@ -273,6 +352,8 @@ final class NormalParsers {
                             bracketsFound = true;
                             bracketsRelativeStart = previousMatcher.start();
                             bracketsRelativeEnd = nextMatcher.end();
+                            leftTokenizedCharactersNum += previousString.length() - bracketsRelativeStart;
+                            rightTokenizedCharactersNum += bracketsRelativeEnd;
                             previousString = previousString.substring(0, bracketsRelativeStart);
                             nextString = nextString.substring(bracketsRelativeEnd);
                         } else
@@ -282,9 +363,9 @@ final class NormalParsers {
                 }
                 if (bracketsFound) {
                     int lastFoundTokenEnd = (foundTokens.size() > 0) ? foundTokens.get(foundTokens.size() - 1).to : 0;
-                    int tokenStart = Math.max(bracketsRelativeStart + previousToken.getStartCoordinate(),
+                    int tokenStart = Math.max(currentToken.getStartCoordinate() - leftTokenizedCharactersNum,
                             lastFoundTokenEnd);
-                    int tokenEnd = bracketsRelativeEnd + nextToken.getStartCoordinate();
+                    int tokenEnd = nextToken.getStartCoordinate() + rightTokenizedCharactersNum;
                     FoundToken foundToken;
                     List<ScoreThreshold> foundScoreThresholds = scoreThresholds.stream()
                             .filter(st -> (st.start >= tokenStart) && (st.start < currentToken.getStartCoordinate()))
@@ -447,19 +528,20 @@ final class NormalParsers {
     }
 
     /**
-     * Return return list of names of groups that have their left edges on left of this pattern (if onLeft == true)
-     * or has their right edges on the right of this pattern (if onLeft == false), without any patterns between this
+     * Return list of group edges: left edges on the left of this pattern (if onLeft == true),
+     * or right edges on the right of this pattern (if onLeft == false), without any patterns between this
      * pattern and group edges.
      *
      * @param position position where to start the search; exclusive
      * @param onLeft true to search group names on the left from this pattern, false to search group closing parentheses
      *               on the right from this pattern
-     * @return list of names of groups for found group edges, and their coordinates
+     * @param patternLength length of the pattern; used as coordinate for group edges on the right border
+     * @return parsed GroupEdgePosition objects, and their coordinates in query (to tokenize them as null patterns)
      */
-    private ArrayList<FoundGroupName> findGroupNames(int position, boolean onLeft) {
-        ArrayList<FoundGroupName> foundGroupNames = new ArrayList<>();
+    private List<FoundGroupEdgePosition> findGroupsOnBorder(int position, boolean onLeft, int patternLength) {
+        List<FoundGroupEdgePosition> foundGroupEdgePositions = new ArrayList<>();
         int currentPosition = position;
-        int closestGroupIndex = getClosestGroupByPosition(onLeft ? position : position + 1, onLeft);
+        int closestGroupIndex = getClosestGroupByPosition(position, onLeft);
         while (closestGroupIndex != -1) {
             NormalSyntaxGroupName currentGroupName = groupNames.get(closestGroupIndex);
             String intermediateSubstring = onLeft ? query.substring(currentGroupName.end + 1,
@@ -467,28 +549,30 @@ final class NormalParsers {
             if (intermediateSubstring.matches(".*[a-zA-Z()*].*"))
                 break;
             currentPosition = onLeft ? currentGroupName.start : currentGroupName.bracketsPair.end;
-            foundGroupNames.add(new FoundGroupName(currentGroupName.name, currentPosition));
-            closestGroupIndex = getClosestGroupByPosition(onLeft ? currentPosition : currentPosition + 1, onLeft);
+            foundGroupEdgePositions.add(new FoundGroupEdgePosition(new GroupEdgePosition(new GroupEdge(
+                 currentGroupName.name, onLeft), onLeft ? 0 : patternLength),
+                    onLeft ? currentGroupName.start : currentGroupName.bracketsPair.end,
+                    onLeft ? currentGroupName.end + 1 : currentGroupName.bracketsPair.end + 1));
+            closestGroupIndex = getClosestGroupByPosition(currentPosition, onLeft);
         }
-        return foundGroupNames;
+        return foundGroupEdgePositions;
     }
 
     /**
      * Find closest index in group names list by position in query string; return -1 if index not found.
      *
-     * @param position position in query string, inclusive (if index is on this position, it will be returned)
+     * @param position position in query string, exclusive (index on this position will not be returned)
      * @param toLeft true: search group name to the left from position,
      *               false: search group closing parenthesis to the right
      * @return found index in list of group names, or -1 if not found
      */
     private int getClosestGroupByPosition(int position, boolean toLeft) {
         for (int i = 0; i < groupNames.size(); i++) {
-            if (toLeft && (position >= groupNames.get(i).end)
-                    && ((i == groupNames.size() - 1) || (position < groupNames.get(i + 1).start)))
+            if (toLeft && (position > groupNames.get(i).end)
+                    && ((i == groupNames.size() - 1) || (position <= groupNames.get(i + 1).start)))
                 return i;
-            if (!toLeft && (position <= groupNames.get(i).bracketsPair.end)
-                    && ((i == 0) || (position > groupNames.get(i - 1).end))
-                    && ((i != 0) || (groupNames.size() == 1)))
+            if (!toLeft && (position < groupNames.get(i).bracketsPair.end)
+                    && ((i == groupNames.size() - 1) || (position >= groupNames.get(i + 1).bracketsPair.end)))
                 return i;
         }
         return -1;
@@ -496,14 +580,14 @@ final class NormalParsers {
 
     /**
      * Get group edge positions for FuzzyMatchPattern from specified range in query string, including groups on left
-     * and right edges; and coordinates of leftmost and rightmost edges if there are groups on the left or right.
+     * and right edges; and positions of starts and ends of group edges on borders, to tokenize them as null patterns.
      *
      * @param start start of FuzzyMatchPattern, inclusive
      * @param end end of FuzzyMatchPattern, exclusive
-     * @return found group edge positions and edge coordinates
+     * @return found group edge positions and their coordinates in query
      */
-    private FoundGroupEdgePositions findGroupEdgePositions(int start, int end) {
-        ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
+    private List<FoundGroupEdgePosition> findGroupsForFuzzyPattern(int start, int end) {
+        List<FoundGroupEdgePosition> foundGroupEdgePositions = new ArrayList<>();
         int patternStringLength = end - start;
         int ignoredCharactersCount = 0;
         int ignoredCharactersSearchPosition = start;
@@ -516,8 +600,8 @@ final class NormalParsers {
                     ignoredCharactersCount += countCharacters(query.substring(ignoredCharactersSearchPosition,
                             groupName.start), ' ');
                     ignoredCharactersSearchPosition = groupName.end;
-                    groupEdgePositions.add(new GroupEdgePosition(new GroupEdge(groupName.name, true),
-                            groupStart - ignoredCharactersCount));
+                    foundGroupEdgePositions.add(new FoundGroupEdgePosition(new GroupEdgePosition(new GroupEdge(
+                            groupName.name, true), groupStart - ignoredCharactersCount), -1, -1));
                     ignoredCharactersCount += groupNameEnd - groupStart + 1;
                 } else
                     throw new IllegalStateException("FuzzyMatchPattern: start=" + start + ", end=" + end
@@ -527,27 +611,18 @@ final class NormalParsers {
                 ignoredCharactersCount += countCharacters(query.substring(ignoredCharactersSearchPosition,
                         groupName.bracketsPair.end), ' ');
                 ignoredCharactersSearchPosition = groupName.bracketsPair.end;
-                groupEdgePositions.add(new GroupEdgePosition(new GroupEdge(groupName.name, false),
-                        groupEnd - ignoredCharactersCount));
+                foundGroupEdgePositions.add(new FoundGroupEdgePosition(new GroupEdgePosition(new GroupEdge(
+                        groupName.name, false), groupEnd - ignoredCharactersCount), -1, -1));
                 ignoredCharactersCount++;
             }
         }
         ignoredCharactersCount += countCharacters(query.substring(ignoredCharactersSearchPosition, end), ' ');
 
-        ArrayList<FoundGroupName> groupNamesLeft = findGroupNames(start, true);
-        ArrayList<FoundGroupName> groupNamesRight = findGroupNames(end - 1, false);
-        groupEdgePositions.addAll(groupNamesLeft.stream()
-                .map(gn -> new GroupEdgePosition(new GroupEdge(gn.name, true), 0))
-                .collect(Collectors.toList()));
         final int patternLength = end - start - ignoredCharactersCount;
-        groupEdgePositions.addAll(groupNamesRight.stream()
-                .map(gn -> new GroupEdgePosition(new GroupEdge(gn.name, false), patternLength))
-                .collect(Collectors.toList()));
-        int leftEdgeCoordinate = groupNamesLeft.stream().mapToInt(fgn -> fgn.edgeCoordinate).min().orElse(start);
-        int rightEdgeCoordinate = groupNamesRight.stream().mapToInt(fgn -> fgn.edgeCoordinate).max()
-                .orElse(end - 1) + 1;
+        foundGroupEdgePositions.addAll(findGroupsOnBorder(start, true, patternLength));
+        foundGroupEdgePositions.addAll(findGroupsOnBorder(end - 1, false, patternLength));
 
-        return new FoundGroupEdgePositions(groupEdgePositions, leftEdgeCoordinate, rightEdgeCoordinate);
+        return foundGroupEdgePositions;
     }
 
     /**
@@ -595,53 +670,67 @@ final class NormalParsers {
      * Search for left BorderToken on the left of this FuzzyMatchPattern.
      *
      * @param position pattern start position, inclusive
-     * @return FoundCut structure, details are in comments for its constructor
+     * @return index of found left cut in borderTokens list; or -1 if there is no left cut
      */
-    private FoundCut findLeftCut(int position) {
-        List<BorderToken> leftBorderTokens = borderTokens.stream()
-                .filter(bt -> bt.leftBorder).collect(Collectors.toList());
+    private int findLeftCut(int position) {
+        List<BorderToken> leftBorderTokens = new ArrayList<>();
+        List<Integer> leftBorderTokensIndexes = new ArrayList<>();
+        for (int i = 0; i < borderTokens.size(); i++) {
+            BorderToken currentToken = borderTokens.get(i);
+            if (currentToken.leftBorder) {
+                leftBorderTokens.add(currentToken);
+                leftBorderTokensIndexes.add(i);
+            }
+        }
         int tokenPosition = -1;
-        int numberOfRepeats = 0;
+        int foundIndex = -1;
         for (int i = 0; i < leftBorderTokens.size(); i++) {
             BorderToken currentToken = leftBorderTokens.get(i);
             if ((position >= currentToken.end) && ((i == leftBorderTokens.size() - 1)
                     || (position < leftBorderTokens.get(i + 1).start))) {
                 tokenPosition = currentToken.start;
-                numberOfRepeats = currentToken.numberOfRepeats;
+                foundIndex = leftBorderTokensIndexes.get(i);
             }
         }
 
         if ((tokenPosition != -1) && !query.substring(tokenPosition, position).matches(".*\\\\.*")
                 && !isAnyNucleotide(tokenPosition, position))
-            return new FoundCut(numberOfRepeats, tokenPosition);
+            return foundIndex;
         else
-            return new FoundCut(0, -1);
+            return -1;
     }
 
     /**
      * Search for right BorderToken on the right of this FuzzyMatchPattern.
      *
      * @param position pattern end position, inclusive
-     * @return FoundCut structure, details are in comments for its constructor
+     * @return index of found right cut in borderTokens list; or -1 if there is no right cut
      */
-    private FoundCut findRightCut(int position) {
-        List<BorderToken> rightBorderTokens = borderTokens.stream()
-                .filter(bt -> !bt.leftBorder).collect(Collectors.toList());
+    private int findRightCut(int position) {
+        List<BorderToken> rightBorderTokens = new ArrayList<>();
+        List<Integer> rightBorderTokensIndexes = new ArrayList<>();
+        for (int i = 0; i < borderTokens.size(); i++) {
+            BorderToken currentToken = borderTokens.get(i);
+            if (!currentToken.leftBorder) {
+                rightBorderTokens.add(currentToken);
+                rightBorderTokensIndexes.add(i);
+            }
+        }
         int tokenPosition = -1;
-        int numberOfRepeats = 0;
+        int foundIndex = -1;
         for (int i = 0; i < rightBorderTokens.size(); i++) {
             BorderToken currentToken = rightBorderTokens.get(i);
             if ((position < currentToken.start) && ((i == 0) || (position > rightBorderTokens.get(i - 1).end))) {
                 tokenPosition = currentToken.end;
-                numberOfRepeats = currentToken.numberOfRepeats;
+                foundIndex = rightBorderTokensIndexes.get(i);
             }
         }
 
         if ((tokenPosition != -1) && !query.substring(position + 1, tokenPosition).matches(".*\\\\.*")
                 && !isAnyNucleotide(position + 1, tokenPosition))
-            return new FoundCut(numberOfRepeats, tokenPosition);
+            return foundIndex;
         else
-            return new FoundCut(0, -1);
+            return -1;
     }
 
     /**
@@ -733,59 +822,25 @@ final class NormalParsers {
             return patternAligner.overridePenaltyThreshold(currentThreshold);
     }
 
-    private static class FoundGroupName {
-        final String name;
-        final int edgeCoordinate;
+    private static class FoundGroupEdgePosition {
+        final GroupEdgePosition groupEdgePosition;
+        final int start;
+        final int end;
 
         /**
-         * Return list item for findGroupNames(): group name and edge coordinate - open parenthesis for left group edge
-         * or closed parenthesis for right group edge; both inclusive.
+         * Return value for findGroupEdgePositions(): parsed group edge position and its start and end coordinates
+         * in query, to tokenize it as null pattern if needed.
          *
-         * @param name found group name
-         * @param edgeCoordinate group edge coordinate, inclusive
+         * @param groupEdgePosition group edge position object
+         * @param start start coordinate in query, inclusive; or -1 if it is inside the pattern and doesn't need to be
+         *              tokenized as null pattern
+         * @param end end coordinate in query, exclusive; or -1 if it is inside the pattern and doesn't need to be
+         *              tokenized as null pattern
          */
-        FoundGroupName(String name, int edgeCoordinate) {
-            this.name = name;
-            this.edgeCoordinate = edgeCoordinate;
-        }
-    }
-
-    private static class FoundGroupEdgePositions {
-        final ArrayList<GroupEdgePosition> groupEdgePositions;
-        final int leftEdgeCoordinate;
-        final int rightEdgeCoordinate;
-
-        /**
-         * Return values for findGroupEdgePositions(): list of group edge positions; leftmost group left edge coordinate
-         * if there are group edges on the left from current pattern or pattern left edge if there are no group edges
-         * on the left; and similarly right edge coordinate.
-         *
-         * @param groupEdgePositions list of group edge positions
-         * @param leftEdgeCoordinate left edge coordinate, inclusive
-         * @param rightEdgeCoordinate right edge coordinate, exclusive
-         */
-        FoundGroupEdgePositions(ArrayList<GroupEdgePosition> groupEdgePositions, int leftEdgeCoordinate,
-                                int rightEdgeCoordinate) {
-            this.groupEdgePositions = groupEdgePositions;
-            this.leftEdgeCoordinate = leftEdgeCoordinate;
-            this.rightEdgeCoordinate = rightEdgeCoordinate;
-        }
-    }
-
-    private static class FoundCut {
-        final int cut;
-        final int tokenPosition;
-
-        /**
-         * Return values for findLeftCut() and findRightCut().
-         *
-         * @param cut if border token found, number of repeats for this border token, otherwise 0
-         * @param tokenPosition inclusive left position for left border token, or exclusive right position for right
-         *                      border token, or -1 if border token not found
-         */
-        FoundCut(int cut, int tokenPosition) {
-            this.cut = cut;
-            this.tokenPosition = tokenPosition;
+        FoundGroupEdgePosition(GroupEdgePosition groupEdgePosition, int start, int end) {
+            this.groupEdgePosition = groupEdgePosition;
+            this.start = start;
+            this.end = end;
         }
     }
 }
