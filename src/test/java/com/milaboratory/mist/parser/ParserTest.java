@@ -2,12 +2,14 @@ package com.milaboratory.mist.parser;
 
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.*;
+import com.milaboratory.mist.output_converter.MatchedGroup;
 import com.milaboratory.mist.pattern.*;
 import org.junit.Test;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.milaboratory.mist.output_converter.GroupUtils.getGroupsFromMatch;
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
@@ -111,6 +113,7 @@ public class ParserTest {
         testBadSample("<*");
         testSample(" ( TEST1 : [  [  (TEST2:  *  )  ]  ] ) ", "AT", new Range(0, 2));
         testSample("<{1}[[ATTA>+<{1}GACA]>+<AATA$>{1}]&^<(X:GCGC)", "CGCTTACAT", new Range(0, 9));
+        testBadSample("AT><TA");
     }
 
     @Test
@@ -120,7 +123,19 @@ public class ParserTest {
 
     @Test
     public void testMatchedGroups() throws Exception {
+        ArrayList<MatchedGroup> testGroups1 = getGroupsFromSample(
+                "(0:[0:AT(1:T{3}A)])+(2:[<<(3:GAT+C)+T]) || (4:AAA)", "GGAAAATTTTAGATCTATG");
+        assertGroupRange(testGroups1, "0", new Range(5, 11));
+        assertGroupRange(testGroups1, "1", new Range(7, 11));
+        assertGroupRange(testGroups1, "2", new Range(11, 16));
+        assertGroupRange(testGroups1, "3", new Range(11, 15));
+        assertEquals(0, testGroups1.stream().filter(g -> g.getGroupName().equals("4")).count());
 
+        ArrayList<MatchedGroup> testGroups2 = getGroupsFromSample(
+                "<(1:[[^[0:[AA+T]+G]TG]>]<<ATAT(2:G+G+TG+[(3:T+GA>{1})]C)C)$", "AATTGTGTTATGAGATGATAGCC");
+        assertGroupRange(testGroups2, "1", new Range(0, 23));
+        assertGroupRange(testGroups2, "2", new Range(11, 22));
+        assertGroupRange(testGroups2, "3", new Range(18, 21));
     }
 
     private static void testSample(String query, String target, Range expectedRange) throws Exception {
@@ -153,5 +168,17 @@ public class ParserTest {
             strictParser.parseQuery(query);
             return null;
         });
+    }
+
+    private static ArrayList<MatchedGroup> getGroupsFromSample(String query, String target) throws Exception {
+        Pattern pattern = strictParser.parseQuery(query);
+        Match bestMatch = pattern.match(new NSequenceWithQuality(target)).getBestMatch(true);
+        return getGroupsFromMatch(bestMatch);
+    }
+
+    private static void assertGroupRange(List<MatchedGroup> groups, String groupName, Range expectedRange) {
+        Range groupRange = groups.stream().filter(g -> g.getGroupName().equals(groupName)).findFirst()
+                .orElseThrow(IllegalArgumentException::new).getRange();
+        assertEquals(expectedRange, groupRange);
     }
 }
