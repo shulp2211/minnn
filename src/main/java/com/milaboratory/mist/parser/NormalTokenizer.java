@@ -50,9 +50,10 @@ final class NormalTokenizer extends Tokenizer {
             for (String operatorRegexp : new String[] {" *\\+ *", " *& *", " *\\|\\| *"}) {
                 normalParsers.parseSingleReadOperators(tokenizedString, operatorRegexp, currentNestedLevel)
                         .forEach(tokenizedString::tokenizeSubstring);
+                clearGarbageTokens(normalParsers, tokenizedString, false);
                 normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+                clearGarbageTokens(normalParsers, tokenizedString, false);
             }
-            clearGarbageTokens(normalParsers, tokenizedString, false);
             normalParsers.parseSequencePatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
             normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         }

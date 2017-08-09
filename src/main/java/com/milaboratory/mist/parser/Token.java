@@ -31,14 +31,31 @@ final class Token {
         return isString;
     }
 
+    boolean isPatternAndNotNull() {
+        return !isString && (pattern != null);
+    }
+
     String getString() {
-        if (isString) return string;
-        else throw new IllegalStateException("Trying to get string, but this is pattern token: " + pattern);
+        if (isString)
+            return string;
+        else
+            throw new IllegalStateException("Trying to get string, but this is pattern token: " + pattern);
     }
 
     Pattern getPattern() {
-        if (!isString) return pattern;
-        else throw new IllegalStateException("Trying to get pattern, but this is string token: " + string);
+        if (isString)
+            throw new IllegalStateException("Trying to get pattern, but this is string token: " + string);
+        else if (pattern == null)
+            throw new IllegalStateException("Trying to get pattern, but pattern is null!");
+        else
+            return pattern;
+    }
+
+    Pattern getNullablePattern() {
+        if (!isString)
+            return pattern;
+        else
+            throw new IllegalStateException("Trying to get nullable pattern, but this is string token: " + string);
     }
 
     int getLength() {

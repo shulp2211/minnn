@@ -205,7 +205,7 @@ final class NormalParsers {
             if (currentToken.isString()
                     && currentToken.getString().replace(" ", "").equals("")) {
                 Token nextToken = tokens.get(i + 1);
-                foundTokens.add(new FoundToken(nextToken.getPattern(), currentToken.getStartCoordinate(),
+                foundTokens.add(new FoundToken(nextToken.getNullablePattern(), currentToken.getStartCoordinate(),
                         nextToken.getStartCoordinate() + nextToken.getLength()));
             }
         }
@@ -227,7 +227,7 @@ final class NormalParsers {
             if (currentToken.isString()
                     && currentToken.getString().replace(" ", "").equals("")) {
                 Token previousToken = tokens.get(i - 1);
-                foundTokens.add(new FoundToken(previousToken.getPattern(), previousToken.getStartCoordinate(),
+                foundTokens.add(new FoundToken(previousToken.getNullablePattern(), previousToken.getStartCoordinate(),
                         currentToken.getStartCoordinate() + currentToken.getLength()));
             }
         }
@@ -248,9 +248,9 @@ final class NormalParsers {
         ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
         for (int i = 0; i < tokens.size() - 1; i++) {
             Token currentToken = tokens.get(i);
-            if (!currentToken.isString() && (currentToken.getPattern() == null)) {
+            if (!currentToken.isString() && (currentToken.getNullablePattern() == null)) {
                 Token nextToken = tokens.get(i + 1);
-                if (!nextToken.isString() && (nextToken.getPattern() != null))
+                if (nextToken.isPatternAndNotNull())
                     foundTokens.add(new FoundToken(nextToken.getPattern(),
                             currentToken.getStartCoordinate(),
                             nextToken.getStartCoordinate() + nextToken.getLength()));
@@ -273,9 +273,9 @@ final class NormalParsers {
         ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
         for (int i = 1; i < tokens.size(); i++) {
             Token currentToken = tokens.get(i);
-            if (!currentToken.isString() && (currentToken.getPattern() == null)) {
+            if (!currentToken.isString() && (currentToken.getNullablePattern() == null)) {
                 Token previousToken = tokens.get(i - 1);
-                if (!previousToken.isString() && (previousToken.getPattern() != null))
+                if (previousToken.isPatternAndNotNull())
                     foundTokens.add(new FoundToken(previousToken.getPattern(),
                             previousToken.getStartCoordinate(),
                             currentToken.getStartCoordinate() + currentToken.getLength()));
@@ -297,7 +297,7 @@ final class NormalParsers {
         boolean sequenceStarted = false;
         int sequenceStart = 0;
         for (int i = 0; i <= tokens.size(); i++) {
-            if ((i == tokens.size()) || tokens.get(i).isString()) {
+            if ((i == tokens.size()) || !tokens.get(i).isPatternAndNotNull()) {
                 if (sequenceStarted) {
                     if (sequenceStart < i - 1) {
                         SinglePattern[] operands = new SinglePattern[i - sequenceStart];
@@ -335,12 +335,12 @@ final class NormalParsers {
             Token previousToken = tokens.get(i - 1);
             Token currentToken = tokens.get(i);
             Token nextToken = tokens.get(i + 1);
-            if (!currentToken.isString() && previousToken.isString() && nextToken.isString()) {
+            if (currentToken.isPatternAndNotNull() && previousToken.isString() && nextToken.isString()) {
                 String previousString = previousToken.getString();
                 String nextString = nextToken.getString();
                 boolean bracketsFound = false;
-                int bracketsRelativeStart = 0;
-                int bracketsRelativeEnd = 0;
+                int bracketsRelativeStart;
+                int bracketsRelativeEnd;
                 int leftTokenizedCharactersNum = 0;
                 int rightTokenizedCharactersNum = 0;
                 boolean noMoreNestedBrackets = false;
@@ -567,15 +567,25 @@ final class NormalParsers {
      * @return found index in list of group names, or -1 if not found
      */
     private int getClosestGroupByPosition(int position, boolean toLeft) {
+        int foundIndex = -1;
+        int minDistance = Integer.MAX_VALUE;
         for (int i = 0; i < groupNames.size(); i++) {
-            if (toLeft && (position > groupNames.get(i).end)
-                    && ((i == groupNames.size() - 1) || (position <= groupNames.get(i + 1).start)))
-                return i;
-            if (!toLeft && (position < groupNames.get(i).bracketsPair.end)
-                    && ((i == groupNames.size() - 1) || (position >= groupNames.get(i + 1).bracketsPair.end)))
-                return i;
+            NormalSyntaxGroupName currentGroupName = groupNames.get(i);
+            int nameEnd = currentGroupName.end;
+            int parenthesesEnd = currentGroupName.bracketsPair.end;
+            if (toLeft) {
+                if ((position > nameEnd) && (position - nameEnd < minDistance)) {
+                    foundIndex = i;
+                    minDistance = position - nameEnd;
+                }
+            } else {
+                if ((position < parenthesesEnd) && (parenthesesEnd - position < minDistance)) {
+                    foundIndex = i;
+                    minDistance = parenthesesEnd - position;
+                }
+            }
         }
-        return -1;
+        return foundIndex;
     }
 
     /**
