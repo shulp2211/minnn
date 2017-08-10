@@ -113,8 +113,8 @@ final class ParserUtils {
                         }
                     }
                     if (isScoreLimit) {
-                        long scoreThreshold = toLong(query.substring(bracketsPair.start + 1, colonPosition)
-                                        .replace(" ", ""), "score threshold");
+                        long scoreThreshold = toLong(query.substring(bracketsPair.start + 1, colonPosition),
+                                "score threshold");
                         int currentNestedLevel = 0;
                         for (ScoreThreshold currentScoreThreshold : scoreThresholds)
                             if (currentScoreThreshold.contains(bracketsPair.start, bracketsPair.end))
@@ -268,7 +268,7 @@ final class ParserUtils {
      */
     static NucleotideSequence toNSeq(String str) throws ParserException {
         try {
-            NucleotideSequence seq = new NucleotideSequence(str);
+            NucleotideSequence seq = new NucleotideSequence(str.trim());
             if (seq.size() < 1)
                 throw new ParserException("Failed to parse nucleotide sequence from string \"" + str + "\"");
             return seq;
@@ -287,7 +287,7 @@ final class ParserUtils {
      */
     static int toInt(String str, String paramName) throws ParserException {
         try {
-            return Integer.parseInt(str);
+            return Integer.parseInt(str.trim());
         } catch (NumberFormatException e) {
             throw new ParserException("Failed to parse " + paramName + " from string \"" + str + "\"");
         }
@@ -302,7 +302,7 @@ final class ParserUtils {
      */
     static long toLong(String str, String paramName) throws ParserException {
         try {
-            return Long.parseLong(str);
+            return Long.parseLong(str.trim());
         } catch (NumberFormatException e) {
             throw new ParserException("Failed to parse " + paramName + " from string \"" + str + "\"");
         }

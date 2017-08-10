@@ -20,6 +20,11 @@ final class TokenizedString {
         this.length = query.length();
     }
 
+    @Override
+    public String toString() {
+        return tokenizedString.toString();
+    }
+
     /**
      * Wrapper for tokenizeSubstring that gets FoundToken object as parameter.
      *

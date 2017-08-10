@@ -173,17 +173,13 @@ final class NormalParsers {
             Token currentStringToken = stringTokens.get(i);
             String currentString = currentStringToken.getString();
             int asteriskPosition = currentString.indexOf("*");
-            if (asteriskPosition != -1) {
+            while (asteriskPosition != -1) {
                 int start = asteriskPosition + currentStringToken.getStartCoordinate();
-                int index = tokenizedString.getIndexByPosition(start);
-                if (((i != 0) && !currentString.substring(0, asteriskPosition).contains("\\"))
-                        || ((i != stringTokens.size() - 1) && !currentString.substring(asteriskPosition).contains("\\"))
-                        || ((i == 0) && (index != 0))
-                        || ((i == stringTokens.size() - 1) && (index != tokenizedString.getSize() - 1))
-                        || ((asteriskPosition != currentString.length() - 1)
-                            && (currentString.indexOf("*", asteriskPosition + 1) != -1)))
+                if (((i != 0) && !currentString.substring(0, asteriskPosition).matches(".*(&&|\\|\\||\\\\).*"))
+                        || ((i != stringTokens.size() - 1) && !currentString.substring(asteriskPosition)
+                            .matches(".*(&&|\\|\\||\\\\).*")))
                     throw new ParserException("'*' pattern is invalid if there are other patterns in the same read, "
-                            + "use 'N{*}' instead!");
+                            + "use 'n{*}' instead!");
 
                 List<FoundGroupEdgePosition> foundGroupEdgePositions = new ArrayList<>();
                 foundGroupEdgePositions.addAll(findGroupsOnBorder(start, true, 0));
@@ -195,6 +191,8 @@ final class NormalParsers {
                 foundGroupEdgePositions.forEach(fe -> foundTokens.add(new FoundToken(null, fe.start, fe.end)));
 
                 foundTokens.add(new FoundToken(new AnyPattern(patternAligner, groupEdges), start, start + 1));
+                asteriskPosition = (asteriskPosition == currentString.length() - 1) ? -1
+                        : currentString.indexOf("*", asteriskPosition + 1);
             }
         }
 
@@ -312,7 +310,7 @@ final class NormalParsers {
                     if (sequenceStart < i - 1) {
                         SinglePattern[] operands = new SinglePattern[i - sequenceStart];
                         for (int j = sequenceStart; j < i; j++)
-                            operands[j - sequenceStart] = tokens.get(j).getSinglePattern();
+                            operands[j - sequenceStart] = tokens.get(j).getSinglePatternExceptAnyPattern();
                         int sequenceTokenStart = tokens.get(sequenceStart).getStartCoordinate();
                         int sequenceTokenEnd = (i == tokens.size()) ? tokenizedString.getFullLength()
                                 : tokens.get(i).getStartCoordinate();
@@ -428,7 +426,10 @@ final class NormalParsers {
                             int numOperands = (i - sequenceStart + 1) / 2;
                             SinglePattern[] operands = new SinglePattern[numOperands];
                             for (int j = 0; j < numOperands; j++)
-                                operands[j] = tokens.get(sequenceStart + j * 2).getSinglePattern();
+                                if (operatorRegexp.contains("\\\\"))
+                                    operands[j] = tokens.get(sequenceStart + j * 2).getSinglePattern();
+                                else
+                                    operands[j] = tokens.get(sequenceStart + j * 2).getSinglePatternExceptAnyPattern();
                             int sequenceTokenStart = tokens.get(sequenceStart).getStartCoordinate();
                             int sequenceTokenEnd = tokens.get(i - 1).getStartCoordinate()
                                     + tokens.get(i - 1).getLength();
@@ -466,6 +467,37 @@ final class NormalParsers {
     }
 
     /**
+     * This function will wrap SinglePattern tokens with MultiPatterns, for case when high level logic operators
+     * are used with single read patterns.
+     *
+     * @param tokenizedString tokenized string object for query string
+     * @return list of found tokens
+     */
+    ArrayList<FoundToken> wrapWithMultiPatterns(TokenizedString tokenizedString) throws ParserException {
+        ArrayList<FoundToken> foundTokens = new ArrayList<>();
+        ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
+        if (tokens.size() > 1) {
+            boolean onlySinglePatterns = tokens.parallelStream().filter(Token::isPatternAndNotNull)
+                    .allMatch(t -> SinglePattern.class.isAssignableFrom(t.getPattern().getClass()));
+            boolean onlyMultiPatterns = tokens.parallelStream().filter(Token::isPatternAndNotNull)
+                    .allMatch(t -> MultipleReadsOperator.class.isAssignableFrom(t.getPattern().getClass()));
+            if (onlySinglePatterns && onlyMultiPatterns)
+                throw new ParserException("Query not parsed: no patterns found!");
+            if (!onlySinglePatterns && !onlyMultiPatterns)
+                throw new ParserException("Single read patterns are mixed with multiple reads patterns: "
+                        + tokenizedString);
+            if (onlySinglePatterns)
+                tokens.stream().filter(Token::isPatternAndNotNull).forEach(token -> foundTokens.add(
+                        new FoundToken(new MultiPattern(getPatternAligner(
+                        token.getStartCoordinate(), token.getStartCoordinate() + token.getLength()),
+                        (SinglePattern)(token.getPattern())),
+                        token.getStartCoordinate(), token.getStartCoordinate() + token.getLength())));
+        }
+
+        return foundTokens;
+    }
+
+    /**
      * This function will parse multiple read operators with specified sign that are in brackets with specified
      * nested level. It will be called from loop with decreasing nested level, once for each operator on every nested
      * level, starting from operators with higher priority. Nested level -1 means to parse operators outside
@@ -497,9 +529,12 @@ final class NormalParsers {
                         if (operatorRegexp.contains("~")) {
                             if ((i > 1) && tokens.get(i - 2).isString() &&
                                     tokens.get(i - 2).getString().matches(operatorRegexp)) {
-                                int tokenStart = tokens.get(i - 2).getStartCoordinate();
-                                int tokenEnd = tokens.get(i - 1).getStartCoordinate() + tokens.get(i - 1).getLength();
-                                MultipleReadsOperator operand = tokens.get(i - 1).getMultipleReadsOperator();
+                                Token operatorToken = tokens.get(i - 2);
+                                Token operandToken = tokens.get(i - 1);
+                                int tokenStart = operatorToken.getStartCoordinate()
+                                        + operatorToken.getString().lastIndexOf("~");
+                                int tokenEnd = operandToken.getStartCoordinate() + operandToken.getLength();
+                                MultipleReadsOperator operand = operandToken.getMultipleReadsOperator();
                                 validateGroupEdges(false, true, false, operand);
                                 foundTokens.add(new FoundToken(new NotOperator(getPatternAligner(tokenStart, tokenEnd),
                                         operand), tokenStart, tokenEnd));
@@ -783,8 +818,9 @@ final class NormalParsers {
         StringBuilder result = new StringBuilder();
         for (int currentPosition = start; currentPosition < end; currentPosition++) {
             final int position = currentPosition;
-            if ((query.charAt(position) != ' ')
-                    && groupNames.stream().noneMatch(gn -> (gn.start <= position) && (gn.end >= position)))
+            if ((query.charAt(position) != ' ') && groupNames.stream()
+                    .noneMatch(gn -> ((gn.start <= position) && (gn.end >= position))
+                            || (gn.bracketsPair.end == position)))
                 result.append(query.charAt(position));
         }
         return result.toString();

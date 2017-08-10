@@ -57,9 +57,9 @@ final class NormalTokenizer extends Tokenizer {
             normalParsers.parseSequencePatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
             normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         }
-        tokenizedString.checkNotParsedNullPatterns();
 
         // MultiPatterns
+        tokenizedString.checkNotParsedNullPatterns();
         for (int currentNestedLevel = maxBracketsNestedLevel; currentNestedLevel >= -1; currentNestedLevel--) {
             normalParsers.parseSingleReadOperators(tokenizedString, " *\\\\ *", currentNestedLevel)
                     .forEach(tokenizedString::tokenizeSubstring);
@@ -67,8 +67,9 @@ final class NormalTokenizer extends Tokenizer {
         }
 
         // multiple reads operators
+        normalParsers.wrapWithMultiPatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         for (int currentNestedLevel = maxBracketsNestedLevel; currentNestedLevel >= -1; currentNestedLevel--) {
-            for (String operatorRegexp : new String[]{" *~ *", " *&& *", " *\\|\\| *"}) {
+            for (String operatorRegexp : new String[]{".*~ *", " *&& *", " *\\|\\| *"}) {
                 normalParsers.parseMultiReadOperators(tokenizedString, operatorRegexp, currentNestedLevel)
                         .forEach(tokenizedString::tokenizeSubstring);
                 normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);

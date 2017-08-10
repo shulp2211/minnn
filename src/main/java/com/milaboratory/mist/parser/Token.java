@@ -1,8 +1,6 @@
 package com.milaboratory.mist.parser;
 
-import com.milaboratory.mist.pattern.MultipleReadsOperator;
-import com.milaboratory.mist.pattern.Pattern;
-import com.milaboratory.mist.pattern.SinglePattern;
+import com.milaboratory.mist.pattern.*;
 
 final class Token {
     private final boolean isString;
@@ -90,6 +88,14 @@ final class Token {
         if (SinglePattern.class.isAssignableFrom(getPattern().getClass()))
             return (SinglePattern)pattern;
         else throw new ParserException("Expected SinglePattern, but got " + pattern);
+    }
+
+    SinglePattern getSinglePatternExceptAnyPattern() throws ParserException {
+        SinglePattern pattern = getSinglePattern();
+        if (AnyPattern.class.equals(pattern.getClass()))
+            throw new ParserException("'*' pattern is invalid if there are other patterns in the same read, "
+                    + "use 'n{*}' instead!");
+        return pattern;
     }
 
     MultipleReadsOperator getMultipleReadsOperator() throws ParserException {
