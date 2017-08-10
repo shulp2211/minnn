@@ -114,6 +114,11 @@ public class ParserTest {
         testBadSample("A*");
         testBadSample("*A");
         testBadSample("**");
+        testBadSample("*A*");
+        testBadSample("*&*");
+        testBadSample("*||*");
+        testBadSample("*||A");
+        testBadSample("A||*");
         testBadSample("<*");
         testBadSample("A^");
         testSample(" ( TEST1 : [  [  (TEST2:  *  )  ]  ] ) ", "AT", new Range(0, 2));
@@ -129,11 +134,33 @@ public class ParserTest {
         testBadSample("AAT{2}>");
         testBadSample("AAT{2}$>");
         testBadSample("AAT{2}^>");
+        testBadSample("(U MI:AAA)");
     }
 
     @Test
     public void sampleNormalSyntaxQueriesTest3() throws Exception {
-
+        testMultiSample("ATTA \\ GACA", "ATTA GACA", true);
+        testMultiSample("AAA || TTT \\ GGG || CCC", "TTT GGG", true);
+        testMultiSample("[AAA \\ TTT] || [GGG \\ CCC]", "GGG CCC", true);
+        testMultiSample("~AAA", "A", true);
+        testMultiSample("AAA + T || ~CCC", "AAACCT", true);
+        testMultiSample("~AAA", "AAA", false);
+        testMultiSample("~[~AAA]", "AAA", true);
+        testBadSample("~~AAA");
+        testMultiSample("A + A && C + C", "ACAC", true);
+        testMultiSample("GC \\ AA && TT \\ C & ATG", "GCTTGC ATGAAC", true);
+        testBadSample("~ATTA \\ ~GACA || ~GC \\ ~[AT + AT] && ~[TTT \\ GCC] && TA & A \\ <<AGACA");
+        testMultiSample("~[ATTA \\ GACA] || ~[GC \\ [AT + AT]] && ~[TTT \\ GCC] && TA & A \\ <<AGACA",
+                "ATTA GACA", true);
+        testMultiSample("[AT || AC \\ GT || GC] || [CT || CC \\ TT || TC]",
+                "ATGTCTTT ACGCCCTC", true);
+        testMultiSample("<<AT(1:TA)TT \\ G & G\\A && [[TG\\C\\*]||[TC{3}ACC>{2}\\<^TG\\(2:*)]]",
+                "TATTCCCA GG A", true);
+        testMultiSample("<<AT(1:TA)TT \\ G & G\\A && [[TG\\C\\*]||[TC{3}ACC>{2}\\^TG\\(2:*)]]",
+                "TATTCCCA GG A", false);
+        testMultiSample("*\\A", "T A", true);
+        testMultiSample("*\\* && *\\* && [*\\*] || ~[*\\*]", "A A", true);
+        testBadSample("[TT\\AA]||[*||GC\\CG]");
     }
 
     @Test
@@ -151,6 +178,18 @@ public class ParserTest {
         assertGroupRange(testGroups2, "1", new Range(0, 23));
         assertGroupRange(testGroups2, "2", new Range(11, 22));
         assertGroupRange(testGroups2, "3", new Range(18, 21));
+
+        ArrayList<MatchedGroup> testGroups3 = getGroupsFromSample(
+                "(1:(2:(3:(4:(5:(6:(7:(8:(9:(10:A))))))))))", "A");
+        for (int i = 1; i <= 10; i++)
+            assertGroupRange(testGroups3, Integer.toString(i), new Range(0, 1));
+
+        ArrayList<MatchedGroup> testGroups4 = getGroupsFromSample(
+                "^<ATTA ( UMI: GACA ) [ ATT + ( G1: GCC ) + TTA ] || ^<AGC(UMI:GC) ATTGAGCC(G2:TTG)GG$",
+                "TTAGACAATTATTGTTCTTCGCCGCCTTAT");
+        assertGroupRange(testGroups4, "UMI", new Range(3, 7));
+        assertGroupRange(testGroups4, "G1", new Range(20, 23));
+        assertEquals(0, testGroups4.stream().filter(g -> g.getGroupName().equals("G2")).count());
     }
 
     @Test
@@ -172,6 +211,14 @@ public class ParserTest {
         }
     }
 
+    @Test
+    public void bestMatchTest() throws Exception {
+        String query = "AGTT >>>+ [-1:<{1} GCA{2:2}TGC & T{2 :}A] +[0: <{1}AGC] &AGC& [[[[[T ] ] ] ] ] ";
+        String target = "TATATTAATCAATGCCCAGCAGC";
+        Pattern pattern = strictParser.parseQuery(query);
+        assertEquals(target, bestToString(pattern.match(new NSequenceWithQuality(target))));
+    }
+
     private static void testSample(String query, String target, Range expectedRange) throws Exception {
         Pattern pattern = strictParser.parseQuery(query);
         Match bestMatch = pattern.match(new NSequenceWithQuality(target)).getBestMatch(true);
@@ -179,7 +226,7 @@ public class ParserTest {
         assertEquals(expectedRange, matchedRange);
     }
 
-    private static void testMultiSample(String query, String multiTarget, long expectedCount) throws Exception {
+    private static void testMultiSample(String query, String multiTarget, boolean mustMatch) throws Exception {
         Pattern pattern = strictParser.parseQuery(query);
         String[] targets = multiTarget.split(" ");
         MultiNSequenceWithQuality multiSeq = new MultiNSequenceWithQuality() {
@@ -194,7 +241,7 @@ public class ParserTest {
             }
         };
         MatchingResult results = pattern.match(multiSeq);
-        assertEquals(expectedCount, countMatches(results, true));
+        assertEquals(mustMatch, results.getBestMatch(true) != null);
     }
 
     private static void testBadSample(String query) throws Exception {
