@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import static com.milaboratory.mist.output_converter.GroupUtils.getGroupsFromMatch;
 import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
+import static com.milaboratory.mist.util.CommonTestUtils.RandomStringType.*;
 import static org.junit.Assert.*;
 
 public class ParserTest {
@@ -107,13 +108,27 @@ public class ParserTest {
         testBadSample("(<{4:}ATTAGACA)");
         testBadSample("{3}");
         testBadSample(":{3}");
+        testBadSample("A{0}");
+        testBadSample("A{-8}");
+        testBadSample("A{3:2}");
         testBadSample("A*");
         testBadSample("*A");
         testBadSample("**");
         testBadSample("<*");
+        testBadSample("A^");
         testSample(" ( TEST1 : [  [  (TEST2:  *  )  ]  ] ) ", "AT", new Range(0, 2));
         testSample("<{1}[[ATTA>+<{1}GACA]>+<AATA$>{1}]&^<(X:GCGC)", "CGCTTACAT", new Range(0, 9));
         testBadSample("AT><TA");
+        testBadSample("A^$A");
+        testBadSample("A+$^A");
+        testBadSample("A+^#A");
+        testBadSample("^*A");
+        testSample("^AT{2}A$", "ATTA", new Range(0, 4));
+        testSample("^A{1}TTA{1}$", "ATTA", new Range(0, 4));
+        testSample("^<AAT{:2}AA>$", "ATA", new Range(0, 3));
+        testBadSample("AAT{2}>");
+        testBadSample("AAT{2}$>");
+        testBadSample("AAT{2}^>");
     }
 
     @Test
@@ -136,6 +151,25 @@ public class ParserTest {
         assertGroupRange(testGroups2, "1", new Range(0, 23));
         assertGroupRange(testGroups2, "2", new Range(11, 22));
         assertGroupRange(testGroups2, "3", new Range(18, 21));
+    }
+
+    @Test
+    public void fuzzingTest() throws Exception {
+        for (int i = 0; i < 100000; i++) {
+            int stringLength = rg.nextInt(30) + 1;
+            String randomString = rg.nextBoolean()
+                    ? getRandomString(stringLength, "", QUERY_CHARACTERS) : rg.nextBoolean()
+                    ? getRandomString(stringLength, "", UNICODE)
+                    : getRandomString(stringLength, "", LIMITED);
+            try {
+                strictParser.parseQuery(randomString);
+            } catch (Exception e) {
+                if (!e.getClass().equals(ParserException.class)) {
+                    System.out.println(randomString + "\n" + e);
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 
     private static void testSample(String query, String target, Range expectedRange) throws Exception {

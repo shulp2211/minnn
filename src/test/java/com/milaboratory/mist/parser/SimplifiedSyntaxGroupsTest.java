@@ -11,6 +11,7 @@ import java.util.*;
 import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
+import static com.milaboratory.mist.util.CommonTestUtils.RandomStringType.*;
 
 public class SimplifiedSyntaxGroupsTest {
     private final PatternAligner patternAligner = getTestPatternAligner();
@@ -57,7 +58,7 @@ public class SimplifiedSyntaxGroupsTest {
                         new AndOperator(patternAligner, multiPatterns.get(j)),
                         multiPatterns.get(rg.nextInt(multiPatterns.size()))));
 
-                String randomGroupName = getRandomString(rg.nextInt(10) + 1, "", true);
+                String randomGroupName = getRandomString(rg.nextInt(10) + 1, "", LETTERS_AND_NUMBERS);
                 ArrayList<GroupEdgePosition> groupEdgePositions1 = new ArrayList<>();
                 ArrayList<GroupEdgePosition> groupEdgePositions2 = new ArrayList<>();
                 groupEdgePositions1.add(new GroupEdgePosition(new GroupEdge(randomGroupName, true), 0));
@@ -112,7 +113,7 @@ public class SimplifiedSyntaxGroupsTest {
 
     @Test
     public void groupPartInvalidNonCommonObjectTest() throws Exception {
-        String randomGroupName = getRandomString(rg.nextInt(10) + 1, "", true);
+        String randomGroupName = getRandomString(rg.nextInt(10) + 1, "", LETTERS_AND_NUMBERS);
         ArrayList<GroupEdgePosition> groupEdgePositions1 = new ArrayList<>();
         ArrayList<GroupEdgePosition> groupEdgePositions2 = new ArrayList<>();
         groupEdgePositions1.add(new GroupEdgePosition(new GroupEdge(randomGroupName, true), 0));

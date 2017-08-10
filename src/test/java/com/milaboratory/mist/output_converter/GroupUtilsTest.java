@@ -11,6 +11,7 @@ import java.util.ArrayList;
 
 import static com.milaboratory.mist.output_converter.GroupUtils.*;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
+import static com.milaboratory.mist.util.CommonTestUtils.RandomStringType.*;
 import static org.junit.Assert.*;
 
 public class GroupUtilsTest {
@@ -138,7 +139,7 @@ public class GroupUtilsTest {
     }
 
     private MatchedGroup generateMatchedGroup(Range range, boolean random) {
-        return new MatchedGroup(random ? getRandomString(rg.nextInt(30) + 1, "", true)
+        return new MatchedGroup(random ? getRandomString(rg.nextInt(30) + 1, "", LETTERS_AND_NUMBERS)
                 : "GroupName", new NSequenceWithQuality("ATTAGACATT"), (byte)(random ? rg.nextInt(20) - 10 : 1),
                 random ? rg.nextInt(10) : 2, range);
     }

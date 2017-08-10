@@ -17,11 +17,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.PatternUtils.invertCoordinate;
+import static com.milaboratory.mist.util.CommonTestUtils.RandomStringType.*;
 import static org.junit.Assert.*;
 
 public class CommonTestUtils {
     public static final Random rg = new Random();
-    private static final String LETTERS_AND_NUMBERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    private static final String LN_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    private static final String QUERY_CHAR_STRING = " ATGCNatgcn()[]{}^$:+&|\\~0123456789-*";
 
     public static int countPortValues(OutputPort<Match> port) {
         int counter = 0;
@@ -217,23 +219,40 @@ public class CommonTestUtils {
         return new String(new char[num]).replace("\0", str);
     }
 
+    public enum RandomStringType {
+        UNICODE,
+        LIMITED,
+        LETTERS_AND_NUMBERS,
+        QUERY_CHARACTERS
+    }
+
     public static String getRandomString(int length) {
-        return getRandomString(length, "", false);
+        return getRandomString(length, "", UNICODE);
     }
 
     public static String getRandomString(int length, String exclude) {
-        return getRandomString(length, exclude, false);
+        return getRandomString(length, exclude, UNICODE);
     }
 
-    public static String getRandomString(int length, String exclude, boolean lettersAndNumbers) {
+    public static String getRandomString(int length, String exclude, RandomStringType type) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < length; i++) {
             char c;
             do {
-                if (lettersAndNumbers)
-                    c = LETTERS_AND_NUMBERS.charAt(rg.nextInt(LETTERS_AND_NUMBERS.length()));
-                else
-                    c = (char)(rg.nextInt(rg.nextInt(2) == 0 ? 128 : Character.MAX_VALUE));
+                switch (type) {
+                    case LIMITED:
+                        c = (char)(rg.nextInt(rg.nextInt(128) + 128));
+                        break;
+                    case LETTERS_AND_NUMBERS:
+                        c = LN_STRING.charAt(rg.nextInt(LN_STRING.length()));
+                        break;
+                    case QUERY_CHARACTERS:
+                        c = QUERY_CHAR_STRING.charAt(rg.nextInt(QUERY_CHAR_STRING.length()));
+                        break;
+                    case UNICODE:
+                    default:
+                        c = (char)(rg.nextInt(rg.nextInt(2) == 0 ? 128 : Character.MAX_VALUE));
+                }
             } while (exclude.contains(Character.toString(c)));
             sb.append(c);
         }
@@ -253,7 +272,7 @@ public class CommonTestUtils {
             throw new IllegalArgumentException("maxCoordinate=" + maxCoordinate);
         ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
         while (groupEdgePositions.size() < numGroups * 2) {
-            String groupName = getRandomString(rg.nextInt(30) + 1, "", true);
+            String groupName = getRandomString(rg.nextInt(30) + 1, "", LETTERS_AND_NUMBERS);
             if (groupEdgePositions.stream().anyMatch(g -> g.getGroupEdge().getGroupName().equals(groupName)))
                 continue;
             int leftPosition = rg.nextInt(maxCoordinate);
