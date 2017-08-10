@@ -79,6 +79,12 @@ final class NormalParsers {
                     maxRepeats = toInt(arguments.substring(arguments.indexOf(":") + 1),
                             "maximum number of repeats");
             }
+            if (minRepeats > maxRepeats)
+                throw new ParserException("Minimum number of repeats (" + minRepeats + ") is bigger than maximum ("
+                        + maxRepeats + ")!");
+            if ((minRepeats < 1) || (maxRepeats < 1) || (minRepeats > MAX_REPEATS) || (maxRepeats > MAX_REPEATS))
+                throw new ParserException("Allowed number of repeats: min=1, max=" + MAX_REPEATS + "; found: from "
+                        + minRepeats + " to " + maxRepeats);
 
             List<FoundGroupEdgePosition> foundGroupEdgePositions = new ArrayList<>();
             foundGroupEdgePositions.addAll(findGroupsOnBorder(bracesPair.start - 1, true, MAX_REPEATS));
@@ -133,6 +139,9 @@ final class NormalParsers {
                     foundTokens.add(new FoundToken(null, rightBorderToken.start, rightBorderToken.end));
                     foundRightCut = rightBorderToken.numberOfRepeats;
                 }
+                if (foundLeftCut + foundRightCut >= patternSeq.size())
+                    throw new ParserException("Number of cut nucleotides must be less than pattern length; found: "
+                        + "pattern: " + patternSeq + ", left cut: " + foundLeftCut + ", right cut: " + foundRightCut);
 
                 int startStickPosition = findStartStick(start);
                 int endStickPosition = findEndStick(end - 1);
@@ -167,11 +176,12 @@ final class NormalParsers {
             if (asteriskPosition != -1) {
                 int start = asteriskPosition + currentStringToken.getStartCoordinate();
                 int index = tokenizedString.getIndexByPosition(start);
-                if (((i != 0) && !currentString.substring(0, start).contains("\\"))
-                        || ((i != stringTokens.size() - 1) && !currentString.substring(start).contains("\\"))
+                if (((i != 0) && !currentString.substring(0, asteriskPosition).contains("\\"))
+                        || ((i != stringTokens.size() - 1) && !currentString.substring(asteriskPosition).contains("\\"))
                         || ((i == 0) && (index != 0))
                         || ((i == stringTokens.size() - 1) && (index != tokenizedString.getSize() - 1))
-                        || (currentString.indexOf("*", start + 1) != -1))
+                        || ((asteriskPosition != currentString.length() - 1)
+                            && (currentString.indexOf("*", asteriskPosition + 1) != -1)))
                     throw new ParserException("'*' pattern is invalid if there are other patterns in the same read, "
                             + "use 'N{*}' instead!");
 
@@ -411,7 +421,7 @@ final class NormalParsers {
             boolean sequenceStarted = false;
             int sequenceStart = 0;
             for (int i = 0; i <= tokens.size(); i++) {
-                if ((i == tokens.size()) || (tokens.get(i).isString()
+                if ((i == tokens.size()) || tokens.get(i).isNullPattern() || (tokens.get(i).isString()
                         && !tokens.get(i).getString().matches(operatorRegexp))) {
                     if (sequenceStarted) {
                         if (sequenceStart < i - 2) {
@@ -445,7 +455,7 @@ final class NormalParsers {
                         }
                         sequenceStarted = false;
                     }
-                } else if (!sequenceStarted && !tokens.get(i).isString()) {
+                } else if (!sequenceStarted && tokens.get(i).isPatternAndNotNull()) {
                     sequenceStart = i;
                     sequenceStarted = true;
                 }
@@ -649,7 +659,8 @@ final class NormalParsers {
                 markerPosition = startStickMarkers.get(i);
         }
 
-        if ((markerPosition != -1) && !query.substring(markerPosition + 1, position).matches(".*\\\\.*")
+        if ((markerPosition != -1)
+                && !query.substring(markerPosition + 1, position).matches(".*[\\^$+&|\\\\].*")
                 && !isAnyNucleotide(markerPosition + 1, position))
             return markerPosition;
         else
@@ -669,7 +680,8 @@ final class NormalParsers {
                 markerPosition = endStickMarkers.get(i);
         }
 
-        if ((markerPosition != -1) && !query.substring(position + 1, markerPosition).matches(".*\\\\.*")
+        if ((markerPosition != -1)
+                && !query.substring(position + 1, markerPosition).matches(".*[\\^$+&|\\\\].*")
                 && !isAnyNucleotide(position + 1, markerPosition))
             return markerPosition;
         else

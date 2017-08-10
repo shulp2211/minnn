@@ -288,10 +288,9 @@ final class TokenizedString {
         return tokenizedString.get(0).getPattern();
     }
 
-    void assertNoNullPatterns() {
-        if (tokenizedString.stream().anyMatch(t -> !t.isString() && (t.getPattern() == null)))
-            throw new IllegalStateException("TokenizedString must not contain null patterns on this stage! "
-                    + tokenizedString);
+    void checkNotParsedNullPatterns() throws ParserException {
+        if (tokenizedString.stream().anyMatch(Token::isNullPattern))
+            throw new ParserException("Some tokens not parsed: " + tokenizedString);
     }
 
     private void assertNotTokenized() {

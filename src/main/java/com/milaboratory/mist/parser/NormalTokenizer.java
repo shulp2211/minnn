@@ -57,7 +57,7 @@ final class NormalTokenizer extends Tokenizer {
             normalParsers.parseSequencePatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
             normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         }
-        tokenizedString.assertNoNullPatterns();
+        tokenizedString.checkNotParsedNullPatterns();
 
         // MultiPatterns
         for (int currentNestedLevel = maxBracketsNestedLevel; currentNestedLevel >= -1; currentNestedLevel--) {

@@ -35,6 +35,10 @@ final class Token {
         return !isString && (pattern != null);
     }
 
+    boolean isNullPattern() {
+        return !isString && (pattern == null);
+    }
+
     String getString() {
         if (isString)
             return string;
