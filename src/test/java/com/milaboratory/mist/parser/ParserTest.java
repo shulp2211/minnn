@@ -135,6 +135,12 @@ public class ParserTest {
         testBadSample("AAT{2}$>");
         testBadSample("AAT{2}^>");
         testBadSample("(U MI:AAA)");
+        testSample("AT(1:TA + GA)CA", "ATTAGACA", new Range(0, 8));
+        testSample("A(1:TT)A || G(1:AC)A", "ATTA", new Range(0, 4));
+        testBadSample("AT(1:TA & GA)CA");
+        testBadSample("AT(1:TA || GA)CA");
+        testBadSample("A(1:TT)A + G(1:AC)A");
+        testBadSample("A(1:TT)A & G(1:AC)A");
     }
 
     @Test
@@ -161,6 +167,9 @@ public class ParserTest {
         testMultiSample("*\\A", "T A", true);
         testMultiSample("*\\* && *\\* && [*\\*] || ~[*\\*]", "A A", true);
         testBadSample("[TT\\AA]||[*||GC\\CG]");
+        testMultiSample("[A(1:TT)A \\ G(2:AC)A] || [(1:A) \\ (2:T)]", "A GACA", false);
+        testBadSample("[A(1:TT)A \\ G(2:AC)A] && [(1:A) \\ (2:T)]");
+        testBadSample("A(1:TT)A \\ G(1:AC)A");
     }
 
     @Test
