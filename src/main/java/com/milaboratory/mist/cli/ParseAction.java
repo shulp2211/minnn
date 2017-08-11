@@ -42,7 +42,7 @@ public final class ParseAction implements Action {
             System.err.println("Error while parsing the pattern!");
             exitWithError(e.getMessage());
         }
-        TargetReader targetReader = new TargetReader(pattern);
+        TargetReader targetReader = new TargetReader(pattern, params.oriented);
         ParsedReadsPort parsedReadsPort = new ParsedReadsPort(targetReader.getMatchingResult(params.inputFileNames),
                 params.fairSorting, params.firstReadNumber);
         writeResultsFromPort(params.outputFileNames, parsedReadsPort);
@@ -75,7 +75,8 @@ public final class ParseAction implements Action {
                 names = {"--output"}, variableArity = true)
         List<String> outputFileNames = new ArrayList<>();
 
-        @Parameter(description = "Query, pattern specified in MiST format.",
+        @Parameter(description = "By default, if there are 2 or more reads, 2 last reads are checked in direct " +
+                "and reverse order. With this flag, only in direct order.",
                 names = {"--oriented"})
         boolean oriented = false;
 

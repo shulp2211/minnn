@@ -18,9 +18,11 @@ import static com.milaboratory.mist.util.SystemUtils.exitWithError;
 
 public class TargetReader {
     private final Pattern pattern;
+    private final boolean orientedReads;
 
-    public TargetReader(Pattern pattern) {
+    public TargetReader(Pattern pattern, boolean orientedReads) {
         this.pattern = pattern;
+        this.orientedReads = orientedReads;
     }
 
     /**
