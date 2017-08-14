@@ -107,7 +107,7 @@ final class NormalParsers {
         List<Token> stringTokens = tokenizedString.getTokens(0, tokenizedString.getFullLength()).stream()
                 .filter(Token::isString).collect(Collectors.toList());
         for (Token currentStringToken : stringTokens) {
-            Matcher regexMatcher = Pattern.compile("[a-zA-Z]+((\\( *\\w *: *[a-zA-Z ]+ *\\))*[a-zA-Z]+)*")
+            Matcher regexMatcher = Pattern.compile("[a-zA-Z]+( *(\\( *[a-zA-Z0-9]+ *: *[a-zA-Z ]+ *\\))* *[a-zA-Z]+)*")
                     .matcher(currentStringToken.getString());
             while (regexMatcher.find()) {
                 int start = regexMatcher.start() + currentStringToken.getStartCoordinate();
@@ -522,8 +522,9 @@ final class NormalParsers {
             for (int i = 0; i <= tokens.size(); i++) {
                 /* for NotOperator, every single pattern will be treated as sequence, and then it will be checked
                    that previous token matches operatorRegexp */
-                if ((i == tokens.size()) || (tokens.get(i).isString()
-                        && !tokens.get(i).getString().matches(operatorRegexp))
+                if ((i == tokens.size())
+                        || (tokens.get(i).isString() && !tokens.get(i).getString().matches(operatorRegexp))
+                        || (sequenceStarted && (i > 0) && (tokens.get(i - 1).isString() == tokens.get(i).isString()))
                         || (sequenceStarted && operatorRegexp.contains("~"))) {
                     if (sequenceStarted) {
                         if (operatorRegexp.contains("~")) {

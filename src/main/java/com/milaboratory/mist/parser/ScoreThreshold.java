@@ -30,7 +30,7 @@ final class ScoreThreshold {
      * @return true if the specified range is inside this score threshold
      */
     boolean contains(int start, int end) {
-        if ((start > this.start) && (end < this.end))
+        if ((start >= this.start) && (end <= this.end))
             return true;
         else if (((start < this.start) && (end <= this.start)) || ((start >= this.end) && (end > this.end))
                 || ((start < this.start) && (end >= this.end)))
