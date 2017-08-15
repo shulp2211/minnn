@@ -34,13 +34,14 @@ public final class ParseAction implements Action {
         PatternAligner patternAligner = new BasePatternAligner(scoring, params.penaltyThreshold,
                 params.singleOverlapPenalty, params.bitapMaxErrors);
         Parser patternParser = new Parser(patternAligner);
-        Pattern pattern = null;
+        Pattern pattern;
         try {
             pattern = params.simplifiedSyntax ? patternParser.parseQuery(params.query, SIMPLIFIED)
                     : patternParser.parseQuery(params.query);
         } catch (ParserException e) {
             System.err.println("Error while parsing the pattern!");
             exitWithError(e.getMessage());
+            throw new RuntimeException();
         }
         TargetReader targetReader = new TargetReader(pattern, params.oriented);
         ParsedReadsPort parsedReadsPort = new ParsedReadsPort(targetReader.getMatchingResult(params.inputFileNames),
@@ -66,12 +67,12 @@ public final class ParseAction implements Action {
         String query = null;
 
         @Parameter(description = "Input files. Single file means that there is 1 read or multi-read file; " +
-                    "multiple files mean that there is 1 file for each read.",
+                "multiple files mean that there is 1 file for each read.",
                 names = {"--input"}, variableArity = true)
         List<String> inputFileNames = new ArrayList<>();
 
         @Parameter(description = "Output files. Single file means that there is 1 read or multi-read file; " +
-                    "multiple files mean that there is 1 file for each read.",
+                "multiple files mean that there is 1 file for each read.",
                 names = {"--output"}, variableArity = true)
         List<String> outputFileNames = new ArrayList<>();
 

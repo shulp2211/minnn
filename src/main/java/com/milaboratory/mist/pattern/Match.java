@@ -30,7 +30,7 @@ public final class Match {
      */
     public MatchedRange getMatchedRange(int patternIndex) {
         for (MatchedItem item : matchedItems)
-            if (MatchedRange.class.isAssignableFrom(item.getClass())
+            if (item instanceof MatchedRange
                     && (item.getPatternIndex() == patternIndex))
                 return (MatchedRange)item;
         if ((patternIndex >= numberOfPatterns) || (patternIndex < 0))
