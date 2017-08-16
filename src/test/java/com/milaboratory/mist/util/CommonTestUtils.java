@@ -11,6 +11,8 @@ import com.milaboratory.core.sequence.SequencesUtils;
 import com.milaboratory.mist.pattern.*;
 import com.milaboratory.test.TestUtil;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
@@ -22,6 +24,7 @@ import static org.junit.Assert.*;
 
 public class CommonTestUtils {
     public static final Random rg = new Random();
+    public static final String TEMP_DIR = System.getProperty("java.io.tmpdir") + "/";
     private static final String LN_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final String QUERY_CHAR_STRING = " ATGCNatgcn()[]{}^$:+&|\\~0123456789-*";
 
@@ -409,6 +412,10 @@ public class CommonTestUtils {
 
     public static String bestToString(MatchingResult matchingResult, boolean fairSorting) {
         return matchingResult.getBestMatch(fairSorting).getValue().getSequence().toString();
+    }
+
+    public static void assertFileEquals(String fileName1, String fileName2) throws Exception {
+        assertArrayEquals(Files.readAllBytes(Paths.get(fileName1)), Files.readAllBytes(Paths.get(fileName2)));
     }
 
     @FunctionalInterface
