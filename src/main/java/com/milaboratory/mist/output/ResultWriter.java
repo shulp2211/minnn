@@ -25,7 +25,7 @@ public class ResultWriter {
                 writeResult(fileNames, bestParsedRead);
             } catch (IOException e) {
                 System.err.println("I/O exception!");
-                exitWithError(e.getMessage());
+                throw exitWithError(e.getMessage());
             }
     }
 
@@ -33,7 +33,7 @@ public class ResultWriter {
         MultiRead multiRead = parsedRead.read();
         int numberOfReads = multiRead.numberOfReads();
         if (fileNames.size() != numberOfReads)
-            exitWithError("Mismatched number of reads (" + numberOfReads + ") and number of output files ("
+            throw exitWithError("Mismatched number of reads (" + numberOfReads + ") and number of output files ("
                     + fileNames.size() + ")!");
         for (int i = 0; i < numberOfReads; i++) {
             SingleFastqWriter writer = new SingleFastqWriter(fileNames.get(i));

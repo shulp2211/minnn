@@ -35,47 +35,45 @@ public class TargetReader {
      */
     public MatchingResult getMatchingResult(List<String> fileNames) {
         if (fileNames.size() <= 1) {
-            SingleFastqReader reader = null;
+            SingleFastqReader reader;
             try {
                 reader = (fileNames.size() == 0) ? new SingleFastqReader(System.in)
                         : new SingleFastqReader(fileNames.get(0));
             } catch (IOException e) {
-                exitWithError(e.getMessage());
+                throw exitWithError(e.getMessage());
             }
-            if (reader != null) {
-                SingleRead read = reader.take();
-                if (read != null) {
-                    NSequenceWithQuality target = read.getData();
-                    if (SinglePattern.class.isAssignableFrom(pattern.getClass())) {
-                        SinglePattern singlePattern = (SinglePattern)pattern;
-                        return singlePattern.match(target);
-                    } else
-                        exitWithError("Trying to use pattern for multiple reads with single read!");
-                }
+
+            SingleRead read = reader.take();
+            if (read != null) {
+                NSequenceWithQuality target = read.getData();
+                if (pattern instanceof SinglePattern) {
+                    SinglePattern singlePattern = (SinglePattern)pattern;
+                    return singlePattern.match(target);
+                } else
+                    throw exitWithError("Trying to use pattern for multiple reads with single read!");
             }
         } else if (fileNames.size() == 2) {
-            PairedFastqReader reader = null;
+            PairedFastqReader reader;
             try {
                 reader = new PairedFastqReader(fileNames.get(0), fileNames.get(1));
             } catch (IOException e) {
-                exitWithError(e.getMessage());
+                throw exitWithError(e.getMessage());
             }
-            if (reader != null) {
-                PairedRead read = reader.take();
-                if (read != null) {
-                    MultiNSequenceWithQuality target = new MultiNSequenceWithQuality() {
-                        @Override
-                        public int numberOfSequences() {
-                            return 2;
-                        }
 
-                        @Override
-                        public NSequenceWithQuality get(int id) {
-                            return ((id == 0) ? read.getR1() : read.getR2()).getData();
-                        }
-                    };
-                    return pattern.match(target);
-                }
+            PairedRead read = reader.take();
+            if (read != null) {
+                MultiNSequenceWithQuality target = new MultiNSequenceWithQuality() {
+                    @Override
+                    public int numberOfSequences() {
+                        return 2;
+                    }
+
+                    @Override
+                    public NSequenceWithQuality get(int id) {
+                        return ((id == 0) ? read.getR1() : read.getR2()).getData();
+                    }
+                };
+                return pattern.match(target);
             }
         } else {
             ArrayList<SingleFastqReader> readers = new ArrayList<>();
@@ -84,14 +82,14 @@ public class TargetReader {
                 for (String fileName : fileNames)
                     readers.add(new SingleFastqReader(fileName));
             } catch (IOException e) {
-                exitWithError(e.getMessage());
+                throw exitWithError(e.getMessage());
             }
             for (int i = 0; i < readers.size(); i++) {
                 SingleRead read = readers.get(i).take();
                 if (read != null)
                     sequences.add(read.getData());
                 else
-                    exitWithError("Target " + i + " was not read!");
+                    throw exitWithError("Target " + i + " was not read!");
             }
             MultiNSequenceWithQuality target = new MultiNSequenceWithQuality() {
                 @Override
@@ -107,7 +105,6 @@ public class TargetReader {
             return pattern.match(target);
         }
 
-        exitWithError("Target was not read!");
-        return null;
+        throw exitWithError("Target was not read!");
     }
 }
