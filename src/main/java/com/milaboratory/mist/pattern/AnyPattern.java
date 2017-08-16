@@ -7,12 +7,8 @@ import com.milaboratory.core.sequence.NSequenceWithQuality;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
-public class AnyPattern extends SinglePattern {
+public final class AnyPattern extends SinglePattern {
     private final ArrayList<GroupEdge> groupEdges;
-
-    public AnyPattern(PatternAligner patternAligner) {
-        this(patternAligner, new ArrayList<>());
-    }
 
     public AnyPattern(PatternAligner patternAligner, ArrayList<GroupEdge> groupEdges) {
         super(patternAligner);

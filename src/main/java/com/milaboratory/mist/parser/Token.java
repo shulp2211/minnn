@@ -85,21 +85,21 @@ final class Token {
     }
 
     SinglePattern getSinglePattern() throws ParserException {
-        if (SinglePattern.class.isAssignableFrom(getPattern().getClass()))
+        if (getPattern() instanceof SinglePattern)
             return (SinglePattern)pattern;
         else throw new ParserException("Expected SinglePattern, but got " + pattern);
     }
 
     SinglePattern getSinglePatternExceptAnyPattern() throws ParserException {
         SinglePattern pattern = getSinglePattern();
-        if (AnyPattern.class.equals(pattern.getClass()))
+        if (pattern instanceof AnyPattern)
             throw new ParserException("'*' pattern is invalid if there are other patterns in the same read, "
                     + "use 'n{*}' instead!");
         return pattern;
     }
 
     MultipleReadsOperator getMultipleReadsOperator() throws ParserException {
-        if (MultipleReadsOperator.class.isAssignableFrom(getPattern().getClass()))
+        if (getPattern() instanceof MultipleReadsOperator)
             return (MultipleReadsOperator)pattern;
         else throw new ParserException("Expected MultipleReadsOperator, but got " + pattern);
     }

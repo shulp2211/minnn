@@ -59,8 +59,8 @@ public class MatchTest {
         assertEquals(8, testMatch2.getMatchedGroupEdges().size());
         assertEquals(MatchedGroupEdge.class, testMatch1.getMatchedGroupEdges().get(1).getClass());
         assertEquals(MatchedGroupEdge.class, testMatch2.getMatchedGroupEdges().get(7).getClass());
-        assertTrue(MatchedItem.class.isAssignableFrom(testMatch1.getMatchedItems().get(2).getClass()));
-        assertTrue(MatchedItem.class.isAssignableFrom(testMatch2.getMatchedItems().get(9).getClass()));
+        assertNotNull(testMatch1.getMatchedItems().get(2));
+        assertNotNull(testMatch2.getMatchedItems().get(9));
         assertTrue(testMatch1.getMatchedGroupEdge("0", true).isStart());
         assertFalse(testMatch1.getMatchedGroupEdge("0", false).isStart());
         assertTrue(testMatch2.getMatchedGroupEdge("1", true).isStart());

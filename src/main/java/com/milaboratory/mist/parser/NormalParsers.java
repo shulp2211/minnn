@@ -381,8 +381,7 @@ final class NormalParsers {
                     if (!foundScoreThresholds.isEmpty()) {
                         long scoreThreshold = foundScoreThresholds.stream().mapToLong(st -> st.threshold).max()
                                 .orElseThrow(IllegalStateException::new);
-                        foundToken = new FoundToken(SinglePattern.class.isAssignableFrom(
-                                currentToken.getPattern().getClass())
+                        foundToken = new FoundToken(currentToken.getPattern() instanceof SinglePattern
                                 ? wrapWithScoreFilter(currentToken.getSinglePattern(), scoreThreshold)
                                 : wrapWithScoreFilter(currentToken.getMultipleReadsOperator(), scoreThreshold),
                                 tokenStart, tokenEnd);
@@ -478,9 +477,9 @@ final class NormalParsers {
         ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
         if (tokens.size() > 1) {
             boolean onlySinglePatterns = tokens.parallelStream().filter(Token::isPatternAndNotNull)
-                    .allMatch(t -> SinglePattern.class.isAssignableFrom(t.getPattern().getClass()));
+                    .allMatch(t -> t.getPattern() instanceof SinglePattern);
             boolean onlyMultiPatterns = tokens.parallelStream().filter(Token::isPatternAndNotNull)
-                    .allMatch(t -> MultipleReadsOperator.class.isAssignableFrom(t.getPattern().getClass()));
+                    .allMatch(t -> t.getPattern() instanceof MultipleReadsOperator);
             if (onlySinglePatterns && onlyMultiPatterns)
                 throw new ParserException("Query not parsed: no patterns found!");
             if (!onlySinglePatterns && !onlyMultiPatterns)

@@ -209,8 +209,7 @@ final class SimplifiedTokenizer extends Tokenizer {
         }
 
         Pattern finalPattern = tokenizedString.getFinalPattern();
-        boolean duplicateGroupsAllowed = OrPattern.class.isAssignableFrom(finalPattern.getClass())
-                || OrOperator.class.isAssignableFrom(finalPattern.getClass());
+        boolean duplicateGroupsAllowed = finalPattern instanceof OrPattern || finalPattern instanceof OrOperator;
         validateGroupEdges(finalPattern.getGroupEdges(), true, duplicateGroupsAllowed);
     }
 

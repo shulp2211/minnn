@@ -69,7 +69,7 @@ public final class Match {
      */
     public MatchedGroupEdge getMatchedGroupEdge(String groupName, boolean isStart) {
         for (MatchedItem item : matchedItems)
-            if (MatchedGroupEdge.class.isAssignableFrom(item.getClass())
+            if (item instanceof MatchedGroupEdge
                     && (((MatchedGroupEdge)item).getGroupName().equals(groupName))
                     && (((MatchedGroupEdge)item).isStart() == isStart))
                 return (MatchedGroupEdge)item;
@@ -86,8 +86,7 @@ public final class Match {
     public ArrayList<MatchedGroupEdge> getMatchedGroupEdgesByPattern(int patternIndex) {
         ArrayList<MatchedGroupEdge> foundGroupEdges = new ArrayList<>();
         for (MatchedItem item : matchedItems)
-            if (MatchedGroupEdge.class.isAssignableFrom(item.getClass())
-                    && (item.getPatternIndex() == patternIndex))
+            if (item instanceof MatchedGroupEdge && (item.getPatternIndex() == patternIndex))
                 foundGroupEdges.add((MatchedGroupEdge)item);
         return foundGroupEdges;
     }
@@ -109,7 +108,7 @@ public final class Match {
     public ArrayList<MatchedRange> getMatchedRanges() {
         ArrayList<MatchedRange> matchedRanges = new ArrayList<>();
         for (MatchedItem item : matchedItems)
-            if (MatchedRange.class.isAssignableFrom(item.getClass()))
+            if (item instanceof MatchedRange)
                 matchedRanges.add((MatchedRange)item);
         return matchedRanges;
     }
@@ -122,7 +121,7 @@ public final class Match {
     public ArrayList<MatchedGroupEdge> getMatchedGroupEdges() {
         ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
         for (MatchedItem item : matchedItems)
-            if (MatchedGroupEdge.class.isAssignableFrom(item.getClass()))
+            if (item instanceof MatchedGroupEdge)
                 matchedGroupEdges.add((MatchedGroupEdge)item);
         return matchedGroupEdges;
     }

@@ -74,7 +74,7 @@ public abstract class ApproximateSorter {
                 } else allMatchesAreNull = false;
                 for (int i = 0; i < match.getNumberOfPatterns(); i++) {
                     MatchedRange currentMatchedRange = match.getMatchedRange(i);
-                    if (NullMatchedRange.class.isAssignableFrom(currentMatchedRange.getClass())) {
+                    if (currentMatchedRange instanceof NullMatchedRange) {
                         if (match.getMatchedGroupEdgesByPattern(i).size() > 0)
                             throw new IllegalStateException("Null pattern contains "
                                     + match.getMatchedGroupEdgesByPattern(i).size() + " group edges");

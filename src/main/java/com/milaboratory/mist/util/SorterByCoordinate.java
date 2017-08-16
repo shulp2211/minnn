@@ -154,7 +154,8 @@ public final class SorterByCoordinate extends ApproximateSorter {
         private int getMatchCoordinateWeight(Match match) {
             for (int i = 0; i < match.getNumberOfPatterns(); i++) {
                 MatchedRange currentMatch = match.getMatchedRange(i);
-                if (NullMatchedRange.class.isAssignableFrom(currentMatch.getClass())) continue;
+                if (currentMatch instanceof NullMatchedRange)
+                    continue;
                 return currentMatch.getRange().getLower();
             }
 
