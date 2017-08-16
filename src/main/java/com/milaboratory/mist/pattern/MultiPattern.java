@@ -61,16 +61,16 @@ public final class MultiPattern extends MultipleReadsOperator {
             byte currentTargetId;
             ApproximateSorter sorter;
 
-            for (int patternIndex = 0; patternIndex < singlePatterns.length; patternIndex++) {
-                SinglePattern currentPattern = singlePatterns[patternIndex];
-                if (reverseComplements[patternIndex]) {
-                    currentTarget = target.get(patternIndex).getReverseComplement();
-                    currentRange = ranges[patternIndex].inverse();
-                    currentTargetId = (byte) (-patternIndex - 1);
+            for (int i = 0; i < singlePatterns.length; i++) {
+                SinglePattern currentPattern = singlePatterns[i];
+                if (reverseComplements[i]) {
+                    currentTarget = target.get(i).getReverseComplement();
+                    currentRange = ranges[i].inverse();
+                    currentTargetId = (byte)(-i - 1);
                 } else {
-                    currentTarget = target.get(patternIndex);
-                    currentRange = ranges[patternIndex];
-                    currentTargetId = (byte) (patternIndex + 1);
+                    currentTarget = target.get(i);
+                    currentRange = ranges[i];
+                    currentTargetId = (byte)(i + 1);
                 }
                 operandPorts.add(new ApproximateSorterOperandPort(currentPattern.match(currentTarget, currentRange,
                         currentTargetId).getMatches(byScore, fairSorting),
