@@ -5,3 +5,4 @@ doc/_build
 .floo
 .flooignore
 out
+classes/artifacts
