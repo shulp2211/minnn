@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.output_converter.GroupUtils.getGroupsFromMatch;
-import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
+import static com.milaboratory.mist.parser.ParserUtils.parseMultiTargetString;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static com.milaboratory.mist.util.CommonTestUtils.RandomStringType.*;
 import static org.junit.Assert.*;
@@ -240,19 +240,7 @@ public class ParserTest {
 
     private static void testMultiSample(String query, String multiTarget, boolean mustMatch) throws Exception {
         Pattern pattern = strictParser.parseQuery(query);
-        String[] targets = multiTarget.split(" ");
-        MultiNSequenceWithQuality multiSeq = new MultiNSequenceWithQuality() {
-            @Override
-            public int numberOfSequences() {
-                return targets.length;
-            }
-
-            @Override
-            public NSequenceWithQuality get(int id) {
-                return new NSequenceWithQuality(targets[id]);
-            }
-        };
-        MatchingResult results = pattern.match(multiSeq);
+        MatchingResult results = pattern.match(parseMultiTargetString(multiTarget));
         assertEquals(mustMatch, results.getBestMatch(true) != null);
     }
 

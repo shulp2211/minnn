@@ -1,5 +1,7 @@
 package com.milaboratory.mist.parser;
 
+import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
+import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.mist.pattern.*;
 
@@ -11,7 +13,7 @@ import static com.milaboratory.mist.parser.BracketsType.*;
 import static com.milaboratory.mist.parser.SimplifiedParsers.parseScoreFilter;
 import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 
-final class ParserUtils {
+public final class ParserUtils {
     /**
      * Find all non-quoted positions of specified token in string.
      *
@@ -257,6 +259,27 @@ final class ParserUtils {
                                 + " before start of group with the same name in 1 sequence of nucleotides!");
                 }
             }
+    }
+
+    /**
+     * Convert string with space separated targets to MultiNSequenceWithQuality object.
+     *
+     * @param multiTarget string with space separated targets (nucleotide sequences)
+     * @return parsed MultiNSequenceWithQuality object
+     */
+    public static MultiNSequenceWithQuality parseMultiTargetString(String multiTarget) {
+        String[] targets = multiTarget.split(" ");
+        return new MultiNSequenceWithQuality() {
+            @Override
+            public int numberOfSequences() {
+                return targets.length;
+            }
+
+            @Override
+            public NSequenceWithQuality get(int id) {
+                return new NSequenceWithQuality(targets[id]);
+            }
+        };
     }
 
     /**
