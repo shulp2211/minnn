@@ -30,7 +30,7 @@ public class ResultWriter {
     }
 
     private static void writeResult(List<String> fileNames, ParsedRead parsedRead) throws IOException {
-        MultiRead multiRead = parsedRead.read();
+        MultiRead multiRead = (MultiRead)(parsedRead.getParsedRead());
         int numberOfReads = multiRead.numberOfReads();
         if (fileNames.size() != numberOfReads)
             throw exitWithError("Mismatched number of reads (" + numberOfReads + ") and number of output files ("

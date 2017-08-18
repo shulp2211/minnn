@@ -47,6 +47,6 @@ public class ParsedReadsPort implements OutputPort<ParsedRead> {
             reads[i] = new SingleReadImpl(0, mainGroup.getValue(), description);
         }
         MultiRead multiRead = new MultiRead(reads);
-        return new ParsedRead(multiRead, getGroupsFromMatch(bestMatch));
+        return new ParsedRead(null, multiRead, getGroupsFromMatch(bestMatch));
     }
 }
