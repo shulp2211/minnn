@@ -47,8 +47,8 @@ public final class GroupUtils {
      *                   false if we need to get only groups that are not inside main
      * @return filtered list of groups
      */
-    static ArrayList<MatchedGroup> getGroupsInsideMain(ArrayList<MatchedGroup> groups, Range mainRange,
-                                                       boolean insideMain) {
+    public static ArrayList<MatchedGroup> getGroupsInsideMain(ArrayList<MatchedGroup> groups, Range mainRange,
+                                                              boolean insideMain) {
         if (insideMain)
             return groups.stream()
                     .filter(g -> mainRange.contains(g.getRange()))
@@ -61,7 +61,8 @@ public final class GroupUtils {
                     .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    static String groupsToReadDescription(ArrayList<MatchedGroup> groups, String mainGroupName, boolean insideMain) {
+    public static String groupsToReadDescription(ArrayList<MatchedGroup> groups, String mainGroupName,
+                                                 boolean insideMain) {
         StringBuilder descriptionBuilder = new StringBuilder();
         for (int i = 0; i < groups.size(); i++) {
             MatchedGroup currentGroup = groups.get(i);

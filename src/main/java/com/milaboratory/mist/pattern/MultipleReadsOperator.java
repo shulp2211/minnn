@@ -77,6 +77,10 @@ public abstract class MultipleReadsOperator extends Pattern {
         return groupEdges;
     }
 
+    public int getNumberOfPatterns() {
+        return Math.max(singlePatterns.length, operandPatterns.length);
+    }
+
     private <T extends Pattern> void getGroupEdgesFromOperands(boolean checkGroupEdges, T[] patterns) {
         for (T pattern : patterns)
             groupEdges.addAll(pattern.getGroupEdges());
