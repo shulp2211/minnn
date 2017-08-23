@@ -1,8 +1,6 @@
 package com.milaboratory.mist.parser;
 
-import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.*;
 import com.milaboratory.mist.pattern.*;
 
 import java.util.*;
@@ -269,17 +267,8 @@ public final class ParserUtils {
      */
     public static MultiNSequenceWithQuality parseMultiTargetString(String multiTarget) {
         String[] targets = multiTarget.split(" ");
-        return new MultiNSequenceWithQuality() {
-            @Override
-            public int numberOfSequences() {
-                return targets.length;
-            }
-
-            @Override
-            public NSequenceWithQuality get(int id) {
-                return new NSequenceWithQuality(targets[id]);
-            }
-        };
+        return new MultiNSequenceWithQualityImpl(Arrays.stream(targets).map(NSequenceWithQuality::new)
+                .toArray(NSequenceWithQuality[]::new));
     }
 
     /**
