@@ -113,11 +113,6 @@
                         <goals>
                             <goal>create-metadata</goal>
                         </goals>
-                        <configuration>
-                            <properties>
-                                <branch>${scmBranch}</branch>
-                            </properties>
-                        </configuration>
                     </execution>
                 </executions>
                 <configuration>
