@@ -1,3 +1,4 @@
 [submodule "milib"]
 	path = milib
-	url = https://github.com/milaboratory/milib
+	url = git@github.com:milaboratory/milib.git
+	branch = develop
