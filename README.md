@@ -1,2 +1,2 @@
 # mist
-asd
+Barcodes detection and parsing toolbox
