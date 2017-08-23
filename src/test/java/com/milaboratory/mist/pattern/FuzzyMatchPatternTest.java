@@ -1,5 +1,6 @@
 package com.milaboratory.mist.pattern;
 
+import cc.redberry.pipe.CUtils;
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.motif.BitapMatcher;
@@ -310,15 +311,12 @@ public class FuzzyMatchPatternTest {
         };
 
         MatchingResult[][] matchingResults = new MatchingResult[3][3];
-        OutputPort<Match> currentPort;
-        Match currentMatch;
         Match previousMatch;
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++) {
                 matchingResults[i][j] = patterns[i].match(sequences[j]);
                 previousMatch = null;
-                for (currentPort = matchingResults[i][j].getMatches(true, true);
-                     (currentMatch = currentPort.take()) != null;) {
+                for (Match currentMatch : CUtils.it(matchingResults[i][j].getMatches(true, true))) {
                     if (previousMatch != null)
                         assertTrue(currentMatch.getScore() <= previousMatch.getScore());
                     previousMatch = currentMatch;

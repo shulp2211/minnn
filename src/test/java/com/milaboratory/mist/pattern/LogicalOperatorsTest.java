@@ -30,55 +30,16 @@ public class LogicalOperatorsTest {
         MultiPattern multiPattern3 = new MultiPattern(getTestPatternAligner(), pattern3, pattern2);
         MultiPattern multiPattern4 = new MultiPattern(getTestPatternAligner(), pattern1);
 
-        MultiNSequenceWithQuality mseq1 = new MultiNSequenceWithQuality() {
-            @Override
-            public int numberOfSequences() {
-                return 3;
-            }
+        MultiNSequenceWithQuality mseq1 = new MultiNSequenceWithQualityImpl(
+                new NSequenceWithQuality("ACAATTAGACA"),
+                new NSequenceWithQuality("GTTATTACCA"),
+                new NSequenceWithQuality("AACTTGCATAT"));
 
-            @Override
-            public NSequenceWithQuality get(int id) {
-                switch (id) {
-                    case 0:
-                        return new NSequenceWithQuality("ACAATTAGACA");
-                    case 1:
-                        return new NSequenceWithQuality("GTTATTACCA");
-                    case 2:
-                        return new NSequenceWithQuality("AACTTGCATAT");
-                }
-                return null;
-            }
-        };
+        MultiNSequenceWithQuality mseq2 = new MultiNSequenceWithQualityImpl(
+                new NSequenceWithQuality("AACTTGCATAT"),
+                new NSequenceWithQuality("GTTATTACCA").getReverseComplement());
 
-        MultiNSequenceWithQuality mseq2 = new MultiNSequenceWithQuality() {
-            @Override
-            public int numberOfSequences() {
-                return 2;
-            }
-
-            @Override
-            public NSequenceWithQuality get(int id) {
-                switch (id) {
-                    case 0:
-                        return new NSequenceWithQuality("AACTTGCATAT");
-                    case 1:
-                        return new NSequenceWithQuality("GTTATTACCA").getReverseComplement();
-                }
-                return null;
-            }
-        };
-
-        MultiNSequenceWithQuality mseq3 = new MultiNSequenceWithQuality() {
-            @Override
-            public int numberOfSequences() {
-                return 1;
-            }
-
-            @Override
-            public NSequenceWithQuality get(int id) {
-                return new NSequenceWithQuality("ATTAGACA");
-            }
-        };
+        MultiNSequenceWithQuality mseq3 = createMultiNSeq("ATTAGACA");
 
         AndOperator andOperatorS1_1 = new AndOperator(getTestPatternAligner(), multiPattern1);
         OrOperator orOperatorS1_1 = new OrOperator(getTestPatternAligner(), multiPattern1);
@@ -135,29 +96,15 @@ public class LogicalOperatorsTest {
     public void simpleTest() throws Exception {
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GTTATTACCA"));
-        AndPattern pattern3 = new AndPattern(getTestPatternAligner(), new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("AT")), new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GCAT")));
+        AndPattern pattern3 = new AndPattern(getTestPatternAligner(),
+                new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("AT")),
+                new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GCAT")));
         MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern1, pattern2, pattern3);
 
-        MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
-            @Override
-            public int numberOfSequences() {
-                return 3;
-            }
-
-            @Override
-            public NSequenceWithQuality get(int id) {
-                switch (id) {
-                    case 0:
-                        return new NSequenceWithQuality("ACAATTAGACA").getReverseComplement();
-                    case 1:
-                        return new NSequenceWithQuality("GTTATTACCA");
-                    case 2:
-                        return new NSequenceWithQuality("AACTTGCATAT");
-                }
-                return null;
-            }
-        };
+        MultiNSequenceWithQuality mseq = new MultiNSequenceWithQualityImpl(
+                new NSequenceWithQuality("ACAATTAGACA").getReverseComplement(),
+                new NSequenceWithQuality("GTTATTACCA"),
+                new NSequenceWithQuality("AACTTGCATAT"));
 
         NotOperator notOperatorFalse = new NotOperator(getTestPatternAligner(), multiPattern);
         OrOperator orOperatorTrue = new OrOperator(getTestPatternAligner(), notOperatorFalse, multiPattern, notOperatorFalse);
@@ -313,23 +260,10 @@ public class LogicalOperatorsTest {
         OrOperator orOperator = new OrOperator(getTestPatternAligner(), notOperator, multiPattern1, notOperator);
         AndOperator andOperator = new AndOperator(getTestPatternAligner(), multiPattern2, orOperator);
 
-        MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
-            @Override
-            public int numberOfSequences() {
-                return 2;
-            }
+        MultiNSequenceWithQuality mseq = new MultiNSequenceWithQualityImpl(
+                new NSequenceWithQuality("ACAATTAGCCA"),
+                new NSequenceWithQuality("GTGCATCTGCCA"));
 
-            @Override
-            public NSequenceWithQuality get(int id) {
-                switch (id) {
-                    case 0:
-                        return new NSequenceWithQuality("ACAATTAGCCA");
-                    case 1:
-                        return new NSequenceWithQuality("GTGCATCTGCCA");
-                }
-                return null;
-            }
-        };
         MatchingResult result = andOperator.match(mseq, false, true);
 
         assertEquals("1", result.getBestMatch().getMatchedGroupEdge("1", false).getGroupName());
@@ -405,24 +339,7 @@ public class LogicalOperatorsTest {
         OrOperator orOperator = new OrOperator(getTestPatternAligner(), multiPattern, notOperator, multiPattern);
         AndOperator andOperator = new AndOperator(getTestPatternAligner(), orOperator, multiPattern, orOperator);
 
-        MultiNSequenceWithQuality mseq = new MultiNSequenceWithQuality() {
-            @Override
-            public int numberOfSequences() {
-                return 3;
-            }
-
-            @Override
-            public NSequenceWithQuality get(int id) {
-                switch (id) {
-                    case 0:
-                        return sequences[1];
-                    case 1:
-                    case 2:
-                        return sequences[4];
-                }
-                return null;
-            }
-        };
+        MultiNSequenceWithQuality mseq = new MultiNSequenceWithQualityImpl(sequences[1], sequences[4], sequences[4]);
 
         MatchingResult result = andOperator.match(mseq);
 
@@ -438,8 +355,7 @@ public class LogicalOperatorsTest {
 
     @Test
     public void scoringRandomTest() throws Exception {
-        int its = TestUtil.its(1000, 2000);
-        for (int i = 0; i < its; ++i) {
+        for (int i = 0; i < 2000; i++) {
             NucleotideSequence motifs[] = new NucleotideSequence[4];
             FuzzyMatchPattern fuzzyPatterns[] = new FuzzyMatchPattern[4];
             for (int j = 0; j < 4; ++j) {
@@ -448,21 +364,12 @@ public class LogicalOperatorsTest {
             }
             MultiNSequenceWithQuality targets[] = new MultiNSequenceWithQuality[2];
             MultiPattern multiPatterns[] = new MultiPattern[2];
-            for (int j = 0; j < 2; ++j) {
-                final int counter = j;
-                targets[j] = new MultiNSequenceWithQuality() {
-                    @Override
-                    public int numberOfSequences() {
-                        return 2;
-                    }
-
-                    @Override
-                    public NSequenceWithQuality get(int id) {
-                        return new NSequenceWithQuality(motifs[id + counter * 2], SequenceQuality.getUniformQuality(
-                                SequenceQuality.GOOD_QUALITY_VALUE, motifs[id + counter * 2].getSequence().size()));
-                    }
-                };
-                multiPatterns[j] = new MultiPattern(getTestPatternAligner(), fuzzyPatterns[j * 2], fuzzyPatterns[j * 2 + 1]);
+            for (int j = 0; j < 2; j++) {
+                targets[j] = new MultiNSequenceWithQualityImpl(
+                        new NSequenceWithQuality(motifs[j * 2].toString()),
+                        new NSequenceWithQuality(motifs[j * 2 + 1].toString()));
+                multiPatterns[j] = new MultiPattern(getTestPatternAligner(),
+                        fuzzyPatterns[j * 2], fuzzyPatterns[j * 2 + 1]);
             }
 
             NotOperator notOperator = new NotOperator(getTestPatternAligner(), multiPatterns[0]);
@@ -477,9 +384,11 @@ public class LogicalOperatorsTest {
             else
                 assertNull(notOperator.match(targets[1]).getBestMatch());
 
-            if (!(fuzzyPatterns[2].match(targets[0].get(0)).isFound() && fuzzyPatterns[3].match(targets[0].get(1)).isFound()))
+            if (!(fuzzyPatterns[2].match(targets[0].get(0)).isFound()
+                    && fuzzyPatterns[3].match(targets[0].get(1)).isFound()))
                 assertNull(andOperator1.match(targets[0]).getBestMatch());
-            if (!(fuzzyPatterns[0].match(targets[1].get(0)).isFound() && fuzzyPatterns[1].match(targets[1].get(1)).isFound()))
+            if (!(fuzzyPatterns[0].match(targets[1].get(0)).isFound()
+                    && fuzzyPatterns[1].match(targets[1].get(1)).isFound()))
                 assertNull(andOperator1.match(targets[1]).getBestMatch());
 
             assertEquals(multiPatterns[0].match(targets[0]).getBestMatch().getScore() * 2,

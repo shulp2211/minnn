@@ -15,20 +15,13 @@ public class ScoreFilterTest {
     public void randomTest() throws Exception {
         for (int i = 0; i < 1000; i++) {
             int scoreThreshold = -rg.nextInt(100);
-            NSequenceWithQuality target = new NSequenceWithQuality(TestUtil.randomSequence(NucleotideSequence.ALPHABET,
-                    1, 300).toString());
-            MultiNSequenceWithQuality multiTarget = new MultiNSequenceWithQuality() {
-                @Override
-                public int numberOfSequences() {
-                    return 2;
-                }
-                @Override
-                public NSequenceWithQuality get(int id) {
-                    return target;
-                }};
+            String seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 300).toString();
+            NSequenceWithQuality target = new NSequenceWithQuality(seq);
+            MultiNSequenceWithQuality multiTarget = createMultiNSeq(seq, 2);
             NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 20);
             FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(rg.nextInt(5)), motif);
-            FilterPattern filterPattern = new FilterPattern(getTestPatternAligner(), new ScoreFilter(scoreThreshold), pattern);
+            FilterPattern filterPattern = new FilterPattern(getTestPatternAligner(),
+                    new ScoreFilter(scoreThreshold), pattern);
             MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern, filterPattern);
             MultipleReadsFilterPattern mFilterPattern = new MultipleReadsFilterPattern(getTestPatternAligner(),
                     new ScoreFilter(scoreThreshold * 2), multiPattern);
@@ -41,10 +34,8 @@ public class ScoreFilterTest {
                 assertEquals(isMatching, andOperator.match(multiTarget).getBestMatch(true) != null);
             assertTrue(countMatches(pattern.match(target), true)
                     >= countMatches(filterPattern.match(target), true));
-            Match currentMatch;
-            for (OutputPort<Match> filteredPort = filterPattern.match(target).getMatches(
-                    rg.nextBoolean(), rg.nextBoolean()); (currentMatch = filteredPort.take()) != null;)
-                assertTrue(currentMatch.getScore() >= scoreThreshold);
+            OutputPort<Match> filteredPort = filterPattern.match(target).getMatches(rg.nextBoolean(), rg.nextBoolean());
+            streamPort(filteredPort).forEach(match -> assertTrue(match.getScore() >= scoreThreshold));
         }
     }
 }

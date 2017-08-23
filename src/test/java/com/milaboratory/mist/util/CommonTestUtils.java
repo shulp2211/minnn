@@ -1,10 +1,9 @@
 package com.milaboratory.mist.util;
 
+import cc.redberry.pipe.CUtils;
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.alignment.*;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
-import com.milaboratory.core.sequence.SequencesUtils;
+import com.milaboratory.core.sequence.*;
 import com.milaboratory.mist.pattern.*;
 import com.milaboratory.test.TestUtil;
 
@@ -13,7 +12,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.stream.*;
 
 import static com.milaboratory.mist.pattern.PatternUtils.invertCoordinate;
 import static com.milaboratory.mist.util.CommonTestUtils.RandomStringType.*;
@@ -25,11 +24,12 @@ public class CommonTestUtils {
     private static final String LN_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final String QUERY_CHAR_STRING = " ATGCNatgcn()[]{}^$:+&|\\~0123456789-*";
 
+    public static <T> Stream<T> streamPort(OutputPort<T> port) {
+        return StreamSupport.stream(CUtils.it(port).spliterator(), false);
+    }
+
     public static long countPortValues(OutputPort<Match> port) {
-        long counter = 0;
-        while (port.take() != null)
-            counter++;
-        return counter;
+        return streamPort(port).count();
     }
 
     public static long countMatches(MatchingResult matchingResult, boolean fair) {
@@ -413,6 +413,16 @@ public class CommonTestUtils {
 
     public static String bestToString(MatchingResult matchingResult, boolean fairSorting) {
         return matchingResult.getBestMatch(fairSorting).getValue().getSequence().toString();
+    }
+
+    public static MultiNSequenceWithQuality createMultiNSeq(String seq) {
+        return new MultiNSequenceWithQualityImpl(new NSequenceWithQuality(seq));
+    }
+
+    public static MultiNSequenceWithQuality createMultiNSeq(String seq, int repeats) {
+        NSequenceWithQuality singleSeq = new NSequenceWithQuality(seq);
+        return new MultiNSequenceWithQualityImpl(Collections.nCopies(repeats, singleSeq)
+                .toArray(new NSequenceWithQuality[repeats]));
     }
 
     public static void assertFileEquals(String fileName1, String fileName2) throws Exception {

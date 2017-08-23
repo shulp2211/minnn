@@ -7,6 +7,8 @@ import com.milaboratory.test.TestUtil;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static com.milaboratory.mist.util.RangeTools.checkFullIntersection;
@@ -69,15 +71,10 @@ public class SequencePatternTest {
                 boolean entirePatternMustMatch = isMatchingPattern1;
                 if (misplacedPatterns) {
                     penaltyThreshold = Long.MIN_VALUE;
-                    ArrayList<Range> ranges1 = new ArrayList<>();
-                    ArrayList<Range> ranges2 = new ArrayList<>();
                     OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(rg.nextBoolean(), fairSorting);
                     OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(rg.nextBoolean(), fairSorting);
-                    Match match;
-                    while ((match = port1.take()) != null)
-                        ranges1.add(match.getRange());
-                    while ((match = port2.take()) != null)
-                        ranges2.add(match.getRange());
+                    List<Range> ranges1 = streamPort(port1).map(Match::getRange).collect(Collectors.toList());
+                    List<Range> ranges2 = streamPort(port2).map(Match::getRange).collect(Collectors.toList());
 
                     entirePatternMustMatch = false;
                     OUTER:
