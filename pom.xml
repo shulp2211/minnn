@@ -45,7 +45,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <milib.version>1.8.2-SNAPSHOT</milib.version>
+        <milib.version>[1.8.2-SNAPSHOT], [1.8.2,)</milib.version>
     </properties>
 
     <dependencies>
@@ -88,6 +88,10 @@
             <version>4.7</version>
         </dependency>
     </dependencies>
+
+    <modules>
+        <module>milib</module>
+    </modules>
 
     <scm>
         <connection>scm:git:https://github.com/milaboratory/mist.git</connection>
