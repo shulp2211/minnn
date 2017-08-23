@@ -7,7 +7,6 @@ import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.test.TestUtil;
 import org.junit.Test;
 
-import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 

@@ -1,10 +1,7 @@
 package com.milaboratory.mist.util;
 
 import cc.redberry.pipe.OutputPort;
-import com.milaboratory.core.alignment.Aligner;
-import com.milaboratory.core.alignment.Alignment;
-import com.milaboratory.core.alignment.BandedLinearAligner;
-import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
+import com.milaboratory.core.alignment.*;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.core.sequence.SequencesUtils;
@@ -28,11 +25,15 @@ public class CommonTestUtils {
     private static final String LN_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final String QUERY_CHAR_STRING = " ATGCNatgcn()[]{}^$:+&|\\~0123456789-*";
 
-    public static int countPortValues(OutputPort<Match> port) {
-        int counter = 0;
+    public static long countPortValues(OutputPort<Match> port) {
+        long counter = 0;
         while (port.take() != null)
             counter++;
         return counter;
+    }
+
+    public static long countMatches(MatchingResult matchingResult, boolean fair) {
+        return countPortValues(matchingResult.getMatches(false, fair));
     }
 
     public static NucleotideSequence makeRandomInsertions(NucleotideSequence seq, int number) {

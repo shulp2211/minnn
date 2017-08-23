@@ -12,8 +12,7 @@ import org.junit.rules.ExpectedException;
 import java.util.ArrayList;
 
 import static com.milaboratory.mist.output_converter.GroupUtils.getGroupsFromMatch;
-import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
-import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class LogicalOperatorsTest {

@@ -12,9 +12,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static com.milaboratory.mist.pattern.MatchUtils.countMatches;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
