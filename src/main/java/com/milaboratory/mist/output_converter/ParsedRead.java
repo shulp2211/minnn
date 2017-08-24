@@ -2,6 +2,7 @@ package com.milaboratory.mist.output_converter;
 
 import com.milaboratory.core.io.sequence.SequenceRead;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class ParsedRead {
@@ -11,8 +12,8 @@ public final class ParsedRead {
     private final boolean reverseMatch;
     private final long bestMatchScore;
 
-    public ParsedRead(SequenceRead originalRead, SequenceRead parsedRead, List<MatchedGroup> groups) {
-        this(originalRead, parsedRead, groups, false, 0);
+    public ParsedRead(SequenceRead originalRead) {
+        this(originalRead, null, new ArrayList<>(), false, Long.MIN_VALUE);
     }
 
     public ParsedRead(SequenceRead originalRead, SequenceRead parsedRead, List<MatchedGroup> groups,

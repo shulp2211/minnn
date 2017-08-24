@@ -9,6 +9,7 @@ import com.milaboratory.cli.ActionParameters;
 import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
 import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.mist.input.TargetReader;
+import com.milaboratory.mist.io.MistDataFormat;
 import com.milaboratory.mist.output_converter.ParsedReadsPort;
 import com.milaboratory.mist.parser.Parser;
 import com.milaboratory.mist.parser.ParserException;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.milaboratory.mist.cli.Defaults.*;
+import static com.milaboratory.mist.io.MistDataFormatNames.parameterNames;
 import static com.milaboratory.mist.output.ResultWriter.writeResultsFromPort;
 import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.util.SystemUtils.exitWithError;
@@ -42,6 +44,8 @@ public final class ParseAction implements Action {
             System.err.println("Error while parsing the pattern!");
             throw exitWithError(e.getMessage());
         }
+        MistDataFormat inputFormat = parameterNames.get(params.inputFormat);
+        MistDataFormat outputFormat = parameterNames.get(params.outputFormat);
         TargetReader targetReader = new TargetReader(pattern, params.oriented);
         ParsedReadsPort parsedReadsPort = new ParsedReadsPort(targetReader.getMatchingResult(params.inputFileNames),
                 params.fairSorting, params.firstReadNumber);
@@ -74,6 +78,14 @@ public final class ParseAction implements Action {
                     "multiple files mean that there is 1 file for each read.",
                 names = {"--output"}, variableArity = true)
         List<String> outputFileNames = new ArrayList<>();
+
+        @Parameter(description = "Input data format. \"fastq\" (default) or \"mif\".",
+                names = {"--input-format"})
+        String inputFormat = DEFAULT_INPUT_FORMAT;
+
+        @Parameter(description = "Output data format. \"fastq\" (default) or \"mif\".",
+                names = {"--output-format"})
+        String outputFormat = DEFAULT_OUTPUT_FORMAT;
 
         @Parameter(description = "By default, if there are 2 or more reads, 2 last reads are checked in direct " +
                 "and reverse order. With this flag, only in direct order.",
@@ -116,10 +128,22 @@ public final class ParseAction implements Action {
                 names = {"--first-read-number"})
         int firstReadNumber = 1;
 
+        @Parameter(description = "Number of threads for parsing reads.",
+                names = {"--threads"})
+        int threads = DEFAULT_THREADS;
+
+        @Parameter(description = "Write comment from original read to the beginning of comment of parsed read.",
+                names = {"--copy-original-comments"})
+        boolean copyOldComments = false;
+
         @Override
         public void validate() {
             if (query == null)
                 throw new ParameterException("Pattern not specified!");
+            if (parameterNames.get(inputFormat) == null)
+                throw new ParameterException("Unknown input format: " + inputFormat);
+            if (parameterNames.get(outputFormat) == null)
+                throw new ParameterException("Unknown output format: " + outputFormat);
         }
     }
 }

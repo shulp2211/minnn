@@ -11,4 +11,7 @@ public final class Defaults {
     public final static int DEFAULT_MATCH_SCORE = 0;
     public final static int DEFAULT_MISMATCH_SCORE = -9;
     public final static int DEFAULT_GAP_SCORE = -10;
+    public final static int DEFAULT_THREADS = 4;
+    public final static String DEFAULT_INPUT_FORMAT = "fastq";
+    public final static String DEFAULT_OUTPUT_FORMAT = "fastq";
 }

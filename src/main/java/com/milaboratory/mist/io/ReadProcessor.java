@@ -1,16 +1,12 @@
 package com.milaboratory.mist.io;
 
-import cc.redberry.pipe.CUtils;
-import cc.redberry.pipe.OutputPort;
-import cc.redberry.pipe.Processor;
+import cc.redberry.pipe.*;
 import cc.redberry.pipe.blocks.ParallelProcessor;
 import cc.redberry.pipe.util.OrderedOutputPort;
 import com.milaboratory.core.io.sequence.*;
 import com.milaboratory.core.io.sequence.fasta.*;
 import com.milaboratory.core.io.sequence.fastq.*;
-import com.milaboratory.core.sequence.MultiNSequenceWithQualityImpl;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.*;
 import com.milaboratory.mist.output_converter.*;
 import com.milaboratory.mist.pattern.*;
 import com.milaboratory.util.CanReportProgress;
@@ -21,6 +17,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static com.milaboratory.mist.io.MifReader.detectReadsNumber;
+import static com.milaboratory.mist.io.MistDataFormat.*;
+import static com.milaboratory.mist.io.ReadsNumber.*;
 import static com.milaboratory.mist.output_converter.GroupUtils.*;
 import static com.milaboratory.mist.util.SystemUtils.exitWithError;
 
@@ -32,10 +31,20 @@ public final class ReadProcessor {
     private final boolean fairSorting;
     private final int firstReadNumber;
     private final int threads;
-    private final boolean addOldComment;
+    private final boolean copyOldComments;
+    private final MistDataFormat inputFormat;
+    private final MistDataFormat outputFormat;
+    private final ReadsNumber readsNumber;
 
     public ReadProcessor(List<String> inputFileNames, List<String> outputFileNames, Pattern pattern,
-            boolean orientedReads, boolean fairSorting, int firstReadNumber, int threads, boolean addOldComment) {
+            boolean orientedReads, boolean fairSorting, int firstReadNumber, int threads, boolean copyOldComments,
+            MistDataFormat inputFormat, MistDataFormat outputFormat) {
+        if ((inputFormat == MIF) && (inputFileNames.size() > 1))
+            throw exitWithError("Mif data format uses single file; specified " + inputFileNames.size()
+                    + " input files!");
+        if ((outputFormat == MIF) && (outputFileNames.size() > 1))
+            throw exitWithError("Mif data format uses single file; specified " + outputFileNames.size()
+                    + " output files!");
         if (((inputFileNames.size() > 1) || (outputFileNames.size() > 1))
                 && (inputFileNames.size() != outputFileNames.size()))
             throw exitWithError("Not equal numbers of input and output file names!");
@@ -53,7 +62,20 @@ public final class ReadProcessor {
         this.fairSorting = fairSorting;
         this.firstReadNumber = firstReadNumber;
         this.threads = threads;
-        this.addOldComment = addOldComment;
+        this.copyOldComments = copyOldComments;
+        this.inputFormat = inputFormat;
+        this.outputFormat = outputFormat;
+        if (inputFormat == FASTQ) {
+            if (inputFileNames.size() <= 1)
+                this.readsNumber = SINGLE;
+            else if (inputFileNames.size() == 2)
+                this.readsNumber = PAIRED;
+            else
+                this.readsNumber = MULTI;
+        } else if (inputFormat == MIF)
+            this.readsNumber = detectReadsNumber();
+        else
+            throw new IllegalStateException("Unknown input format: " + inputFormat);
     }
 
     public void processReadsParallel() {
@@ -61,7 +83,7 @@ public final class ReadProcessor {
         SequenceWriter writer;
         try {
             readers.add(createReader(false));
-            if (!orientedReads && (inputFileNames.size() >= 2))
+            if (!orientedReads && (readsNumber != SINGLE))
                 readers.add(createReader(true));
             writer = createWriter();
         } catch (IOException e) {
@@ -101,55 +123,80 @@ public final class ReadProcessor {
             else
                 return bestRead;
         };
-        for (ParsedRead parsedRead : CUtils.it(bestMatchPort))
-            writer.write(parsedRead.getParsedRead());
+        for (ParsedRead parsedRead : CUtils.it(bestMatchPort)) {
+            SequenceRead parsedSequenceRead = parsedRead.getParsedRead();
+            if (parsedSequenceRead != null)
+                writer.write(parsedSequenceRead);
+        }
         writer.close();
     }
 
     private SequenceReaderCloseable<? extends SequenceRead> createReader(boolean swapped) throws IOException {
-        switch (inputFileNames.size()) {
-            case 0:
-                return new SingleFastqReader(System.in);
-            case 1:
-                String[] s = inputFileNames.get(0).split("\\.");
-                if (s[s.length - 1].equals("fasta") || s[s.length - 1].equals("fa"))
-                    return new FastaSequenceReaderWrapper(new FastaReader<>(inputFileNames.get(0),
-                            NucleotideSequence.ALPHABET), true);
-                else
-                    return new SingleFastqReader(inputFileNames.get(0), true);
-            case 2:
-                if (swapped)
-                    return new PairedFastqReader(inputFileNames.get(1), inputFileNames.get(0), true);
-                else
-                    return new PairedFastqReader(inputFileNames.get(0), inputFileNames.get(1), true);
-            default:
-                List<SingleFastqReader> readers = new ArrayList<>();
-                if (swapped) {
-                    for (int i = 0; i < inputFileNames.size(); i++) {
-                        if (i < inputFileNames.size() - 2)
-                            readers.add(new SingleFastqReader(inputFileNames.get(i), true));
-                        else if (i == inputFileNames.size() - 2)
-                            readers.add(new SingleFastqReader(inputFileNames.get(i + 1), true));
+        switch (inputFormat) {
+            case FASTQ:
+                switch (inputFileNames.size()) {
+                    case 0:
+                        return new SingleFastqReader(System.in);
+                    case 1:
+                        String[] s = inputFileNames.get(0).split("\\.");
+                        if (s[s.length - 1].equals("fasta") || s[s.length - 1].equals("fa"))
+                            return new FastaSequenceReaderWrapper(new FastaReader<>(inputFileNames.get(0),
+                                    NucleotideSequence.ALPHABET), true);
                         else
-                            readers.add(new SingleFastqReader(inputFileNames.get(i - 1), true));
-                    }
-                } else
-                    for (String fileName : inputFileNames)
-                        readers.add(new SingleFastqReader(fileName, true));
-                return new MultiReader(readers.toArray(new SingleFastqReader[readers.size()]));
+                            return new SingleFastqReader(inputFileNames.get(0), true);
+                    case 2:
+                        if (swapped)
+                            return new PairedFastqReader(inputFileNames.get(1), inputFileNames.get(0),
+                                    true);
+                        else
+                            return new PairedFastqReader(inputFileNames.get(0), inputFileNames.get(1),
+                                    true);
+                    default:
+                        List<SingleFastqReader> readers = new ArrayList<>();
+                        if (swapped) {
+                            for (int i = 0; i < inputFileNames.size(); i++) {
+                                if (i < inputFileNames.size() - 2)
+                                    readers.add(new SingleFastqReader(inputFileNames.get(i), true));
+                                else if (i == inputFileNames.size() - 2)
+                                    readers.add(new SingleFastqReader(inputFileNames.get(i + 1), true));
+                                else
+                                    readers.add(new SingleFastqReader(inputFileNames.get(i - 1), true));
+                            }
+                        } else
+                            for (String fileName : inputFileNames)
+                                readers.add(new SingleFastqReader(fileName, true));
+                        return new MultiReader(readers.toArray(new SingleFastqReader[readers.size()]));
+                }
+            case MIF:
+                if (inputFileNames.size() == 0)
+                    return new MifReader(System.in);
+                else
+                    return new MifReader(inputFileNames.get(0), swapped);
+            default:
+                throw new IllegalStateException("Unknown input format: " + inputFormat);
         }
     }
 
     private SequenceWriter createWriter() throws IOException {
-        switch (outputFileNames.size()) {
-            case 0:
-                return new SingleFastqWriter(System.out);
-            case 1:
-                return new SingleFastqWriter(outputFileNames.get(0));
-            case 2:
-                return new PairedFastqWriter(outputFileNames.get(0), outputFileNames.get(1));
+        switch (outputFormat) {
+            case FASTQ:
+                switch (outputFileNames.size()) {
+                    case 0:
+                        return new SingleFastqWriter(System.out);
+                    case 1:
+                        return new SingleFastqWriter(outputFileNames.get(0));
+                    case 2:
+                        return new PairedFastqWriter(outputFileNames.get(0), outputFileNames.get(1));
+                    default:
+                        return new MultiFastqWriter(outputFileNames.toArray(new String[outputFileNames.size()]));
+                }
+            case MIF:
+                if (outputFileNames.size() == 0)
+                    return new MifWriter(System.out);
+                else
+                    return new MifWriter(outputFileNames.get(0));
             default:
-                return new MultiFastqWriter(outputFileNames.toArray(new String[outputFileNames.size()]));
+                throw new IllegalStateException("Unknown output format: " + outputFormat);
         }
     }
 
@@ -171,7 +218,7 @@ public final class ReadProcessor {
             MatchingResult result = pattern.match(target);
             Match bestMatch = result.getBestMatch(fairSorting);
             if (bestMatch == null)
-                return new ParsedRead(input.read, null, new ArrayList<>());
+                return new ParsedRead(input.read);
             else {
                 int numberOfReads = target.numberOfSequences();
                 SingleRead[] reads = new SingleReadImpl[numberOfReads];
@@ -185,7 +232,7 @@ public final class ReadProcessor {
                             .collect(Collectors.toCollection(ArrayList::new));
                     ArrayList<MatchedGroup> groupsNotInsideMain = getGroupsInsideMain(currentGroups,
                             mainGroup.getRange(), false);
-                    String description = addOldComment ? input.read.getRead(i).getDescription() + "~" : "";
+                    String description = copyOldComments ? input.read.getRead(i).getDescription() + "~" : "";
                     if (input.reverseMatch)
                         description += "|~";
                     description += groupsToReadDescription(groupsNotInsideMain, mainGroupName, false)
