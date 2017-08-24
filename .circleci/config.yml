@@ -16,6 +16,8 @@ jobs:
           command: |
               git submodule sync --recursive
               git submodule update --init --recursive
+              cd milib
+              mvn clean install -DskipTests
 
       - restore_cache:
           keys:

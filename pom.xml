@@ -89,10 +89,6 @@
         </dependency>
     </dependencies>
 
-    <modules>
-        <module>milib</module>
-    </modules>
-
     <scm>
         <connection>scm:git:https://github.com/milaboratory/mist.git</connection>
     </scm>
