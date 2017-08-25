@@ -8,9 +8,8 @@ import com.milaboratory.cli.ActionHelper;
 import com.milaboratory.cli.ActionParameters;
 import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
 import com.milaboratory.core.sequence.NucleotideSequence;
-import com.milaboratory.mist.input.TargetReader;
 import com.milaboratory.mist.io.MistDataFormat;
-import com.milaboratory.mist.output_converter.ParsedReadsPort;
+import com.milaboratory.mist.io.ReadProcessor;
 import com.milaboratory.mist.parser.Parser;
 import com.milaboratory.mist.parser.ParserException;
 import com.milaboratory.mist.pattern.BasePatternAligner;
@@ -22,7 +21,6 @@ import java.util.List;
 
 import static com.milaboratory.mist.cli.Defaults.*;
 import static com.milaboratory.mist.io.MistDataFormatNames.parameterNames;
-import static com.milaboratory.mist.output.ResultWriter.writeResultsFromPort;
 import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.util.SystemUtils.exitWithError;
 
@@ -46,10 +44,10 @@ public final class ParseAction implements Action {
         }
         MistDataFormat inputFormat = parameterNames.get(params.inputFormat);
         MistDataFormat outputFormat = parameterNames.get(params.outputFormat);
-        TargetReader targetReader = new TargetReader(pattern, params.oriented);
-        ParsedReadsPort parsedReadsPort = new ParsedReadsPort(targetReader.getMatchingResult(params.inputFileNames),
-                params.fairSorting, params.firstReadNumber);
-        writeResultsFromPort(params.outputFileNames, parsedReadsPort);
+        ReadProcessor readProcessor = new ReadProcessor(params.inputFileNames, params.outputFileNames, pattern,
+                params.oriented, params.fairSorting, params.firstReadNumber, params.threads, params.copyOldComments,
+                inputFormat, outputFormat);
+        readProcessor.processReadsParallel();
     }
 
     @Override

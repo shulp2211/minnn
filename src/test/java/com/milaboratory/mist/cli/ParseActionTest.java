@@ -1,6 +1,7 @@
 package com.milaboratory.mist.cli;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -20,6 +21,7 @@ public class ParseActionTest {
             throw exitWithError("Directory for temporary output files " + TEMP_DIR + " does not exist!");
     }
 
+    @Ignore
     @Test
     public void simpleTest() throws Exception {
         String testInputR1 = TEST_RESOURCES_PATH + "sample_r1.fastq";
