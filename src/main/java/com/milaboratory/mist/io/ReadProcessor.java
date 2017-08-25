@@ -100,7 +100,10 @@ public final class ReadProcessor {
         for (int i = 0; i < readers.size(); i++) {
             OutputPort<? extends SequenceRead> inputReads = bufferedReaderPorts.get(i);
             boolean reverseMatch = (i == 1);
-            OutputPort<ProcessorInput> processorInputs = () -> new ProcessorInput(inputReads.take(), reverseMatch);
+            OutputPort<ProcessorInput> processorInputs = () -> {
+                SequenceRead read = inputReads.take();
+                return (read == null) ? null : new ProcessorInput(read, reverseMatch);
+            };
             OutputPort<ParsedRead> parsedReadsPort = new ParallelProcessor<>(processorInputs, new ReadParserProcessor(),
                     threads);
             OrderedOutputPort<ParsedRead> orderedReadsPort = new OrderedOutputPort<>(parsedReadsPort,
