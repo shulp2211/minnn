@@ -21,7 +21,6 @@ public class ParseActionTest {
             throw exitWithError("Directory for temporary output files " + TEMP_DIR + " does not exist!");
     }
 
-    @Ignore
     @Test
     public void simpleTest() throws Exception {
         String testInputR1 = TEST_RESOURCES_PATH + "sample_r1.fastq";
@@ -37,26 +36,29 @@ public class ParseActionTest {
                 inQuotes("MultiPattern([FuzzyMatchPattern(GAAGCA, 1, 0, -1, -1, [GroupEdgePosition(" +
                         "GroupEdge('UMI', true), 2), GroupEdgePosition(GroupEdge('UMI', false), 4)]), " +
                         "FuzzyMatchPattern(AA, 0, 0, -1, -1)])"),
-                "--input", testInputR1, testInputR2, "--output", testOutput1R1, testOutput1R2, "--devel-parser-syntax"};
+                "--input", testInputR1, testInputR2, "--output", testOutput1R1, testOutput1R2, "--devel-parser-syntax",
+                "--penalty-threshold", "0"};
         main(args1);
 
-        String[] args2 = {"parse", "--devel-parser-syntax", "--match-score", "0", "--oriented", "--pattern", inQuotes(
-                "FuzzyMatchPattern(ATTAGACA, 0, 0, -1, -1)"), "--input", testInputR1, "--output", testOutput1Single};
+        String[] args2 = {"parse", "--penalty-threshold", "0", "--devel-parser-syntax", "--match-score", "0",
+                "--oriented", "--pattern", inQuotes("FuzzyMatchPattern(ATTAGACA, 0, 0, -1, -1)"),
+                "--input", testInputR1, "--output", testOutput1Single};
         main(args2);
 
         String[] args3 = {"parse", "--pattern", "<GA(UMI:AG)CA \\ AA",
-                "--input", testInputR1, testInputR2, "--output", testOutput2R1, testOutput2R2};
+                "--input", testInputR1, testInputR2, "--output", testOutput2R1, testOutput2R2,
+                "--penalty-threshold", "0"};
         main(args3);
 
-        String[] args4 = {"parse", "--match-score", "0", "--oriented", "--pattern", "ATTAGACA",
-                "--input", testInputR1, "--output", testOutput2Single};
+        String[] args4 = {"parse", "--penalty-threshold", "0", "--match-score", "0", "--oriented",
+                "--pattern", "ATTAGACA", "--input", testInputR1, "--output", testOutput2Single};
         main(args4);
 
         assertFileEquals(testOutput1R1, testOutput2R1);
         assertFileEquals(testOutput1R2, testOutput2R2);
-        assertFalse(new File(testOutput1Single).exists());
-        assertFalse(new File(testOutput2Single).exists());
-        for (String fileName : new String[] {testOutput1R1, testOutput2R1, testOutput1R2, testOutput2R2})
+        assertFileEquals(testOutput1Single, testOutput2Single);
+        for (String fileName : new String[] {
+                testOutput1R1, testOutput2R1, testOutput1R2, testOutput2R2, testOutput1Single, testOutput2Single })
             assertTrue(new File(fileName).delete());
     }
 }
