@@ -14,9 +14,12 @@ public abstract class SinglePattern extends Pattern {
 
     @Override
     public MatchingResult match(MultiNSequenceWithQuality target) {
-        if (!(target instanceof NSequenceWithQuality))
+        if (target instanceof NSequenceWithQuality)
+            return match((NSequenceWithQuality)target);
+        else if (target.numberOfSequences() == 1)
+            return match(target.get(0));
+        else
             throw new IllegalArgumentException("Supports only single NSequenceWithQuality.");
-        return match((NSequenceWithQuality) target);
     }
 
     public MatchingResult match(NSequenceWithQuality target, Range range) {
