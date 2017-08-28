@@ -113,18 +113,17 @@ public final class ReadProcessor {
         OutputPort<ParsedRead> bestMatchPort = () -> {
             ParsedRead bestRead = null;
             for (OrderedOutputPort<ParsedRead> parsedRead : parsedReads) {
-                if (bestRead == null)
+                if (bestRead == null) {
                     bestRead = parsedRead.take();
-                else {
+                    if (bestRead == null)
+                        return null;
+                } else {
                     ParsedRead currentRead = parsedRead.take();
                     if (currentRead.getBestMatchScore() > currentRead.getBestMatchScore())
                         bestRead = currentRead;
                 }
             }
-            if (bestRead == null)
-                throw new NullPointerException();
-            else
-                return bestRead;
+            return bestRead;
         };
         for (ParsedRead parsedRead : CUtils.it(bestMatchPort)) {
             SequenceRead parsedSequenceRead = parsedRead.getParsedRead();
