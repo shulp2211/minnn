@@ -48,10 +48,10 @@ public final class AndOperator extends MultipleReadsOperator {
 
             if (byScore)
                 sorter = new SorterByScore(patternAligner, true, true, fairSorting,
-                        LOGICAL_AND);
+                        LOGICAL_AND, unfairSorterPortLimits.get(AndOperator.class));
             else
                 sorter = new SorterByCoordinate(patternAligner, true, true, fairSorting,
-                        LOGICAL_AND);
+                        LOGICAL_AND, unfairSorterPortLimits.get(AndOperator.class));
 
             return sorter.getOutputPort(Arrays.stream(operandPatterns).map(pattern -> new ApproximateSorterOperandPort(
                     pattern.match(target, ranges, reverseComplements).getMatches(byScore, fairSorting),

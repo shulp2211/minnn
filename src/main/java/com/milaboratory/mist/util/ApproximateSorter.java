@@ -8,6 +8,9 @@ import com.milaboratory.mist.pattern.*;
 import java.util.*;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
+import static com.milaboratory.mist.util.DebugUtils.countCall;
+import static com.milaboratory.mist.util.DebugUtils.countExecutionTime;
+import static com.milaboratory.mist.util.DebugUtils.maxSize;
 import static com.milaboratory.mist.util.RangeTools.*;
 
 public abstract class ApproximateSorter {
@@ -16,6 +19,8 @@ public abstract class ApproximateSorter {
     protected final boolean combineScoresBySum;
     protected final boolean fairSorting;
     protected final MatchValidationType matchValidationType;
+    protected final int unfairSorterLimit;
+    protected int unfairSorterTakenValues = 0;
 
     /**
      * This sorter allows to get output port for approximately sorted matches by score or coordinate from
@@ -28,14 +33,16 @@ public abstract class ApproximateSorter {
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
      * @param matchValidationType type of validation used to determine that current matches combination is invalid
+     * @param unfairSorterLimit maximum number of output values for this port for unfair sorter
      */
     public ApproximateSorter(PatternAligner patternAligner, boolean multipleReads, boolean combineScoresBySum,
-                             boolean fairSorting, MatchValidationType matchValidationType) {
+                             boolean fairSorting, MatchValidationType matchValidationType, int unfairSorterLimit) {
         this.patternAligner = patternAligner;
         this.multipleReads = multipleReads;
         this.combineScoresBySum = combineScoresBySum;
         this.fairSorting = fairSorting;
         this.matchValidationType = matchValidationType;
+        this.unfairSorterLimit = unfairSorterLimit;
         if ((multipleReads && ((matchValidationType == INTERSECTION)
                 || (matchValidationType == ORDER) || (matchValidationType == FOLLOWING) || (matchValidationType == FIRST)))
                 || (!multipleReads && ((matchValidationType == LOGICAL_AND) || (matchValidationType == LOGICAL_OR))))
@@ -60,38 +67,44 @@ public abstract class ApproximateSorter {
      * @return combined match
      */
     protected Match combineMatches(boolean sortingByScore, Match... matches) {
-        ArrayList<MatchedItem> matchedItems = new ArrayList<>();
+        List<Match> tempMatches = new ArrayList<>();
+        tempMatches.add(null);
+        countCall("combine");
+        countExecutionTime("combine", () -> {
 
-        if (multipleReads) {
-            int patternIndex = 0;
-            boolean allMatchesAreNull = true;
-            for (Match match : matches) {
-                if (match == null) {
-                    if (matchValidationType == LOGICAL_OR) {
-                        matchedItems.add(new NullMatchedRange(patternIndex++));
-                        continue;
-                    } else throw new IllegalStateException("Found null match when MatchValidationType doesn't allow them");
-                } else allMatchesAreNull = false;
-                for (int i = 0; i < match.getNumberOfPatterns(); i++) {
-                    MatchedRange currentMatchedRange = match.getMatchedRange(i);
-                    if (currentMatchedRange instanceof NullMatchedRange) {
-                        if (match.getMatchedGroupEdgesByPattern(i).size() > 0)
-                            throw new IllegalStateException("Null pattern contains "
-                                    + match.getMatchedGroupEdgesByPattern(i).size() + " group edges");
-                        matchedItems.add(new NullMatchedRange(patternIndex++));
-                    } else {
-                        matchedItems.add(new MatchedRange(currentMatchedRange.getTarget(), currentMatchedRange.getTargetId(),
-                                patternIndex, currentMatchedRange.getRange()));
-                        for (MatchedGroupEdge matchedGroupEdge : match.getMatchedGroupEdgesByPattern(i))
-                            matchedItems.add(new MatchedGroupEdge(matchedGroupEdge.getTarget(), matchedGroupEdge.getTargetId(),
-                                    patternIndex, matchedGroupEdge.getGroupEdge(), matchedGroupEdge.getPosition()));
-                        patternIndex++;
+            ArrayList<MatchedItem> matchedItems = new ArrayList<>();
+
+            if (multipleReads) {
+                int patternIndex = 0;
+                boolean allMatchesAreNull = true;
+                for (Match match : matches) {
+                    if (match == null) {
+                        if (matchValidationType == LOGICAL_OR) {
+                            matchedItems.add(new NullMatchedRange(patternIndex++));
+                            continue;
+                        } else throw new IllegalStateException("Found null match when MatchValidationType doesn't allow them");
+                    } else allMatchesAreNull = false;
+                    for (int i = 0; i < match.getNumberOfPatterns(); i++) {
+                        MatchedRange currentMatchedRange = match.getMatchedRange(i);
+                        if (currentMatchedRange instanceof NullMatchedRange) {
+                            if (match.getMatchedGroupEdgesByPattern(i).size() > 0)
+                                throw new IllegalStateException("Null pattern contains "
+                                        + match.getMatchedGroupEdgesByPattern(i).size() + " group edges");
+                            matchedItems.add(new NullMatchedRange(patternIndex++));
+                        } else {
+                            matchedItems.add(new MatchedRange(currentMatchedRange.getTarget(), currentMatchedRange.getTargetId(),
+                                    patternIndex, currentMatchedRange.getRange()));
+                            for (MatchedGroupEdge matchedGroupEdge : match.getMatchedGroupEdgesByPattern(i))
+                                matchedItems.add(new MatchedGroupEdge(matchedGroupEdge.getTarget(), matchedGroupEdge.getTargetId(),
+                                        patternIndex, matchedGroupEdge.getGroupEdge(), matchedGroupEdge.getPosition()));
+                            patternIndex++;
+                        }
                     }
                 }
-            }
-            if (allMatchesAreNull) return null;
-            return new Match(patternIndex, combineMatchScores(matches), matchedItems);
-        } else
+                if (allMatchesAreNull) return null;
+                tempMatches.set(0, new Match(patternIndex, combineMatchScores(matches), matchedItems));
+                return null;
+            } else
             if (matchValidationType == FIRST) {
                 boolean matchExist = false;
                 int bestMatchPort = 0;
@@ -99,16 +112,17 @@ public abstract class ApproximateSorter {
                 long bestScore = Long.MIN_VALUE;
                 for (int i = 0; i < matches.length; i++)
                     if ((matches[i] != null)
-                        && ((sortingByScore && (matches[i].getScore() > bestScore))
-                        || (!sortingByScore && (matches[i].getRange().getLower() < bestCoordinate)))) {
+                            && ((sortingByScore && (matches[i].getScore() > bestScore))
+                            || (!sortingByScore && (matches[i].getRange().getLower() < bestCoordinate)))) {
                         matchExist = true;
                         if (sortingByScore) bestScore = matches[i].getScore();
                         else bestCoordinate = matches[i].getRange().getLower();
                         bestMatchPort = i;
                     }
-                if (matchExist)
-                    return matches[bestMatchPort];
-                else
+                if (matchExist) {
+                    tempMatches.set(0, matches[bestMatchPort]);
+                    return null;
+                } else
                     return null;
             } else {
                 NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
@@ -127,9 +141,13 @@ public abstract class ApproximateSorter {
                         target, matchValidationType == FOLLOWING, ranges);
                 matchedItems.addAll(combinedRange.getMatchedGroupEdges());
                 matchedItems.add(new MatchedRange(target, targetId, 0, combinedRange.getRange()));
-                return new Match(1, combineMatchScores(matches) + combinedRange.getScorePenalty(),
-                        matchedItems);
+                tempMatches.set(0, new Match(1, combineMatchScores(matches) + combinedRange.getScorePenalty(), matchedItems));
             }
+
+            return null;
+        });
+        return tempMatches.get(0);
+
     }
 
     /**
@@ -238,50 +256,59 @@ public abstract class ApproximateSorter {
             throw new IllegalArgumentException("matches length is " + matches.length + ", indexes length is "
                 + indexes.size() + "; they must be equal!");
 
-        IncompatibleIndexes result = null;
-        switch (matchValidationType) {
-            case LOGICAL_OR:
-            case LOGICAL_AND:
-            case FIRST:
-                return null;
-            case INTERSECTION:
-                Range ranges[] = new Range[matches.length];
+        List<IncompatibleIndexes> tempIndexes = new ArrayList<>();
+        tempIndexes.add(null);
+        countCall("find");
+        countExecutionTime("find", () -> {
+            IncompatibleIndexes result = null;
+            switch (matchValidationType) {
+                case LOGICAL_OR:
+                case LOGICAL_AND:
+                case FIRST:
+                    return null;
+                case INTERSECTION:
+                    Range ranges[] = new Range[matches.length];
 
-                OUTER:
-                for (int i = 0; i < matches.length; i++) {
-                    if (matches[i] == null) continue;
-                    Range currentRange = matches[i].getRange();
-                    ranges[i] = currentRange;
-                    for (int j = 0; j < i; j++)     // Compare with all previously added matches
-                        if (checkFullIntersection(ranges[i], ranges[j])
-                                || checkOverlap(matches[0].getMatchedRange().getTarget(), ranges[i], ranges[j])) {
-                            result = new IncompatibleIndexes(j, indexes.get(j), i, indexes.get(i));
-                            break OUTER;
-                        }
-                }
-
-                return result;
-            case ORDER:
-            case FOLLOWING:
-                Range currentRange;
-                Range previousRange;
-
-                for (int i = 1; i < matches.length; i++) {
-                    if (matches[i] == null) continue;
-                    NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
-                    currentRange = matches[i].getRange();
-                    previousRange = matches[i - 1].getRange();
-                    if ((previousRange.getLower() >= currentRange.getLower())
-                            || checkFullIntersection(previousRange, currentRange)
-                            || checkOverlap(target, previousRange, currentRange)
-                            || checkInsertionPenalty(target, previousRange, currentRange)) {
-                        result = new IncompatibleIndexes(i - 1, indexes.get(i - 1), i, indexes.get(i));
-                        break;
+                    OUTER:
+                    for (int i = 0; i < matches.length; i++) {
+                        if (matches[i] == null) continue;
+                        Range currentRange = matches[i].getRange();
+                        ranges[i] = currentRange;
+                        for (int j = 0; j < i; j++)     // Compare with all previously added matches
+                            if (checkFullIntersection(ranges[i], ranges[j])
+                                    || checkOverlap(matches[0].getMatchedRange().getTarget(), ranges[i], ranges[j])) {
+                                result = new IncompatibleIndexes(j, indexes.get(j), i, indexes.get(i));
+                                break OUTER;
+                            }
                     }
-                }
-                return result;
-        }
-        return null;
+
+                    tempIndexes.set(0, result);
+                    return null;
+                case ORDER:
+                case FOLLOWING:
+                    Range currentRange;
+                    Range previousRange;
+
+                    for (int i = 1; i < matches.length; i++) {
+                        if (matches[i] == null) continue;
+                        NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
+                        currentRange = matches[i].getRange();
+                        previousRange = matches[i - 1].getRange();
+                        if ((previousRange.getLower() >= currentRange.getLower())
+                                || checkFullIntersection(previousRange, currentRange)
+                                || checkOverlap(target, previousRange, currentRange)
+                                || checkInsertionPenalty(target, previousRange, currentRange)) {
+                            result = new IncompatibleIndexes(i - 1, indexes.get(i - 1), i, indexes.get(i));
+                            break;
+                        }
+                    }
+                    tempIndexes.set(0, result);
+                    return null;
+            }
+            return null;
+        });
+
+        return tempIndexes.get(0);
     }
 
     /**
@@ -436,25 +463,34 @@ public abstract class ApproximateSorter {
          * @return true if there are no incompatible indexes found; false if they are found
          */
         boolean isCompatible(boolean allNextIncompatible, ArrayList<Integer> indexes) {
-            for (IncompatibleIndexes currentIndexes : incompatibleIndexes)
-                if (allNextIncompatible)
-                    if ((indexes.get(currentIndexes.port1) >= currentIndexes.index1)
-                            && (indexes.get(currentIndexes.port2) <= currentIndexes.index2)) {
-                        // if we find incompatible combination, mark it as already returned
-                        addReturnedCombination(indexes);
-                        return false;
-                    }
-                else
-                    if ((indexes.get(currentIndexes.port1) == currentIndexes.index1)
-                            && (indexes.get(currentIndexes.port2) == currentIndexes.index2)) {
-                        addReturnedCombination(indexes);
-                        return false;
-                    }
-            return true;
+            countCall("isCompatible");
+            List<Boolean> result = new ArrayList<>();
+            result.add(true);
+            countExecutionTime("isCompatible", () -> {
+                for (IncompatibleIndexes currentIndexes : incompatibleIndexes)
+                    if (allNextIncompatible)
+                        if ((indexes.get(currentIndexes.port1) >= currentIndexes.index1)
+                                && (indexes.get(currentIndexes.port2) <= currentIndexes.index2)) {
+                            // if we find incompatible combination, mark it as already returned
+                            addReturnedCombination(indexes);
+                            result.set(0, false);
+                            return null;
+                        }
+                        else
+                        if ((indexes.get(currentIndexes.port1) == currentIndexes.index1)
+                                && (indexes.get(currentIndexes.port2) == currentIndexes.index2)) {
+                            addReturnedCombination(indexes);
+                            result.set(0, false);
+                            return null;
+                        }
+                return null;
+            });
+            return result.get(0);
         }
 
         void addIncompatibleIndexes(IncompatibleIndexes foundIncompatibleIndexes) {
             incompatibleIndexes.add(foundIncompatibleIndexes);
+            if (incompatibleIndexes.size() > maxSize) maxSize = incompatibleIndexes.size();
         }
     }
 }

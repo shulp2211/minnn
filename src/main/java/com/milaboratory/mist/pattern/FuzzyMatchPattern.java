@@ -12,7 +12,7 @@ import com.milaboratory.core.sequence.NucleotideSequence;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.milaboratory.mist.pattern.PatternUtils.invertCoordinate;
+import static com.milaboratory.mist.pattern.PatternUtils.*;
 
 public final class FuzzyMatchPattern extends SinglePattern {
     private final ArrayList<NucleotideSequence> sequences;
@@ -227,7 +227,7 @@ public final class FuzzyMatchPattern extends SinglePattern {
                     match = takeFromFixedPosition();
                 else
                     if (fairSorting)
-                        match = takeFair(byScore);
+                        match = takeFair();
                     else
                         if (byScore) match = takeUnfairByScore();
                         else match = takeUnfairByCoordinate();
@@ -251,9 +251,11 @@ public final class FuzzyMatchPattern extends SinglePattern {
                             else
                                 currentReturnedPositions.add(position);
                             Alignment<NucleotideSequence> alignment = patternAligner.align(sequences.get(currentIndex),
-                                    target, position);
+                                        target, position);
                             if (alignment.getScore() >= patternAligner.penaltyThreshold())
-                                return generateMatch(alignment);
+                                return generateMatch(alignment, target, targetId,
+                                        fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
+                                                sequences.get(currentIndex).size()));
                         }
                     }
                     currentIndex = 0;
@@ -271,13 +273,15 @@ public final class FuzzyMatchPattern extends SinglePattern {
                         Alignment<NucleotideSequence> alignment = patternAligner.align(sequences.get(currentIndex),
                                 target, position);
                         if (alignment.getScore() >= patternAligner.penaltyThreshold())
-                            return generateMatch(alignment);
+                            return generateMatch(alignment, target, targetId,
+                                    fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
+                                    sequences.get(currentIndex).size()));
                     }
                 }
                 return null;
             }
 
-            private Match takeFair(boolean byScore) {
+            private Match takeFair() {
                 if (!sortingPerformed) {
                     fillAllMatchesForFairSorting();
                     if (byScore)
@@ -310,42 +314,6 @@ public final class FuzzyMatchPattern extends SinglePattern {
             }
 
             /**
-             * Generate match from alignment.
-             *
-             * @param alignment alignment returned from getAlignment function
-             * @return generated match
-             */
-            private Match generateMatch(Alignment<NucleotideSequence> alignment) {
-                Range foundRange = alignment.getSequence2Range();
-                long foundScore = (long)alignment.getScore();
-                MatchedRange matchedRange = new MatchedRange(target, targetId, 0, foundRange);
-                ArrayList<MatchedItem> matchedItems = new ArrayList<>();
-                matchedItems.add(matchedRange);
-
-                for (GroupEdgePosition groupEdgePosition : fixGroupEdgePositions(groupEdgePositions,
-                        groupMovements.get(currentIndex), sequences.get(currentIndex).size())) {
-                    int foundGroupEdgePosition = alignment.convertToSeq2Position(groupEdgePosition.getPosition());
-                    if (foundGroupEdgePosition == -1)
-                        if (groupEdgePosition.getPosition() < alignment.getSequence1Range().getLower())
-                            foundGroupEdgePosition = foundRange.getLower();
-                        else if (groupEdgePosition.getPosition() > alignment.getSequence1Range().getUpper())
-                            foundGroupEdgePosition = foundRange.getUpper();
-                        else
-                            throw new IllegalStateException("Unexpected state when converting group edge positions: "
-                                    + "Sequence1Range=" + alignment.getSequence1Range()
-                                    + ", Sequence2Range=" + alignment.getSequence2Range()
-                                    + ", GroupEdgePosition=" + groupEdgePosition.getPosition());
-                    else if (foundGroupEdgePosition < 0)
-                        foundGroupEdgePosition = invertCoordinate(foundGroupEdgePosition);
-                    MatchedGroupEdge matchedGroupEdge = new MatchedGroupEdge(target, targetId, 0,
-                            groupEdgePosition.getGroupEdge(), foundGroupEdgePosition);
-                    matchedItems.add(matchedGroupEdge);
-                }
-
-                return new Match(1, foundScore, matchedItems);
-            }
-
-            /**
              * Fill allMatches array with all existing matches for fair sorting.
              */
             private void fillAllMatchesForFairSorting() {
@@ -364,7 +332,9 @@ public final class FuzzyMatchPattern extends SinglePattern {
                             if ((alignment.getScore() >= patternAligner.penaltyThreshold())
                                     && !uniqueRanges.contains(alignment.getSequence2Range())) {
                                 uniqueRanges.add(alignment.getSequence2Range());
-                                allMatchesList.add(generateMatch(alignment));
+                                allMatchesList.add(generateMatch(alignment, target, targetId,
+                                        fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
+                                        sequences.get(currentIndex).size())));
                             }
                         }
                     } while (matchLastPosition != -1);
@@ -397,7 +367,9 @@ public final class FuzzyMatchPattern extends SinglePattern {
                             if ((alignment.getScore() >= patternAligner.penaltyThreshold())
                                     && !uniqueRanges.contains(alignment.getSequence2Range())) {
                                 uniqueRanges.add(alignment.getSequence2Range());
-                                allMatchesList.add(generateMatch(alignment));
+                                allMatchesList.add(generateMatch(alignment, target, targetId,
+                                        fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
+                                        sequences.get(currentIndex).size())));
                             }
                         }
                 }
@@ -421,7 +393,9 @@ public final class FuzzyMatchPattern extends SinglePattern {
                     NucleotideSequence currentSeq = sequences.get(currentIndex);
                     alignment = patternAligner.align(currentSeq, target, fixedRightBorder);
                     if (alignment.getScore() >= patternAligner.penaltyThreshold())
-                        allMatchesList.add(generateMatch(alignment));
+                        allMatchesList.add(generateMatch(alignment, target, targetId,
+                                fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
+                                sequences.get(currentIndex).size())));
                 }
 
                 allMatches = new Match[allMatchesList.size()];

@@ -53,10 +53,10 @@ public final class OrPattern extends MultiplePatternsOperator {
 
             if (byScore)
                 sorter = new SorterByScore(patternAligner, false, false, fairSorting,
-                        FIRST);
+                        FIRST, unfairSorterPortLimits.get(OrPattern.class));
             else
                 sorter = new SorterByCoordinate(patternAligner, false, false, fairSorting,
-                        FIRST);
+                        FIRST, unfairSorterPortLimits.get(OrPattern.class));
 
             return sorter.getOutputPort(Arrays.stream(operandPatterns).map(pattern -> new ApproximateSorterOperandPort(
                     pattern.match(target, from, to, targetId).getMatches(byScore, fairSorting),

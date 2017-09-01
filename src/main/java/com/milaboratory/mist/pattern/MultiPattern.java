@@ -79,10 +79,10 @@ public final class MultiPattern extends MultipleReadsOperator {
 
             if (byScore)
                 sorter = new SorterByScore(patternAligner, true, true, fairSorting,
-                        LOGICAL_AND);
+                        LOGICAL_AND, unfairSorterPortLimits.get(MultiPattern.class));
             else
                 sorter = new SorterByCoordinate(patternAligner, true, true, fairSorting,
-                        LOGICAL_AND);
+                        LOGICAL_AND, unfairSorterPortLimits.get(MultiPattern.class));
 
             return sorter.getOutputPort(operandPorts);
         }

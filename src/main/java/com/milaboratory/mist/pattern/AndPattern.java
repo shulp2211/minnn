@@ -49,10 +49,10 @@ public final class AndPattern extends MultiplePatternsOperator {
 
             if (byScore)
                 sorter = new SorterByScore(patternAligner, false, true, fairSorting,
-                        INTERSECTION);
+                        INTERSECTION, unfairSorterPortLimits.get(AndPattern.class));
             else
                 sorter = new SorterByCoordinate(patternAligner, false, true, fairSorting,
-                        INTERSECTION);
+                        INTERSECTION, unfairSorterPortLimits.get(AndPattern.class));
 
             return sorter.getOutputPort(Arrays.stream(operandPatterns).map(pattern -> new ApproximateSorterOperandPort(
                     pattern.match(target, from, to, targetId).getMatches(byScore, fairSorting),

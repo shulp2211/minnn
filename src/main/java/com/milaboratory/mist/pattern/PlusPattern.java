@@ -49,10 +49,10 @@ public final class PlusPattern extends MultiplePatternsOperator {
 
             if (byScore)
                 sorter = new SorterByScore(patternAligner, false, true, fairSorting,
-                        ORDER);
+                        ORDER, unfairSorterPortLimits.get(PlusPattern.class));
             else
                 sorter = new SorterByCoordinate(patternAligner, false, true, fairSorting,
-                        ORDER);
+                        ORDER, unfairSorterPortLimits.get(PlusPattern.class));
 
             return sorter.getOutputPort(Arrays.stream(operandPatterns).map(pattern -> new ApproximateSorterOperandPort(
                     pattern.match(target, from, to, targetId).getMatches(byScore, fairSorting),

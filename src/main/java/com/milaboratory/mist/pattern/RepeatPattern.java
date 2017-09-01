@@ -2,10 +2,13 @@ package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
+import com.milaboratory.core.alignment.Alignment;
 import com.milaboratory.core.sequence.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.milaboratory.mist.pattern.PatternUtils.generateMatch;
 
 public final class RepeatPattern extends SinglePattern {
     private final NucleotideSequence patternSeq;
@@ -31,11 +34,11 @@ public final class RepeatPattern extends SinglePattern {
     }
 
     /**
-     * Match several repeats of specified sequence. Number of repeats specified as interval.
+     * Match several repeats of specified nucleotide or wildcard. Number of repeats specified as interval.
      * Calls FuzzyMatchPattern to find matches for each number of repeats.
      *
      * @param patternAligner pattern aligner, for FuzzyMatchPattern
-     * @param patternSeq sequence to repeat
+     * @param patternSeq 1 character nucleotide sequence to repeat
      * @param minRepeats minimum number of repeats; minimum allowed value is 1
      * @param maxRepeats maximum number of repeats; use Integer.MAX_VALUE to match without maximum limit of repeats
      * @param fixedLeftBorder position in target where must be the left border, for FuzzyMatchPattern
@@ -48,14 +51,14 @@ public final class RepeatPattern extends SinglePattern {
         super(patternAligner);
         this.patternSeq = patternSeq;
         if ((minRepeats < 1) || (maxRepeats < minRepeats))
-            throw new IllegalArgumentException("Wrong arguments: minRepeats=" + minRepeats + ", maxRepeats=" + maxRepeats);
+            throw new IllegalArgumentException("Wrong arguments: minRepeats=" + minRepeats
+                    + ", maxRepeats=" + maxRepeats);
         else {
             this.minRepeats = minRepeats;
             this.maxRepeats = maxRepeats;
         }
-        if (patternSeq.size() * maxRepeats >= 64)
-            throw new IllegalArgumentException("Motif length must be less than 64; patternSeq.size()="
-                    + patternSeq.size() + ", maxRepeats=" + maxRepeats);
+        if (patternSeq.size() != 1)
+            throw new IllegalArgumentException("patternSeq length must be 1 for RepeatPattern, found " + patternSeq);
         this.fixedLeftBorder = fixedLeftBorder;
         this.fixedRightBorder = fixedRightBorder;
         this.groupEdgePositions = groupEdgePositions;
@@ -126,6 +129,7 @@ public final class RepeatPattern extends SinglePattern {
             private final int maxRepeats;
             private final int fixedLeftBorder;
             private final int fixedRightBorder;
+            private final boolean fixedBorder;
             private final List<GroupEdgePosition> groupEdgePositions;
             private final NSequenceWithQuality target;
             private final int from;
@@ -133,15 +137,21 @@ public final class RepeatPattern extends SinglePattern {
             private final byte targetId;
             private final boolean byScore;
             private final boolean fairSorting;
-            private final int patternSeqLength;
+            private final TargetSections targetSections;
+
+            /* Length of longest valid section starting from this position (index1) in target inside (from->to) range.
+             * Section is valid when number of errors (index2) isn't bigger than bitapMaxErrors in PatternAligner. */
+            private final int[][] longestValidSections;
+
+            private final NucleotideSequence[] sequences;
 
             private OutputPort<Match> currentPort;
 
-            // for unfair sorting
+            // Variables used for unfair sorting.
             private boolean currentPortEmpty = true;
             private int currentRepeats;
 
-            // for fair sorting
+            // Data structures used for fair sorting and for matching in fixed position.
             private Match[] allMatches;
             private boolean sortingPerformed = false;
             private int takenValues = 0;
@@ -153,11 +163,11 @@ public final class RepeatPattern extends SinglePattern {
                                     boolean byScore, boolean fairSorting) {
                 this.patternAligner = patternAligner;
                 this.patternSeq = patternSeq;
-                this.patternSeqLength = patternSeq.size();
                 this.minRepeats = minRepeats;
-                this.maxRepeats = Math.min(maxRepeats, (to - from + patternAligner.bitapMaxErrors()) / patternSeqLength);
+                this.maxRepeats = maxRepeats;
                 this.fixedLeftBorder = fixedLeftBorder;
                 this.fixedRightBorder = fixedRightBorder;
+                this.fixedBorder = (fixedLeftBorder != -1) || (fixedRightBorder != -1);
                 this.groupEdgePositions = groupEdgePositions;
                 this.target = target;
                 this.from = from;
@@ -166,22 +176,48 @@ public final class RepeatPattern extends SinglePattern {
                 this.byScore = byScore;
                 this.fairSorting = fairSorting;
                 this.currentRepeats = maxRepeats;
+                this.targetSections = new TargetSections(target.getSequence().toString().substring(from, to),
+                        patternSeq);
+                int maxErrors = patternAligner.bitapMaxErrors();
+                this.longestValidSections = new int[to - from][maxErrors];
+                for (int i = 0; i < to - from; i++) {
+                    longestValidSections[i] = new int[maxErrors];
+                    for (int j = 0; j < maxErrors; j++)
+                        longestValidSections[i][j] = calculateLongestValidSection(i, j);
+                }
+                this.sequences = new NucleotideSequence[maxRepeats - minRepeats + 1];
+                for (int i = minRepeats; i <= maxRepeats; i++) {
+                    NucleotideSequence[] sequencesToConcatenate = new NucleotideSequence[i];
+                    Arrays.fill(sequencesToConcatenate, patternSeq);
+                    NucleotideSequence currentSequence = SequencesUtils.concatenate(sequencesToConcatenate);
+                    this.sequences[i - minRepeats] = currentSequence;
+                }
             }
 
             @Override
             public Match take() {
-                return fairSorting ? takeFair() : takeUnfair();
+                Match match;
+                if (fixedBorder)
+                    match = takeFromFixedPosition();
+                else
+                if (fairSorting)
+                    match = takeFair();
+                else
+                if (byScore) match = takeUnfairByScore();
+                else match = takeUnfairByCoordinate();
+
+                return match;
             }
 
-            private Match takeUnfair() {
+            private Match takeUnfairByScore() {
                 while ((currentRepeats >= minRepeats) || !currentPortEmpty) {
                     if (currentPortEmpty) {
                         NucleotideSequence[] sequencesToConcatenate = new NucleotideSequence[currentRepeats];
                         Arrays.fill(sequencesToConcatenate, patternSeq);
                         NucleotideSequence currentSequence = SequencesUtils.concatenate(sequencesToConcatenate);
                         currentPort = new FuzzyMatchPattern(patternAligner, currentSequence,
-                                0, 0, fixedLeftBorder, fixedRightBorder, fixGroupEdgePositions(
-                                        groupEdgePositions, 0, patternSeqLength * currentRepeats))
+                                0, 0, fixedLeftBorder, fixedRightBorder,
+                                fixGroupEdgePositions(groupEdgePositions, 0, currentRepeats))
                                 .match(target, from, to, targetId)
                                 .getMatches(byScore, false);
                         currentPortEmpty = false;
@@ -196,47 +232,254 @@ public final class RepeatPattern extends SinglePattern {
                 return null;
             }
 
+            private Match takeUnfairByCoordinate() {
+                while (currentIndex < sequences.size()) {
+                    int position = bitapMatcherFilters.get(currentIndex).findNext();
+                    if (position == -1)
+                        currentIndex++;
+                    else {
+                        Alignment<NucleotideSequence> alignment = patternAligner.align(sequences.get(currentIndex),
+                                target, position);
+                        if (alignment.getScore() >= patternAligner.penaltyThreshold())
+                            return generateMatch(alignment, target, targetId,
+                                    fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
+                                            sequences.get(currentIndex).size()));
+                    }
+                }
+                return null;
+            }
+
             private Match takeFair() {
                 if (!sortingPerformed) {
-                    HashMap<Range, Match> matchesWithUniqueRanges = new HashMap<>();
-                    for (int repeats = maxRepeats; repeats >= minRepeats; repeats--) {
-                        NucleotideSequence[] sequencesToConcatenate = new NucleotideSequence[repeats];
-                        Arrays.fill(sequencesToConcatenate, patternSeq);
-                        NucleotideSequence currentSequence = SequencesUtils.concatenate(sequencesToConcatenate);
-                        currentPort = new FuzzyMatchPattern(patternAligner, currentSequence,
-                                0, 0, fixedLeftBorder, fixedRightBorder, fixGroupEdgePositions(
-                                        groupEdgePositions, 0, patternSeqLength * repeats))
-                                .match(target, from, to, targetId)
-                                .getMatches(byScore, true);
-                        Match currentMatch;
-                        do {
-                            currentMatch = currentPort.take();
-                            if (currentMatch != null) {
-                                currentMatch = overrideMatchScore(currentMatch, repeats);
-                                Range currentRange = currentMatch.getRange();
-                                if ((matchesWithUniqueRanges.get(currentRange) == null)
-                                        || (matchesWithUniqueRanges.get(currentRange).getScore() < currentMatch.getScore()))
-                                    matchesWithUniqueRanges.put(currentRange, currentMatch);
-                            }
-                        } while (currentMatch != null);
-                    }
-                    allMatches = new Match[matchesWithUniqueRanges.size()];
-                    matchesWithUniqueRanges.values().toArray(allMatches);
-                    Arrays.sort(allMatches, Comparator.comparingInt((Match match) -> match.getRange().length()).reversed());
+                    fillAllMatchesForFairSorting();
+                    Arrays.sort(allMatches, Comparator.comparingInt((Match match) -> match.getRange().length())
+                            .reversed());
                     if (byScore)
                         Arrays.sort(allMatches, Comparator.comparingLong(Match::getScore).reversed());
                     else
                         Arrays.sort(allMatches, Comparator.comparingInt(match -> match.getRange().getLower()));
                     sortingPerformed = true;
                 }
-
                 if (takenValues == allMatches.length) return null;
                 return allMatches[takenValues++];
+            }
+
+            private Match takeFromFixedPosition() {
+                // important: to is exclusive and fixedRightBorder is inclusive
+                if (((fixedLeftBorder != -1) && (from > fixedLeftBorder))
+                        || ((fixedRightBorder != -1) && (to <= fixedRightBorder)))
+                    return null;
+                if (!sortingPerformed) {
+                    if (fixedRightBorder != -1)
+                        fillAllMatchesForFixedRightBorder();
+                    else if (fixedLeftBorder != -1)
+                        fillAllMatchesForFixedLeftBorder();
+                    else throw new IllegalArgumentException("Wrong call of takeFromFixedPosition: fixedLeftBorder="
+                                + fixedLeftBorder + ", fixedRightBorder=" + fixedRightBorder);
+                    Arrays.sort(allMatches, Comparator.comparingInt((Match match) -> match.getRange().length())
+                            .reversed());
+                    Arrays.sort(allMatches, Comparator.comparingLong(Match::getScore).reversed());
+                    sortingPerformed = true;
+                }
+                if (takenValues == allMatches.length) return null;
+                return allMatches[takenValues++];
+            }
+
+            /**
+             * Fill allMatches array with all existing matches for fair sorting.
+             */
+            private void fillAllMatchesForFairSorting() {
+                ArrayList<Match> allMatchesList = new ArrayList<>();
+                Alignment<NucleotideSequence> alignment;
+                HashSet<Range> uniqueRanges = new HashSet<>();
+                HashSet<Range> uniqueAlignedRanges = new HashSet<>();
+
+                for (int repeats = maxRepeats; repeats >= minRepeats; repeats--)
+                    for (int i = 0; i < to - from; i++)
+                        for (int j = 0; j < patternAligner.bitapMaxErrors(); j++) {
+                            int currentLongestSection = longestValidSections[i][j];
+                            if (repeats <= currentLongestSection)
+                                uniqueRanges.add(new Range(i + from, i + repeats + from));
+                        }
+
+                for (Range range : uniqueRanges) {
+                    alignment = patternAligner.align(sequences[range.length() - minRepeats], target,
+                            range.getLower());
+                    if ((alignment.getScore() >= patternAligner.penaltyThreshold())
+                            && !uniqueAlignedRanges.contains(alignment.getSequence2Range())) {
+                        uniqueAlignedRanges.add(alignment.getSequence2Range());
+                        allMatchesList.add(overrideMatchScore(generateMatch(alignment, target, targetId,
+                                fixGroupEdgePositions(groupEdgePositions, 0, range.length())),
+                                range.length()));
+                    }
+                }
+
+                allMatches = new Match[allMatchesList.size()];
+                allMatchesList.toArray(allMatches);
+            }
+
+            /**
+             * Fill allMatches array with all possible alignments for fixed left border.
+             */
+            private void fillAllMatchesForFixedLeftBorder() {
+                ArrayList<Match> allMatchesList = new ArrayList<>();
+                PatternAligner patternAligner = this.patternAligner.setLeftBorder(fixedLeftBorder);
+                Alignment<NucleotideSequence> alignment;
+
+                NucleotideSequence currentSeq = sequences.get(currentIndex);
+                HashSet<Range> uniqueRanges = new HashSet<>();
+                for (int rightBorder = Math.max(fixedLeftBorder, fixedLeftBorder + currentSeq.size()
+                        - patternAligner.bitapMaxErrors() - 1);
+                     rightBorder <= Math.min(to - 1, fixedLeftBorder + currentSeq.size()
+                             + patternAligner.bitapMaxErrors() - 1);
+                     rightBorder++)
+                    if ((rightBorder >= fixedLeftBorder) && (rightBorder < target.size())) {
+                        alignment = patternAligner.align(currentSeq, target, rightBorder);
+                        if ((alignment.getScore() >= patternAligner.penaltyThreshold())
+                                && !uniqueRanges.contains(alignment.getSequence2Range())) {
+                            uniqueRanges.add(alignment.getSequence2Range());
+                            allMatchesList.add(generateMatch(alignment, target, targetId,
+                                    fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
+                                            sequences.get(currentIndex).size())));
+                        }
+                    }
+
+                allMatches = new Match[allMatchesList.size()];
+                allMatchesList.toArray(allMatches);
+            }
+
+            /**
+             * Fill allMatches array with all possible alignments for fixed right border.
+             */
+            private void fillAllMatchesForFixedRightBorder() {
+                ArrayList<Match> allMatchesList = new ArrayList<>();
+                PatternAligner patternAligner = (fixedLeftBorder == -1) ? this.patternAligner
+                        : this.patternAligner.setLeftBorder(fixedLeftBorder);
+                Alignment<NucleotideSequence> alignment;
+
+                for (currentIndex = 0; currentIndex < sequences.size(); currentIndex++) {
+                    if (bitapMatcherFilters.get(currentIndex).findNext() == -1)
+                        continue;
+                    NucleotideSequence currentSeq = sequences.get(currentIndex);
+                    alignment = patternAligner.align(currentSeq, target, fixedRightBorder);
+                    if (alignment.getScore() >= patternAligner.penaltyThreshold())
+                        allMatchesList.add(generateMatch(alignment, target, targetId,
+                                fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
+                                        sequences.get(currentIndex).size())));
+                }
+
+                allMatches = new Match[allMatchesList.size()];
+                allMatchesList.toArray(allMatches);
             }
 
             private Match overrideMatchScore(Match match, int repeats) {
                 return new Match(match.getNumberOfPatterns(), match.getScore() + patternAligner.repeatsPenalty(
                         patternSeq, repeats, maxRepeats), match.getMatchedItems());
+            }
+
+            /**
+             * Calculate length of longest valid section starting from specified position inside (from->to) range.
+             * Section is considered valid if number of errors in it is not bigger than numberOfErrors.
+             *
+             * @param position section starting position inside (from->to) range, inclusive
+             * @param numberOfErrors maximum number of errors, inclusive
+             * @return length of longest valid section that starts from this position
+             */
+            private int calculateLongestValidSection(int position, int numberOfErrors) {
+                int[] sections = targetSections.sections;
+                boolean currentSectionIsMatching = targetSections.firstMatching;
+                int currentLength = 0;
+                int currentPosition = 0;
+                int currentErrors = 0;
+                for (int i = 0; i < sections.length; i++, currentSectionIsMatching = !currentSectionIsMatching) {
+                    int currentSectionValue = sections[i];
+                    if (currentPosition + currentSectionValue < position) {
+                        currentPosition += currentSectionValue;
+                        continue;
+                    } else if (currentPosition <= position) {
+                        if (currentSectionIsMatching) {
+                            currentLength = currentPosition + currentSectionValue - position;
+                        } else if (currentPosition + currentSectionValue - position <= numberOfErrors) {
+                            currentErrors = currentPosition + currentSectionValue - position;
+                            currentLength = currentErrors;
+                        } else {
+                            currentLength = numberOfErrors;
+                            break;
+                        }
+                    } else {
+                        if (currentSectionIsMatching) {
+                            currentLength += currentSectionValue;
+                        } else if (currentErrors + currentSectionValue <= numberOfErrors) {
+                            currentErrors += currentSectionValue;
+                            currentLength += currentSectionValue;
+                        } else {
+                            currentLength += numberOfErrors - currentErrors;
+                            break;
+                        }
+                    }
+                    currentPosition += currentSectionValue;
+                }
+                return currentLength;
+            }
+
+            /**
+             * This class represents sections in the target substring (from "from" to "to" coordinates) with array of
+             * integers. Each integer is length of section that consists of only matching or only non-matching letters.
+             * firstMatching is true if first section is matching, otherwise false.
+             */
+            private static class TargetSections {
+                final int[] sections;
+                final boolean firstMatching;
+
+                private static HashMap<Character, String> allMatchingLetters = new HashMap<>();
+                static {
+                    allMatchingLetters.put('A', "Aa");
+                    allMatchingLetters.put('T', "Tt");
+                    allMatchingLetters.put('G', "Gg");
+                    allMatchingLetters.put('C', "Cc");
+                    allMatchingLetters.put('W', "AaTt");
+                    allMatchingLetters.put('S', "GgCc");
+                    allMatchingLetters.put('M', "AaCc");
+                    allMatchingLetters.put('K', "GgTt");
+                    allMatchingLetters.put('R', "AaGg");
+                    allMatchingLetters.put('Y', "CcTt");
+                    allMatchingLetters.put('B', "TtGgCc");
+                    allMatchingLetters.put('V', "AaGgCc");
+                    allMatchingLetters.put('H', "AaTtCc");
+                    allMatchingLetters.put('D', "AaTtGg");
+                    allMatchingLetters.put('N', "AaTtGgCc");
+                    allMatchingLetters.keySet()
+                            .forEach(l -> allMatchingLetters.put(Character.toLowerCase(l), allMatchingLetters.get(l)));
+                }
+
+                TargetSections(String targetSubstring, NucleotideSequence patternSeq) {
+                    String matchingLetters = allMatchingLetters.get(patternSeq.toString().charAt(0));
+                    if (matchingLetters == null)
+                        throw new IllegalArgumentException("Wrong patternSeq for RepeatPattern: "
+                                + patternSeq);
+                    if (targetSubstring.length() < 1)
+                        throw new IllegalArgumentException("Wrong targetSubstring for RepeatPattern: "
+                                + targetSubstring);
+                    else {
+                        ArrayList<Integer> sectionsList = new ArrayList<>();
+                        boolean currentSectionMatching = matchingLetters.contains(targetSubstring.substring(0, 1));
+                        int currentSectionLength = 1;
+                        this.firstMatching = currentSectionMatching;
+                        for (int i = 1; i < targetSubstring.length(); i++) {
+                            String currentLetter = targetSubstring.substring(i, i + 1);
+                            boolean currentLetterMatching = matchingLetters.contains(currentLetter);
+                            if (currentLetterMatching != currentSectionMatching) {
+                                sectionsList.add(currentSectionLength);
+                                currentSectionLength = 0;
+                                currentSectionMatching = currentLetterMatching;
+                            } else
+                                currentSectionLength++;
+                        }
+                        if (currentSectionLength > 0)
+                            sectionsList.add(currentSectionLength);
+                        this.sections = sectionsList.stream().mapToInt(i -> i).toArray();
+                    }
+                }
             }
         }
     }

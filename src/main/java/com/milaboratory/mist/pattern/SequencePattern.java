@@ -49,10 +49,10 @@ public final class SequencePattern extends MultiplePatternsOperator {
 
             if (byScore)
                 sorter = new SorterByScore(patternAligner, false, true, fairSorting,
-                        FOLLOWING);
+                        FOLLOWING, unfairSorterPortLimits.get(SequencePattern.class));
             else
                 sorter = new SorterByCoordinate(patternAligner, false, true, fairSorting,
-                        FOLLOWING);
+                        FOLLOWING, unfairSorterPortLimits.get(SequencePattern.class));
 
             return sorter.getOutputPort(Arrays.stream(operandPatterns).map(pattern -> new ApproximateSorterOperandPort(
                     pattern.match(target, from, to, targetId).getMatches(byScore, fairSorting),

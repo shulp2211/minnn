@@ -18,10 +18,11 @@ public final class SorterByCoordinate extends ApproximateSorter {
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
      * @param matchValidationType type of validation used to determine that current matches combination is invalid
+     * @param unfairSorterLimit maximum number of output values for this port for unfair sorter
      */
     public SorterByCoordinate(PatternAligner patternAligner, boolean multipleReads, boolean combineScoresBySum,
-                              boolean fairSorting, MatchValidationType matchValidationType) {
-        super(patternAligner, multipleReads, combineScoresBySum, fairSorting, matchValidationType);
+                              boolean fairSorting, MatchValidationType matchValidationType, int unfairSorterLimit) {
+        super(patternAligner, multipleReads, combineScoresBySum, fairSorting, matchValidationType, unfairSorterLimit);
     }
 
     @Override
@@ -60,11 +61,14 @@ public final class SorterByCoordinate extends ApproximateSorter {
 
         @Override
         public Match take() {
-            Match combinedMatch = null;
-
             if (alwaysReturnNull) return null;
             if (fairSorting) return takeFairSorted();
+            if (unfairSorterTakenValues++ > unfairSorterLimit) {
+                alwaysReturnNull = true;
+                return null;
+            }
 
+            Match combinedMatch = null;
             boolean combinationFound = false;
             GET_NEXT_COMBINATION:
             while (!combinationFound) {
