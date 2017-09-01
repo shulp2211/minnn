@@ -234,13 +234,16 @@ public final class ReadProcessor {
                             .collect(Collectors.toCollection(ArrayList::new));
                     ArrayList<MatchedGroup> groupsNotInsideMain = getGroupsInsideMain(currentGroups,
                             mainGroup.getRange(), false);
-                    String description = copyOldComments ? input.read.getRead(i).getDescription() + "~" : "";
-                    if (input.reverseMatch)
-                        description += "|~";
-                    description += groupsToReadDescription(groupsNotInsideMain, mainGroupName, false)
+                    String mistComments = groupsToReadDescription(groupsNotInsideMain, mainGroupName, false)
                             + (((groupsNotInsideMain.size() == 0) || (groupsInsideMain.size() == 0)) ? "" : '~')
                             + groupsToReadDescription(groupsInsideMain, mainGroupName, true);
-                    reads[i] = new SingleReadImpl(0, mainGroup.getValue(), description);
+                    String comments = copyOldComments ? input.read.getRead(i).getDescription() : "";
+                    if (copyOldComments && (input.reverseMatch || !mistComments.equals("")))
+                        comments += "~";
+                    if (input.reverseMatch)
+                        comments += "|~";
+                    comments += mistComments;
+                    reads[i] = new SingleReadImpl(0, mainGroup.getValue(), comments);
                 }
 
                 SequenceRead parsedRead;
