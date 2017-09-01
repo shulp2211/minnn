@@ -69,9 +69,10 @@ final class NormalParsers {
                         bracesPair.end + 1));
             else if (arguments.equals("*"))
                 minRepeats = 1;
-            else if (!arguments.contains(":"))
+            else if (!arguments.contains(":")) {
                 minRepeats = toInt(arguments, "number of repeats");
-            else {
+                maxRepeats = minRepeats;
+            } else {
                 if (arguments.indexOf(":") != 0)
                     minRepeats = toInt(arguments.substring(0, arguments.indexOf(":")),
                             "minimum number of repeats");
