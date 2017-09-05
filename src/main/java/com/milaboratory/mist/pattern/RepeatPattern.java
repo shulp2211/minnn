@@ -8,7 +8,7 @@ import com.milaboratory.core.sequence.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.milaboratory.mist.pattern.PatternUtils.generateMatch;
+import static com.milaboratory.mist.pattern.PatternUtils.*;
 
 public final class RepeatPattern extends SinglePattern {
     private final NucleotideSequence patternSeq;
@@ -145,11 +145,13 @@ public final class RepeatPattern extends SinglePattern {
 
             private final NucleotideSequence[] sequences;
 
-            private OutputPort<Match> currentPort;
-
-            // Variables used for unfair sorting.
-            private boolean currentPortEmpty = true;
+            // Data structures used for unfair sorting.
+            private final HashSet<Range> uniqueRangesUnfairNotAligned = new HashSet<>();
+            private final HashSet<Range> uniqueRangesUnfairAligned = new HashSet<>();
             private int currentRepeats;
+            private int currentMaxErrors = 0;
+            private int currentPosition = 0;
+            private boolean noMoreMatches = false;
 
             // Data structures used for fair sorting and for matching in fixed position.
             private Match[] allMatches;
@@ -199,54 +201,64 @@ public final class RepeatPattern extends SinglePattern {
                 Match match;
                 if (fixedBorder)
                     match = takeFromFixedPosition();
-                else
-                if (fairSorting)
+                else if (fairSorting)
                     match = takeFair();
                 else
-                if (byScore) match = takeUnfairByScore();
-                else match = takeUnfairByCoordinate();
+                    match = takeUnfair();
 
                 return match;
             }
 
-            private Match takeUnfairByScore() {
-                while ((currentRepeats >= minRepeats) || !currentPortEmpty) {
-                    if (currentPortEmpty) {
-                        NucleotideSequence[] sequencesToConcatenate = new NucleotideSequence[currentRepeats];
-                        Arrays.fill(sequencesToConcatenate, patternSeq);
-                        NucleotideSequence currentSequence = SequencesUtils.concatenate(sequencesToConcatenate);
-                        currentPort = new FuzzyMatchPattern(patternAligner, currentSequence,
-                                0, 0, fixedLeftBorder, fixedRightBorder,
-                                fixGroupEdgePositions(groupEdgePositions, 0, currentRepeats))
-                                .match(target, from, to, targetId)
-                                .getMatches(byScore, false);
-                        currentPortEmpty = false;
-                        currentRepeats--;
+            private Match takeUnfair() {
+                while (!noMoreMatches) {
+                    int currentLongestSection = longestValidSections[currentPosition][currentMaxErrors];
+                    if (currentRepeats <= currentLongestSection) {
+                        Range currentRange = new Range(currentPosition + from, currentPosition + currentRepeats + from);
+                        if (!uniqueRangesUnfairNotAligned.contains(currentRange)) {
+                            uniqueRangesUnfairNotAligned.add(currentRange);
+                            Alignment<NucleotideSequence> alignment = patternAligner.align(
+                                    sequences[currentRepeats - minRepeats], target, currentRange.getLower());
+                            if ((alignment.getScore() >= patternAligner.penaltyThreshold())
+                                    && !uniqueRangesUnfairAligned.contains(alignment.getSequence2Range())) {
+                                uniqueRangesUnfairAligned.add(alignment.getSequence2Range());
+                                pointToNextUnfairMatch();
+                                return overrideMatchScore(generateMatch(alignment, target, targetId,
+                                        fixGroupEdgePositions(groupEdgePositions, 0, currentRange.length())),
+                                        currentRange.length());
+                            }
+                        }
                     }
-                    Match currentMatch = currentPort.take();
-                    if (currentMatch != null)
-                        return overrideMatchScore(currentMatch, currentRepeats + 1);
-                    else
-                        currentPortEmpty = true;
+                    pointToNextUnfairMatch();
                 }
                 return null;
             }
 
-            private Match takeUnfairByCoordinate() {
-                while (currentIndex < sequences.size()) {
-                    int position = bitapMatcherFilters.get(currentIndex).findNext();
-                    if (position == -1)
-                        currentIndex++;
-                    else {
-                        Alignment<NucleotideSequence> alignment = patternAligner.align(sequences.get(currentIndex),
-                                target, position);
-                        if (alignment.getScore() >= patternAligner.penaltyThreshold())
-                            return generateMatch(alignment, target, targetId,
-                                    fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
-                                            sequences.get(currentIndex).size()));
+            private void pointToNextUnfairMatch() {
+                if (byScore) {
+                    currentPosition++;
+                    if (currentPosition >= to - from) {
+                        currentPosition = 0;
+                        currentMaxErrors++;
+                        if (currentMaxErrors > patternAligner.bitapMaxErrors()) {
+                            currentMaxErrors = 0;
+                            currentRepeats--;
+                            if (currentRepeats < minRepeats)
+                                noMoreMatches = true;
+                        }
+                    }
+                } else {
+                    currentMaxErrors++;
+                    if (currentMaxErrors > patternAligner.bitapMaxErrors()) {
+                        currentMaxErrors = 0;
+                        currentRepeats--;
+                        if (currentRepeats < minRepeats) {
+                            currentRepeats = maxRepeats;
+                            currentPosition++;
+                            if (currentPosition >= to - from)
+                                noMoreMatches = true;
+                        }
                     }
                 }
-                return null;
             }
 
             private Match takeFair() {
@@ -289,31 +301,17 @@ public final class RepeatPattern extends SinglePattern {
              * Fill allMatches array with all existing matches for fair sorting.
              */
             private void fillAllMatchesForFairSorting() {
-                ArrayList<Match> allMatchesList = new ArrayList<>();
-                Alignment<NucleotideSequence> alignment;
                 HashSet<Range> uniqueRanges = new HashSet<>();
-                HashSet<Range> uniqueAlignedRanges = new HashSet<>();
 
                 for (int repeats = maxRepeats; repeats >= minRepeats; repeats--)
                     for (int i = 0; i < to - from; i++)
-                        for (int j = 0; j < patternAligner.bitapMaxErrors(); j++) {
+                        for (int j = 0; j <= patternAligner.bitapMaxErrors(); j++) {
                             int currentLongestSection = longestValidSections[i][j];
                             if (repeats <= currentLongestSection)
                                 uniqueRanges.add(new Range(i + from, i + repeats + from));
                         }
 
-                for (Range range : uniqueRanges) {
-                    alignment = patternAligner.align(sequences[range.length() - minRepeats], target,
-                            range.getLower());
-                    if ((alignment.getScore() >= patternAligner.penaltyThreshold())
-                            && !uniqueAlignedRanges.contains(alignment.getSequence2Range())) {
-                        uniqueAlignedRanges.add(alignment.getSequence2Range());
-                        allMatchesList.add(overrideMatchScore(generateMatch(alignment, target, targetId,
-                                fixGroupEdgePositions(groupEdgePositions, 0, range.length())),
-                                range.length()));
-                    }
-                }
-
+                ArrayList<Match> allMatchesList = getMatchesList(uniqueRanges, patternAligner);
                 allMatches = new Match[allMatchesList.size()];
                 allMatchesList.toArray(allMatches);
             }
@@ -322,28 +320,20 @@ public final class RepeatPattern extends SinglePattern {
              * Fill allMatches array with all possible alignments for fixed left border.
              */
             private void fillAllMatchesForFixedLeftBorder() {
-                ArrayList<Match> allMatchesList = new ArrayList<>();
-                PatternAligner patternAligner = this.patternAligner.setLeftBorder(fixedLeftBorder);
-                Alignment<NucleotideSequence> alignment;
-
-                NucleotideSequence currentSeq = sequences.get(currentIndex);
                 HashSet<Range> uniqueRanges = new HashSet<>();
-                for (int rightBorder = Math.max(fixedLeftBorder, fixedLeftBorder + currentSeq.size()
-                        - patternAligner.bitapMaxErrors() - 1);
-                     rightBorder <= Math.min(to - 1, fixedLeftBorder + currentSeq.size()
-                             + patternAligner.bitapMaxErrors() - 1);
-                     rightBorder++)
-                    if ((rightBorder >= fixedLeftBorder) && (rightBorder < target.size())) {
-                        alignment = patternAligner.align(currentSeq, target, rightBorder);
-                        if ((alignment.getScore() >= patternAligner.penaltyThreshold())
-                                && !uniqueRanges.contains(alignment.getSequence2Range())) {
-                            uniqueRanges.add(alignment.getSequence2Range());
-                            allMatchesList.add(generateMatch(alignment, target, targetId,
-                                    fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
-                                            sequences.get(currentIndex).size())));
-                        }
+                int maxErrors = patternAligner.bitapMaxErrors();
+
+                for (int repeats = maxRepeats; repeats >= minRepeats; repeats--)
+                    for (int i = Math.max(0, fixedLeftBorder - maxErrors - from);
+                         i < Math.min(to - from, fixedLeftBorder + maxErrors - from + 1); i++)
+                    for (int j = 0; j <= maxErrors; j++) {
+                        int currentLongestSection = longestValidSections[i][j];
+                        if (repeats <= currentLongestSection)
+                            uniqueRanges.add(new Range(i + from, i + repeats + from));
                     }
 
+                ArrayList<Match> allMatchesList = getMatchesList(uniqueRanges,
+                        patternAligner.setLeftBorder(fixedLeftBorder));
                 allMatches = new Match[allMatchesList.size()];
                 allMatchesList.toArray(allMatches);
             }
@@ -352,24 +342,56 @@ public final class RepeatPattern extends SinglePattern {
              * Fill allMatches array with all possible alignments for fixed right border.
              */
             private void fillAllMatchesForFixedRightBorder() {
-                ArrayList<Match> allMatchesList = new ArrayList<>();
-                PatternAligner patternAligner = (fixedLeftBorder == -1) ? this.patternAligner
-                        : this.patternAligner.setLeftBorder(fixedLeftBorder);
-                Alignment<NucleotideSequence> alignment;
+                HashSet<Range> uniqueRanges = new HashSet<>();
+                PatternAligner aligner = (fixedLeftBorder == -1) ? patternAligner
+                        : patternAligner.setLeftBorder(fixedLeftBorder);
+                int maxErrors = patternAligner.bitapMaxErrors();
 
-                for (currentIndex = 0; currentIndex < sequences.size(); currentIndex++) {
-                    if (bitapMatcherFilters.get(currentIndex).findNext() == -1)
-                        continue;
-                    NucleotideSequence currentSeq = sequences.get(currentIndex);
-                    alignment = patternAligner.align(currentSeq, target, fixedRightBorder);
-                    if (alignment.getScore() >= patternAligner.penaltyThreshold())
-                        allMatchesList.add(generateMatch(alignment, target, targetId,
-                                fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
-                                        sequences.get(currentIndex).size())));
+                for (int repeats = maxRepeats; repeats >= minRepeats; repeats--) {
+                    int minIndex = (fixedLeftBorder == -1)
+                            ? Math.max(0, fixedRightBorder - repeats - maxErrors - from + 1)
+                            : Math.max(0, fixedLeftBorder - maxErrors - from);
+                    int maxIndex = (fixedLeftBorder == -1)
+                            ? Math.min(to - from - 1, fixedRightBorder - repeats + maxErrors - from + 1)
+                            : Math.min(to - from - 1, fixedLeftBorder + maxErrors - from);
+                    for (int i = minIndex; i <= maxIndex; i++)
+                        for (int j = 0; j <= maxErrors; j++) {
+                            int currentLongestSection = longestValidSections[i][j];
+                            if (repeats <= currentLongestSection)
+                                uniqueRanges.add(new Range(i + from, i + repeats + from));
+                        }
                 }
 
+                ArrayList<Match> allMatchesList = getMatchesList(uniqueRanges, aligner);
                 allMatches = new Match[allMatchesList.size()];
                 allMatchesList.toArray(allMatches);
+            }
+
+            /**
+             * Get list of aligned matches from specified set of ranges. Used for fair sorting and
+             * for matching with fixed border.
+             *
+             * @param uniqueRanges set of ranges where to use aligner
+             * @param aligner pattern aligner, maybe configured for matching with fixed border
+             * @return list of aligned matches
+             */
+            private ArrayList<Match> getMatchesList(HashSet<Range> uniqueRanges, PatternAligner aligner) {
+                ArrayList<Match> allMatchesList = new ArrayList<>();
+                Alignment<NucleotideSequence> alignment;
+                HashSet<Range> uniqueAlignedRanges = new HashSet<>();
+
+                for (Range range : uniqueRanges) {
+                    alignment = aligner.align(sequences[range.length() - minRepeats], target, range.getLower());
+                    if ((alignment.getScore() >= aligner.penaltyThreshold())
+                            && !uniqueAlignedRanges.contains(alignment.getSequence2Range())) {
+                        uniqueAlignedRanges.add(alignment.getSequence2Range());
+                        allMatchesList.add(overrideMatchScore(generateMatch(alignment, target, targetId,
+                                fixGroupEdgePositions(groupEdgePositions, 0, range.length())),
+                                range.length()));
+                    }
+                }
+
+                return allMatchesList;
             }
 
             private Match overrideMatchScore(Match match, int repeats) {
