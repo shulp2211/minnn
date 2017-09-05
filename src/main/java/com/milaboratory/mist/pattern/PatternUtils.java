@@ -7,10 +7,30 @@ import com.milaboratory.core.sequence.NucleotideSequence;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class PatternUtils {
     public static int invertCoordinate(int x) {
         return -2 - x;
+    }
+
+    /**
+     * Fix group edge positions to make them not get beyond the right border of pattern sequence; and move group
+     * edge positions if specified.
+     *
+     * @param groupEdgePositions group edge positions
+     * @param move if not 0, add this value to all group edge positions; but never move positions below 0
+     * @param maxPosition maximum allowed position for group edge; this is size of current sequence
+     * @return new group edge positions
+     */
+    static List<GroupEdgePosition> fixGroupEdgePositions(List<GroupEdgePosition> groupEdgePositions,
+                                                         int move, int maxPosition) {
+        return groupEdgePositions.stream()
+                .map(gp -> (move == 0) ? gp : new GroupEdgePosition(gp.getGroupEdge(),
+                        (gp.getPosition() + move >= 0) ? gp.getPosition() + move : 0))
+                .map(gp -> (gp.getPosition() <= maxPosition) ? gp
+                        : new GroupEdgePosition(gp.getGroupEdge(), maxPosition))
+                .collect(Collectors.toList());
     }
 
     /**
