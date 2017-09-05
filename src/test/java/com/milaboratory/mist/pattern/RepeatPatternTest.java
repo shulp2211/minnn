@@ -19,28 +19,29 @@ import static org.junit.Assert.*;
 public class RepeatPatternTest {
     @Test
     public void bestMatchTest() throws Exception {
-        RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(),
-                new NucleotideSequence("TATG"), 3, 5);
-        NSequenceWithQuality nseq = new NSequenceWithQuality("TTTATGTATGTTATGTATGTATGTATGTATGTATGTTATGTTA");
-        ArrayList<MatchingResult> results = new ArrayList<>(Arrays.asList(
+        RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(true),
+                new NucleotideSequence("T"), 3, 6);
+        NSequenceWithQuality nseq = new NSequenceWithQuality("TTTATTTTTGTTATTTTTTTATGTTTATGTTTTATGTTA");
+        MatchingResult[] results = {
                 pattern.match(nseq),
-                pattern.match(nseq, 3, 36, (byte)0),
-                pattern.match(nseq, 0, 43, (byte)0),
-                pattern.match(nseq, 11, 31, (byte)0),
-                pattern.match(nseq, new Range(11, 31))
-        ));
-        Range expectedRange = new Range(11, 31);
-        for (int i = 0; i < results.size(); i++) {
-            assertEquals(expectedRange.getLower(), results.get(i).getBestMatch().getRange().getLower());
-            assertEquals(expectedRange.getUpper(), results.get(i).getBestMatch().getRange().getUpper());
-            assertEquals("TATGTATGTATGTATGTATG", bestToString(results.get(i), false));
-            assertEquals(nseq, results.get(i).getBestMatch().getMatchedRange().getTarget());
-            assertEquals(true, results.get(i).isFound());
-            assertEquals((i < 3) ? 9 : 6, countMatches(results.get(i), true));
-            assertEquals(1, results.get(i).getBestMatch().getNumberOfPatterns());
-            assertEquals(1, results.get(i).getBestMatch().getMatchedRanges().size());
-            assertEquals(0, results.get(i).getBestMatch().getMatchedGroupEdges().size());
-        }
+                pattern.match(nseq, 0, 33, (byte)0),
+                pattern.match(nseq, 0, 39, (byte)0),
+                pattern.match(nseq, 15, 31, (byte)0),
+                pattern.match(nseq, new Range(15, 31))
+        };
+        for (boolean fairSorting : new boolean[] {true, false})
+            for (int i = 0; i < results.length; i++) {
+                Range expectedRange = (i < 3) ? new Range(13, 19) : new Range(15, 20);
+                assertEquals(expectedRange.getLower(), results[i].getBestMatch(fairSorting).getRange().getLower());
+                assertEquals(expectedRange.getUpper(), results[i].getBestMatch(fairSorting).getRange().getUpper());
+                assertEquals((i < 3) ? "TTTTTT" : "TTTTT", bestToString(results[i], fairSorting));
+                assertEquals(nseq, results[i].getBestMatch(fairSorting).getMatchedRange().getTarget());
+                assertEquals(true, results[i].isFound());
+                assertEquals((i < 3) ? 25 : 7, countMatches(results[i], true));
+                assertEquals(1, results[i].getBestMatch(fairSorting).getNumberOfPatterns());
+                assertEquals(1, results[i].getBestMatch(fairSorting).getMatchedRanges().size());
+                assertEquals(0, results[i].getBestMatch(fairSorting).getMatchedGroupEdges().size());
+            }
     }
 
     @Test
