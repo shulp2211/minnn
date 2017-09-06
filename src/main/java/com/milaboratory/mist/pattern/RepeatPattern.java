@@ -143,7 +143,7 @@ public final class RepeatPattern extends SinglePattern {
              * Section is valid when number of errors (index2) isn't bigger than bitapMaxErrors in PatternAligner. */
             private final int[][] longestValidSections;
 
-            private final NucleotideSequence[] sequences;
+            private final HashMap<Integer, NucleotideSequence> sequences = new HashMap<>();
 
             // Data structures used for unfair sorting.
             private final HashSet<Range> uniqueRangesUnfairNotAligned = new HashSet<>();
@@ -187,12 +187,11 @@ public final class RepeatPattern extends SinglePattern {
                     for (int j = 0; j <= maxErrors; j++)
                         longestValidSections[i][j] = calculateLongestValidSection(i, j);
                 }
-                this.sequences = new NucleotideSequence[maxRepeats - minRepeats + 1];
-                for (int i = minRepeats; i <= maxRepeats; i++) {
+                for (int i = Math.max(1, minRepeats - maxErrors); i <= maxRepeats; i++) {
                     NucleotideSequence[] sequencesToConcatenate = new NucleotideSequence[i];
                     Arrays.fill(sequencesToConcatenate, patternSeq);
                     NucleotideSequence currentSequence = SequencesUtils.concatenate(sequencesToConcatenate);
-                    this.sequences[i - minRepeats] = currentSequence;
+                    this.sequences.put(i, currentSequence);
                 }
             }
 
@@ -213,12 +212,12 @@ public final class RepeatPattern extends SinglePattern {
                 while (!noMoreMatches) {
                     int currentLongestSection = longestValidSections[currentPosition][currentMaxErrors];
                     if (currentRepeats <= currentLongestSection) {
-                        Range currentRange = new Range(currentPosition + from, currentPosition + currentRepeats + from);
+                        Range currentRange = new Range(currentPosition + from,
+                                Math.min(to, currentPosition + currentRepeats + from));
                         if (!uniqueRangesUnfairNotAligned.contains(currentRange)) {
                             uniqueRangesUnfairNotAligned.add(currentRange);
                             Alignment<NucleotideSequence> alignment = patternAligner.align(
-                                    sequences[currentRepeats - minRepeats], target,
-                                    currentRange.getUpper() - 1);
+                                    sequences.get(currentRepeats), target, currentRange.getUpper() - 1);
                             if ((alignment.getScore() >= patternAligner.penaltyThreshold())
                                     && !uniqueRangesUnfairAligned.contains(alignment.getSequence2Range())) {
                                 uniqueRangesUnfairAligned.add(alignment.getSequence2Range());
@@ -237,7 +236,7 @@ public final class RepeatPattern extends SinglePattern {
             private void pointToNextUnfairMatch() {
                 if (byScore) {
                     currentPosition++;
-                    if (currentPosition > to - from - currentRepeats) {
+                    if (currentPosition > to - from - Math.max(1, currentRepeats - currentMaxErrors)) {
                         currentPosition = 0;
                         currentMaxErrors++;
                         if (currentMaxErrors > patternAligner.bitapMaxErrors()) {
@@ -249,13 +248,14 @@ public final class RepeatPattern extends SinglePattern {
                     }
                 } else {
                     currentMaxErrors++;
-                    if (currentMaxErrors > patternAligner.bitapMaxErrors()) {
+                    int maxErrors = patternAligner.bitapMaxErrors();
+                    if (currentMaxErrors > maxErrors) {
                         currentMaxErrors = 0;
                         currentRepeats--;
                         if (currentRepeats < minRepeats) {
                             currentPosition++;
-                            currentRepeats = Math.min(maxRepeats, to - from - currentPosition);
-                            if (currentPosition > to - from - minRepeats)
+                            currentRepeats = Math.min(maxRepeats, to - from - Math.max(1, currentPosition - maxErrors));
+                            if (currentPosition > to - from - Math.max(1, minRepeats - maxErrors))
                                 noMoreMatches = true;
                         }
                     }
@@ -306,10 +306,10 @@ public final class RepeatPattern extends SinglePattern {
                 int maxErrors = patternAligner.bitapMaxErrors();
 
                 for (int repeats = maxRepeats; repeats >= minRepeats; repeats--)
-                    for (int i = 0; i <= to - from - repeats; i++) {
+                    for (int i = 0; i <= to - from - Math.max(1, repeats - maxErrors); i++) {
                         int currentLongestSection = longestValidSections[i][maxErrors];
                         if (repeats <= currentLongestSection)
-                            uniqueRanges.add(new Range(i + from, i + repeats + from));
+                            uniqueRanges.add(new Range(i + from, Math.min(to, i + repeats + from)));
                     }
 
                 ArrayList<Match> allMatchesList = getMatchesList(uniqueRanges, patternAligner);
@@ -325,11 +325,12 @@ public final class RepeatPattern extends SinglePattern {
                 int maxErrors = patternAligner.bitapMaxErrors();
 
                 for (int repeats = maxRepeats; repeats >= minRepeats; repeats--)
-                    for (int i = Math.max(0, fixedLeftBorder - maxErrors - from);
-                         i <= Math.min(to - from - repeats, fixedLeftBorder + maxErrors - from); i++) {
+                    for (int i = Math.max(0, fixedLeftBorder - from);
+                         i <= Math.min(to - from - Math.max(1, repeats - maxErrors),
+                                 fixedLeftBorder + maxErrors - from); i++) {
                         int currentLongestSection = longestValidSections[i][maxErrors];
                         if (repeats <= currentLongestSection)
-                            uniqueRanges.add(new Range(i + from, i + repeats + from));
+                            uniqueRanges.add(new Range(i + from, Math.min(to, i + repeats + from)));
                     }
 
                 ArrayList<Match> allMatchesList = getMatchesList(uniqueRanges,
@@ -350,14 +351,16 @@ public final class RepeatPattern extends SinglePattern {
                 for (int repeats = maxRepeats; repeats >= minRepeats; repeats--) {
                     int minIndex = (fixedLeftBorder == -1)
                             ? Math.max(0, fixedRightBorder - repeats - maxErrors - from + 1)
-                            : Math.max(0, fixedLeftBorder - maxErrors - from);
+                            : Math.max(0, fixedLeftBorder - from);
                     int maxIndex = (fixedLeftBorder == -1)
-                            ? Math.min(to - from - repeats, fixedRightBorder - repeats + maxErrors - from + 1)
-                            : Math.min(to - from - repeats, fixedLeftBorder + maxErrors - from);
+                            ? Math.min(to - from - Math.max(1, repeats - maxErrors),
+                                fixedRightBorder - repeats - from + 1)
+                            : Math.min(to - from - Math.max(1, repeats - maxErrors),
+                                Math.min(fixedLeftBorder + maxErrors - from, fixedRightBorder - repeats - from + 1));
                     for (int i = minIndex; i <= maxIndex; i++) {
                         int currentLongestSection = longestValidSections[i][maxErrors];
                         if (repeats <= currentLongestSection)
-                            uniqueRanges.add(new Range(i + from, i + repeats + from));
+                            uniqueRanges.add(new Range(i + from, Math.min(to, i + repeats + from)));
                     }
                 }
 
@@ -380,7 +383,7 @@ public final class RepeatPattern extends SinglePattern {
                 HashSet<Range> uniqueAlignedRanges = new HashSet<>();
 
                 for (Range range : uniqueRanges) {
-                    alignment = aligner.align(sequences[range.length() - minRepeats], target,
+                    alignment = aligner.align(sequences.get(range.length()), target,
                             range.getUpper() - 1);
                     if ((alignment.getScore() >= aligner.penaltyThreshold())
                             && !uniqueAlignedRanges.contains(alignment.getSequence2Range())) {
@@ -402,6 +405,7 @@ public final class RepeatPattern extends SinglePattern {
             /**
              * Calculate length of longest valid section starting from specified position inside (from->to) range.
              * Section is considered valid if number of errors in it is not bigger than numberOfErrors.
+             * Longest valid section length can end out of target bounds if numberOfErrors is not 0.
              *
              * @param position section starting position inside (from->to) range, inclusive
              * @param numberOfErrors maximum number of errors, inclusive
@@ -426,6 +430,7 @@ public final class RepeatPattern extends SinglePattern {
                             currentLength = currentErrors;
                         } else {
                             currentLength = numberOfErrors;
+                            currentErrors = numberOfErrors;
                             break;
                         }
                     } else {
@@ -436,12 +441,13 @@ public final class RepeatPattern extends SinglePattern {
                             currentLength += currentSectionValue;
                         } else {
                             currentLength += numberOfErrors - currentErrors;
+                            currentErrors = numberOfErrors;
                             break;
                         }
                     }
                     currentPosition += currentSectionValue;
                 }
-                return currentLength;
+                return currentLength + (numberOfErrors - currentErrors);
             }
 
             /**
