@@ -212,7 +212,7 @@ public final class RepeatPattern extends SinglePattern {
             private Match takeUnfair() {
                 while (!noMoreMatches) {
                     int currentLongestSection = longestValidSections[currentPosition][currentMaxErrors];
-                    if (currentRepeats <= currentLongestSection + currentMaxErrors) {
+                    if (currentRepeats <= currentLongestSection) {
                         Range currentRange = new Range(currentPosition + from, currentPosition + currentRepeats + from);
                         if (!uniqueRangesUnfairNotAligned.contains(currentRange)) {
                             uniqueRangesUnfairNotAligned.add(currentRange);
@@ -237,7 +237,7 @@ public final class RepeatPattern extends SinglePattern {
             private void pointToNextUnfairMatch() {
                 if (byScore) {
                     currentPosition++;
-                    if (currentPosition >= to - from) {
+                    if (currentPosition > to - from - currentRepeats) {
                         currentPosition = 0;
                         currentMaxErrors++;
                         if (currentMaxErrors > patternAligner.bitapMaxErrors()) {
@@ -253,9 +253,9 @@ public final class RepeatPattern extends SinglePattern {
                         currentMaxErrors = 0;
                         currentRepeats--;
                         if (currentRepeats < minRepeats) {
-                            currentRepeats = maxRepeats;
                             currentPosition++;
-                            if (currentPosition >= to - from)
+                            currentRepeats = Math.min(maxRepeats, to - from - currentPosition);
+                            if (currentPosition > to - from - minRepeats)
                                 noMoreMatches = true;
                         }
                     }
@@ -306,9 +306,9 @@ public final class RepeatPattern extends SinglePattern {
                 int maxErrors = patternAligner.bitapMaxErrors();
 
                 for (int repeats = maxRepeats; repeats >= minRepeats; repeats--)
-                    for (int i = 0; i < to - from; i++) {
+                    for (int i = 0; i <= to - from - repeats; i++) {
                         int currentLongestSection = longestValidSections[i][maxErrors];
-                        if (repeats <= currentLongestSection + maxErrors)
+                        if (repeats <= currentLongestSection)
                             uniqueRanges.add(new Range(i + from, i + repeats + from));
                     }
 
@@ -326,9 +326,9 @@ public final class RepeatPattern extends SinglePattern {
 
                 for (int repeats = maxRepeats; repeats >= minRepeats; repeats--)
                     for (int i = Math.max(0, fixedLeftBorder - maxErrors - from);
-                         i < Math.min(to - from, fixedLeftBorder + maxErrors - from + 1); i++) {
+                         i <= Math.min(to - from - repeats, fixedLeftBorder + maxErrors - from); i++) {
                         int currentLongestSection = longestValidSections[i][maxErrors];
-                        if (repeats <= currentLongestSection + maxErrors)
+                        if (repeats <= currentLongestSection)
                             uniqueRanges.add(new Range(i + from, i + repeats + from));
                     }
 
@@ -352,11 +352,11 @@ public final class RepeatPattern extends SinglePattern {
                             ? Math.max(0, fixedRightBorder - repeats - maxErrors - from + 1)
                             : Math.max(0, fixedLeftBorder - maxErrors - from);
                     int maxIndex = (fixedLeftBorder == -1)
-                            ? Math.min(to - from - 1, fixedRightBorder - repeats + maxErrors - from + 1)
-                            : Math.min(to - from - 1, fixedLeftBorder + maxErrors - from);
+                            ? Math.min(to - from - repeats, fixedRightBorder - repeats + maxErrors - from + 1)
+                            : Math.min(to - from - repeats, fixedLeftBorder + maxErrors - from);
                     for (int i = minIndex; i <= maxIndex; i++) {
                         int currentLongestSection = longestValidSections[i][maxErrors];
-                        if (repeats <= currentLongestSection + maxErrors)
+                        if (repeats <= currentLongestSection)
                             uniqueRanges.add(new Range(i + from, i + repeats + from));
                     }
                 }
