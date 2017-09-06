@@ -302,12 +302,12 @@ public class CommonTestUtils {
     }
 
     public static RepeatPattern getRandomRepeatPattern(PatternAligner patternAligner, boolean withGroups) {
-        RandomRepeats rr = new RandomRepeats();
-        RandomBorders randomBorders = new RandomBorders(rr.motifSize * rr.repeats);
-        NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, rr.motifSize, rr.motifSize);
-        return new RepeatPattern(patternAligner, seq, rr.minRepeats, rr.maxRepeats,
-                randomBorders.left, randomBorders.right,
-                withGroups ? getRandomGroupsForFuzzyMatch(rr.motifSize * rr.repeats) : new ArrayList<>());
+        int minRepeats = rg.nextInt(10) + 1;
+        int maxRepeats = rg.nextInt(100) + minRepeats;
+        RandomBorders randomBorders = new RandomBorders(maxRepeats);
+        NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1);
+        return new RepeatPattern(patternAligner, seq, minRepeats, maxRepeats, randomBorders.left, randomBorders.right,
+                withGroups ? getRandomGroupsForFuzzyMatch(maxRepeats) : new ArrayList<>());
     }
 
     public static AnyPattern getRandomAnyPattern(PatternAligner patternAligner, boolean withGroups) {
@@ -527,20 +527,6 @@ public class CommonTestUtils {
                 } while (leftCut + rightCut >= motifSize);
             this.left = leftCut;
             this.right = rightCut;
-        }
-    }
-
-    public static class RandomRepeats {
-        public final int motifSize;
-        public final int repeats;
-        public final int minRepeats;
-        public final int maxRepeats;
-
-        public RandomRepeats() {
-            motifSize = rg.nextInt(60) + 1;
-            repeats = Math.max(1, rg.nextInt(60 / motifSize + 1));
-            minRepeats = repeats - rg.nextInt(repeats);
-            maxRepeats = Math.max(repeats, rg.nextInt(60 / motifSize + 1));
         }
     }
 }

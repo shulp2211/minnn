@@ -19,8 +19,8 @@ import static org.junit.Assert.*;
 public class RepeatPatternTest {
     @Test
     public void bestMatchTest() throws Exception {
-        RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(true),
-                new NucleotideSequence("T"), 3, 6);
+        RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(), new NucleotideSequence("T"),
+                3, 6);
         NSequenceWithQuality nseq = new NSequenceWithQuality("TTTATTTTTGTTATTTTTTTATGTTTATGTTTTATGTTA");
         MatchingResult[] results = {
                 pattern.match(nseq),
@@ -47,14 +47,14 @@ public class RepeatPatternTest {
     @Test
     public void noMatchesTest() throws Exception {
         RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(),
-                new NucleotideSequence("TAT"), 3, 4);
-        NSequenceWithQuality nseq1 = new NSequenceWithQuality("TATATTATGACA");
-        NSequenceWithQuality nseq2 = new NSequenceWithQuality("ATTATTATTAATGTATTATGTTATTATATAGACA");
-        ArrayList<MatchingResult> results = new ArrayList<>(Arrays.asList(
+                new NucleotideSequence("K"), 4, 5);
+        NSequenceWithQuality nseq1 = new NSequenceWithQuality("TTTTATTATGTACA");
+        NSequenceWithQuality nseq2 = new NSequenceWithQuality("ATTATTTATTAATGTATTATGCTATTATATAGACA");
+        MatchingResult[] results = {
                 pattern.match(nseq1, 1, 12, (byte)0),
                 pattern.match(nseq1, new Range(3, 10), (byte)0),
                 pattern.match(nseq2)
-        ));
+        };
         for (MatchingResult result : results) {
             assertEquals(null, result.getBestMatch());
             assertEquals(null, result.getMatches().take());
@@ -66,42 +66,48 @@ public class RepeatPatternTest {
     @Test
     public void randomMatchTest() throws Exception {
         for (int i = 0; i < 10000; i++) {
-            RandomRepeats rr = new RandomRepeats();
-            NucleotideSequence seqM = TestUtil.randomSequence(NucleotideSequence.ALPHABET, rr.motifSize, rr.motifSize);
+            int minRepeats = rg.nextInt(10) + 1;
+            int maxRepeats = rg.nextInt(100) + minRepeats;
+            int targetRepeats = rg.nextInt(100) + minRepeats;
+            NucleotideSequence seqM = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1);
             NucleotideSequence seqL = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, 40);
             NucleotideSequence seqR = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, 40);
-            NucleotideSequence[] seqRepeats = new NucleotideSequence[rr.repeats];
+            NucleotideSequence[] seqRepeats = new NucleotideSequence[targetRepeats];
             Arrays.fill(seqRepeats, seqM);
             NucleotideSequence fullSeq = SequencesUtils.concatenate(seqL, SequencesUtils.concatenate(seqRepeats), seqR);
             NSequenceWithQuality target = new NSequenceWithQuality(fullSeq.toString());
-            RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(), seqM, rr.minRepeats, rr.maxRepeats);
+            RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(), seqM, minRepeats, maxRepeats);
             assertTrue(pattern.match(target).isFound());
-            assertNotNull(pattern.match(target).getBestMatch(rg.nextBoolean()));
-            assertNotNull(pattern.match(target).getMatches(rg.nextBoolean(), rg.nextBoolean()).take());
+            assertNotNull(pattern.match(target).getBestMatch(i % 50 == 0));
+            assertNotNull(pattern.match(target).getMatches(rg.nextBoolean(), i % 50 == 0).take());
         }
     }
 
     @Test
     public void randomTest() throws Exception {
         for (int i = 0; i < 10000; i++) {
-            RandomRepeats rr = new RandomRepeats();
-            NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
-            NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, rr.motifSize, rr.motifSize);
+            int minRepeats = rg.nextInt(10) + 1;
+            int maxRepeats = rg.nextInt(100) + minRepeats;
+            NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    1, 1000);
+            NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    1, 1);
             NSequenceWithQuality targetQ = new NSequenceWithQuality(target.toString());
-            RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(), motif, rr.minRepeats, rr.maxRepeats);
-            boolean isMatching = target.toString().contains(repeatString(motif.toString(), rr.minRepeats));
+            RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(), motif, minRepeats, maxRepeats);
+            boolean isMatching = target.toString().contains(repeatString(motif.toString(), minRepeats));
             assertEquals(isMatching, pattern.match(targetQ).isFound());
-            assertEquals(isMatching, pattern.match(targetQ).getBestMatch(rg.nextBoolean()) != null);
+            assertEquals(isMatching, pattern.match(targetQ).getBestMatch(i % 50 == 0) != null);
             assertEquals(isMatching, pattern.match(targetQ).getMatches(rg.nextBoolean(),
-                    rg.nextBoolean()).take() != null);
+                    i % 50 == 0).take() != null);
         }
     }
 
     @Test
     public void multipleMatchesTest() throws Exception {
-        RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(), new NucleotideSequence("TGT"),
+        RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(), new NucleotideSequence("C"),
                 2, 4);
-        NSequenceWithQuality nseq = new NSequenceWithQuality("ATAGGAATGTTGTTGTTGTTGTGTATAAAGGACCCAGAGCCCCATGTTGTAGTGTC");
+        NSequenceWithQuality nseq = new NSequenceWithQuality(
+                "ATCGGAATGTTGTTGTTGTTGTGTATAAAGGACCCAGAGCCCCATGTTGTAGTGTC");
         MatchingResult result = pattern.match(nseq);
         Match bestMatch1 = result.getBestMatch();
         Match firstMatchByScore = result.getMatches(true, true).take();
@@ -111,41 +117,47 @@ public class RepeatPatternTest {
         assertEquals(bestMatch1.getRange(), bestMatch2.getRange());
         assertEquals(bestMatch1.getRange(), bestMatch3.getRange());
         assertEquals(bestMatch1.getRange(), firstMatchByScore.getRange());
-        assertEquals(bestMatch1.getRange(), firstMatchByCoordinate.getRange());
+        assertEquals(new Range(39, 43), firstMatchByScore.getRange());
+        assertEquals(new Range(32, 35), firstMatchByCoordinate.getRange());
         assertEquals(true, result.isFound());
-        assertEquals(10, countMatches(result, true));
-        assertEquals(10, countMatches(result, false));
+        assertEquals(9, countMatches(result, true));
+        assertEquals(9, countMatches(result, false));
         result = pattern.match(nseq);
         OutputPort<Match> matches = result.getMatches(false, true);
-        assertEquals(new Range(7, 19), matches.take().getRange());
-        assertEquals("TGTTGTTGT", matches.take().getValue().getSequence().toString());
-        assertEquals(new Range(7, 13), matches.take().getMatchedRanges().get(0).getRange());
-        assertEquals(new Range(10, 22), matches.take().getMatchedRange(0).getRange());
+        assertEquals(new Range(32, 35), matches.take().getRange());
+        assertEquals("CC", matches.take().getValue().getSequence().toString());
+        assertEquals(new Range(33, 35), matches.take().getMatchedRanges().get(0).getRange());
+        assertEquals(new Range(39, 43), matches.take().getMatchedRange(0).getRange());
     }
 
     @Test
     public void groupEdgeOutsideOfMotifTest() throws Exception {
         for (int i = 0; i < 1000; i++) {
-            RandomRepeats rr = new RandomRepeats();
+            int minRepeats = rg.nextInt(10) + 1;
+            int maxRepeats = rg.nextInt(100) + minRepeats;
+            int targetRepeats = rg.nextInt(100) + minRepeats;
             ArrayList<GroupEdgePosition> groups = getRandomGroupsForFuzzyMatch(100);
-            NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, rr.motifSize, rr.motifSize);
-            RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(), motif, rr.minRepeats, rr.maxRepeats, groups);
-            Match match = pattern.match(new NSequenceWithQuality(repeatString(motif.toString(), rr.repeats))).getBestMatch();
+            NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1);
+            RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(), motif, minRepeats, maxRepeats, groups);
+            Match match = pattern.match(new NSequenceWithQuality(repeatString(motif.toString(), targetRepeats)))
+                    .getBestMatch();
             for (MatchedGroupEdge matchedGroupEdge : match.getMatchedGroupEdges())
-                assertTrue(matchedGroupEdge.getPosition() <= motif.size() * rr.repeats);
+                assertTrue(matchedGroupEdge.getPosition() <= motif.size() * targetRepeats);
         }
     }
 
     @Test
     public void masksTest() throws Exception {
         for (int i = 0; i < 10000; i++) {
-            RandomRepeats rr = new RandomRepeats();
-            NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
-            NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, rr.motifSize, rr.motifSize,
+            int minRepeats = rg.nextInt(10) + 1;
+            int maxRepeats = rg.nextInt(100) + minRepeats;
+            NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    1, 1000);
+            NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1,
                     false);
-            NucleotideSequence repeatedMotif = new NucleotideSequence(repeatString(motif.toString(), rr.minRepeats));
+            NucleotideSequence repeatedMotif = new NucleotideSequence(repeatString(motif.toString(), minRepeats));
             NSequenceWithQuality targetQ = new NSequenceWithQuality(target.toString());
-            RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(), motif, rr.minRepeats, rr.maxRepeats);
+            RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(), motif, minRepeats, maxRepeats);
             BitapMatcher matcher = repeatedMotif.toMotif().getBitapPattern().exactMatcher(target.getSequence(),
                     0, target.size());
             boolean isMatching = (matcher.findNext() != -1);
@@ -156,17 +168,17 @@ public class RepeatPatternTest {
     @Test
     public void scoringTest() throws Exception {
         RepeatPattern[] patterns = {
-                new RepeatPattern(getTestPatternAligner(0), new NucleotideSequence("TGCA"),
+                new RepeatPattern(getTestPatternAligner(0), new NucleotideSequence("T"),
                         3, 5),
-                new RepeatPattern(getTestPatternAligner(1), new NucleotideSequence("TGCA"),
+                new RepeatPattern(getTestPatternAligner(1), new NucleotideSequence("G"),
                         3, 5),
-                new RepeatPattern(getTestPatternAligner(0), new NucleotideSequence("TA"),
+                new RepeatPattern(getTestPatternAligner(0), new NucleotideSequence("N"),
                         1, 4)
         };
         NSequenceWithQuality[] sequences = {
                 new NSequenceWithQuality("TTAGACTTACCAGGAGCAGTTTGCATGCATGCAAGA"),
                 new NSequenceWithQuality("AGACTTAGACCTCATGCATGCAGACTGCATGCATGCAGACA"),
-                new NSequenceWithQuality("TGCATGCAATGCATGCA")
+                new NSequenceWithQuality("TGCATGCGATGCATGCA")
         };
 
         MatchingResult[][] matchingResults = new MatchingResult[3][3];
@@ -184,11 +196,15 @@ public class RepeatPatternTest {
 
         for (boolean fairSorting : new boolean[] {true, false}) {
             assertEquals(0, matchingResults[0][0].getBestMatch(fairSorting).getScore());
-            assertEquals(0, matchingResults[1][0].getBestMatch(fairSorting).getScore());
-            assertEquals(0, matchingResults[2][0].getBestMatch(fairSorting).getScore());
-            assertEquals(0, matchingResults[1][1].getBestMatch(fairSorting).getScore());
-            assertEquals(-10, matchingResults[1][2].getBestMatch(fairSorting).getScore());
+            assertNull(matchingResults[0][1].getBestMatch(fairSorting));
+            assertNull(matchingResults[1][1].getBestMatch(fairSorting));
+            assertNull(matchingResults[0][2].getBestMatch(fairSorting));
         }
+        assertEquals(-9, matchingResults[1][0].getBestMatch(true).getScore());
+        assertEquals(-9, matchingResults[1][2].getBestMatch(true).getScore());
+        assertEquals(-6, matchingResults[2][0].getBestMatch(true).getScore());
+        assertEquals(-6, matchingResults[2][1].getBestMatch(true).getScore());
+        assertEquals(-6, matchingResults[2][2].getBestMatch(true).getScore());
     }
 
     @Test
