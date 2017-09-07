@@ -82,8 +82,15 @@ public final class RepeatPattern extends SinglePattern {
 
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
+        int fixedLeftBorder = (this.fixedLeftBorder > -2) ? this.fixedLeftBorder
+                : target.size() - 1 - invertCoordinate(this.fixedLeftBorder);
+        int fixedRightBorder = (this.fixedRightBorder > -2) ? this.fixedRightBorder
+                : target.size() - 1 - invertCoordinate(this.fixedRightBorder);
+        int fromWithBorder = (fixedLeftBorder == -1) ? from : Math.max(from, fixedLeftBorder);
+        // to is exclusive and fixedRightBorder is inclusive
+        int toWithBorder = (fixedRightBorder == -1) ? to : Math.min(to, fixedRightBorder + 1);
         return new RepeatPatternMatchingResult(patternAligner, patternSeq, minRepeats, maxRepeats,
-                fixedLeftBorder, fixedRightBorder, groupEdgePositions, target, from, to, targetId);
+                fixedLeftBorder, fixedRightBorder, groupEdgePositions, target, fromWithBorder, toWithBorder, targetId);
     }
 
     private static class RepeatPatternMatchingResult extends MatchingResult {
@@ -169,11 +176,8 @@ public final class RepeatPattern extends SinglePattern {
                 this.fixedLeftBorder = fixedLeftBorder;
                 this.fixedRightBorder = fixedRightBorder;
                 this.fixedBorder = (fixedLeftBorder != -1) || (fixedRightBorder != -1);
-                this.from = (fixedLeftBorder == -1) ? from : Math.max(from, fixedLeftBorder);
-                // important: fixedRightBorder is inclusive, to is exclusive
-                this.to = (fixedRightBorder == -1) ? to : Math.min(to, fixedRightBorder + 1);
-                from = this.from;
-                to = this.to;
+                this.from = from;
+                this.to = to;
                 if (from >= to)
                     noMoreMatches = true;
 
