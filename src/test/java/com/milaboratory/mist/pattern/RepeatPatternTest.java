@@ -210,34 +210,37 @@ public class RepeatPatternTest {
     @Test
     public void fixedBordersTest() throws Exception {
         PatternAligner patternAligner = getTestPatternAligner(1);
-        RepeatPattern pattern1 = new RepeatPattern(patternAligner, new NucleotideSequence("TGGA"), 2, 3,
-                2, -1, getRandomGroupsForFuzzyMatch(7));
-        RepeatPattern pattern2 = new RepeatPattern(patternAligner, new NucleotideSequence("TGGA"), 2, 6,
-                -1, 11, getRandomGroupsForFuzzyMatch(3));
-        RepeatPattern pattern3 = new RepeatPattern(patternAligner, new NucleotideSequence("TGGA"), 2, 4,
-                3, 9, getRandomGroupsForFuzzyMatch(9, 18));
-        NSequenceWithQuality target1_1 = new NSequenceWithQuality("GTGGATGGA");
-        NSequenceWithQuality target1_2 = new NSequenceWithQuality("TGGATGGA");
-        NSequenceWithQuality target2_1 = new NSequenceWithQuality("GTCGATGGATGGATTA");
-        NSequenceWithQuality target2_2 = new NSequenceWithQuality("GTACGATGGATGGATTA");
-        NSequenceWithQuality target3_1 = new NSequenceWithQuality("TTATGGATGGATTA");
-        NSequenceWithQuality target3_2 = new NSequenceWithQuality("TATGGATGGATTA");
-        NSequenceWithQuality target3_3 = new NSequenceWithQuality("TTGGATGGATTA");
+        RepeatPattern pattern1 = new RepeatPattern(patternAligner, new NucleotideSequence("T"),
+                8, 12, 2, -1,
+                getRandomGroupsForFuzzyMatch(7));
+        RepeatPattern pattern2 = new RepeatPattern(patternAligner, new NucleotideSequence("T"),
+                8, Integer.MAX_VALUE, -1, 11,
+                getRandomGroupsForFuzzyMatch(3));
+        RepeatPattern pattern3 = new RepeatPattern(patternAligner, new NucleotideSequence("T"),
+                8, 16, 3, 9,
+                getRandomGroupsForFuzzyMatch(9, 18));
+        NSequenceWithQuality target1_1 = new NSequenceWithQuality("GTTTTTTTT");
+        NSequenceWithQuality target1_2 = new NSequenceWithQuality("TTTTTTTT");
+        NSequenceWithQuality target2_1 = new NSequenceWithQuality("GTTTATTTTTTTTTTA");
+        NSequenceWithQuality target2_2 = new NSequenceWithQuality("TGTTCATTTTTTTTCTT");
+        NSequenceWithQuality target3_1 = new NSequenceWithQuality("TTATTTTTTTTCTT");
+        NSequenceWithQuality target3_2 = new NSequenceWithQuality("TATTTTTTTTGTT");
+        NSequenceWithQuality target3_3 = new NSequenceWithQuality("ATTTTTTTTATT");
         for (boolean fairSorting : new boolean[] {true, false}) {
-            assertEquals("GGATGGA", bestToString(pattern1.match(target1_1), fairSorting));
+            assertEquals("TTTTTTT", bestToString(pattern1.match(target1_1), fairSorting));
             assertNull(pattern1.match(target1_2).getBestMatch(fairSorting));
-            assertEquals("GGATGGA", bestToString(pattern1.match(target1_1, 2, 9), fairSorting));
+            assertEquals("TTTTTTT", bestToString(pattern1.match(target1_1, 2, 9), fairSorting));
             assertNull(pattern1.match(target1_1, 2, 8).getBestMatch(fairSorting));
 
-            assertEquals("ATGGATGG", bestToString(pattern2.match(target2_1), fairSorting));
+            assertEquals("TTTATTTTTTT", bestToString(pattern2.match(target2_1), fairSorting));
             assertNull(pattern2.match(target2_2).getBestMatch(fairSorting));
-            assertEquals("ATGGATGG", bestToString(pattern2.match(target2_1, 5, 12), fairSorting));
+            assertEquals("ATTTTTTT", bestToString(pattern2.match(target2_1, 5, 12), fairSorting));
             assertNull(pattern2.match(target2_1, 6, 12).getBestMatch(fairSorting));
 
-            assertEquals("TGGATGG", bestToString(pattern3.match(target3_1), fairSorting));
-            assertEquals("GGATGGA", bestToString(pattern3.match(target3_2), fairSorting));
+            assertEquals("TTTTTTT", bestToString(pattern3.match(target3_1), fairSorting));
+            assertEquals("TTTTTTT", bestToString(pattern3.match(target3_2), fairSorting));
             assertNull(pattern3.match(target3_3).getBestMatch(fairSorting));
-            assertEquals("TGGATGG", bestToString(pattern3.match(target3_1, 3, 10), fairSorting));
+            assertEquals("TTTTTTT", bestToString(pattern3.match(target3_1, 3, 10), fairSorting));
             assertNull(pattern3.match(target3_1, 4, 10).getBestMatch(fairSorting));
             assertNull(pattern3.match(target3_1, 3, 9).getBestMatch(fairSorting));
             assertNull(pattern3.match(target3_1, 4, 9).getBestMatch(fairSorting));
