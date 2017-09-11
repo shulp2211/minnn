@@ -13,12 +13,12 @@ public final class UnfairSorterConfiguration {
         unfairSorterPortLimits.put(FilterPattern.class, 50);
         unfairSorterPortLimits.put(AndPattern.class, 20);
         unfairSorterPortLimits.put(PlusPattern.class, 20);
-        unfairSorterPortLimits.put(SequencePattern.class, 10);
+        unfairSorterPortLimits.put(SequencePattern.class, 20);
         unfairSorterPortLimits.put(OrPattern.class, 50);
-        unfairSorterPortLimits.put(MultiPattern.class, 10);
-        unfairSorterPortLimits.put(AndOperator.class, 10);
-        unfairSorterPortLimits.put(OrOperator.class, 10);
+        unfairSorterPortLimits.put(MultiPattern.class, 25);
+        unfairSorterPortLimits.put(AndOperator.class, 25);
+        unfairSorterPortLimits.put(OrOperator.class, 25);
         unfairSorterPortLimits.put(NotOperator.class, 1);
-        unfairSorterPortLimits.put(MultipleReadsFilterPattern.class, 10);
+        unfairSorterPortLimits.put(MultipleReadsFilterPattern.class, 25);
     }
 }
