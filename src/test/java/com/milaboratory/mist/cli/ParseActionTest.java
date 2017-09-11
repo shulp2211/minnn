@@ -1,6 +1,7 @@
 package com.milaboratory.mist.cli;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -65,6 +66,7 @@ public class ParseActionTest {
         }
     }
 
+    @Ignore
     @Test
     public void examplesTest() throws Exception {
         String posR1 = EXAMPLES_PATH + "positional/polyfid10_R1.fastq.gz";
