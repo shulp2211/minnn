@@ -154,8 +154,8 @@ public final class RepeatPattern extends SinglePattern {
             private boolean noMoreMatches = false;
 
             // Data structures used for unfair sorting.
-            private final HashSet<Range> uniqueRangesUnfairNotAligned = new HashSet<>();
-            private final HashSet<Range> uniqueRangesUnfairAligned = new HashSet<>();
+            private final HashSet<Range> uniqueRangesUnfair = new HashSet<>();
+            private final HashSet<UniqueAlignedSequence> uniqueAlignedSequencesUnfair = new HashSet<>();
             private int currentRepeats;
             private int currentMaxErrors = 0;
             private int currentPosition = 0;
@@ -240,16 +240,17 @@ public final class RepeatPattern extends SinglePattern {
                     if (Math.max(minRepeats, currentRepeats) <= currentLongestSection) {
                         Range currentRange = new Range(currentPosition + from,
                                 Math.min(to, currentPosition + currentRepeats + from));
-                        if (!uniqueRangesUnfairNotAligned.contains(currentRange)) {
-                            uniqueRangesUnfairNotAligned.add(currentRange);
+                        if (!uniqueRangesUnfair.contains(currentRange)) {
+                            uniqueRangesUnfair.add(currentRange);
                             int repeats = Math.max(minRepeats, Math.min(maxRepeats, currentRepeats));
                             Alignment<NucleotideSequence> alignment = patternAligner.align(
                                     sequences[repeats - minRepeats], target,
                                     currentRange.getUpper() - 1);
                             Range targetRange = alignment.getSequence2Range();
+                            UniqueAlignedSequence alignedSequence = new UniqueAlignedSequence(targetRange, repeats);
                             if ((alignment.getScore() >= patternAligner.penaltyThreshold())
-                                    && !uniqueRangesUnfairAligned.contains(targetRange)) {
-                                uniqueRangesUnfairAligned.add(targetRange);
+                                    && !uniqueAlignedSequencesUnfair.contains(alignedSequence)) {
+                                uniqueAlignedSequencesUnfair.add(alignedSequence);
                                 pointToNextUnfairMatch();
                                 return overrideMatchScore(generateMatch(alignment, target, targetId,
                                         fixGroupEdgePositions(groupEdgePositions, 0, targetRange.length())),
@@ -396,16 +397,17 @@ public final class RepeatPattern extends SinglePattern {
             private ArrayList<Match> getMatchesList(HashSet<Range> uniqueRanges, PatternAligner aligner) {
                 ArrayList<Match> allMatchesList = new ArrayList<>();
                 Alignment<NucleotideSequence> alignment;
-                HashSet<Range> uniqueAlignedRanges = new HashSet<>();
+                HashSet<UniqueAlignedSequence> uniqueAlignedSequences = new HashSet<>();
 
                 for (Range range : uniqueRanges) {
                     int repeats = Math.max(minRepeats, Math.min(maxRepeats, range.length()));
                     alignment = aligner.align(sequences[repeats - minRepeats], target,
                             range.getUpper() - 1);
                     Range targetRange = alignment.getSequence2Range();
+                    UniqueAlignedSequence alignedSequence = new UniqueAlignedSequence(targetRange, repeats);
                     if ((alignment.getScore() >= aligner.penaltyThreshold())
-                            && !uniqueAlignedRanges.contains(targetRange)) {
-                        uniqueAlignedRanges.add(targetRange);
+                            && !uniqueAlignedSequences.contains(alignedSequence)) {
+                        uniqueAlignedSequences.add(alignedSequence);
                         allMatchesList.add(overrideMatchScore(generateMatch(alignment, target, targetId,
                                 fixGroupEdgePositions(groupEdgePositions, 0, targetRange.length())), repeats));
                     }
@@ -523,6 +525,31 @@ public final class RepeatPattern extends SinglePattern {
                         sectionsList.add(currentSectionLength);
                         this.sections = sectionsList.stream().mapToInt(i -> i).toArray();
                     }
+                }
+            }
+
+            private static class UniqueAlignedSequence {
+                private Range range;
+                private int repeats;
+
+                UniqueAlignedSequence(Range range, int repeats) {
+                    this.range = range;
+                    this.repeats = repeats;
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (o == null || getClass() != o.getClass()) return false;
+                    UniqueAlignedSequence that = (UniqueAlignedSequence) o;
+                    return repeats == that.repeats && range.equals(that.range);
+                }
+
+                @Override
+                public int hashCode() {
+                    int result = range.hashCode();
+                    result = 31 * result + repeats;
+                    return result;
                 }
             }
         }
