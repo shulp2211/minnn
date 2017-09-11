@@ -295,12 +295,15 @@ public class LogicalOperatorsTest {
             }
         }
 
-        OutputPort<Match> matchOutputPort = result.getMatches();
-        for (int i = 0; i < 15; i++)
-            assertNotNull(matchOutputPort.take());
-        assertNull(matchOutputPort.take());
-        for (int i = 0; i < 16; i++)
-            assertNotNull(result.getMatches().take());
+        for (boolean byScore : new boolean[] {true, false})
+            for (boolean fairSorting : new boolean[] {true, false}) {
+                OutputPort<Match> matchOutputPort = result.getMatches(byScore, fairSorting);
+                for (int i = 0; i < 15; i++)
+                    assertNotNull(matchOutputPort.take());
+                assertNull(matchOutputPort.take());
+                for (int i = 0; i < 16; i++)
+                    assertNotNull(result.getMatches().take());
+            }
     }
 
     @Test
