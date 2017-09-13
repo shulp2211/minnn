@@ -81,7 +81,7 @@ public final class RepeatPattern extends SinglePattern {
     }
 
     @Override
-    public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
+    public MatchingResult match(NSequenceWithQuality target, int from, int to) {
         int fixedLeftBorder = (this.fixedLeftBorder > -2) ? this.fixedLeftBorder
                 : target.size() - 1 - invertCoordinate(this.fixedLeftBorder);
         int fixedRightBorder = (this.fixedRightBorder > -2) ? this.fixedRightBorder
@@ -91,6 +91,14 @@ public final class RepeatPattern extends SinglePattern {
         int toWithBorder = (fixedRightBorder == -1) ? to : Math.min(to, fixedRightBorder + 1);
         return new RepeatPatternMatchingResult(patternAligner, patternSeq, minRepeats, maxRepeats,
                 fixedLeftBorder, fixedRightBorder, groupEdgePositions, target, fromWithBorder, toWithBorder, targetId);
+    }
+
+    @Override
+    public int estimateMaxLength() {
+        if (maxRepeats == Integer.MAX_VALUE)
+            return -1;
+        else
+            return maxRepeats + patternAligner.bitapMaxErrors();
     }
 
     private static class RepeatPatternMatchingResult extends MatchingResult {

@@ -1,6 +1,7 @@
 package com.milaboratory.mist.pattern;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 
 abstract class MultiplePatternsOperator extends SinglePattern {
@@ -32,5 +33,11 @@ abstract class MultiplePatternsOperator extends SinglePattern {
     @Override
     public ArrayList<GroupEdge> getGroupEdges() {
         return groupEdges;
+    }
+
+    @Override
+    void setTargetId(byte targetId) {
+        super.setTargetId(targetId);
+        Arrays.stream(operandPatterns).forEach(sp -> sp.setTargetId(targetId));
     }
 }

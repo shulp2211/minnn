@@ -1,7 +1,6 @@
 package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
-import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 
 import java.util.ArrayList;
@@ -21,29 +20,25 @@ public final class NotOperator extends MultipleReadsOperator {
     }
 
     @Override
-    public MatchingResult match(MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
-        return new NotOperatorMatchingResult(patternAligner, operandPatterns[0], target, ranges, reverseComplements);
+    public MatchingResult match(MultiNSequenceWithQuality target) {
+        return new NotOperatorMatchingResult(patternAligner, operandPatterns[0], target);
     }
 
     private static class NotOperatorMatchingResult extends MatchingResult {
         private final PatternAligner patternAligner;
         private final MultipleReadsOperator operandPattern;
         private final MultiNSequenceWithQuality target;
-        private final Range[] ranges;
-        private final boolean[] reverseComplements;
 
         NotOperatorMatchingResult(PatternAligner patternAligner, MultipleReadsOperator operandPattern,
-                                 MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
+                                 MultiNSequenceWithQuality target) {
             this.patternAligner = patternAligner;
             this.operandPattern = operandPattern;
             this.target = target;
-            this.ranges = ranges;
-            this.reverseComplements = reverseComplements;
         }
 
         @Override
         public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
-            return new NotOperatorOutputPort(patternAligner, operandPattern.match(target, ranges, reverseComplements)
+            return new NotOperatorOutputPort(patternAligner, operandPattern.match(target)
                     .getMatches(byScore, fairSorting));
         }
 

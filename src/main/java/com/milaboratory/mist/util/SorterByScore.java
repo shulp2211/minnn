@@ -9,13 +9,12 @@ import static com.milaboratory.mist.util.DebugUtils.countCall;
 import static com.milaboratory.mist.util.DebugUtils.countExecutionTime;
 
 public final class SorterByScore extends ApproximateSorter {
-    public SorterByScore(PatternAligner patternAligner, boolean multipleReads, boolean combineScoresBySum,
-                         boolean fairSorting, MatchValidationType matchValidationType, int unfairSorterLimit) {
-        super(patternAligner, multipleReads, combineScoresBySum, fairSorting, matchValidationType, unfairSorterLimit);
+    public SorterByScore(ApproximateSorterConfiguration conf) {
+        super(conf);
     }
 
     @Override
-    public OutputPort<Match> getOutputPort(List<ApproximateSorterOperandPort> inputPorts) {
+    public OutputPort<Match> getOutputPort() {
         int numberOfPorts = inputPorts.size();
         if (numberOfPorts == 0)
             throw new IllegalArgumentException("List of input ports is empty!");

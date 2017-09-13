@@ -29,8 +29,13 @@ public final class AnyPattern extends SinglePattern {
     }
 
     @Override
-    public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
+    public MatchingResult match(NSequenceWithQuality target, int from, int to) {
         return new AnyPatternMatchingResult(groupEdges, target, from, to, targetId);
+    }
+
+    @Override
+    public int estimateMaxLength() {
+        throw new IllegalStateException("estimateMaxLength() called for AnyPattern!");
     }
 
     private static class AnyPatternMatchingResult extends MatchingResult {

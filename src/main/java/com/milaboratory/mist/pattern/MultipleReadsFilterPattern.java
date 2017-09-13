@@ -1,6 +1,5 @@
 package com.milaboratory.mist.pattern;
 
-import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 
 /**
@@ -10,7 +9,8 @@ public final class MultipleReadsFilterPattern extends MultipleReadsOperator {
     private final FilterPattern filterPattern;
     private final Filter filter;
 
-    public MultipleReadsFilterPattern(PatternAligner patternAligner, Filter filter, MultipleReadsOperator... operandPatterns) {
+    public MultipleReadsFilterPattern(PatternAligner patternAligner, Filter filter,
+                                      MultipleReadsOperator... operandPatterns) {
         super(patternAligner, operandPatterns);
         if (operandPatterns.length != 1)
             throw new IllegalArgumentException("Filter pattern must take exactly 1 operand pattern!");
@@ -24,7 +24,7 @@ public final class MultipleReadsFilterPattern extends MultipleReadsOperator {
     }
 
     @Override
-    public MatchingResult match(MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
-        return filterPattern.match(target, ranges, reverseComplements);
+    public MatchingResult match(MultiNSequenceWithQuality target) {
+        return filterPattern.match(target);
     }
 }

@@ -1,12 +1,9 @@
 package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
-import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.mist.util.*;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.LOGICAL_AND;
@@ -15,6 +12,8 @@ import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterP
 public final class MultiPattern extends MultipleReadsOperator {
     public MultiPattern(PatternAligner patternAligner, SinglePattern... singlePatterns) {
         super(patternAligner, singlePatterns);
+        for (byte i = 1; i <= singlePatterns.length; i++)
+            singlePatterns[i].setTargetId(i);
     }
 
     @Override
@@ -23,68 +22,39 @@ public final class MultiPattern extends MultipleReadsOperator {
     }
 
     @Override
-    public MatchingResult match(MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
-        if (target.numberOfSequences() != ranges.length)
-            throw new IllegalArgumentException("Mismatched number of reads (" + target.numberOfSequences()
-                    + ") and ranges (" + ranges.length + ")!");
-        if (target.numberOfSequences() != reverseComplements.length)
-            throw new IllegalArgumentException("Mismatched number of reads (" + target.numberOfSequences()
-                    + ") and reverse complement flags (" + reverseComplements.length + ")!");
+    public MatchingResult match(MultiNSequenceWithQuality target) {
         if (target.numberOfSequences() != singlePatterns.length)
             throw new IllegalArgumentException("Mismatched number of reads (" + target.numberOfSequences()
                     + ") and patterns (" + singlePatterns.length + ")!");
 
-        return new MultiPatternMatchingResult(patternAligner, singlePatterns, target, ranges, reverseComplements);
+        return new MultiPatternMatchingResult(patternAligner, singlePatterns, target);
     }
 
     private static class MultiPatternMatchingResult extends MatchingResult {
         private final PatternAligner patternAligner;
         private final SinglePattern[] singlePatterns;
         private final MultiNSequenceWithQuality target;
-        private final Range[] ranges;
-        private final boolean[] reverseComplements;
 
         MultiPatternMatchingResult(PatternAligner patternAligner, SinglePattern[] singlePatterns,
-                                  MultiNSequenceWithQuality target, Range[] ranges, boolean[] reverseComplements) {
+                                   MultiNSequenceWithQuality target) {
             this.patternAligner = patternAligner;
             this.singlePatterns = singlePatterns;
             this.target = target;
-            this.ranges = ranges;
-            this.reverseComplements = reverseComplements;
         }
 
         @Override
         public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
-            ArrayList<ApproximateSorterOperandPort> operandPorts = new ArrayList<>();
-            NSequenceWithQuality currentTarget;
-            Range currentRange;
-            byte currentTargetId;
+            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, patternAligner,
+                    true, fairSorting, LOGICAL_AND, unfairSorterPortLimits.get(MultiPattern.class),
+                    singlePatterns);
             ApproximateSorter sorter;
 
-            for (int i = 0; i < singlePatterns.length; i++) {
-                SinglePattern currentPattern = singlePatterns[i];
-                if (reverseComplements[i]) {
-                    currentTarget = target.get(i).getReverseComplement();
-                    currentRange = ranges[i].inverse();
-                    currentTargetId = (byte)(-i - 1);
-                } else {
-                    currentTarget = target.get(i);
-                    currentRange = ranges[i];
-                    currentTargetId = (byte)(i + 1);
-                }
-                operandPorts.add(new ApproximateSorterOperandPort(currentPattern.match(currentTarget, currentRange,
-                        currentTargetId).getMatches(byScore, fairSorting),
-                        unfairSorterPortLimits.get(currentPattern.getClass())));
-            }
-
             if (byScore)
-                sorter = new SorterByScore(patternAligner, true, true, fairSorting,
-                        LOGICAL_AND, unfairSorterPortLimits.get(MultiPattern.class));
+                sorter = new SorterByScore(conf);
             else
-                sorter = new SorterByCoordinate(patternAligner, true, true, fairSorting,
-                        LOGICAL_AND, unfairSorterPortLimits.get(MultiPattern.class));
+                sorter = new SorterByCoordinate(conf);
 
-            return sorter.getOutputPort(operandPorts);
+            return sorter.getOutputPort();
         }
     }
 }

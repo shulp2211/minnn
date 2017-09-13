@@ -5,7 +5,6 @@ import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.mist.util.*;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.FOLLOWING;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
@@ -21,8 +20,22 @@ public final class SequencePattern extends MultiplePatternsOperator {
     }
 
     @Override
-    public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
-        return new SequencePatternMatchingResult(patternAligner, operandPatterns, target, from, to, targetId);
+    public MatchingResult match(NSequenceWithQuality target, int from, int to) {
+        return new SequencePatternMatchingResult(patternAligner, operandPatterns, target, from, to);
+    }
+
+    @Override
+    public int estimateMaxLength() {
+        int maxGap = Math.max(patternAligner.maxOverlap(), patternAligner.bitapMaxErrors());
+        int summaryLength = maxGap * (operandPatterns.length - 1);
+        for (SinglePattern currentPattern : operandPatterns) {
+            int currentPatternMaxLength = currentPattern.estimateMaxLength();
+            if (currentPatternMaxLength == -1)
+                return -1;
+            else
+                summaryLength += currentPatternMaxLength;
+        }
+        return summaryLength;
     }
 
     private static class SequencePatternMatchingResult extends MatchingResult {
@@ -31,32 +44,29 @@ public final class SequencePattern extends MultiplePatternsOperator {
         private final NSequenceWithQuality target;
         private final int from;
         private final int to;
-        private final byte targetId;
 
         SequencePatternMatchingResult(PatternAligner patternAligner, SinglePattern[] operandPatterns,
-                                      NSequenceWithQuality target, int from, int to, byte targetId) {
+                                      NSequenceWithQuality target, int from, int to) {
             this.patternAligner = patternAligner;
             this.operandPatterns = operandPatterns;
             this.target = target;
             this.from = from;
             this.to = to;
-            this.targetId = targetId;
         }
 
         @Override
         public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
+            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, patternAligner,
+                    true, fairSorting, FOLLOWING, unfairSorterPortLimits.get(SequencePattern.class),
+                    operandPatterns);
             ApproximateSorter sorter;
 
             if (byScore)
-                sorter = new SorterByScore(patternAligner, false, true, fairSorting,
-                        FOLLOWING, unfairSorterPortLimits.get(SequencePattern.class));
+                sorter = new SorterByScore(conf);
             else
-                sorter = new SorterByCoordinate(patternAligner, false, true, fairSorting,
-                        FOLLOWING, unfairSorterPortLimits.get(SequencePattern.class));
+                sorter = new SorterByCoordinate(conf);
 
-            return sorter.getOutputPort(Arrays.stream(operandPatterns).map(pattern -> new ApproximateSorterOperandPort(
-                    pattern.match(target, from, to, targetId).getMatches(byScore, fairSorting),
-                    unfairSorterPortLimits.get(pattern.getClass()))).collect(Collectors.toList()));
+            return sorter.getOutputPort();
         }
     }
 }

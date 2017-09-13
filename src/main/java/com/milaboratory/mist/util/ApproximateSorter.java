@@ -14,48 +14,25 @@ import static com.milaboratory.mist.util.DebugUtils.maxSize;
 import static com.milaboratory.mist.util.RangeTools.*;
 
 public abstract class ApproximateSorter {
-    protected final PatternAligner patternAligner;
-    protected final boolean multipleReads;
-    protected final boolean combineScoresBySum;
-    protected final boolean fairSorting;
-    protected final MatchValidationType matchValidationType;
-    protected final int unfairSorterLimit;
+    protected final ApproximateSorterConfiguration conf;
     protected int unfairSorterTakenValues = 0;
 
     /**
      * This sorter allows to get output port for approximately sorted matches by score or coordinate from
      * input ports. Specific sorters (by score, coordinate and with different rules) are extending this class.
      *
-     * @param patternAligner pattern aligner that provides information about scoring and pattern overlap limits
-     * @param multipleReads true if we combine matches from multiple reads; false if we combine matches
-     *                      from single read
-     * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
-     *                           score must be the highest of match scores
-     * @param fairSorting true if we need slow but fair sorting
-     * @param matchValidationType type of validation used to determine that current matches combination is invalid
-     * @param unfairSorterLimit maximum number of output values for this port for unfair sorter
+     * @param conf sorter configuration
      */
-    public ApproximateSorter(PatternAligner patternAligner, boolean multipleReads, boolean combineScoresBySum,
-                             boolean fairSorting, MatchValidationType matchValidationType, int unfairSorterLimit) {
-        this.patternAligner = patternAligner;
-        this.multipleReads = multipleReads;
-        this.combineScoresBySum = combineScoresBySum;
-        this.fairSorting = fairSorting;
-        this.matchValidationType = matchValidationType;
-        this.unfairSorterLimit = unfairSorterLimit;
-        if ((multipleReads && ((matchValidationType == INTERSECTION)
-                || (matchValidationType == ORDER) || (matchValidationType == FOLLOWING) || (matchValidationType == FIRST)))
-                || (!multipleReads && ((matchValidationType == LOGICAL_AND) || (matchValidationType == LOGICAL_OR))))
-            throw new IllegalArgumentException("Invalid combination of multipleReads and matchValidationType flags!");
+    public ApproximateSorter(ApproximateSorterConfiguration conf) {
+        this.conf = conf;
     }
 
     /**
      * Get output port for sorted combined matches.
      *
-     * @param inputPorts operand ports, with limits for unfair sorter
      * @return output port
      */
-    public abstract OutputPort<Match> getOutputPort(List<ApproximateSorterOperandPort> inputPorts);
+    public abstract OutputPort<Match> getOutputPort();
 
     /**
      * Get combined match from a group of input matches. It uses multipleReads flag to determine how to combine matches

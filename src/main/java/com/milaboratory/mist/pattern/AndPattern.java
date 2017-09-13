@@ -5,7 +5,6 @@ import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.mist.util.*;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.INTERSECTION;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
@@ -21,8 +20,8 @@ public final class AndPattern extends MultiplePatternsOperator {
     }
 
     @Override
-    public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
-        return new AndPatternMatchingResult(patternAligner, operandPatterns, target, from, to, targetId);
+    public MatchingResult match(NSequenceWithQuality target, int from, int to) {
+        return new AndPatternMatchingResult(patternAligner, operandPatterns, target, from, to);
     }
 
     private static class AndPatternMatchingResult extends MatchingResult {
@@ -31,32 +30,29 @@ public final class AndPattern extends MultiplePatternsOperator {
         private final NSequenceWithQuality target;
         private final int from;
         private final int to;
-        private final byte targetId;
 
         AndPatternMatchingResult(PatternAligner patternAligner, SinglePattern[] operandPatterns,
-                                 NSequenceWithQuality target, int from, int to, byte targetId) {
+                                 NSequenceWithQuality target, int from, int to) {
             this.patternAligner = patternAligner;
             this.operandPatterns = operandPatterns;
             this.target = target;
             this.from = from;
             this.to = to;
-            this.targetId = targetId;
         }
 
         @Override
         public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
+            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, patternAligner,
+                    true, fairSorting, INTERSECTION, unfairSorterPortLimits.get(AndPattern.class),
+                    operandPatterns);
             ApproximateSorter sorter;
 
             if (byScore)
-                sorter = new SorterByScore(patternAligner, false, true, fairSorting,
-                        INTERSECTION, unfairSorterPortLimits.get(AndPattern.class));
+                sorter = new SorterByScore(conf);
             else
-                sorter = new SorterByCoordinate(patternAligner, false, true, fairSorting,
-                        INTERSECTION, unfairSorterPortLimits.get(AndPattern.class));
+                sorter = new SorterByCoordinate(conf);
 
-            return sorter.getOutputPort(Arrays.stream(operandPatterns).map(pattern -> new ApproximateSorterOperandPort(
-                    pattern.match(target, from, to, targetId).getMatches(byScore, fairSorting),
-                    unfairSorterPortLimits.get(pattern.getClass()))).collect(Collectors.toList()));
+            return sorter.getOutputPort();
         }
     }
 }

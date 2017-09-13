@@ -8,9 +8,8 @@ import com.milaboratory.core.sequence.NSequenceWithQuality;
 public abstract class MatchedItem {
     protected final NSequenceWithQuality target;
     /**
-     * actualTargetId + 1 if matched on forward strand
-     * -actualTargetId - 1 if matched on reverse strand
-     * 0 used only in NullMatchedRange (when there is actually no match)
+     * IDs start from 1.
+     * 0 used only in NullMatchedRange (when there is actually no match).
      */
     protected final byte targetId;
     protected final int patternIndex;

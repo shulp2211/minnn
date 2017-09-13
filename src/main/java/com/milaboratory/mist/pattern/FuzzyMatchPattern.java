@@ -106,7 +106,7 @@ public final class FuzzyMatchPattern extends SinglePattern {
     }
 
     @Override
-    public MatchingResult match(NSequenceWithQuality target, int from, int to, byte targetId) {
+    public MatchingResult match(NSequenceWithQuality target, int from, int to) {
         int fixedLeftBorder = (this.fixedLeftBorder > -2) ? this.fixedLeftBorder
                 : target.size() - 1 - invertCoordinate(this.fixedLeftBorder);
         int fixedRightBorder = (this.fixedRightBorder > -2) ? this.fixedRightBorder
@@ -116,6 +116,11 @@ public final class FuzzyMatchPattern extends SinglePattern {
         int toWithBorder = (fixedRightBorder == -1) ? to : Math.min(to, fixedRightBorder + 1);
         return new FuzzyMatchingResult(patternAligner, sequences, motifs, fixedLeftBorder, fixedRightBorder,
                 groupEdgePositions, groupMovements, target, fromWithBorder, toWithBorder, targetId);
+    }
+
+    @Override
+    public int estimateMaxLength() {
+        return sequences.get(0).size() + patternAligner.bitapMaxErrors();
     }
 
     private static class FuzzyMatchingResult extends MatchingResult {
