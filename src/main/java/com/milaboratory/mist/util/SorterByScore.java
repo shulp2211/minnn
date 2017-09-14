@@ -10,14 +10,13 @@ import static com.milaboratory.mist.util.DebugUtils.countExecutionTime;
 
 public final class SorterByScore extends ApproximateSorter {
     public SorterByScore(ApproximateSorterConfiguration conf) {
-        super(conf);
+        super(conf, true);
     }
 
     @Override
     public OutputPort<Match> getOutputPort() {
-        int numberOfPorts = inputPorts.size();
-        if (numberOfPorts == 0)
-            throw new IllegalArgumentException("List of input ports is empty!");
+        if (conf.operandPatterns.length == 0)
+            throw new IllegalArgumentException("Operand patterns array is empty!");
         return new MatchesOutputPort(inputPorts, numberOfPorts);
     }
 
@@ -57,12 +56,13 @@ public final class SorterByScore extends ApproximateSorter {
         @Override
         public Match take() {
             if (alwaysReturnNull) return null;
-            if (fairSorting) return takeFairSorted();
-            if (unfairSorterTakenValues++ > unfairSorterLimit) {
+            if (conf.fairSorting) return takeFairSorted();
+            if (unfairSorterTakenValues++ > conf.unfairSorterLimit) {
                 alwaysReturnNull = true;
                 return null;
             }
 
+            long penaltyThreshold = conf.patternAligner.penaltyThreshold();
             List<Match> tempMatches = new ArrayList<>();
             tempMatches.add(null);
             countCall("take");
@@ -111,8 +111,8 @@ public final class SorterByScore extends ApproximateSorter {
 
                     IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, currentIndexes);
                     if (incompatibleIndexes == null) {
-                        combinedMatch = combineMatches(true, currentMatches);
-                        if ((combinedMatch != null) && (combinedMatch.getScore() >= patternAligner.penaltyThreshold()))
+                        combinedMatch = combineMatches(currentMatches);
+                        if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
                             combinationFound = true;
                         else {
                         /* current combination doesn't fit the score threshold, mark it as returned
@@ -140,7 +140,7 @@ public final class SorterByScore extends ApproximateSorter {
 
         private Match takeFairSorted() {
             if (!sortingPerformed) {
-                allMatchesFiltered = fillArrayForFairSorting(inputPorts, numberOfPorts, true);
+                allMatchesFiltered = fillArrayForFairSorting();
                 filteredMatchesCount = allMatchesFiltered.length;
                 Arrays.sort(allMatchesFiltered, Comparator.comparingLong(Match::getScore).reversed());
                 sortingPerformed = true;
@@ -193,7 +193,7 @@ public final class SorterByScore extends ApproximateSorter {
             based on sum, or based on max value if we count total score based on max value */
                 countExecutionTime("stage2", () -> {
                     while (tableOfIterations.getNumberOfEndedPorts() < numberOfPorts) {
-                        if (combineScoresBySum) {
+                        if (conf.combineScoresBySum) {
                             int bestDeltaPort = 0;
                             long bestDelta = Long.MIN_VALUE;
                             for (int i = 0; i < numberOfPorts; i++) {

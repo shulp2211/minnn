@@ -15,6 +15,9 @@ import static com.milaboratory.mist.util.RangeTools.*;
 
 public abstract class ApproximateSorter {
     protected final ApproximateSorterConfiguration conf;
+    private final ArrayList<SpecificOutputPort> unfairOutputPorts = new ArrayList<>();
+    private final boolean sortingByScore;
+
     protected int unfairSorterTakenValues = 0;
 
     /**
@@ -22,9 +25,11 @@ public abstract class ApproximateSorter {
      * input ports. Specific sorters (by score, coordinate and with different rules) are extending this class.
      *
      * @param conf sorter configuration
+     * @param sortingByScore set in constructor of child class: true if sorting by score, false if by coordinate
      */
-    public ApproximateSorter(ApproximateSorterConfiguration conf) {
+    protected ApproximateSorter(ApproximateSorterConfiguration conf, boolean sortingByScore) {
         this.conf = conf;
+        this.sortingByScore = sortingByScore;
     }
 
     /**
@@ -38,12 +43,10 @@ public abstract class ApproximateSorter {
      * Get combined match from a group of input matches. It uses multipleReads flag to determine how to combine matches
      * (by combining ranges for single read or by numbering the matched ranges for multiple reads).
      *
-     * @param sortingByScore true if we use sorting by score, false if we use sorting by coordinate;
-     *                       it really used only for matchValidationType == FIRST
      * @param matches input matches
      * @return combined match
      */
-    protected Match combineMatches(boolean sortingByScore, Match... matches) {
+    protected Match combineMatches(Match... matches) {
         List<Match> tempMatches = new ArrayList<>();
         tempMatches.add(null);
         countCall("combine");
@@ -51,12 +54,12 @@ public abstract class ApproximateSorter {
 
             ArrayList<MatchedItem> matchedItems = new ArrayList<>();
 
-            if (multipleReads) {
+            if (conf.multipleReads) {
                 int patternIndex = 0;
                 boolean allMatchesAreNull = true;
                 for (Match match : matches) {
                     if (match == null) {
-                        if (matchValidationType == LOGICAL_OR) {
+                        if (conf.matchValidationType == LOGICAL_OR) {
                             matchedItems.add(new NullMatchedRange(patternIndex++));
                             continue;
                         } else throw new IllegalStateException("Found null match when MatchValidationType doesn't allow them");
@@ -81,8 +84,7 @@ public abstract class ApproximateSorter {
                 if (allMatchesAreNull) return null;
                 tempMatches.set(0, new Match(patternIndex, combineMatchScores(matches), matchedItems));
                 return null;
-            } else
-            if (matchValidationType == FIRST) {
+            } else if (conf.matchValidationType == FIRST) {
                 boolean matchExist = false;
                 int bestMatchPort = 0;
                 int bestCoordinate = Integer.MAX_VALUE;
@@ -114,8 +116,8 @@ public abstract class ApproximateSorter {
                 }
 
                 Arrays.sort(ranges, Comparator.comparingInt(Range::getLower));
-                CombinedRange combinedRange = combineRanges(patternAligner, matchedGroupEdgesFromOperands,
-                        target, matchValidationType == FOLLOWING, ranges);
+                CombinedRange combinedRange = combineRanges(conf.patternAligner, matchedGroupEdgesFromOperands,
+                        target, conf.matchValidationType == FOLLOWING, ranges);
                 matchedItems.addAll(combinedRange.getMatchedGroupEdges());
                 matchedItems.add(new MatchedRange(target, targetId, 0, combinedRange.getRange()));
                 tempMatches.set(0, new Match(1, combineMatchScores(matches) + combinedRange.getScorePenalty(), matchedItems));
@@ -134,9 +136,9 @@ public abstract class ApproximateSorter {
      * @param matches matches from which we will get the scores
      * @return combined score
      */
-    protected long combineMatchScores(Match... matches) {
+    private long combineMatchScores(Match... matches) {
         long resultScore;
-        if (combineScoresBySum) {
+        if (conf.combineScoresBySum) {
             resultScore = 0;
             for (Match match : matches)
                 if (match != null)
@@ -157,63 +159,65 @@ public abstract class ApproximateSorter {
      * @return true if null matches taken from operands must not automatically discard the current combination
      */
     protected boolean areNullMatchesAllowed() {
-        return ((matchValidationType == LOGICAL_OR) || (matchValidationType == FIRST));
+        return ((conf.matchValidationType == LOGICAL_OR) || (conf.matchValidationType == FIRST));
     }
 
     /**
      * Fills array for fair sorting. Array will be already filtered: match combinations that contain incompatible
      * ranges will not be saved to array.
      *
-     * @param inputPorts ports for input matches
-     * @param numberOfPorts number of ports for input matches
-     * @param sortingByScore true if we use sorting by score, false if we use sorting by coordinate;
-     *                       it used as argument for combineMatches
      * @return array for fair sorting
      */
-    protected Match[] fillArrayForFairSorting(List<ApproximateSorterOperandPort> inputPorts, int numberOfPorts,
-                                              boolean sortingByScore) {
+    protected Match[] fillArrayForFairSorting() {
         ArrayList<ArrayList<Match>> allMatches = new ArrayList<>();
         ArrayList<Match> allMatchesFiltered = new ArrayList<>();
-        TableOfIterations tableOfIterations = new TableOfIterations(numberOfPorts);
+        int numberOfOperands = conf.operandPatterns.length;
+        TableOfIterations tableOfIterations = new TableOfIterations(numberOfOperands);
         Match currentMatch;
         int totalNumberOfCombinations = 1;
 
         // get all matches from all operands
-        for (int i = 0; i < numberOfPorts; i++) {
+        for (int i = 0; i < numberOfOperands; i++) {
+            OutputPort<Match> currentPort = conf.multipleReads
+                    ? conf.operandPatterns[i].match(conf.target)
+                        .getMatches(sortingByScore, true)
+                    : ((SinglePattern)conf.operandPatterns[i]).match(conf.target.get(0), conf.from(), conf.to())
+                        .getMatches(sortingByScore, true);
             allMatches.add(new ArrayList<>());
             do {
-                currentMatch = inputPorts.get(i).outputPort.take();
+                currentMatch = currentPort.take();
                 if ((currentMatch != null) || (areNullMatchesAllowed() && (allMatches.get(i).size() == 0)))
                     allMatches.get(i).add(currentMatch);
             } while (currentMatch != null);
             totalNumberOfCombinations *= allMatches.get(i).size();
         }
 
-        ArrayList<Integer> innerArrayIndexes = new ArrayList<>(Collections.nCopies(numberOfPorts, 0));
-        Match[] currentMatches = new Match[numberOfPorts];
+        int[] innerArrayIndexes = new int[numberOfOperands];
+        Match[] currentMatches = new Match[numberOfOperands];
+        long penaltyThreshold = conf.patternAligner.penaltyThreshold();
         for (int i = 0; i < totalNumberOfCombinations; i++) {
             if (tableOfIterations.isCompatible(false, innerArrayIndexes)) {
-                for (int j = 0; j < numberOfPorts; j++)
-                    currentMatches[j] = allMatches.get(j).get(innerArrayIndexes.get(j));
+                for (int j = 0; j < numberOfOperands; j++)
+                    currentMatches[j] = allMatches.get(j).get(innerArrayIndexes[j]);
                 IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, innerArrayIndexes);
                 if (incompatibleIndexes != null)
                     tableOfIterations.addIncompatibleIndexes(incompatibleIndexes);
                 else {
-                    Match combinedMatch = combineMatches(sortingByScore, currentMatches);
-                    if ((combinedMatch != null) && (combinedMatch.getScore() >= patternAligner.penaltyThreshold()))
+                    Match combinedMatch = combineMatches(currentMatches);
+                    if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
                         allMatchesFiltered.add(combinedMatch);
                 }
             }
 
             // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
-            for (int j = 0; j < numberOfPorts; j++) {
-                int currentIndex = innerArrayIndexes.get(j);
+            for (int j = 0; j < numberOfOperands; j++) {
+                int currentIndex = innerArrayIndexes[j];
                 if (currentIndex + 1 < allMatches.get(j).size()) {
-                    innerArrayIndexes.set(j, currentIndex + 1);
+                    innerArrayIndexes[j] = currentIndex + 1;
                     break;
                 }
                 // we need to update next index and reset current index to zero
-                innerArrayIndexes.set(j, 0);
+                innerArrayIndexes[j] = 0;
             }
         }
 
@@ -228,17 +232,17 @@ public abstract class ApproximateSorter {
      * @param indexes indexes of all provided matches for writing to IncompatibleIndexes structure
      * @return IncompatibleIndexes structure
      */
-    protected IncompatibleIndexes findIncompatibleIndexes(Match[] matches, ArrayList<Integer> indexes) {
-        if (matches.length != indexes.size())
+    protected IncompatibleIndexes findIncompatibleIndexes(Match[] matches, int[] indexes) {
+        if (matches.length != indexes.length)
             throw new IllegalArgumentException("matches length is " + matches.length + ", indexes length is "
-                + indexes.size() + "; they must be equal!");
+                + indexes.length + "; they must be equal!");
 
         List<IncompatibleIndexes> tempIndexes = new ArrayList<>();
         tempIndexes.add(null);
         countCall("find");
         countExecutionTime("find", () -> {
             IncompatibleIndexes result = null;
-            switch (matchValidationType) {
+            switch (conf.matchValidationType) {
                 case LOGICAL_OR:
                 case LOGICAL_AND:
                 case FIRST:
@@ -254,7 +258,7 @@ public abstract class ApproximateSorter {
                         for (int j = 0; j < i; j++)     // Compare with all previously added matches
                             if (checkFullIntersection(ranges[i], ranges[j])
                                     || checkOverlap(matches[0].getMatchedRange().getTarget(), ranges[i], ranges[j])) {
-                                result = new IncompatibleIndexes(j, indexes.get(j), i, indexes.get(i));
+                                result = new IncompatibleIndexes(j, indexes[j], i, indexes[i]);
                                 break OUTER;
                             }
                     }
@@ -275,7 +279,7 @@ public abstract class ApproximateSorter {
                                 || checkFullIntersection(previousRange, currentRange)
                                 || checkOverlap(target, previousRange, currentRange)
                                 || checkInsertionPenalty(target, previousRange, currentRange)) {
-                            result = new IncompatibleIndexes(i - 1, indexes.get(i - 1), i, indexes.get(i));
+                            result = new IncompatibleIndexes(i - 1, indexes[i - 1], i, indexes[i]);
                             break;
                         }
                     }
@@ -294,6 +298,7 @@ public abstract class ApproximateSorter {
      * @return true if overlap is too big and this combination of ranges is invalid
      */
     private boolean checkOverlap(NSequenceWithQuality target, Range range0, Range range1) {
+        PatternAligner patternAligner = conf.patternAligner;
         Range intersection = range0.intersection(range1);
         return (intersection != null) && (((patternAligner.maxOverlap() != -1) && (patternAligner.maxOverlap()
                 < intersection.length())) || (patternAligner.overlapPenalty(target, intersection.getLower(),
@@ -306,14 +311,67 @@ public abstract class ApproximateSorter {
      * @return true if insertion penalty is too big and this combination of ranges is invalid
      */
     private boolean checkInsertionPenalty(NSequenceWithQuality target, Range range0, Range range1) {
-        if (matchValidationType == FOLLOWING) {
+        PatternAligner patternAligner = conf.patternAligner;
+        if (conf.matchValidationType == FOLLOWING) {
             int insertionLength = range1.getLower() - range0.getUpper();
             return (insertionLength > 0) && (patternAligner.insertionPenalty(target, range0.getUpper(), insertionLength)
                     < patternAligner.penaltyThreshold());
         } else return false;
     }
 
-    protected class IncompatibleIndexes {
+    private SpecificOutputPort getPortWithParams(int operandIndex) {
+        return getPortWithParams(operandIndex, -1);
+    }
+
+    private SpecificOutputPort getPortWithParams(int operandIndex, int from) {
+        SpecificOutputPort currentPort = unfairOutputPorts.stream().filter(p -> p.paramsEqualTo(operandIndex, from))
+                .findFirst().orElse(null);
+        if (currentPort == null) {
+            Pattern currentPattern = conf.operandPatterns[operandIndex];
+            int matchFrom = (from == -1) ? conf.from() : Math.max(conf.from(), from);
+            int matchTo = conf.to();
+            if (conf.matchValidationType == FOLLOWING) {
+                int patternMaxLength = ((SinglePattern)currentPattern).estimateMaxLength();
+                if (patternMaxLength != -1)
+                    matchTo = Math.min(conf.to(), matchFrom + patternMaxLength);
+            }
+            currentPort = new SpecificOutputPort(conf.multipleReads
+                    ? currentPattern.match(conf.target)
+                        .getMatches(sortingByScore, false)
+                    : ((SinglePattern)currentPattern).match(conf.target.get(0), matchFrom, matchTo)
+                        .getMatches(sortingByScore, false),
+                    operandIndex, from);
+            unfairOutputPorts.add(currentPort);
+        }
+        return currentPort;
+    }
+
+    protected Match[] getMatchesByIndexes(int[] indexes) {
+        int numberOfOperands = conf.operandPatterns.length;
+        if (indexes.length != numberOfOperands)
+            throw new IllegalArgumentException("indexes length is " + indexes.length + ", number of operands: "
+                    + numberOfOperands);
+        Match[] matches = new Match[numberOfOperands];
+        if ((conf.matchValidationType == ORDER) || (conf.matchValidationType == FOLLOWING)) {
+            int maxOverlap = conf.patternAligner.maxOverlap();
+            int previousMatchEnd = -1;
+            for (int i = 0; i < numberOfOperands; i++) {
+                int thisMatchStart = (previousMatchEnd == -1) ? 0 : previousMatchEnd - maxOverlap;
+                Match currentMatch = getPortWithParams(i, thisMatchStart).get(indexes[i]);
+                if (currentMatch != null)
+                    previousMatchEnd = currentMatch.getRange().getTo();
+                else
+                    previousMatchEnd = -1;
+                matches[i] = currentMatch;
+            }
+        } else
+            for (int i = 0; i < numberOfOperands; i++)
+                matches[i] = getPortWithParams(i).get(indexes[i]);
+
+        return matches;
+    }
+
+    protected static class IncompatibleIndexes {
         int port1;
         int index1;
         int port2;
@@ -350,88 +408,19 @@ public abstract class ApproximateSorter {
         }
     }
 
-    protected class TableOfIterations {
-        private final HashSet<ArrayList<Integer>> returnedCombinations;
+    protected static class TableOfIterations {
         private final HashSet<IncompatibleIndexes> incompatibleIndexes;
         private final int numberOfPorts;
-        private final boolean portEndReached[];
-        private final int portMatchesQuantities[];
         private int totalCombinationsCount = -1;
 
         TableOfIterations(int numberOfPorts) {
-            returnedCombinations = new HashSet<>();
             incompatibleIndexes = new HashSet<>();
             this.numberOfPorts = numberOfPorts;
-            this.portEndReached = new boolean[numberOfPorts];   // boolean initialize value is false
-            this.portMatchesQuantities = new int[numberOfPorts];
-        }
-
-        boolean isPortEndReached(int portNumber) {
-            return portEndReached[portNumber];
-        }
-
-        int getNumberOfEndedPorts() {
-            int endedPorts = 0;
-            for (int i = 0; i < numberOfPorts; i++)
-                if (isPortEndReached(i)) endedPorts++;
-            return endedPorts;
-        }
-
-        int getPortMatchesQuantity(int portNumber) {
-            return portMatchesQuantities[portNumber];
-        }
-
-        void setPortEndReached(int portNumber, int matchesQuantity) {
-            portEndReached[portNumber] = true;
-            portMatchesQuantities[portNumber] = matchesQuantity;
-
-            if (getNumberOfEndedPorts() == numberOfPorts) {
-                totalCombinationsCount = 1;
-                for (int currentPortMatchesQuantity : portMatchesQuantities)
-                    totalCombinationsCount *= currentPortMatchesQuantity;
-            }
-        }
-
-        /**
-         * If all ports ended and total combinations count is calculated, returns total combinations count,
-         * otherwise -1.
-         *
-         * @return total combinations count
-         */
-        int getTotalCombinationsCount() {
-            return totalCombinationsCount;
-        }
-
-        /**
-         * This is not a number of actually returned combinations, but number of combinations that are marked
-         * as returned. It may be higher because found invalid combinations are marked as returned.
-         *
-         * @return number of combinations that marked as returned
-         */
-        int getNumberOfReturnedCombinations() {
-            return returnedCombinations.size();
-        }
-
-        boolean isCombinationReturned(ArrayList<Integer> indexes) {
-            return returnedCombinations.contains(indexes);
-        }
-
-        /**
-         * Register combination as already returned.
-         *
-         * @param indexes indexes of matches to register as returned
-         */
-        void addReturnedCombination(ArrayList<Integer> indexes) {
-            if (isCombinationReturned(indexes))
-                throw new IllegalStateException("Trying to add already returned combination " + indexes
-                        + ", all returned combinations: " + returnedCombinations);
-            returnedCombinations.add(new ArrayList<>(indexes));
         }
 
         /**
          * Check if this combination of indexes contains incompatible indexes. Incompatible means that we
-         * already know that matches with that indexes have misplaced ranges. Also this function automatically
-         * marks found incompatible combinations as already returned.
+         * already know that matches with that indexes have misplaced ranges.
          *
          * @param allNextIncompatible true if operand matches are sorted by coordinate and matchValidationType == ORDER;
          *                            otherwise false. In fair sorting it must be always false. This flag marks that
@@ -439,24 +428,22 @@ public abstract class ApproximateSorter {
          * @param indexes indexes of matches
          * @return true if there are no incompatible indexes found; false if they are found
          */
-        boolean isCompatible(boolean allNextIncompatible, ArrayList<Integer> indexes) {
+        boolean isCompatible(boolean allNextIncompatible, int[] indexes) {
             countCall("isCompatible");
             List<Boolean> result = new ArrayList<>();
             result.add(true);
             countExecutionTime("isCompatible", () -> {
                 for (IncompatibleIndexes currentIndexes : incompatibleIndexes)
                     if (allNextIncompatible)
-                        if ((indexes.get(currentIndexes.port1) >= currentIndexes.index1)
-                                && (indexes.get(currentIndexes.port2) <= currentIndexes.index2)) {
+                        if ((indexes[currentIndexes.port1] >= currentIndexes.index1)
+                                && (indexes[currentIndexes.port2] <= currentIndexes.index2)) {
                             // if we find incompatible combination, mark it as already returned
-                            addReturnedCombination(indexes);
                             result.set(0, false);
                             return null;
                         }
                         else
-                        if ((indexes.get(currentIndexes.port1) == currentIndexes.index1)
-                                && (indexes.get(currentIndexes.port2) == currentIndexes.index2)) {
-                            addReturnedCombination(indexes);
+                        if ((indexes[currentIndexes.port1] == currentIndexes.index1)
+                                && (indexes[currentIndexes.port2] == currentIndexes.index2)) {
                             result.set(0, false);
                             return null;
                         }

@@ -12,19 +12,21 @@ public class BasePatternAligner implements PatternAligner {
     private final long penaltyThreshold;
     private final long singleOverlapPenalty;
     private final int bitapMaxErrors;
+    private final int maxOverlap;
     private final int leftBorder;
 
     public BasePatternAligner(LinearGapAlignmentScoring<NucleotideSequence> scoring, long penaltyThreshold,
-                              long singleOverlapPenalty, int bitapMaxErrors) {
-        this(scoring, penaltyThreshold, singleOverlapPenalty, bitapMaxErrors, -1);
+                              long singleOverlapPenalty, int bitapMaxErrors, int maxOverlap) {
+        this(scoring, penaltyThreshold, singleOverlapPenalty, bitapMaxErrors, maxOverlap, -1);
     }
 
-    public BasePatternAligner(LinearGapAlignmentScoring<NucleotideSequence> scoring, long penaltyThreshold,
-                              long singleOverlapPenalty, int bitapMaxErrors, int leftBorder) {
+    private BasePatternAligner(LinearGapAlignmentScoring<NucleotideSequence> scoring, long penaltyThreshold,
+                              long singleOverlapPenalty, int bitapMaxErrors, int maxOverlap, int leftBorder) {
         this.scoring = scoring;
         this.penaltyThreshold = penaltyThreshold;
         this.singleOverlapPenalty = singleOverlapPenalty;
         this.bitapMaxErrors = bitapMaxErrors;
+        this.maxOverlap = maxOverlap;
         this.leftBorder = leftBorder;
     }
 
@@ -68,6 +70,11 @@ public class BasePatternAligner implements PatternAligner {
     }
 
     @Override
+    public int maxOverlap() {
+        return maxOverlap;
+    }
+
+    @Override
     public boolean compatible(PatternAligner otherAligner) {
         return otherAligner.getClass() == BasePatternAligner.class;
     }
@@ -79,16 +86,19 @@ public class BasePatternAligner implements PatternAligner {
 
     @Override
     public PatternAligner overridePenaltyThreshold(long newThresholdValue) {
-        return new BasePatternAligner(scoring, newThresholdValue, singleOverlapPenalty, bitapMaxErrors, leftBorder);
+        return new BasePatternAligner(scoring, newThresholdValue, singleOverlapPenalty, bitapMaxErrors, maxOverlap,
+                leftBorder);
     }
 
     @Override
     public PatternAligner overrideMaxOverlap(int newMaxOverlap) {
-        return new BasePatternAligner(scoring, penaltyThreshold, singleOverlapPenalty, newMaxOverlap, leftBorder);
+        return new BasePatternAligner(scoring, penaltyThreshold, singleOverlapPenalty, bitapMaxErrors, newMaxOverlap,
+                leftBorder);
     }
 
     @Override
     public PatternAligner setLeftBorder(int newLeftBorder) {
-        return new BasePatternAligner(scoring, penaltyThreshold, singleOverlapPenalty, bitapMaxErrors, newLeftBorder);
+        return new BasePatternAligner(scoring, penaltyThreshold, singleOverlapPenalty, bitapMaxErrors, maxOverlap,
+                newLeftBorder);
     }
 }

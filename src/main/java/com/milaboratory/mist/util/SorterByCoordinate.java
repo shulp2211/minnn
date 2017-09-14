@@ -6,27 +6,24 @@ import com.milaboratory.mist.pattern.*;
 import java.util.*;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
+import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
 
 public final class SorterByCoordinate extends ApproximateSorter {
     public SorterByCoordinate(ApproximateSorterConfiguration conf) {
-        super(conf);
+        super(conf, false);
     }
 
     @Override
     public OutputPort<Match> getOutputPort() {
-        int numberOfPorts = inputPorts.size();
-        if (numberOfPorts == 0)
-            throw new IllegalArgumentException("List of input ports is empty!");
-        return new MatchesOutputPort(inputPorts, numberOfPorts);
+        if (conf.operandPatterns.length == 0)
+            throw new IllegalArgumentException("Operand patterns array is empty!");
+        return new MatchesOutputPort(conf.operandPatterns);
     }
 
     private class MatchesOutputPort implements OutputPort<Match> {
-        private final ArrayList<ArrayList<Match>> takenMatches;
-        private final List<ApproximateSorterOperandPort> inputPorts;
-        private final int numberOfPorts;
-        private ArrayList<Integer> currentIndexes;
-        private final Match[] currentMatches;
-        private final TableOfIterations tableOfIterations;
+        private final Pattern[] operandPatterns;
+        private final int numberOfOperands;
+        private int currentIndexes[];
         private boolean alwaysReturnNull = false;
 
         // data structures used for fair sorting
@@ -35,25 +32,28 @@ public final class SorterByCoordinate extends ApproximateSorter {
         private int nextFairSortedMatch = 0;
         private boolean sortingPerformed = false;
 
-        MatchesOutputPort(List<ApproximateSorterOperandPort> inputPorts, int numberOfPorts) {
-            this.takenMatches = new ArrayList<>();
-            for (int i = 0; i < numberOfPorts; i++)
-                this.takenMatches.add(new ArrayList<>());
-            this.inputPorts = inputPorts;
-            this.numberOfPorts = numberOfPorts;
-            this.currentIndexes = new ArrayList<>(Collections.nCopies(numberOfPorts, 0));
-            this.currentMatches = new Match[numberOfPorts];
-            this.tableOfIterations = new TableOfIterations(numberOfPorts);
+        MatchesOutputPort(Pattern[] operandPatterns) {
+            this.operandPatterns = operandPatterns;
+            this.numberOfOperands = operandPatterns.length;
+            this.currentIndexes = new int[numberOfOperands];
         }
 
         @Override
         public Match take() {
             if (alwaysReturnNull) return null;
-            if (fairSorting) return takeFairSorted();
-            if (unfairSorterTakenValues++ > unfairSorterLimit) {
+            if (conf.fairSorting) return takeFairSorted();
+            if (unfairSorterTakenValues++ > conf.unfairSorterLimit) {
                 alwaysReturnNull = true;
                 return null;
             }
+
+            long penaltyThreshold = conf.patternAligner.penaltyThreshold();
+            boolean combinationFound = false;
+            while (!combinationFound) {
+                Match[] currentMatches = getMatchesByIndexes(currentIndexes);
+                for
+            }
+
 
             Match combinedMatch = null;
             boolean combinationFound = false;
@@ -64,16 +64,17 @@ public final class SorterByCoordinate extends ApproximateSorter {
                     return null;
                 }
 
-                for (int i = 0; i < numberOfPorts; i++) {
-                    ArrayList<Match> currentPortMatches = takenMatches.get(i);
-                    ApproximateSorterOperandPort currentPort = inputPorts.get(i);
+                for (int i = 0; i < numberOfOperands; i++) {
+                    Pattern currentPattern = operandPatterns[i];
+
+
                     // if we didn't take the needed match before, take it now
-                    if (currentIndexes.get(i) == currentPortMatches.size()) {
+                    if (currentIndexes.get(i) == currentPatternMatches.size()) {
                         Match takenMatch = currentPort.outputPort.take();
                         if (takenMatch == null) {
-                            if (currentPortMatches.size() == 0) {
+                            if (currentPatternMatches.size() == 0) {
                                 if (areNullMatchesAllowed()) {
-                                    currentPortMatches.add(null);
+                                    currentPatternMatches.add(null);
                                     tableOfIterations.setPortEndReached(i, 1);
                                     currentIndexes.set(i, 0);
                                 } else {
@@ -88,18 +89,19 @@ public final class SorterByCoordinate extends ApproximateSorter {
                                 continue GET_NEXT_COMBINATION;
                             }
                         } else {
-                            currentPortMatches.add(takenMatch);
-                            if (currentPortMatches.size() == currentPort.unfairSorterPortLimit)
-                                tableOfIterations.setPortEndReached(i, currentPort.unfairSorterPortLimit);
+                            currentPatternMatches.add(takenMatch);
+                            int currentPortLimit = unfairSorterPortLimits.get(currentPattern.getClass());
+                            if (currentPatternMatches.size() == currentPortLimit)
+                                tableOfIterations.setPortEndReached(i, currentPortLimit);
                         }
                     }
-                    currentMatches[i] = currentPortMatches.get(currentIndexes.get(i));
+                    currentMatches[i] = currentPatternMatches.get(currentIndexes.get(i));
                 }
 
                 IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, currentIndexes);
                 if (incompatibleIndexes == null) {
-                    combinedMatch = combineMatches(true, currentMatches);
-                    if ((combinedMatch != null) && (combinedMatch.getScore() >= patternAligner.penaltyThreshold()))
+                    combinedMatch = combineMatches(currentMatches);
+                    if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
                         combinationFound = true;
                     else {
                         /* current combination doesn't fit the score threshold, mark it as returned
@@ -122,9 +124,9 @@ public final class SorterByCoordinate extends ApproximateSorter {
 
         private Match takeFairSorted() {
             if (!sortingPerformed) {
-                allMatchesFiltered = fillArrayForFairSorting(inputPorts, numberOfPorts, false);
+                allMatchesFiltered = fillArrayForFairSorting();
                 filteredMatchesCount = allMatchesFiltered.length;
-                if (!multipleReads)
+                if (!conf.multipleReads)
                     Arrays.sort(allMatchesFiltered, Comparator.comparingInt(match -> match.getRange().getLower()));
                 else
                     Arrays.sort(allMatchesFiltered, Comparator.comparingInt(this::getMatchCoordinateWeight));
@@ -162,17 +164,17 @@ public final class SorterByCoordinate extends ApproximateSorter {
                 return;
             /* Iterate through port values, starting from the last port, ending with the first,
             and skipping all combinations with incompatible indexes */
-            ArrayList<Integer> innerArrayIndexes = new ArrayList<>(Collections.nCopies(numberOfPorts, 0));
             while (true) {
                 if (!tableOfIterations.isCombinationReturned(innerArrayIndexes)
                         && (combinationContainsUnfinishedPort(innerArrayIndexes)
-                        || tableOfIterations.isCompatible(matchValidationType == ORDER, innerArrayIndexes))) {
-                    currentIndexes = innerArrayIndexes;
+                        || tableOfIterations.isCompatible(conf.matchValidationType == ORDER,
+                            innerArrayIndexes))) {
+                    currentIndexes = new ArrayList<>(innerArrayIndexes);
                     return;
                 }
 
                 // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
-                for (int i = numberOfPorts - 1; i >= 0; i--) {
+                for (int i = numberOfOperands - 1; i >= 0; i--) {
                     int currentIndex = innerArrayIndexes.get(i);
                     if (!tableOfIterations.isPortEndReached(i)
                             || (currentIndex + 1 < tableOfIterations.getPortMatchesQuantity(i))) {
@@ -190,18 +192,18 @@ public final class SorterByCoordinate extends ApproximateSorter {
             }
         }
 
-        /**
-         * Returns true if combination contains at least 1 port from which the needed value has not been taken.
-         *
-         * @param indexes indexes for ports
-         * @return true if there is a port for which we need to take the value
-         */
-        private boolean combinationContainsUnfinishedPort(ArrayList<Integer> indexes) {
-            for (int i = 0; i < numberOfPorts; i++) {
-                if (!tableOfIterations.isPortEndReached(i) && (indexes.get(i) == takenMatches.get(i).size()))
-                    return true;
-            }
-            return false;
-        }
+//        /**
+//         * Returns true if combination contains at least 1 port from which the needed value has not been taken.
+//         *
+//         * @param indexes indexes for ports
+//         * @return true if there is a port for which we need to take the value
+//         */
+//        private boolean combinationContainsUnfinishedPort(ArrayList<Integer> indexes) {
+//            for (int i = 0; i < numberOfOperands; i++) {
+//                if (!tableOfIterations.isPortEndReached(i) && (indexes.get(i) == takenMatches.get(i).size()))
+//                    return true;
+//            }
+//            return false;
+//        }
     }
 }

@@ -5,7 +5,7 @@ import com.milaboratory.mist.pattern.*;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
 
-public class ApproximateSorterConfiguration {
+public final class ApproximateSorterConfiguration {
     final Pattern[] operandPatterns;
     final MultiNSequenceWithQuality target;
     private final int from;
