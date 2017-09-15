@@ -16,6 +16,7 @@ public final class ApproximateSorterConfiguration {
     final boolean fairSorting;
     final MatchValidationType matchValidationType;
     final int unfairSorterLimit;
+    final boolean specificOutputPorts;
 
     /**
      * Configuration for MultipleReadsOperator patterns.
@@ -42,6 +43,7 @@ public final class ApproximateSorterConfiguration {
         this.fairSorting = fairSorting;
         this.matchValidationType = matchValidationType;
         this.unfairSorterLimit = unfairSorterLimit;
+        this.specificOutputPorts = false;
         if (((matchValidationType == INTERSECTION) || (matchValidationType == ORDER)
                 || (matchValidationType == FOLLOWING) || (matchValidationType == FIRST)))
             throw new IllegalArgumentException("Invalid combination of multipleReads and matchValidationType flags: " +
@@ -83,6 +85,8 @@ public final class ApproximateSorterConfiguration {
         this.fairSorting = fairSorting;
         this.matchValidationType = matchValidationType;
         this.unfairSorterLimit = unfairSorterLimit;
+        this.specificOutputPorts = !fairSorting
+                && ((matchValidationType == ORDER) || (matchValidationType == FOLLOWING));
         if ((from < 0) || (to < 0))
             throw new IllegalArgumentException("Invalid from and to arguments: from = " + from + ", to = " + to);
         if ((matchValidationType == LOGICAL_AND) || (matchValidationType == LOGICAL_OR))

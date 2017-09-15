@@ -10,13 +10,14 @@ import java.util.*;
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
 import static com.milaboratory.mist.util.DebugUtils.countCall;
 import static com.milaboratory.mist.util.DebugUtils.countExecutionTime;
-import static com.milaboratory.mist.util.DebugUtils.maxSize;
 import static com.milaboratory.mist.util.RangeTools.*;
+import static com.milaboratory.mist.util.UnfairSorterConfiguration.*;
 
 public abstract class ApproximateSorter {
     protected final ApproximateSorterConfiguration conf;
     private final ArrayList<SpecificOutputPort> unfairOutputPorts = new ArrayList<>();
     private final boolean sortingByScore;
+    protected final HashSet<IncompatibleIndexes> allIncompatibleIndexes = new HashSet<>();
 
     protected int unfairSorterTakenValues = 0;
 
@@ -172,7 +173,6 @@ public abstract class ApproximateSorter {
         ArrayList<ArrayList<Match>> allMatches = new ArrayList<>();
         ArrayList<Match> allMatchesFiltered = new ArrayList<>();
         int numberOfOperands = conf.operandPatterns.length;
-        TableOfIterations tableOfIterations = new TableOfIterations(numberOfOperands);
         Match currentMatch;
         int totalNumberOfCombinations = 1;
 
@@ -192,16 +192,16 @@ public abstract class ApproximateSorter {
             totalNumberOfCombinations *= allMatches.get(i).size();
         }
 
-        int[] innerArrayIndexes = new int[numberOfOperands];
+        int[] matchIndexes = new int[numberOfOperands];
         Match[] currentMatches = new Match[numberOfOperands];
         long penaltyThreshold = conf.patternAligner.penaltyThreshold();
         for (int i = 0; i < totalNumberOfCombinations; i++) {
-            if (tableOfIterations.isCompatible(false, innerArrayIndexes)) {
+            if (areCompatible(matchIndexes)) {
                 for (int j = 0; j < numberOfOperands; j++)
-                    currentMatches[j] = allMatches.get(j).get(innerArrayIndexes[j]);
-                IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, innerArrayIndexes);
+                    currentMatches[j] = allMatches.get(j).get(matchIndexes[j]);
+                IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, matchIndexes);
                 if (incompatibleIndexes != null)
-                    tableOfIterations.addIncompatibleIndexes(incompatibleIndexes);
+                    allIncompatibleIndexes.add(incompatibleIndexes);
                 else {
                     Match combinedMatch = combineMatches(currentMatches);
                     if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
@@ -209,15 +209,15 @@ public abstract class ApproximateSorter {
                 }
             }
 
-            // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
+            // Update matchIndexes to switch to the next combination on next iteration of outer loop
             for (int j = 0; j < numberOfOperands; j++) {
-                int currentIndex = innerArrayIndexes[j];
+                int currentIndex = matchIndexes[j];
                 if (currentIndex + 1 < allMatches.get(j).size()) {
-                    innerArrayIndexes[j] = currentIndex + 1;
+                    matchIndexes[j] = currentIndex + 1;
                     break;
                 }
                 // we need to update next index and reset current index to zero
-                innerArrayIndexes[j] = 0;
+                matchIndexes[j] = 0;
             }
         }
 
@@ -237,59 +237,65 @@ public abstract class ApproximateSorter {
             throw new IllegalArgumentException("matches length is " + matches.length + ", indexes length is "
                 + indexes.length + "; they must be equal!");
 
-        List<IncompatibleIndexes> tempIndexes = new ArrayList<>();
-        tempIndexes.add(null);
-        countCall("find");
-        countExecutionTime("find", () -> {
-            IncompatibleIndexes result = null;
-            switch (conf.matchValidationType) {
-                case LOGICAL_OR:
-                case LOGICAL_AND:
-                case FIRST:
-                    return null;
-                case INTERSECTION:
-                    Range ranges[] = new Range[matches.length];
+        IncompatibleIndexes result = null;
+        switch (conf.matchValidationType) {
+            case LOGICAL_OR:
+            case LOGICAL_AND:
+            case FIRST:
+                break;
+            case INTERSECTION:
+                Range ranges[] = new Range[matches.length];
 
-                    OUTER:
-                    for (int i = 0; i < matches.length; i++) {
-                        if (matches[i] == null) continue;
-                        Range currentRange = matches[i].getRange();
-                        ranges[i] = currentRange;
-                        for (int j = 0; j < i; j++)     // Compare with all previously added matches
-                            if (checkFullIntersection(ranges[i], ranges[j])
-                                    || checkOverlap(matches[0].getMatchedRange().getTarget(), ranges[i], ranges[j])) {
-                                result = new IncompatibleIndexes(j, indexes[j], i, indexes[i]);
-                                break OUTER;
-                            }
-                    }
-
-                    tempIndexes.set(0, result);
-                    return null;
-                case ORDER:
-                case FOLLOWING:
-                    Range currentRange;
-                    Range previousRange;
-
-                    for (int i = 1; i < matches.length; i++) {
-                        if (matches[i] == null) continue;
-                        NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
-                        currentRange = matches[i].getRange();
-                        previousRange = matches[i - 1].getRange();
-                        if ((previousRange.getLower() >= currentRange.getLower())
-                                || checkFullIntersection(previousRange, currentRange)
-                                || checkOverlap(target, previousRange, currentRange)
-                                || checkInsertionPenalty(target, previousRange, currentRange)) {
-                            result = new IncompatibleIndexes(i - 1, indexes[i - 1], i, indexes[i]);
-                            break;
+                OUTER:
+                for (int i = 0; i < matches.length; i++) {
+                    if (matches[i] == null) continue;
+                    Range currentRange = matches[i].getRange();
+                    ranges[i] = currentRange;
+                    for (int j = 0; j < i; j++)     // Compare with all previously added matches
+                        if (checkFullIntersection(ranges[i], ranges[j])
+                                || checkOverlap(matches[0].getMatchedRange().getTarget(), ranges[i], ranges[j])) {
+                            result = new IncompatibleIndexes(j, indexes[j], i, indexes[i]);
+                            break OUTER;
                         }
-                    }
-                    tempIndexes.set(0, result);
-                    return null;
-            }
-            return null;
-        });
+                }
+                break;
+            case ORDER:
+            case FOLLOWING:
+                Range currentRange;
+                Range previousRange;
 
-        return tempIndexes.get(0);
+                for (int i = 1; i < matches.length; i++) {
+                    if (matches[i] == null) continue;
+                    NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
+                    currentRange = matches[i].getRange();
+                    previousRange = matches[i - 1].getRange();
+                    if ((previousRange.getLower() >= currentRange.getLower())
+                            || checkFullIntersection(previousRange, currentRange)
+                            || checkOverlap(target, previousRange, currentRange)
+                            || checkInsertionPenalty(target, previousRange, currentRange)) {
+                        result = new IncompatibleIndexes(i - 1, indexes[i - 1], i, indexes[i]);
+                        break;
+                    }
+                }
+        }
+
+        return result;
+    }
+
+    /**
+     * Check if this combination of indexes contains incompatible indexes. Incompatible means that we
+     * already know that matches with that indexes have misplaced ranges.
+     *
+     * @param indexes indexes of matches
+     * @return true if there are no incompatible indexes found; false if they are found
+     */
+    protected boolean areCompatible(int[] indexes) {
+        if (!conf.specificOutputPorts)
+            for (IncompatibleIndexes currentIndexes : allIncompatibleIndexes)
+                if ((indexes[currentIndexes.port1] == currentIndexes.index1)
+                        && (indexes[currentIndexes.port2] == currentIndexes.index2))
+                    return false;
+        return true;
     }
 
     /**
@@ -330,17 +336,19 @@ public abstract class ApproximateSorter {
             Pattern currentPattern = conf.operandPatterns[operandIndex];
             int matchFrom = (from == -1) ? conf.from() : Math.max(conf.from(), from);
             int matchTo = conf.to();
+            int portLimit = unfairSorterPortLimits.get(currentPattern.getClass());
             if (conf.matchValidationType == FOLLOWING) {
                 int patternMaxLength = ((SinglePattern)currentPattern).estimateMaxLength();
                 if (patternMaxLength != -1)
                     matchTo = Math.min(conf.to(), matchFrom + patternMaxLength);
+                portLimit = specificPortLimit;
             }
             currentPort = new SpecificOutputPort(conf.multipleReads
                     ? currentPattern.match(conf.target)
                         .getMatches(sortingByScore, false)
                     : ((SinglePattern)currentPattern).match(conf.target.get(0), matchFrom, matchTo)
                         .getMatches(sortingByScore, false),
-                    operandIndex, from);
+                    operandIndex, from, portLimit);
             unfairOutputPorts.add(currentPort);
         }
         return currentPort;
@@ -352,7 +360,7 @@ public abstract class ApproximateSorter {
             throw new IllegalArgumentException("indexes length is " + indexes.length + ", number of operands: "
                     + numberOfOperands);
         Match[] matches = new Match[numberOfOperands];
-        if ((conf.matchValidationType == ORDER) || (conf.matchValidationType == FOLLOWING)) {
+        if (conf.specificOutputPorts) {
             int maxOverlap = conf.patternAligner.maxOverlap();
             int previousMatchEnd = -1;
             for (int i = 0; i < numberOfOperands; i++) {
@@ -405,56 +413,6 @@ public abstract class ApproximateSorter {
             hashCode = hashCode * 37 + this.index2;
 
             return hashCode;
-        }
-    }
-
-    protected static class TableOfIterations {
-        private final HashSet<IncompatibleIndexes> incompatibleIndexes;
-        private final int numberOfPorts;
-        private int totalCombinationsCount = -1;
-
-        TableOfIterations(int numberOfPorts) {
-            incompatibleIndexes = new HashSet<>();
-            this.numberOfPorts = numberOfPorts;
-        }
-
-        /**
-         * Check if this combination of indexes contains incompatible indexes. Incompatible means that we
-         * already know that matches with that indexes have misplaced ranges.
-         *
-         * @param allNextIncompatible true if operand matches are sorted by coordinate and matchValidationType == ORDER;
-         *                            otherwise false. In fair sorting it must be always false. This flag marks that
-         *                            next indexes can be considered incompatible to speed up search.
-         * @param indexes indexes of matches
-         * @return true if there are no incompatible indexes found; false if they are found
-         */
-        boolean isCompatible(boolean allNextIncompatible, int[] indexes) {
-            countCall("isCompatible");
-            List<Boolean> result = new ArrayList<>();
-            result.add(true);
-            countExecutionTime("isCompatible", () -> {
-                for (IncompatibleIndexes currentIndexes : incompatibleIndexes)
-                    if (allNextIncompatible)
-                        if ((indexes[currentIndexes.port1] >= currentIndexes.index1)
-                                && (indexes[currentIndexes.port2] <= currentIndexes.index2)) {
-                            // if we find incompatible combination, mark it as already returned
-                            result.set(0, false);
-                            return null;
-                        }
-                        else
-                        if ((indexes[currentIndexes.port1] == currentIndexes.index1)
-                                && (indexes[currentIndexes.port2] == currentIndexes.index2)) {
-                            result.set(0, false);
-                            return null;
-                        }
-                return null;
-            });
-            return result.get(0);
-        }
-
-        void addIncompatibleIndexes(IncompatibleIndexes foundIncompatibleIndexes) {
-            incompatibleIndexes.add(foundIncompatibleIndexes);
-            if (incompatibleIndexes.size() > maxSize) maxSize = incompatibleIndexes.size();
         }
     }
 }

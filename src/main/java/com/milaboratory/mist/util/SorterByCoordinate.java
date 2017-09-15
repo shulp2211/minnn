@@ -50,8 +50,19 @@ public final class SorterByCoordinate extends ApproximateSorter {
             long penaltyThreshold = conf.patternAligner.penaltyThreshold();
             boolean combinationFound = false;
             while (!combinationFound) {
-                Match[] currentMatches = getMatchesByIndexes(currentIndexes);
-                for
+                if (areCompatible(currentIndexes)) {
+                    Match[] currentMatches = getMatchesByIndexes(currentIndexes);
+                    IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, currentIndexes);
+                    if (incompatibleIndexes != null)
+                        allIncompatibleIndexes.add(incompatibleIndexes);
+                    else {
+                        Match combinedMatch = combineMatches(currentMatches);
+                        if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
+                            ....
+                    }
+
+
+                }
             }
 
 

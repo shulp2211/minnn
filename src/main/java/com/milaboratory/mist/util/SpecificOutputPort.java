@@ -5,19 +5,19 @@ import com.milaboratory.mist.pattern.Match;
 
 import java.util.ArrayList;
 
-import static com.milaboratory.mist.util.UnfairSorterConfiguration.specificPortLimit;
-
 final class SpecificOutputPort implements OutputPort<Match> {
     private final OutputPort<Match> port;
     private final ArrayList<Match> cachedMatches = new ArrayList<>();
     private final int operandIndex;
     private final int from;
+    private final int portLimit;
     private boolean finished = false;
 
-    SpecificOutputPort(OutputPort<Match> port, int operandIndex, int from) {
+    SpecificOutputPort(OutputPort<Match> port, int operandIndex, int from, int portLimit) {
         this.port = port;
         this.operandIndex = operandIndex;
         this.from = from;
+        this.portLimit = portLimit;
     }
 
     @Override
@@ -29,7 +29,7 @@ final class SpecificOutputPort implements OutputPort<Match> {
             finished = true;
         else {
             cachedMatches.add(match);
-            if ((from != -1) && (cachedMatches.size() == specificPortLimit))
+            if (cachedMatches.size() == portLimit)
                 finished = true;
         }
         return match;
