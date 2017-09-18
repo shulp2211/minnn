@@ -37,9 +37,8 @@ public final class NotOperator extends MultipleReadsOperator {
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
-            return new NotOperatorOutputPort(patternAligner, operandPattern.match(target)
-                    .getMatches(byScore, fairSorting));
+        public OutputPort<Match> getMatches(boolean fairSorting) {
+            return new NotOperatorOutputPort(patternAligner, operandPattern.match(target).getMatches(fairSorting));
         }
 
         private static class NotOperatorOutputPort implements OutputPort<Match> {

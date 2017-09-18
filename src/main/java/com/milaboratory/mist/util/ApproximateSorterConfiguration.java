@@ -48,6 +48,8 @@ public final class ApproximateSorterConfiguration {
                 || (matchValidationType == FOLLOWING) || (matchValidationType == FIRST)))
             throw new IllegalArgumentException("Invalid combination of multipleReads and matchValidationType flags: " +
                     "multipleReads = true, matchValidationType = " + matchValidationType);
+        if (operandPatterns.length == 0)
+            throw new IllegalArgumentException("Operand patterns array is empty!");
         for (Pattern operandPattern : operandPatterns) {
             if (!(operandPattern instanceof MultipleReadsOperator))
                 throw new IllegalArgumentException("Invalid combination of multipleReads and operand pattern class: "
@@ -92,6 +94,8 @@ public final class ApproximateSorterConfiguration {
         if ((matchValidationType == LOGICAL_AND) || (matchValidationType == LOGICAL_OR))
             throw new IllegalArgumentException("Invalid combination of multipleReads and matchValidationType flags: " +
                     "multipleReads = false, matchValidationType = " + matchValidationType);
+        if (operandPatterns.length == 0)
+            throw new IllegalArgumentException("Operand patterns array is empty!");
         for (Pattern operandPattern : operandPatterns) {
             if (!(operandPattern instanceof SinglePattern))
                 throw new IllegalArgumentException("Invalid combination of multipleReads and operand pattern class: "

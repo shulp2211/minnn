@@ -86,16 +86,16 @@ public final class FilterPattern extends SinglePattern {
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
+        public OutputPort<Match> getMatches(boolean fairSorting) {
             if (targetMulti != null) {
                 if (!(pattern instanceof MultipleReadsOperator)) throw new IllegalArgumentException(
                         "Trying to use filter with single-target pattern and multi-target match arguments.");
-                return new FilterOutputPort(filter, pattern.match(targetMulti).getMatches(byScore, fairSorting));
+                return new FilterOutputPort(filter, pattern.match(targetMulti).getMatches(fairSorting));
             } else if (targetSingle != null) {
                 if (!(pattern instanceof SinglePattern)) throw new IllegalArgumentException(
                         "Trying to use filter with multi-target pattern and single-target match arguments.");
                 return new FilterOutputPort(filter, ((SinglePattern)pattern).match(targetSingle, from, to)
-                        .getMatches(byScore, fairSorting));
+                        .getMatches(fairSorting));
             } else throw new IllegalStateException("Both targetMulti and targetSingle are null.");
         }
 

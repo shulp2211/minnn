@@ -37,18 +37,11 @@ public final class AndOperator extends MultipleReadsOperator {
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
+        public OutputPort<Match> getMatches(boolean fairSorting) {
             ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, patternAligner,
                     true, fairSorting, LOGICAL_AND, unfairSorterPortLimits.get(AndOperator.class),
                     operandPatterns);
-            ApproximateSorter sorter;
-
-            if (byScore)
-                sorter = new SorterByScore(conf);
-            else
-                sorter = new SorterByCoordinate(conf);
-
-            return sorter.getOutputPort();
+            return new ApproximateSorter(conf).getOutputPort();
         }
     }
 }

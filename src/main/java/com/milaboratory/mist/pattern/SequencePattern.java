@@ -55,18 +55,11 @@ public final class SequencePattern extends MultiplePatternsOperator {
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
+        public OutputPort<Match> getMatches(boolean fairSorting) {
             ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, patternAligner,
                     true, fairSorting, FOLLOWING, unfairSorterPortLimits.get(SequencePattern.class),
                     operandPatterns);
-            ApproximateSorter sorter;
-
-            if (byScore)
-                sorter = new SorterByScore(conf);
-            else
-                sorter = new SorterByCoordinate(conf);
-
-            return sorter.getOutputPort();
+            return new ApproximateSorter(conf).getOutputPort();
         }
     }
 }

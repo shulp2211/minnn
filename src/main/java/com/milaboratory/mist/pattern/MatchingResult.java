@@ -6,11 +6,10 @@ public abstract class MatchingResult {
     /**
      * Get iterator for all match results
      *
-     * @param byScore Order by score if true, by coordinate if false
      * @param fairSorting true if we need fair sorting, otherwise false
      * @return OutputPort iterator for all match results
      */
-    public abstract OutputPort<Match> getMatches(boolean byScore, boolean fairSorting);
+    public abstract OutputPort<Match> getMatches(boolean fairSorting);
 
     /**
      * Get iterator for all match results
@@ -18,7 +17,7 @@ public abstract class MatchingResult {
      * @return OutputPort iterator for all match results
      */
     public OutputPort<Match> getMatches() {
-        return getMatches(true, false);
+        return getMatches(false);
     }
 
     /**
@@ -28,7 +27,7 @@ public abstract class MatchingResult {
      * @return best matching result
      */
     public Match getBestMatch(boolean fairSorting) {
-        return getMatches(true, fairSorting).take();
+        return getMatches(fairSorting).take();
     }
 
     /**
@@ -46,6 +45,6 @@ public abstract class MatchingResult {
      * @return true if pattern matched
      */
     public boolean isFound() {
-        return getMatches(false, false).take() != null;
+        return getMatches(false).take() != null;
     }
 }

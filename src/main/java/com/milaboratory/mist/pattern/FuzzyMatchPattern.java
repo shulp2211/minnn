@@ -154,9 +154,9 @@ public final class FuzzyMatchPattern extends SinglePattern {
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
+        public OutputPort<Match> getMatches(boolean fairSorting) {
             return new FuzzyMatchOutputPort(patternAligner, sequences, motifs, fixedLeftBorder, fixedRightBorder,
-                    groupEdgePositions, groupMovements, target, from, to, targetId, byScore, fairSorting);
+                    groupEdgePositions, groupMovements, target, from, to, targetId, fairSorting);
         }
 
         private static class FuzzyMatchOutputPort implements OutputPort<Match> {
@@ -172,7 +172,6 @@ public final class FuzzyMatchPattern extends SinglePattern {
             private final int from;
             private final int to;
             private final byte targetId;
-            private final boolean byScore;
             private final boolean fairSorting;
             private final List<BitapPattern> bitapPatterns;
             private final List<BitapMatcherFilter> bitapMatcherFilters;
@@ -196,8 +195,7 @@ public final class FuzzyMatchPattern extends SinglePattern {
             FuzzyMatchOutputPort(PatternAligner patternAligner, ArrayList<NucleotideSequence> sequences,
                                  ArrayList<Motif<NucleotideSequence>> motifs, int fixedLeftBorder, int fixedRightBorder,
                                  List<GroupEdgePosition> groupEdgePositions, ArrayList<Integer> groupMovements,
-                                 NSequenceWithQuality target, int from, int to, byte targetId,
-                                 boolean byScore, boolean fairSorting) {
+                                 NSequenceWithQuality target, int from, int to, byte targetId, boolean fairSorting) {
                 this.patternAligner = patternAligner;
                 this.sequences = sequences;
                 this.fixedLeftBorder = fixedLeftBorder;
@@ -210,10 +208,9 @@ public final class FuzzyMatchPattern extends SinglePattern {
                 this.from = from;
                 this.to = to;
                 this.targetId = targetId;
-                this.byScore = byScore;
                 this.fairSorting = fairSorting;
                 this.bitapPatterns = motifs.stream().map(Motif::getBitapPattern).collect(Collectors.toList());
-                if (!fixedBorder && !fairSorting && byScore) {
+                if (!fixedBorder && !fairSorting) {
                     this.bitapMatcherFilters = bitapPatterns.stream().map(bp -> new BitapMatcherFilter(
                             bp.substitutionAndIndelMatcherLast(0, target.getSequence(), from, to)))
                             .collect(Collectors.toList());
@@ -234,13 +231,12 @@ public final class FuzzyMatchPattern extends SinglePattern {
                     if (fairSorting)
                         match = takeFair();
                     else
-                        if (byScore) match = takeUnfairByScore();
-                        else match = takeUnfairByCoordinate();
+                        match = takeUnfair();
 
                 return match;
             }
 
-            private Match takeUnfairByScore() {
+            private Match takeUnfair() {
                 while (currentNumBitapErrors <= maxErrors) {
                     while (currentIndex < sequences.size()) {
                         int position = bitapMatcherFilters.get(currentIndex).findNext();
@@ -269,30 +265,10 @@ public final class FuzzyMatchPattern extends SinglePattern {
                 return null;
             }
 
-            private Match takeUnfairByCoordinate() {
-                while (currentIndex < sequences.size()) {
-                    int position = bitapMatcherFilters.get(currentIndex).findNext();
-                    if (position == -1)
-                        currentIndex++;
-                    else {
-                        Alignment<NucleotideSequence> alignment = patternAligner.align(sequences.get(currentIndex),
-                                target, position);
-                        if (alignment.getScore() >= patternAligner.penaltyThreshold())
-                            return generateMatch(alignment, target, targetId,
-                                    fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
-                                    sequences.get(currentIndex).size()));
-                    }
-                }
-                return null;
-            }
-
             private Match takeFair() {
                 if (!sortingPerformed) {
                     fillAllMatchesForFairSorting();
-                    if (byScore)
-                        Arrays.sort(allMatches, Comparator.comparingLong(Match::getScore).reversed());
-                    else
-                        Arrays.sort(allMatches, Comparator.comparingInt(match -> match.getRange().getLower()));
+                    Arrays.sort(allMatches, Comparator.comparingLong(Match::getScore).reversed());
                     sortingPerformed = true;
                 }
                 if (takenValues == allMatches.length) return null;

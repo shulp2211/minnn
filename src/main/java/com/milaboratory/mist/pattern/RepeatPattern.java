@@ -132,9 +132,9 @@ public final class RepeatPattern extends SinglePattern {
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
+        public OutputPort<Match> getMatches(boolean fairSorting) {
             return new RepeatPatternOutputPort(patternAligner, patternSeq, minRepeats, maxRepeats, fixedLeftBorder,
-                    fixedRightBorder, groupEdgePositions, target, from, to, targetId, byScore, fairSorting);
+                    fixedRightBorder, groupEdgePositions, target, from, to, targetId, fairSorting);
         }
 
         private static class RepeatPatternOutputPort implements OutputPort<Match> {
@@ -150,7 +150,6 @@ public final class RepeatPattern extends SinglePattern {
             private final int from;
             private final int to;
             private final byte targetId;
-            private final boolean byScore;
             private final boolean fairSorting;
             private final TargetSections targetSections;
 
@@ -176,8 +175,7 @@ public final class RepeatPattern extends SinglePattern {
             RepeatPatternOutputPort(PatternAligner patternAligner, NucleotideSequence patternSeq,
                                     int minRepeats, int maxRepeats, int fixedLeftBorder, int fixedRightBorder,
                                     List<GroupEdgePosition> groupEdgePositions,
-                                    NSequenceWithQuality target, int from, int to, byte targetId,
-                                    boolean byScore, boolean fairSorting) {
+                                    NSequenceWithQuality target, int from, int to, byte targetId, boolean fairSorting) {
                 this.patternAligner = patternAligner;
                 int maxErrors = patternAligner.bitapMaxErrors();
 
@@ -197,7 +195,6 @@ public final class RepeatPattern extends SinglePattern {
                 this.groupEdgePositions = groupEdgePositions;
                 this.target = target;
                 this.targetId = targetId;
-                this.byScore = byScore;
                 this.fairSorting = fairSorting;
 
                 this.currentRepeats = maxRepeats + maxErrors;
@@ -273,29 +270,15 @@ public final class RepeatPattern extends SinglePattern {
 
             private void pointToNextUnfairMatch() {
                 int maxErrors = patternAligner.bitapMaxErrors();
-                if (byScore) {
-                    currentPosition++;
-                    if (currentPosition > to - from - Math.max(1, currentRepeats - currentMaxErrors)) {
-                        currentPosition = 0;
-                        currentMaxErrors++;
-                        if (currentMaxErrors > maxErrors) {
-                            currentMaxErrors = 0;
-                            currentRepeats--;
-                            if (currentRepeats < Math.max(1, minRepeats - maxErrors))
-                                noMoreMatches = true;
-                        }
-                    }
-                } else {
+                currentPosition++;
+                if (currentPosition > to - from - Math.max(1, currentRepeats - currentMaxErrors)) {
+                    currentPosition = 0;
                     currentMaxErrors++;
                     if (currentMaxErrors > maxErrors) {
                         currentMaxErrors = 0;
                         currentRepeats--;
-                        if (currentRepeats < Math.max(1, minRepeats - maxErrors)) {
-                            currentPosition++;
-                            currentRepeats = Math.min(maxRepeats, to - from - Math.max(1, currentPosition - maxErrors));
-                            if (currentPosition > to - from - Math.max(1, minRepeats - maxErrors))
-                                noMoreMatches = true;
-                        }
+                        if (currentRepeats < Math.max(1, minRepeats - maxErrors))
+                            noMoreMatches = true;
                     }
                 }
             }
@@ -305,10 +288,7 @@ public final class RepeatPattern extends SinglePattern {
                     fillAllMatchesForFairSorting();
                     Arrays.sort(allMatches, Comparator.comparingInt((Match match) -> match.getRange().length())
                             .reversed());
-                    if (byScore)
-                        Arrays.sort(allMatches, Comparator.comparingLong(Match::getScore).reversed());
-                    else
-                        Arrays.sort(allMatches, Comparator.comparingInt(match -> match.getRange().getLower()));
+                    Arrays.sort(allMatches, Comparator.comparingLong(Match::getScore).reversed());
                     sortingPerformed = true;
                 }
                 if (takenValues == allMatches.length) return null;

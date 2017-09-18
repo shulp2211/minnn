@@ -35,6 +35,20 @@ final class SpecificOutputPort implements OutputPort<Match> {
         return match;
     }
 
+    ArrayList<Match> takeAll(boolean nullMatchesAllowed) {
+        ArrayList<Match> allMatches = new ArrayList<>();
+        Match currentMatch;
+        int index = 0;
+        do {
+            currentMatch = get(index);
+            if ((currentMatch != null) || (nullMatchesAllowed && (index == 0)))
+                allMatches.add(currentMatch);
+            index++;
+        } while (currentMatch != null);
+
+        return allMatches;
+    }
+
     Match get(int index) {
         if (index < cachedMatches.size())
             return cachedMatches.get(index);

@@ -55,7 +55,7 @@ public final class AnyPattern extends SinglePattern {
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean byScore, boolean fairSorting) {
+        public OutputPort<Match> getMatches(boolean fairSorting) {
             return new AnyPatternOutputPort(groupEdges, target, from, to, targetId);
         }
 
