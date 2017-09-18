@@ -29,7 +29,7 @@ public class ReportAction implements Action {
         LinearGapAlignmentScoring<NucleotideSequence> scoring = new LinearGapAlignmentScoring<>(
                 DEFAULT_ALPHABET, params.matchScore, params.mismatchScore, params.gapScore);
         PatternAligner patternAligner = new BasePatternAligner(scoring, params.penaltyThreshold,
-                params.singleOverlapPenalty, params.bitapMaxErrors);
+                params.singleOverlapPenalty, params.bitapMaxErrors, params.maxOverlap);
         Parser patternParser = new Parser(patternAligner);
         Pattern pattern;
         try {
@@ -130,6 +130,10 @@ public class ReportAction implements Action {
         @Parameter(description = "Maximum allowed number of errors for bitap matcher.",
                 names = {"--bitap-max-errors"})
         int bitapMaxErrors = DEFAULT_BITAP_MAX_ERRORS;
+
+        @Parameter(description = "Max allowed overlap for 2 intersecting operands in +, & and pattern sequences.",
+                names = {"--max-overlap"})
+        int maxOverlap = DEFAULT_MAX_OVERLAP;
 
         @Override
         public void validate() {
