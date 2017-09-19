@@ -6,10 +6,9 @@ import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.mist.pattern.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
-import static com.milaboratory.mist.util.DebugUtils.countCall;
-import static com.milaboratory.mist.util.DebugUtils.countExecutionTime;
 import static com.milaboratory.mist.util.RangeTools.*;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.*;
 
@@ -17,6 +16,7 @@ public final class ApproximateSorter {
     private final ApproximateSorterConfiguration conf;
     private final ArrayList<SpecificOutputPort> unfairOutputPorts = new ArrayList<>();
     private final HashSet<IncompatibleIndexes> allIncompatibleIndexes = new HashSet<>();
+    private final HashSet<List<Integer>> unfairAlreadyReturnedCombinations = new HashSet<>();
 
     private int unfairSorterTakenValues = 0;
 
@@ -194,7 +194,7 @@ public final class ApproximateSorter {
             }
 
             for (int i = 0; i < totalNumberOfCombinations; i++) {
-                if (areCompatible(matchIndexes)) {
+                if (areCompatible(matchIndexes) && !alreadyReturned(matchIndexes)) {
                     for (int j = 0; j < numberOfOperands; j++)
                         currentMatches[j] = allMatches.get(j).get(matchIndexes[j]);
                     IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, matchIndexes);
@@ -222,20 +222,22 @@ public final class ApproximateSorter {
             int firstFoundNullIndex = numberOfOperands - 1;
             boolean allPortsFinished = false;
             while (!allPortsFinished) {
-                currentMatches = getMatchesByIndexes(matchIndexes);
-                if (Arrays.stream(currentMatches).noneMatch(Objects::isNull)) {
-                    IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, matchIndexes);
-                    if (incompatibleIndexes == null) {
-                        Match combinedMatch = combineMatches(currentMatches);
-                        if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
-                            allMatchesFiltered.add(combinedMatch);
-                    }
-                } else
-                    for (int i = 0; i < numberOfOperands - 1; i++)
-                        if (currentMatches[i] == null) {
-                            firstFoundNullIndex = i;
-                            break;
+                if (!alreadyReturned(matchIndexes)) {
+                    currentMatches = getMatchesByIndexes(matchIndexes);
+                    if (Arrays.stream(currentMatches).noneMatch(Objects::isNull)) {
+                        IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, matchIndexes);
+                        if (incompatibleIndexes == null) {
+                            Match combinedMatch = combineMatches(currentMatches);
+                            if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
+                                allMatchesFiltered.add(combinedMatch);
                         }
+                    } else
+                        for (int i = 0; i < numberOfOperands - 1; i++)
+                            if (currentMatches[i] == null) {
+                                firstFoundNullIndex = i;
+                                break;
+                            }
+                }
 
                 // update matchIndexes
                 if (currentMatches[firstFoundNullIndex] == null) {
@@ -326,6 +328,21 @@ public final class ApproximateSorter {
                         && (indexes[currentIndexes.port2] == currentIndexes.index2))
                     return false;
         return true;
+    }
+
+    /**
+     * Check if this combination of matches was already returned on first stages of unfair sorter.
+     *
+     * @param indexes indexes of matches
+     * @return true if combination was already returned, otherwise false
+     */
+    private boolean alreadyReturned(int[] indexes) {
+        if (!conf.fairSorting) {
+            List<Integer> indexesList = Arrays.stream(indexes).boxed().collect(Collectors.toList());
+            if (unfairAlreadyReturnedCombinations.contains(indexesList))
+                return false;
+        }
+        return false;
     }
 
     /**
@@ -452,119 +469,56 @@ public final class ApproximateSorter {
     }
 
     private class MatchesOutputPort implements OutputPort<Match> {
-        private final ArrayList<ArrayList<Match>> takenMatches;
-        private final int numberOfPorts;
-        private ArrayList<Integer> currentIndexes;
-        private ArrayList<Integer> stage3Indexes;
-        private final Match[] currentMatches;
-        private boolean alwaysReturnNull = false;
-        private int numberOfSkippedIterations = 0;
-
-        /* maximum number of values to take from single port on stage3;
-           it will be increased if all combinations with this depth will end */
-        private int stage3CurrentDepth = 3;
-
         private ArrayList<Match> allMatchesFiltered;
+        private long penaltyThreshold = conf.patternAligner.penaltyThreshold();
+        private int numberOfPatterns = conf.operandPatterns.length;
         private int filteredMatchesCount = 0;
         private int currentMatchIndex = 0;
         private boolean sortingPerformed = false;
+        private boolean alwaysReturnNull = false;
+        private int unfairSorterStage = 1;
 
-        MatchesOutputPort() {
-            this.takenMatches = new ArrayList<>();
-            for (int i = 0; i < numberOfPorts; i++)
-                this.takenMatches.add(new ArrayList<>());
-            this.numberOfPorts = numberOfPorts;
-            this.currentIndexes = new ArrayList<>(Collections.nCopies(numberOfPorts, 0));
-            this.stage3Indexes = new ArrayList<>(Collections.nCopies(numberOfPorts, 0));
-            this.currentMatches = new Match[numberOfPorts];
-        }
+        // data structures for stages 1 and 2 of unfair sorter
+        private int[] currentIndexes = conf.fairSorting ? null : new int[numberOfPatterns];
+        private Match[] zeroIndexMatches = null;
+        private boolean stage2Init = false;
+        private boolean[] endedPorts;
+        private long[] previousMatchScores;
+        private long[] currentMatchScores;
 
         @Override
         public Match take() {
             if (alwaysReturnNull) return null;
-            if (conf.fairSorting) return takeFairSorted();
+            if (conf.fairSorting) return takeSorted();
             if (unfairSorterTakenValues++ > conf.unfairSorterLimit) {
                 alwaysReturnNull = true;
                 return null;
             }
 
-            long penaltyThreshold = conf.patternAligner.penaltyThreshold();
-            List<Match> tempMatches = new ArrayList<>();
-            tempMatches.add(null);
-            countCall("take");
-            countExecutionTime("take", () -> {
-                Match combinedMatch = null;
-                boolean combinationFound = false;
-                GET_NEXT_COMBINATION:
-                while (!combinationFound) {
-                    if (tableOfIterations.getTotalCombinationsCount() == tableOfIterations.getNumberOfReturnedCombinations()) {
-                        alwaysReturnNull = true;
-                        return null;
+            Match takenMatch;
+            switch (unfairSorterStage) {
+                case 1:
+                    takenMatch = takeUnfairStage1();
+                    if (takenMatch != null)
+                        return takenMatch;
+                    else
+                        unfairSorterStage++;
+                case 2:
+                    if (conf.specificOutputPorts)
+                        unfairSorterStage++;
+                    else {
+                        takenMatch = takeUnfairStage2();
+                        if (takenMatch != null)
+                            return takenMatch;
+                        else
+                            unfairSorterStage++;
                     }
-
-                    for (int i = 0; i < numberOfPorts; i++) {
-                        ArrayList<Match> currentPortMatches = takenMatches.get(i);
-                        ApproximateSorterOperandPort currentPort = inputPorts.get(i);
-                        // if we didn't take the needed match before, take it now
-                        if (currentIndexes.get(i) == currentPortMatches.size()) {
-                            Match takenMatch = currentPort.outputPort.take();
-                            if (takenMatch == null) {
-                                if (currentPortMatches.size() == 0) {
-                                    if (areNullMatchesAllowed()) {
-                                        currentPortMatches.add(null);
-                                        tableOfIterations.setPortEndReached(i, 1);
-                                        currentIndexes.set(i, 0);
-                                    } else {
-                                        alwaysReturnNull = true;
-                                        return null;
-                                    }
-                                } else {
-                                    int currentIndex = currentIndexes.get(i);
-                                    tableOfIterations.setPortEndReached(i, currentIndex);
-                                    currentIndexes.set(i, currentIndex - 1);
-                                    numberOfSkippedIterations++;
-                                    calculateNextIndexes();
-                                    continue GET_NEXT_COMBINATION;
-                                }
-                            } else {
-                                currentPortMatches.add(takenMatch);
-                                if (currentPortMatches.size() == currentPort.unfairSorterPortLimit)
-                                    tableOfIterations.setPortEndReached(i, currentPort.unfairSorterPortLimit);
-                            }
-                        }
-                        currentMatches[i] = currentPortMatches.get(currentIndexes.get(i));
-                    }
-
-                    IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, currentIndexes);
-                    if (incompatibleIndexes == null) {
-                        combinedMatch = combineMatches(currentMatches);
-                        if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
-                            combinationFound = true;
-                        else {
-                        /* current combination doesn't fit the score threshold, mark it as returned
-                         and continue search */
-                            tableOfIterations.addReturnedCombination(currentIndexes);
-                            calculateNextIndexes();
-                        }
-                    } else {
-                    /* mark invalid match as already returned in table of iterations, write found
-                     incompatible indexes to table of iterations and continue search */
-                        tableOfIterations.addReturnedCombination(currentIndexes);
-                        tableOfIterations.addIncompatibleIndexes(incompatibleIndexes);
-                        calculateNextIndexes();
-                    }
-                }
-                tableOfIterations.addReturnedCombination(currentIndexes);
-                calculateNextIndexes();
-                tempMatches.set(0, combinedMatch);
-
-                return null;
-            });
-            return tempMatches.get(0);
-
+                default:
+                    return takeSorted();
+            }
         }
 
-        private Match takeFairSorted() {
+        private Match takeSorted() {
             if (!sortingPerformed) {
                 allMatchesFiltered = takeFilteredMatches();
                 filteredMatchesCount = allMatchesFiltered.size();
@@ -572,26 +526,115 @@ public final class ApproximateSorter {
                 sortingPerformed = true;
             }
 
-            if (currentMatchIndex >= filteredMatchesCount) return null;
+            if (currentMatchIndex >= filteredMatchesCount) {
+                alwaysReturnNull = true;
+                return null;
+            } else
+                return allMatchesFiltered.get(currentMatchIndex++);
+        }
 
-            return allMatchesFiltered.get(currentMatchIndex++);
+        /**
+         * Stage 1: return combination of 1st values from each port, then combinations of 2nd value from one port
+         * and 1st values from other ports.
+         *
+         * @return match, or null if there are no more matches on stage 1
+         */
+        private Match takeUnfairStage1() {
+            Match currentMatch = null;
+
+            if (zeroIndexMatches == null) {
+                zeroIndexMatches = getMatchesByIndexes(currentIndexes);
+                currentMatch = takeMatchOrNull(currentIndexes);
+            }
+
+            while (currentMatch == null) {
+                int indexForSecondValue = Arrays.stream(currentIndexes)
+                        .filter(i -> i == 1).findFirst().orElse(numberOfPatterns) - 1;
+                while ((indexForSecondValue >= 0) && (zeroIndexMatches[indexForSecondValue] == null))
+                    indexForSecondValue--;
+
+                if (indexForSecondValue == -1)
+                    return null;
+                else {
+                    for (int i = 0; i < numberOfPatterns; i++)
+                        currentIndexes[i] = (i == indexForSecondValue) ? 1 : 0;
+                    currentMatch = takeMatchOrNull(currentIndexes);
+                }
+            }
+
+            return currentMatch;
+        }
+
+        /**
+         *  Stage 2: iterate over ports, trying to pick better score, based on deltas if we count total score
+         *  based on sum, or based on max value if we count total score based on max value.
+         *  This stage is not used if conf.specificOutputPorts is true.
+         *
+         * @return match, or null if there are no more matches on stage 2
+         */
+        private Match takeUnfairStage2() {
+            if (!stage2Init) {
+                endedPorts = new boolean[numberOfPatterns];
+                previousMatchScores = new long[numberOfPatterns];
+                currentMatchScores = new long[numberOfPatterns];
+                
+                for (int i = 0; i < numberOfPatterns; i++) {
+                    endedPorts[i] = (zeroIndexMatches[i] == null) || (getPortWithParams(i).get(1) == null);
+                    if (!endedPorts[i]) {
+                        previousMatchScores[i] = zeroIndexMatches[i].getScore();
+                        currentMatchScores[i] = getPortWithParams(i).get(1).getScore();
+                    }
+                }
+
+                stage2Init = true;
+            }
+        }
+
+        private Match takeMatchOrNull(int[] indexes) {
+            Match[] currentMatches;
+            if (areCompatible(indexes)) {
+                if (!alreadyReturned(indexes)) {
+                    rememberReturnedCombination(indexes);
+                    currentMatches = getMatchesByIndexes(indexes);
+
+                    boolean invalidCombination = false;
+                    for (int i = 0; i < numberOfPatterns; i++)
+                        if (((indexes[i] > 0) || !areNullMatchesAllowed()) && (currentMatches[i] == null)) {
+                            invalidCombination = true;
+                            break;
+                        }
+                    if (!invalidCombination) {
+                        IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, indexes);
+                        if (incompatibleIndexes != null) {
+                            if (!conf.specificOutputPorts)
+                                allIncompatibleIndexes.add(incompatibleIndexes);
+                        } else {
+                            Match combinedMatch = combineMatches(currentMatches);
+                            if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
+                                return combinedMatch;
+                        }
+                    }
+                }
+            } else
+                rememberReturnedCombination(indexes);
+
+            return null;
+        }
+
+        private void rememberReturnedCombination(int[] indexes) {
+            unfairAlreadyReturnedCombinations.add(Arrays.stream(indexes).boxed().collect(Collectors.toList()));
         }
 
         /**
          * Calculate next indexes for matches arrays: which next combination will be returned.
          */
         private void calculateNextIndexes() {
-            countCall("calculate");
-            countExecutionTime("calculate", () -> {
                             /* If all combinations already iterated, there is nothing to calculate */
                 if (tableOfIterations.getTotalCombinationsCount() == tableOfIterations.getNumberOfReturnedCombinations())
                     return null;
 
             /* Stage 1: return combination of 1st values from each port, then combinations of 2nd value from
             one port and 1st values from other ports */
-                List<Boolean> needReturn = new ArrayList<>();
-                needReturn.add(false);
-                countExecutionTime("stage1", () -> {
                     while (tableOfIterations.getNumberOfReturnedCombinations() + numberOfSkippedIterations <= numberOfPorts) {
                         for (int i = 0; i < numberOfPorts; i++)
                             if (i == tableOfIterations.getNumberOfReturnedCombinations() + numberOfSkippedIterations - 1)
@@ -611,13 +654,9 @@ public final class ApproximateSorter {
                         }
                     }
                     return null;
-                });
-                if (needReturn.get(0))
-                    return null;
 
             /* Stage 2: iterate over ports, trying to pick better score, based on deltas if we count total score
             based on sum, or based on max value if we count total score based on max value */
-                countExecutionTime("stage2", () -> {
                     while (tableOfIterations.getNumberOfEndedPorts() < numberOfPorts) {
                         if (conf.combineScoresBySum) {
                             int bestDeltaPort = 0;
@@ -659,14 +698,9 @@ public final class ApproximateSorter {
                         }
                     }
 
-                    return null;
-                });
-                if (needReturn.get(0))
-                    return null;
 
 
             /* Stage 3: iterate over all remaining combinations of ports */
-                countExecutionTime("stage3", () -> {
                     while (true) {
                         if (!tableOfIterations.isCombinationReturned(stage3Indexes)
                                 && tableOfIterations.isCompatible(false, stage3Indexes)) {
@@ -699,9 +733,6 @@ public final class ApproximateSorter {
                             }
                         }
                     }
-                });
-                return null;
-            });
         }
     }
 }
