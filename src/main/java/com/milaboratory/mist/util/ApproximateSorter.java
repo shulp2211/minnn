@@ -479,10 +479,11 @@ public final class ApproximateSorter {
         private int unfairSorterStage = 1;
 
         // data structures for stages 1 and 2 of unfair sorter
-        private int[] currentIndexes = conf.fairSorting ? null : new int[numberOfPatterns];
-        private Match[] zeroIndexMatches = null;
-        private boolean stage2Init = false;
+        private boolean stage1Init = false;
+        private int[] currentIndexes;
         private boolean[] endedPorts;
+        private Match[] zeroIndexMatches;
+        private boolean stage2Init = false;
         private long[] previousMatchScores;
         private long[] currentMatchScores;
 
@@ -501,8 +502,10 @@ public final class ApproximateSorter {
                     takenMatch = takeUnfairStage1();
                     if (takenMatch != null)
                         return takenMatch;
-                    else
+                    else if (!alwaysReturnNull)
                         unfairSorterStage++;
+                    else
+                        return null;
                 case 2:
                     if (conf.specificOutputPorts)
                         unfairSorterStage++;
@@ -534,7 +537,7 @@ public final class ApproximateSorter {
         }
 
         /**
-         * Stage 1: return combination of 1st values from each port, then combinations of 2nd value from one port
+         * Stage 1: return combination of 1st values from each port, then combinations of other value from one port
          * and 1st values from other ports.
          *
          * @return match, or null if there are no more matches on stage 1
@@ -542,27 +545,93 @@ public final class ApproximateSorter {
         private Match takeUnfairStage1() {
             Match currentMatch = null;
 
-            if (zeroIndexMatches == null) {
+            if (!stage1Init) {
+                currentIndexes = new int[numberOfPatterns];
+                endedPorts = new boolean[numberOfPatterns];
                 zeroIndexMatches = getMatchesByIndexes(currentIndexes);
+                for (int i = 0; i < numberOfPatterns; i++)
+                    if (zeroIndexMatches[i] == null)
+                        endedPorts[i] = true;
                 currentMatch = takeMatchOrNull(currentIndexes);
+                stage1Init = true;
             }
 
             while (currentMatch == null) {
-                int indexForSecondValue = Arrays.stream(currentIndexes)
-                        .filter(i -> i == 1).findFirst().orElse(numberOfPatterns) - 1;
-                while ((indexForSecondValue >= 0) && (zeroIndexMatches[indexForSecondValue] == null))
-                    indexForSecondValue--;
+                boolean indexFound = false;
+                for (int i = 0; i < numberOfPatterns; i++) {
+                    int currentIndex = currentIndexes[i];
+                    if (currentIndex > 0) {
+                        if (currentIndex < approximateSorterStage1Depth - 1) {
+                            if (checkPortByIndexForStage1(i, currentIndex + 1)) {
+                                currentIndexes[i]++;
+                                indexFound = true;
+                                break;
+                            } else
+                                endedPorts[i] = true;
+                        }
 
-                if (indexForSecondValue == -1)
-                    return null;
-                else {
-                    for (int i = 0; i < numberOfPatterns; i++)
-                        currentIndexes[i] = (i == indexForSecondValue) ? 1 : 0;
-                    currentMatch = takeMatchOrNull(currentIndexes);
+                        currentIndexes[i] = 0;
+                        int nextIndex = i - 1;
+                        while (nextIndex >= 0) {
+                            if (endedPorts[nextIndex])
+                                nextIndex--;
+                            else {
+                                if (checkPortByIndexForStage1(nextIndex, 1))
+                                    break;
+                                else {
+                                    endedPorts[nextIndex] = true;
+                                    nextIndex--;
+                                }
+                            }
+                        }
+                        if (nextIndex == -1) {
+                            // no more matches on stage 1
+                            return null;
+                        } else {
+                            currentIndexes[nextIndex] = 1;
+                            indexFound = true;
+                            break;
+                        }
+                    }
                 }
+                if (!indexFound)
+                    for (int i = numberOfPatterns - 1; i >= 0; i--)
+                        if (!endedPorts[i]) {
+                            if (checkPortByIndexForStage1(i, 1)) {
+                                currentIndexes[i] = 1;
+                                indexFound = true;
+                                break;
+                            } else
+                                endedPorts[i] = true;
+                        }
+                if (!indexFound) {
+                    // all ports ended
+                    alwaysReturnNull = true;
+                    return null;
+                }
+
+                currentMatch = takeMatchOrNull(currentIndexes);
             }
 
             return currentMatch;
+        }
+
+        /**
+         * Return true if port has non-null match with specified index (depth), otherwise false.
+         * For specificOutputPorts (when indexes are not fixed and depend on each other) all other indexes are 0 as it
+         * defined on stage 1.
+         *
+         * @param port port number, same as pattern number in conf.operandPatterns array
+         * @param index number of match in this port (depth)
+         * @return true if port has non-null match with specified index (depth), otherwise false
+         */
+        private boolean checkPortByIndexForStage1(int port, int index) {
+            if (conf.specificOutputPorts) {
+                int[] indexes = new int[numberOfPatterns];
+                indexes[port] = index;
+                return getMatchesByIndexes(indexes)[port] != null;
+            } else
+                return getPortWithParams(port).get(index) != null;
         }
 
         /**
@@ -574,20 +643,76 @@ public final class ApproximateSorter {
          */
         private Match takeUnfairStage2() {
             if (!stage2Init) {
-                endedPorts = new boolean[numberOfPatterns];
+                currentIndexes = new int[numberOfPatterns];
                 previousMatchScores = new long[numberOfPatterns];
                 currentMatchScores = new long[numberOfPatterns];
-                
                 for (int i = 0; i < numberOfPatterns; i++) {
-                    endedPorts[i] = (zeroIndexMatches[i] == null) || (getPortWithParams(i).get(1) == null);
+                    endedPorts[i] = (zeroIndexMatches[i] != null) && (getPortWithParams(i).get(1) != null);
                     if (!endedPorts[i]) {
-                        previousMatchScores[i] = zeroIndexMatches[i].getScore();
-                        currentMatchScores[i] = getPortWithParams(i).get(1).getScore();
+                        if (conf.combineScoresBySum) {
+                            previousMatchScores[i] = zeroIndexMatches[i].getScore();
+                            currentMatchScores[i] = getPortWithParams(i).get(1).getScore();
+                        } else
+                            currentMatchScores[i] = zeroIndexMatches[i].getScore();
+                    }
+                }
+                stage2Init = true;
+            }
+
+            Match currentMatch = null;
+            while (currentMatch == null) {
+                int bestPort = 0;
+                if (conf.combineScoresBySum) {
+                    long bestDelta = Long.MIN_VALUE;
+                    for (int i = 0; i < numberOfPatterns; i++) {
+                        if (endedPorts[i])
+                            continue;
+                        long currentDelta = currentMatchScores[i] - previousMatchScores[i];
+                        if (currentDelta > bestDelta) {
+                            bestDelta = currentDelta;
+                            bestPort = i;
+                        }
+                    }
+                } else {
+                    long bestScore = Long.MIN_VALUE;
+                    for (int i = 0; i < numberOfPatterns; i++) {
+                        if (endedPorts[i])
+                            continue;
+                        if (currentMatchScores[i] > bestScore) {
+                            bestScore = currentMatchScores[i];
+                            bestPort = i;
+                        }
                     }
                 }
 
-                stage2Init = true;
+                Match bestOperandMatch = getPortWithParams(bestPort).get(currentIndexes[bestPort] + 1);
+                if (bestOperandMatch != null) {
+                    if (conf.combineScoresBySum) {
+                        if (currentIndexes[bestPort] > 0) {
+                            previousMatchScores[bestPort] = currentMatchScores[bestPort];
+                            currentMatchScores[bestPort] = bestOperandMatch.getScore();
+                        }
+                    } else
+                        currentMatchScores[bestPort] = bestOperandMatch.getScore();
+                    currentIndexes[bestPort]++;
+                } else {
+                    endedPorts[bestPort] = true;
+                    boolean allPortsEnded = true;
+                    for (boolean endedPort : endedPorts)
+                        if (!endedPort) {
+                            allPortsEnded = false;
+                            break;
+                        }
+                    if (allPortsEnded) {
+                        // no more matches on stage 2
+                        return null;
+                    }
+                }
+
+                currentMatch = takeMatchOrNull(currentIndexes);
             }
+
+            return currentMatch;
         }
 
         private Match takeMatchOrNull(int[] indexes) {
@@ -606,6 +731,7 @@ public final class ApproximateSorter {
                     if (!invalidCombination) {
                         IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, indexes);
                         if (incompatibleIndexes != null) {
+                            // if conf.specificOutputPorts is true, indexes are not fixed; no need to remember them
                             if (!conf.specificOutputPorts)
                                 allIncompatibleIndexes.add(incompatibleIndexes);
                         } else {
@@ -623,116 +749,6 @@ public final class ApproximateSorter {
 
         private void rememberReturnedCombination(int[] indexes) {
             unfairAlreadyReturnedCombinations.add(Arrays.stream(indexes).boxed().collect(Collectors.toList()));
-        }
-
-        /**
-         * Calculate next indexes for matches arrays: which next combination will be returned.
-         */
-        private void calculateNextIndexes() {
-                            /* If all combinations already iterated, there is nothing to calculate */
-                if (tableOfIterations.getTotalCombinationsCount() == tableOfIterations.getNumberOfReturnedCombinations())
-                    return null;
-
-            /* Stage 1: return combination of 1st values from each port, then combinations of 2nd value from
-            one port and 1st values from other ports */
-                    while (tableOfIterations.getNumberOfReturnedCombinations() + numberOfSkippedIterations <= numberOfPorts) {
-                        for (int i = 0; i < numberOfPorts; i++)
-                            if (i == tableOfIterations.getNumberOfReturnedCombinations() + numberOfSkippedIterations - 1)
-                                if (areNullMatchesAllowed() && (takenMatches.get(i).get(0) == null)) {
-                                    numberOfSkippedIterations++;
-                                    currentIndexes.set(i, 0);
-                                } else
-                                    currentIndexes.set(i, 1);
-                            else
-                                currentIndexes.set(i, 0);
-
-                        // if we found valid combination, return it, otherwise continue search
-                        if (tableOfIterations.isCompatible(false, currentIndexes)
-                                && !tableOfIterations.isCombinationReturned(currentIndexes)) {
-                            needReturn.set(0, true);
-                            return null;
-                        }
-                    }
-                    return null;
-
-            /* Stage 2: iterate over ports, trying to pick better score, based on deltas if we count total score
-            based on sum, or based on max value if we count total score based on max value */
-                    while (tableOfIterations.getNumberOfEndedPorts() < numberOfPorts) {
-                        if (conf.combineScoresBySum) {
-                            int bestDeltaPort = 0;
-                            long bestDelta = Long.MIN_VALUE;
-                            for (int i = 0; i < numberOfPorts; i++) {
-                                ArrayList<Match> currentPortMatches = takenMatches.get(i);
-                                int currentIndex = currentIndexes.get(i);
-                                if (tableOfIterations.isPortEndReached(i)) continue;
-                                int match1Number = (currentIndex == 0) ? 0 : currentIndex - 1;
-                                int match2Number = (currentIndex == 0) ? 1 : currentIndex;
-                                Match match1 = currentPortMatches.get(match1Number);
-                                Match match2 = currentPortMatches.get(match2Number);
-                                long currentDelta = match2.getScore() - match1.getScore();
-                                if (currentDelta > bestDelta) {
-                                    bestDelta = currentDelta;
-                                    bestDeltaPort = i;
-                                }
-                            }
-                            currentIndexes.set(bestDeltaPort, currentIndexes.get(bestDeltaPort) + 1);
-                        } else {
-                            int bestScorePort = 0;
-                            long bestScore = Long.MIN_VALUE;
-                            for (int i = 0; i < numberOfPorts; i++) {
-                                if (tableOfIterations.isPortEndReached(i)) continue;
-                                Match currentMatch = takenMatches.get(i).get(currentIndexes.get(i));
-                                if (currentMatch.getScore() > bestScore) {
-                                    bestScore = currentMatch.getScore();
-                                    bestScorePort = i;
-                                }
-                            }
-                            currentIndexes.set(bestScorePort, currentIndexes.get(bestScorePort) + 1);
-                        }
-
-                        // if we found valid combination, return it, otherwise continue search
-                        if (tableOfIterations.isCompatible(false, currentIndexes)
-                                && !tableOfIterations.isCombinationReturned(currentIndexes)) {
-                            needReturn.set(0, true);
-                            return null;
-                        }
-                    }
-
-
-
-            /* Stage 3: iterate over all remaining combinations of ports */
-                    while (true) {
-                        if (!tableOfIterations.isCombinationReturned(stage3Indexes)
-                                && tableOfIterations.isCompatible(false, stage3Indexes)) {
-                            currentIndexes = new ArrayList<>(stage3Indexes);
-                            return null;
-                        }
-
-                        // Update innerArrayIndexes to switch to the next combination on next iteration of outer loop
-                        for (int i = 0; i < numberOfPorts; i++) {
-                            int currentIndex = stage3Indexes.get(i);
-                            if (currentIndex + 1 < Math.min(stage3CurrentDepth,
-                                    tableOfIterations.getPortMatchesQuantity(i))) {
-                                stage3Indexes.set(i, currentIndex + 1);
-                                break;
-                            }
-                            // we need to update next index and reset current index to zero
-                            stage3Indexes.set(i, 0);
-                            // if we looped through all combinations, increase the depth or stop the search
-                            if (i == numberOfPorts - 1) {
-                                boolean allPortsEnded = true;
-                                for (int j = 0; j < numberOfPorts; j++)
-                                    if (tableOfIterations.getPortMatchesQuantity(j) > stage3CurrentDepth) {
-                                        stage3CurrentDepth++;
-                                        allPortsEnded = false;
-                                    }
-                                if (allPortsEnded) {
-                                    alwaysReturnNull = true;
-                                    return null;
-                                }
-                            }
-                        }
-                    }
         }
     }
 }

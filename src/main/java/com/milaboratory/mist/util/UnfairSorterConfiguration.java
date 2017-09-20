@@ -22,4 +22,5 @@ public final class UnfairSorterConfiguration {
         unfairSorterPortLimits.put(MultipleReadsFilterPattern.class, 25);
     }
     public static final int specificPortLimit = 20;
+    public static final int approximateSorterStage1Depth = 5;
 }
