@@ -91,12 +91,6 @@ public class BasePatternAligner implements PatternAligner {
     }
 
     @Override
-    public PatternAligner overrideMaxOverlap(int newMaxOverlap) {
-        return new BasePatternAligner(scoring, penaltyThreshold, singleOverlapPenalty, bitapMaxErrors, newMaxOverlap,
-                leftBorder);
-    }
-
-    @Override
     public PatternAligner setLeftBorder(int newLeftBorder) {
         return new BasePatternAligner(scoring, penaltyThreshold, singleOverlapPenalty, bitapMaxErrors, maxOverlap,
                 newLeftBorder);

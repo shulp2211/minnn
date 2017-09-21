@@ -202,12 +202,6 @@ public class CommonTestUtils {
             }
 
             @Override
-            public PatternAligner overrideMaxOverlap(int newMaxOverlap) {
-                return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty,
-                        compatible, newMaxOverlap, fixedLeftBorder);
-            }
-
-            @Override
             public PatternAligner setLeftBorder(int leftBorder) {
                 return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty,
                         compatible, maxOverlap, leftBorder);

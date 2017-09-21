@@ -103,13 +103,6 @@ public interface PatternAligner {
     PatternAligner overridePenaltyThreshold(long newThresholdValue);
 
     /**
-     * Return new pattern with more strict maxOverlap threshold.
-     *
-     * @return copy of this PatternAligner with more strict maxOverlap threshold
-     */
-    PatternAligner overrideMaxOverlap(int newMaxOverlap);
-
-    /**
      * Set left border for alignment. When it is set, global aligner is used.
      *
      * @param leftBorder left border for alignment
