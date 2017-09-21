@@ -33,7 +33,7 @@ public class CommonTestUtils {
     }
 
     public static long countMatches(MatchingResult matchingResult, boolean fair) {
-        return countPortValues(matchingResult.getMatches(false, fair));
+        return countPortValues(matchingResult.getMatches(fair));
     }
 
     public static NucleotideSequence makeRandomInsertions(NucleotideSequence seq, int number) {

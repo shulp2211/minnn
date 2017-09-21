@@ -38,14 +38,12 @@ public class SequencePatternTest {
             if (targetContainsPattern1) {
                 assertTrue(pattern1.match(targetQ).isFound());
                 assertTrue(pattern1.match(targetQ).getBestMatch(rg.nextBoolean()) != null);
-                assertTrue(pattern1.match(targetQ).getMatches(rg.nextBoolean(),
-                        rg.nextBoolean()).take() != null);
+                assertTrue(pattern1.match(targetQ).getMatches(rg.nextBoolean()).take() != null);
             }
 
             assertTrue(pattern2.match(targetQ).isFound());
             assertTrue(pattern2.match(targetQ).getBestMatch(rg.nextBoolean()) != null);
-            assertTrue(pattern2.match(targetQ).getMatches(rg.nextBoolean(),
-                    rg.nextBoolean()).take() != null);
+            assertTrue(pattern2.match(targetQ).getMatches(rg.nextBoolean()).take() != null);
 
             for (Boolean fairSorting: new Boolean[] {false, true}) {
                 long errorScorePenalty = -rg.nextInt(50) - 1;
@@ -71,8 +69,8 @@ public class SequencePatternTest {
                 boolean entirePatternMustMatch = isMatchingPattern1;
                 if (misplacedPatterns) {
                     penaltyThreshold = Long.MIN_VALUE;
-                    OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(rg.nextBoolean(), fairSorting);
-                    OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(rg.nextBoolean(), fairSorting);
+                    OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(fairSorting);
+                    OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(fairSorting);
                     List<Range> ranges1 = streamPort(port1).map(Match::getRange).collect(Collectors.toList());
                     List<Range> ranges2 = streamPort(port2).map(Match::getRange).collect(Collectors.toList());
 
@@ -88,14 +86,16 @@ public class SequencePatternTest {
                             }
                 }
 
-                SequencePattern sequencePattern = new SequencePattern(getTestPatternAligner(penaltyThreshold, 0,
-                        0, errorScorePenalty, true, maxOverlap), pattern1, pattern2);
+                SequencePattern sequencePattern = new SequencePattern(getTestPatternAligner(penaltyThreshold,
+                        0, 0, errorScorePenalty, true, maxOverlap),
+                        pattern1, pattern2);
 
                 if (!fairSorting)
                     assertEquals(entirePatternMustMatch, sequencePattern.match(targetQ).isFound());
-                assertEquals(entirePatternMustMatch, sequencePattern.match(targetQ).getBestMatch(fairSorting) != null);
-                assertEquals(entirePatternMustMatch, sequencePattern.match(targetQ).getMatches(rg.nextBoolean(),
-                        fairSorting).take() != null);
+                assertEquals(entirePatternMustMatch, sequencePattern.match(targetQ)
+                        .getBestMatch(fairSorting) != null);
+                assertEquals(entirePatternMustMatch, sequencePattern.match(targetQ)
+                        .getMatches(fairSorting).take() != null);
             }
         }
     }
@@ -111,14 +111,16 @@ public class SequencePatternTest {
             NucleotideSequence motif1 = SequencesUtils.concatenate(leftPart, middleLetter);
             NucleotideSequence motif2 = SequencesUtils.concatenate(middleLetter, rightPart);
             NucleotideSequence target1 = SequencesUtils.concatenate(leftPart, middleLetter, rightPart);
-            NucleotideSequence middleInsertion = TestUtil.randomSequence(NucleotideSequence.ALPHABET, middleInsertionSize,
-                    middleInsertionSize);
+            NucleotideSequence middleInsertion = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    middleInsertionSize, middleInsertionSize);
             NucleotideSequence target2 = SequencesUtils.concatenate(leftPart, middleInsertion, rightPart);
 
             NSequenceWithQuality targetQ1 = new NSequenceWithQuality(target1,
-                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target1.getSequence().size()));
+                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE,
+                            target1.getSequence().size()));
             NSequenceWithQuality targetQ2 = new NSequenceWithQuality(target2,
-                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target2.getSequence().size()));
+                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE,
+                            target2.getSequence().size()));
             FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), motif1);
             FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), motif2);
             FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(getTestPatternAligner(), leftPart);
@@ -133,8 +135,10 @@ public class SequencePatternTest {
                     0, 0, errorScorePenalty), pattern2, pattern1);
             SequencePattern sequencePattern5 = new SequencePattern(getTestPatternAligner(0,
                     0, 0, errorScorePenalty), pattern3, pattern4);
-            SequencePattern sequencePattern6 = new SequencePattern(getTestPatternAligner(errorScorePenalty
-                            * middleInsertionSize, 0, 0, errorScorePenalty), pattern3, pattern4);
+            SequencePattern sequencePattern6 = new SequencePattern(getTestPatternAligner(
+                    errorScorePenalty * middleInsertionSize,
+                    0, 0, errorScorePenalty),
+                    pattern3, pattern4);
             assertNull(sequencePattern1.match(targetQ1).getBestMatch());
             assertNull(sequencePattern2.match(targetQ1).getBestMatch());
             assertEquals(pattern1.match(targetQ1).getBestMatch().getScore()
@@ -147,7 +151,8 @@ public class SequencePatternTest {
                     && (countPortValues(pattern3.match(targetQ2).getMatches()) == 1)) {
                 assertNull(sequencePattern5.match(targetQ2).getBestMatch());
                 assertEquals(pattern3.match(targetQ2).getBestMatch().getScore()
-                                + pattern4.match(targetQ2).getBestMatch().getScore() + errorScorePenalty * middleInsertionSize,
+                                + pattern4.match(targetQ2).getBestMatch().getScore()
+                                + errorScorePenalty * middleInsertionSize,
                         sequencePattern6.match(targetQ2).getBestMatch().getScore());
             }
             if (!leftPart.toString().equals(rightPart.toString()))
@@ -179,7 +184,7 @@ public class SequencePatternTest {
                 0, -5, true, 2, -1), pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("ATAGATTC");
         MatchingResult result = sequencePattern.match(nseq);
-        OutputPort<Match> matchOutputPort = result.getMatches(false, true);
+        OutputPort<Match> matchOutputPort = result.getMatches(true);
         Match match = matchOutputPort.take();
         assertEquals(5, match.getMatchedGroupEdge("A", true).getPosition());
         assertEquals(5, match.getMatchedGroupEdge("A", false).getPosition());

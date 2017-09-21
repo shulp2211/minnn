@@ -24,7 +24,7 @@ public class AnyPatternTest {
             AnyPattern pattern = new AnyPattern(patternAligner, groupEdges);
             NucleotideSequence targetSeq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, targetSize, targetSize);
             NSequenceWithQuality target = new NSequenceWithQuality(targetSeq.toString());
-            OutputPort<Match> port = pattern.match(target).getMatches(rg.nextBoolean(), rg.nextBoolean());
+            OutputPort<Match> port = pattern.match(target).getMatches(rg.nextBoolean());
             Match match = port.take();
             assertNull(port.take());
             for (int j = 0; j < numGroupEdges; j++) {

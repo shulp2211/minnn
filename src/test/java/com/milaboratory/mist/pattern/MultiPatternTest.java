@@ -1,7 +1,6 @@
 package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
-import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.*;
 import com.milaboratory.test.TestUtil;
 import org.junit.Rule;
@@ -28,57 +27,28 @@ public class MultiPatternTest {
     }
 
     @Test
-    public void mismatchedReadsAndRangesTest() throws Exception {
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
-        MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern);
-        MultiNSequenceWithQuality mseq = createMultiNSeq("AT", 3);
-        exception.expect(IllegalArgumentException.class);
-        multiPattern.match(mseq, new Range(0, 2), new Range(2, 3));
-    }
-
-    @Test
-    public void mismatchedReadsAndComplementsTest1() throws Exception {
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
-        MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern);
-        MultiNSequenceWithQuality mseq = createMultiNSeq("AT");
-        exception.expect(IllegalArgumentException.class);
-        multiPattern.match(mseq, new Range[]{new Range(0, 2)}, new boolean[]{false, false});
-    }
-
-    @Test
-    public void mismatchedReadsAndComplementsTest2() throws Exception {
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
-        MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern);
-        MultiNSequenceWithQuality mseq = createMultiNSeq("AT", 3);
-        exception.expect(IllegalArgumentException.class);
-        multiPattern.match(mseq, false, false);
-    }
-
-    @Test
     public void simpleTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GTTATTACCA"));
-        AndPattern pattern3 = new AndPattern(getTestPatternAligner(), new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("AT")), new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GCAT")));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("ATTAGACA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("TGGTAATAAC"));
+        AndPattern pattern3 = new AndPattern(getTestPatternAligner(),
+                new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("AT")),
+                new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATGC")));
         MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern1, pattern2, pattern3);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQualityImpl(
                 new NSequenceWithQuality("ACAATTAGACA"),
                 new NSequenceWithQuality("GTTATTACCA").getReverseComplement(),
                 new NSequenceWithQuality("AACTTGCATAT").getReverseComplement());
-        assertTrue(multiPattern.match(mseq, new Range[]{new Range(0, 11),
-                new Range(0, 10, true), new Range(0, 11, true)},
-                new boolean[]{false, true, true}).isFound());
-        assertTrue(multiPattern.match(mseq, false, true, true).isFound());
-        assertFalse(multiPattern.match(mseq, new Range[]{new Range(0, 11),
-                        new Range(1, 10, true), new Range(0, 11, true)},
-                new boolean[]{false, true, true}).isFound());
-        assertFalse(multiPattern.match(mseq, false, true, false).isFound());
-        assertEquals("GCATAT", multiPattern.match(mseq, false, true, true)
+        assertTrue(multiPattern.match(mseq).isFound());
+        assertTrue(multiPattern.match(mseq).isFound());
+        assertFalse(multiPattern.match(mseq).isFound());
+        assertFalse(multiPattern.match(mseq).isFound());
+        assertEquals("GCATAT", multiPattern.match(mseq)
                 .getMatches().take().getMatchedRange(2).getValue().getSequence().toString());
         assertNull(multiPattern.match(mseq).getBestMatch());
-        assertNotNull(multiPattern.match(mseq, false, true, true).getBestMatch());
-        assertTrue(multiPattern.match(mseq, new Range(0, 11), new Range(0, 10, true),
-                new Range(0, 11, true)).isFound());
+        assertNotNull(multiPattern.match(mseq).getBestMatch());
+        assertTrue(multiPattern.match(mseq).isFound());
     }
 
     @Test
@@ -101,8 +71,7 @@ public class MultiPatternTest {
             MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), patterns);
             assertEquals(isMatching, multiPattern.match(mseq).isFound());
             assertEquals(isMatching, multiPattern.match(mseq).getBestMatch() != null);
-            assertEquals(isMatching, multiPattern.match(mseq).getMatches(true, false).take() != null);
-            assertEquals(isMatching, multiPattern.match(mseq).getMatches(false, false).take() != null);
+            assertEquals(isMatching, multiPattern.match(mseq).getMatches(false).take() != null);
         }
     }
 
@@ -125,16 +94,19 @@ public class MultiPatternTest {
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
                 new NucleotideSequence("ATAGGAGGGTAGCC"), groups1);
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("TTTTCAATGCATTAG").getReverseComplement(), groups2);
+                new NucleotideSequence("TTTTCAATGCATTAG"), groups2);
         MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern1, pattern2);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQualityImpl(
                 new NSequenceWithQuality("ATAGGAGGGTAGCCACAATTAGCCA"),
                 new NSequenceWithQuality("GTGCATCTGCCATTTTCAATGCATTAG"));
-        MatchingResult result = multiPattern.match(mseq, false, true);
+        MatchingResult result = multiPattern.match(mseq);
         OutputPort<Match> matchOutputPort = result.getMatches();
-        assertEquals("ABC", result.getBestMatch().getMatchedGroupEdge("ABC", false).getGroupName());
-        assertEquals(11, result.getBestMatch().getMatchedGroupEdge("GH", false).getPosition());
-        assertEquals(1, matchOutputPort.take().getMatchedGroupEdge("XYZ", true).getPosition());
+        assertEquals("ABC", result.getBestMatch()
+                .getMatchedGroupEdge("ABC", false).getGroupName());
+        assertEquals(11, result.getBestMatch()
+                .getMatchedGroupEdge("GH", false).getPosition());
+        assertEquals(1, matchOutputPort.take()
+                .getMatchedGroupEdge("XYZ", true).getPosition());
         assertNull(matchOutputPort.take());
     }
 

@@ -43,20 +43,20 @@ public class PlusPatternTest {
         PlusPattern plusPattern7 = new PlusPattern(patternAligner, pattern1, pattern3, pattern2);
 
         assertEquals(false, plusPattern1.match(nseq1).isFound());
-        assertEquals(false, plusPattern1.match(nseq1, 0, 25, (byte)1).isFound());
+        assertEquals(false, plusPattern1.match(nseq1, 0, 25).isFound());
         assertEquals(false, plusPattern1.match(nseq1, new Range(0, 25)).isFound());
         assertEquals(true, plusPattern2.match(nseq1).isFound());
-        assertEquals(true, plusPattern2.match(nseq1, 0, 25, (byte)1).isFound());
+        assertEquals(true, plusPattern2.match(nseq1, 0, 25).isFound());
         assertEquals(true, plusPattern2.match(nseq1, new Range(0, 25)).isFound());
-        assertEquals(false, plusPattern4.match(nseq3, new Range(0, 24), (byte)-1).isFound());
-        assertEquals(false, plusPattern3.match(nseq3, new Range(0, 24), (byte)-1).isFound());
-        assertEquals(true, plusPattern7.match(nseq3, new Range(0, 24), (byte)-1).isFound());
+        assertEquals(false, plusPattern4.match(nseq3, new Range(0, 24)).isFound());
+        assertEquals(false, plusPattern3.match(nseq3, new Range(0, 24)).isFound());
+        assertEquals(true, plusPattern7.match(nseq3, new Range(0, 24)).isFound());
         assertEquals(false, plusPattern3.match(nseq1).isFound());
         assertEquals(false, plusPattern6.match(nseq2).isFound());
         assertEquals(true, plusPattern6.match(nseq1).isFound());
         assertEquals(false, plusPattern2.match(nseq1, new Range(12, 21)).isFound());
 
-        assertEquals(new Range(0, 17), plusPattern7.match(nseq3, new Range(0, 24), (byte)-1).getBestMatch().getRange());
+        assertEquals(new Range(0, 17), plusPattern7.match(nseq3, new Range(0, 24)).getBestMatch().getRange());
         assertEquals(new Range(11, 21), plusPattern2.match(nseq1, new Range(1, 21)).getBestMatch().getRange());
         assertEquals(null, plusPattern2.match(nseq1, new Range(11, 20)).getBestMatch());
 
@@ -82,11 +82,9 @@ public class PlusPatternTest {
                     patternMotif1, patternMotif2);
             assertTrue(plusPattern.match(target).isFound());
             assertNotNull(plusPattern.match(target).getBestMatch(false));
-            assertNotNull(plusPattern.match(target).getMatches(true, false).take());
-            assertNotNull(plusPattern.match(target).getMatches(false, false).take());
+            assertNotNull(plusPattern.match(target).getMatches(false).take());
             assertNotNull(plusPattern.match(target).getBestMatch(true));
-            assertNotNull(plusPattern.match(target).getMatches(true, true).take());
-            assertNotNull(plusPattern.match(target).getMatches(false, true).take());
+            assertNotNull(plusPattern.match(target).getMatches(true).take());
 
             NSequenceWithQuality foundSequence = plusPattern.match(target).getBestMatch(true).getValue();
             assertTrue(patternMotif1.match(foundSequence).isFound());
@@ -109,18 +107,16 @@ public class PlusPatternTest {
         assertNotNull(plusPattern2.match(nseq).getBestMatch());
         assertEquals(22, countMatches(plusPattern1.match(nseq), true));
         assertEquals(30, countMatches(plusPattern2.match(nseq), true));
-        for (boolean byScore : new boolean[] {true, false}) {
-            OutputPort<Match> matchesPattern1 = plusPattern1.match(nseq).getMatches(byScore, true);
-            OutputPort<Match> matchesPattern2 = plusPattern2.match(nseq).getMatches(byScore, true);
-            for (int i = 0; i < 22; i++) {
-                assertNotNull(matchesPattern1.take().getValue());
-            }
-            assertNull(matchesPattern1.take());
-            for (int i = 0; i < 30; i++) {
-                assertNotNull(matchesPattern2.take().getValue());
-            }
-            assertNull(matchesPattern2.take());
+        OutputPort<Match> matchesPattern1 = plusPattern1.match(nseq).getMatches(true);
+        OutputPort<Match> matchesPattern2 = plusPattern2.match(nseq).getMatches(true);
+        for (int i = 0; i < 22; i++) {
+            assertNotNull(matchesPattern1.take().getValue());
         }
+        assertNull(matchesPattern1.take());
+        for (int i = 0; i < 30; i++) {
+            assertNotNull(matchesPattern2.take().getValue());
+        }
+        assertNull(matchesPattern2.take());
     }
 
     @Test
@@ -129,7 +125,7 @@ public class PlusPatternTest {
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("TAT"));
         PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(true), pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("ATATATATTATA");
-        plusPattern.match(nseq).getMatches(false, true);
+        plusPattern.match(nseq).getMatches(true);
         assertEquals(6, countMatches(plusPattern.match(nseq), true));
     }
 
@@ -150,11 +146,9 @@ public class PlusPatternTest {
         match2 = plusPattern.match(nseq2);
         assertEquals(true, match1.isFound());
         assertEquals(false, match2.isFound());
-        assertNotNull(match1.getMatches(true, true).take());
-        assertNotNull(match1.getMatches(false, true).take());
+        assertNotNull(match1.getMatches(true).take());
         assertNotNull(match1.getMatches().take());
-        assertNotNull(match2.getMatches(true, true));
-        assertNotNull(match2.getMatches(false, true));
+        assertNotNull(match2.getMatches(true));
         assertNotNull(match2.getMatches());
         assertNull(match2.getMatches().take());
         assertEquals(6, countMatches(match1, true));
@@ -186,7 +180,7 @@ public class PlusPatternTest {
         PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(true), pattern2, pattern1);
         NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGCC");
         MatchingResult result = plusPattern.match(nseq);
-        OutputPort<Match> matchOutputPort = result.getMatches(false, true);
+        OutputPort<Match> matchOutputPort = result.getMatches(true);
         Match match = matchOutputPort.take();
         assertEquals(16, match.getMatchedGroupEdge("2", true).getPosition());
         assertEquals(20, match.getMatchedGroupEdge("4", false).getPosition());
@@ -216,13 +210,12 @@ public class PlusPatternTest {
             if (targetContainsPattern1) {
                 assertTrue(pattern1.match(targetQ).isFound());
                 assertTrue(pattern1.match(targetQ).getBestMatch(rg.nextBoolean()) != null);
-                assertTrue(pattern1.match(targetQ).getMatches(rg.nextBoolean(), rg.nextBoolean())
-                        .take() != null);
+                assertTrue(pattern1.match(targetQ).getMatches(rg.nextBoolean()).take() != null);
             }
 
             assertTrue(pattern2.match(targetQ).isFound());
             assertTrue(pattern2.match(targetQ).getBestMatch(rg.nextBoolean()) != null);
-            assertTrue(pattern2.match(targetQ).getMatches(rg.nextBoolean(), rg.nextBoolean()).take() != null);
+            assertTrue(pattern2.match(targetQ).getMatches(rg.nextBoolean()).take() != null);
 
             long errorScorePenalty = -rg.nextInt(50) - 1;
             int maxOverlap = rg.nextInt(5) - 1;
@@ -245,8 +238,8 @@ public class PlusPatternTest {
             boolean plusMustBeFound = isMatchingPattern1;
             if (misplacedPatterns) {
                 plusPenaltyThreshold = Long.MIN_VALUE;
-                OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(rg.nextBoolean(), true);
-                OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(rg.nextBoolean(), true);
+                OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(true);
+                OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(true);
                 List<Range> ranges1 = streamPort(port1).map(Match::getRange).collect(Collectors.toList());
                 List<Range> ranges2 = streamPort(port2).map(Match::getRange).collect(Collectors.toList());
 
@@ -266,8 +259,7 @@ public class PlusPatternTest {
                     0, errorScorePenalty, true, maxOverlap), pattern1, pattern2);
 
             assertEquals(plusMustBeFound, plusPattern.match(targetQ).getBestMatch(true) != null);
-            assertEquals(plusMustBeFound, plusPattern.match(targetQ).getMatches(rg.nextBoolean(),
-                    true).take() != null);
+            assertEquals(plusMustBeFound, plusPattern.match(targetQ).getMatches(true).take() != null);
         }
     }
 
@@ -328,7 +320,7 @@ public class PlusPatternTest {
                 -5, true, 2, -1), pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("ATAGATTC");
         MatchingResult result = plusPattern.match(nseq);
-        OutputPort<Match> matchOutputPort = result.getMatches(false, true);
+        OutputPort<Match> matchOutputPort = result.getMatches(true);
         Match match = matchOutputPort.take();
         assertEquals(5, match.getMatchedGroupEdge("A", true).getPosition());
         assertEquals(5, match.getMatchedGroupEdge("A", false).getPosition());
@@ -341,7 +333,16 @@ public class PlusPatternTest {
     }
 
     @Test
-    public void specialCaseTest1() throws Exception {
+    public void specialCaseTest1Unfair() throws Exception {
+        assertNotNull(specialCaseTest1MatchingResult().getBestMatch(false));
+    }
+
+    @Test
+    public void specialCaseTest1Fair() throws Exception {
+        assertEquals(7253, countMatches(specialCaseTest1MatchingResult(), true));
+    }
+
+    private MatchingResult specialCaseTest1MatchingResult() {
         PatternAligner patternAligner = getTestPatternAligner(-100, 2, 0,
                 -1);
         NSequenceWithQuality target = new NSequenceWithQuality("TAATCATCCATTAGACATTTTTTTA");
@@ -352,8 +353,6 @@ public class PlusPatternTest {
         FuzzyMatchPattern plusOperand2 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("GACA"));
         FuzzyMatchPattern plusOperand4 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("T"));
         PlusPattern plusPattern = new PlusPattern(patternAligner, plusOperand1, plusOperand2, andPattern, plusOperand4);
-        MatchingResult matchingResult = plusPattern.match(target);
-        assertEquals(7253, countMatches(matchingResult,true));
-        assertNotNull(matchingResult.getBestMatch(false));
+        return plusPattern.match(target);
     }
 }

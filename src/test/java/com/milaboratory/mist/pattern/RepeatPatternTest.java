@@ -24,9 +24,9 @@ public class RepeatPatternTest {
         NSequenceWithQuality nseq = new NSequenceWithQuality("TTTATTTTTGTTATTTTTTTATGTTTATGTTTTATGTTA");
         MatchingResult[] results = {
                 pattern.match(nseq),
-                pattern.match(nseq, 0, 33, (byte)0),
-                pattern.match(nseq, 0, 39, (byte)0),
-                pattern.match(nseq, 15, 31, (byte)0),
+                pattern.match(nseq, 0, 33),
+                pattern.match(nseq, 0, 39),
+                pattern.match(nseq, 15, 31),
                 pattern.match(nseq, new Range(15, 31))
         };
         for (boolean fairSorting : new boolean[] {true, false})
@@ -51,8 +51,8 @@ public class RepeatPatternTest {
         NSequenceWithQuality nseq1 = new NSequenceWithQuality("TTTTATTATGTACA");
         NSequenceWithQuality nseq2 = new NSequenceWithQuality("ATTATTTATTAATGTATTATGCTATTATATAGACA");
         MatchingResult[] results = {
-                pattern.match(nseq1, 1, 12, (byte)0),
-                pattern.match(nseq1, new Range(3, 10), (byte)0),
+                pattern.match(nseq1, 1, 12),
+                pattern.match(nseq1, new Range(3, 10)),
                 pattern.match(nseq2)
         };
         for (MatchingResult result : results) {
@@ -79,7 +79,7 @@ public class RepeatPatternTest {
             RepeatPattern pattern = new RepeatPattern(getTestPatternAligner(), seqM, minRepeats, maxRepeats);
             assertTrue(pattern.match(target).isFound());
             assertNotNull(pattern.match(target).getBestMatch(i % 50 == 0));
-            assertNotNull(pattern.match(target).getMatches(rg.nextBoolean(), i % 50 == 0).take());
+            assertNotNull(pattern.match(target).getMatches(i % 50 == 0).take());
         }
     }
 
@@ -97,8 +97,7 @@ public class RepeatPatternTest {
             boolean isMatching = target.toString().contains(repeatString(motif.toString(), minRepeats));
             assertEquals(isMatching, pattern.match(targetQ).isFound());
             assertEquals(isMatching, pattern.match(targetQ).getBestMatch(i % 50 == 0) != null);
-            assertEquals(isMatching, pattern.match(targetQ).getMatches(rg.nextBoolean(),
-                    i % 50 == 0).take() != null);
+            assertEquals(isMatching, pattern.match(targetQ).getMatches(i % 50 == 0).take() != null);
         }
     }
 
@@ -110,20 +109,18 @@ public class RepeatPatternTest {
                 "ATCGGAATGTTGTTGTTGTTGTGTATAAAGGACCCAGAGCCCCATGTTGTAGTGTC");
         MatchingResult result = pattern.match(nseq);
         Match bestMatch1 = result.getBestMatch();
-        Match firstMatchByScore = result.getMatches(true, true).take();
+        Match firstMatch = result.getMatches(true).take();
         Match bestMatch2 = result.getBestMatch();
-        Match firstMatchByCoordinate = result.getMatches(false, true).take();
         Match bestMatch3 = result.getBestMatch();
         assertEquals(bestMatch1.getRange(), bestMatch2.getRange());
         assertEquals(bestMatch1.getRange(), bestMatch3.getRange());
-        assertEquals(bestMatch1.getRange(), firstMatchByScore.getRange());
-        assertEquals(new Range(39, 43), firstMatchByScore.getRange());
-        assertEquals(new Range(32, 35), firstMatchByCoordinate.getRange());
+        assertEquals(bestMatch1.getRange(), firstMatch.getRange());
+        assertEquals(new Range(39, 43), firstMatch.getRange());
         assertEquals(true, result.isFound());
         assertEquals(9, countMatches(result, true));
         assertEquals(9, countMatches(result, false));
         result = pattern.match(nseq);
-        OutputPort<Match> matches = result.getMatches(false, true);
+        OutputPort<Match> matches = result.getMatches(true);
         assertEquals(new Range(32, 35), matches.take().getRange());
         assertEquals("CC", matches.take().getValue().getSequence().toString());
         assertEquals(new Range(33, 35), matches.take().getMatchedRanges().get(0).getRange());
@@ -187,7 +184,7 @@ public class RepeatPatternTest {
             for (int j = 0; j < 3; j++) {
                 matchingResults[i][j] = patterns[i].match(sequences[j]);
                 previousMatch = null;
-                for (Match currentMatch : CUtils.it(matchingResults[i][j].getMatches(true, true))) {
+                for (Match currentMatch : CUtils.it(matchingResults[i][j].getMatches(true))) {
                     if (previousMatch != null)
                         assertTrue(currentMatch.getScore() <= previousMatch.getScore());
                     previousMatch = currentMatch;

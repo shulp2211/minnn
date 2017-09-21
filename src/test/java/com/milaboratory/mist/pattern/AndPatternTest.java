@@ -42,19 +42,19 @@ public class AndPatternTest {
         AndPattern andPattern6 = new AndPattern(patternAligner, pattern1);
 
         assertEquals(false, andPattern1.match(nseq1).isFound());
-        assertEquals(false, andPattern1.match(nseq1, 0, 25, (byte)1).isFound());
+        assertEquals(false, andPattern1.match(nseq1, 0, 25).isFound());
         assertEquals(false, andPattern1.match(nseq1, new Range(0, 25)).isFound());
         assertEquals(true, andPattern2.match(nseq1).isFound());
-        assertEquals(true, andPattern2.match(nseq1, 0, 25, (byte)1).isFound());
+        assertEquals(true, andPattern2.match(nseq1, 0, 25).isFound());
         assertEquals(true, andPattern2.match(nseq1, new Range(0, 25)).isFound());
-        assertEquals(false, andPattern4.match(nseq3, new Range(0, 24), (byte)-1).isFound());
-        assertEquals(true, andPattern3.match(nseq3, new Range(0, 24), (byte)-1).isFound());
+        assertEquals(false, andPattern4.match(nseq3, new Range(0, 24)).isFound());
+        assertEquals(true, andPattern3.match(nseq3, new Range(0, 24)).isFound());
         assertEquals(false, andPattern3.match(nseq1).isFound());
         assertEquals(false, andPattern6.match(nseq2).isFound());
         assertEquals(true, andPattern6.match(nseq1).isFound());
         assertEquals(false, andPattern2.match(nseq1, new Range(12, 21)).isFound());
 
-        assertEquals(new Range(0, 17), andPattern3.match(nseq3, new Range(0, 24), (byte)-1).getBestMatch().getRange());
+        assertEquals(new Range(0, 17), andPattern3.match(nseq3, new Range(0, 24)).getBestMatch().getRange());
         assertEquals(new Range(11, 21), andPattern2.match(nseq1, new Range(1, 21)).getBestMatch().getRange());
         assertEquals(null, andPattern2.match(nseq1, new Range(11, 20)).getBestMatch());
 
@@ -83,11 +83,9 @@ public class AndPatternTest {
             assertTrue(andPattern1.match(target).isFound());
             assertTrue(andPattern2.match(target).isFound());
             assertNotNull(andPattern1.match(target).getBestMatch(false));
-            assertNotNull(andPattern1.match(target).getMatches(true, false).take());
-            assertNotNull(andPattern1.match(target).getMatches(false, false).take());
+            assertNotNull(andPattern1.match(target).getMatches(false).take());
             assertNotNull(andPattern1.match(target).getBestMatch(true));
-            assertNotNull(andPattern1.match(target).getMatches(true, true).take());
-            assertNotNull(andPattern1.match(target).getMatches(false, true).take());
+            assertNotNull(andPattern1.match(target).getMatches(true).take());
 
             NSequenceWithQuality foundSequence = andPattern1.match(target).getBestMatch(true).getValue();
             assertTrue(patternMotif1.match(foundSequence).isFound());
@@ -110,18 +108,16 @@ public class AndPatternTest {
         assertNotNull(andPattern2.match(nseq).getBestMatch());
         assertEquals(44, countMatches(andPattern1.match(nseq), true));
         assertEquals(248, countMatches(andPattern2.match(nseq), true));
-        for (boolean byScore : new boolean[] {true, false}) {
-            OutputPort<Match> matchesPattern1 = andPattern1.match(nseq).getMatches(byScore, true);
-            OutputPort<Match> matchesPattern2 = andPattern2.match(nseq).getMatches(byScore, true);
-            for (int i = 0; i < 44; i++) {
-                assertNotNull(matchesPattern1.take().getValue());
-            }
-            assertNull(matchesPattern1.take());
-            for (int i = 0; i < 248; i++) {
-                assertNotNull(matchesPattern2.take().getValue());
-            }
-            assertNull(matchesPattern2.take());
+        OutputPort<Match> matchesPattern1 = andPattern1.match(nseq).getMatches(true);
+        OutputPort<Match> matchesPattern2 = andPattern2.match(nseq).getMatches(true);
+        for (int i = 0; i < 44; i++) {
+            assertNotNull(matchesPattern1.take().getValue());
         }
+        assertNull(matchesPattern1.take());
+        for (int i = 0; i < 248; i++) {
+            assertNotNull(matchesPattern2.take().getValue());
+        }
+        assertNull(matchesPattern2.take());
     }
 
     @Test
@@ -130,7 +126,7 @@ public class AndPatternTest {
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("TAT"));
         AndPattern andPattern = new AndPattern(getTestPatternAligner(true), pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("ATATATATTATA");
-        andPattern.match(nseq).getMatches(false, true);
+        andPattern.match(nseq).getMatches(true);
         assertEquals(10, countMatches(andPattern.match(nseq), true));
     }
 
@@ -151,11 +147,9 @@ public class AndPatternTest {
         match2 = andPattern.match(nseq2);
         assertEquals(true, match1.isFound());
         assertEquals(false, match2.isFound());
-        assertNotNull(match1.getMatches(true, true).take());
-        assertNotNull(match1.getMatches(false, true).take());
+        assertNotNull(match1.getMatches(true).take());
         assertNotNull(match1.getMatches().take());
-        assertNotNull(match2.getMatches(true, true));
-        assertNotNull(match2.getMatches(false, true));
+        assertNotNull(match2.getMatches(true));
         assertNotNull(match2.getMatches());
         assertNull(match2.getMatches().take());
         assertEquals(10, countMatches(match1, true));
@@ -187,7 +181,7 @@ public class AndPatternTest {
         AndPattern andPattern = new AndPattern(getTestPatternAligner(true), pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGCC");
         MatchingResult result = andPattern.match(nseq);
-        OutputPort<Match> matchOutputPort = result.getMatches(false, true);
+        OutputPort<Match> matchOutputPort = result.getMatches(true);
         Match match = matchOutputPort.take();
         assertEquals(16, match.getMatchedGroupEdge("2", true).getPosition());
         assertEquals(9, match.getMatchedGroupEdge("5", false).getPosition());
@@ -217,13 +211,12 @@ public class AndPatternTest {
             if (targetContainsPattern1) {
                 assertTrue(pattern1.match(targetQ).isFound());
                 assertTrue(pattern1.match(targetQ).getBestMatch(rg.nextBoolean()) != null);
-                assertTrue(pattern1.match(targetQ).getMatches(rg.nextBoolean(), rg.nextBoolean())
-                        .take() != null);
+                assertTrue(pattern1.match(targetQ).getMatches(rg.nextBoolean()).take() != null);
             }
 
             assertTrue(pattern2.match(targetQ).isFound());
             assertTrue(pattern2.match(targetQ).getBestMatch(rg.nextBoolean()) != null);
-            assertTrue(pattern2.match(targetQ).getMatches(rg.nextBoolean(), rg.nextBoolean()).take() != null);
+            assertTrue(pattern2.match(targetQ).getMatches(rg.nextBoolean()).take() != null);
 
             long errorScorePenalty = -rg.nextInt(50) - 1;
             int maxOverlap = rg.nextInt(5) - 1;
@@ -245,8 +238,8 @@ public class AndPatternTest {
             boolean andMustBeFound = isMatchingPattern1;
             if (tooBigOverlap) {
                 andPenaltyThreshold = Long.MIN_VALUE;
-                OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(rg.nextBoolean(), true);
-                OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(rg.nextBoolean(), true);
+                OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(true);
+                OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(true);
                 List<Range> ranges1 = streamPort(port1).map(Match::getRange).collect(Collectors.toList());
                 List<Range> ranges2 = streamPort(port2).map(Match::getRange).collect(Collectors.toList());
 
@@ -265,8 +258,7 @@ public class AndPatternTest {
                     0, errorScorePenalty, true, maxOverlap), pattern1, pattern2);
 
             assertEquals(andMustBeFound, andPattern.match(targetQ).getBestMatch(true) != null);
-            assertEquals(andMustBeFound, andPattern.match(targetQ).getMatches(rg.nextBoolean(),
-                    true).take() != null);
+            assertEquals(andMustBeFound, andPattern.match(targetQ).getMatches(true).take() != null);
         }
     }
 

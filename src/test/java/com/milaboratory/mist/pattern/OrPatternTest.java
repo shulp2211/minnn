@@ -37,20 +37,21 @@ public class OrPatternTest {
         OrPattern orPattern6 = new OrPattern(getTestPatternAligner(), pattern1);
 
         assertEquals(false, orPattern1.match(nseq1).isFound());
-        assertEquals(false, orPattern1.match(nseq1, 0, 25, (byte)1).isFound());
+        assertEquals(false, orPattern1.match(nseq1, 0, 25).isFound());
         assertEquals(false, orPattern1.match(nseq1, new Range(0, 25)).isFound());
         assertEquals(true, orPattern2.match(nseq3).isFound());
-        assertEquals(true, orPattern2.match(nseq3, 0, 24, (byte)1).isFound());
+        assertEquals(true, orPattern2.match(nseq3, 0, 24).isFound());
         assertEquals(true, orPattern2.match(nseq3, new Range(0, 24)).isFound());
-        assertEquals(false, orPattern4.match(nseq3, new Range(0, 24), (byte)-1).isFound());
-        assertEquals(true, orPattern3.match(nseq3, new Range(0, 24), (byte)-1).isFound());
+        assertEquals(false, orPattern4.match(nseq3, new Range(0, 24)).isFound());
+        assertEquals(true, orPattern3.match(nseq3, new Range(0, 24)).isFound());
         assertEquals(false, orPattern3.match(nseq1).isFound());
         assertEquals(false, orPattern6.match(nseq2).isFound());
         assertEquals(true, orPattern6.match(nseq3).isFound());
         assertEquals(false, orPattern2.match(nseq3, new Range(12, 21)).isFound());
 
-        assertEquals(new Range(0, 8), orPattern3.match(nseq3, new Range(0, 24), (byte)-1).getBestMatch().getRange());
-        assertEquals(new Range(2, 6), orPattern2.match(nseq2, new Range(1, 17)).getMatches(false, true).take().getRange());
+        assertEquals(new Range(0, 8), orPattern3.match(nseq3, new Range(0, 24)).getBestMatch().getRange());
+        assertEquals(new Range(2, 6),
+                orPattern2.match(nseq2, new Range(1, 17)).getMatches(true).take().getRange());
         assertEquals(null, orPattern2.match(nseq3, new Range(12, 21)).getBestMatch());
 
         exception.expect(IllegalArgumentException.class);
@@ -77,11 +78,9 @@ public class OrPatternTest {
             assertTrue(orPattern2.match(target).isFound());
             assertTrue(orPattern3.match(target).isFound());
             assertNotNull(orPattern1.match(target).getBestMatch(false));
-            assertNotNull(orPattern1.match(target).getMatches(true, false).take());
-            assertNotNull(orPattern1.match(target).getMatches(false, false).take());
+            assertNotNull(orPattern1.match(target).getMatches(false).take());
             assertNotNull(orPattern1.match(target).getBestMatch(true));
-            assertNotNull(orPattern1.match(target).getMatches(true, true).take());
-            assertNotNull(orPattern1.match(target).getMatches(false, true).take());
+            assertNotNull(orPattern1.match(target).getMatches(true).take());
 
             NSequenceWithQuality foundSequence = orPattern1.match(target).getBestMatch(true).getValue();
             assertTrue(foundSequence.getSequence().toString().equals(
@@ -108,18 +107,16 @@ public class OrPatternTest {
         assertNotNull(orPattern2.match(nseq).getBestMatch());
         assertEquals(48, countMatches(orPattern1.match(nseq), true));
         assertEquals(384, countMatches(orPattern2.match(nseq), true));
-        for (boolean byScore : new boolean[] {true, false}) {
-            OutputPort<Match> matchesPattern1 = orPattern1.match(nseq).getMatches(byScore, true);
-            OutputPort<Match> matchesPattern2 = orPattern2.match(nseq).getMatches(byScore, true);
-            for (int i = 0; i < 48; i++) {
-                assertNotNull(matchesPattern1.take().getValue());
-            }
-            assertNull(matchesPattern1.take());
-            for (int i = 0; i < 384; i++) {
-                assertNotNull(matchesPattern2.take().getValue());
-            }
-            assertNull(matchesPattern2.take());
+        OutputPort<Match> matchesPattern1 = orPattern1.match(nseq).getMatches(true);
+        OutputPort<Match> matchesPattern2 = orPattern2.match(nseq).getMatches(true);
+        for (int i = 0; i < 48; i++) {
+            assertNotNull(matchesPattern1.take().getValue());
         }
+        assertNull(matchesPattern1.take());
+        for (int i = 0; i < 384; i++) {
+            assertNotNull(matchesPattern2.take().getValue());
+        }
+        assertNull(matchesPattern2.take());
     }
 
     @Test
@@ -139,11 +136,9 @@ public class OrPatternTest {
         match2 = orPattern.match(nseq2);
         assertEquals(true, match1.isFound());
         assertEquals(false, match2.isFound());
-        assertNotNull(match1.getMatches(true, true).take());
-        assertNotNull(match1.getMatches(false, true).take());
+        assertNotNull(match1.getMatches(true).take());
         assertNotNull(match1.getMatches().take());
-        assertNotNull(match2.getMatches(true, true));
-        assertNotNull(match2.getMatches(false, true));
+        assertNotNull(match2.getMatches(true));
         assertNotNull(match2.getMatches());
         assertNull(match2.getMatches().take());
         assertEquals(4, countMatches(match1, true));
@@ -168,7 +163,7 @@ public class OrPatternTest {
         OrPattern orPattern = new OrPattern(getTestPatternAligner(), pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGCC");
         MatchingResult result = orPattern.match(nseq);
-        OutputPort<Match> matchOutputPort = result.getMatches(false, true);
+        OutputPort<Match> matchOutputPort = result.getMatches(true);
         Match match = matchOutputPort.take();
         assertEquals(4, match.getMatchedGroupEdge("2", true).getPosition());
         assertEquals(4, match.getMatchedGroupEdge("1", false).getPosition());
@@ -199,21 +194,17 @@ public class OrPatternTest {
             if (targetContainsPattern1) {
                 assertTrue(pattern1.match(targetQ).isFound());
                 assertTrue(pattern1.match(targetQ).getBestMatch(false) != null);
-                assertTrue(pattern1.match(targetQ).getMatches(true, false).take() != null);
-                assertTrue(pattern1.match(targetQ).getMatches(false, false).take() != null);
+                assertTrue(pattern1.match(targetQ).getMatches(false).take() != null);
                 assertTrue(pattern1.match(targetQ).getBestMatch(true) != null);
-                assertTrue(pattern1.match(targetQ).getMatches(true, true).take() != null);
-                assertTrue(pattern1.match(targetQ).getMatches(false, true).take() != null);
+                assertTrue(pattern1.match(targetQ).getMatches(true).take() != null);
             }
 
             if (targetContainsPattern2) {
                 assertTrue(pattern2.match(targetQ).isFound());
                 assertTrue(pattern2.match(targetQ).getBestMatch(false) != null);
-                assertTrue(pattern2.match(targetQ).getMatches(true, false).take() != null);
-                assertTrue(pattern2.match(targetQ).getMatches(false, false).take() != null);
+                assertTrue(pattern2.match(targetQ).getMatches(false).take() != null);
                 assertTrue(pattern2.match(targetQ).getBestMatch(true) != null);
-                assertTrue(pattern2.match(targetQ).getMatches(true, true).take() != null);
-                assertTrue(pattern2.match(targetQ).getMatches(false, true).take() != null);
+                assertTrue(pattern2.match(targetQ).getMatches(true).take() != null);
             }
 
             OrPattern orPattern = new OrPattern(getTestPatternAligner(), pattern1, pattern2);
@@ -221,11 +212,9 @@ public class OrPatternTest {
 
             assertEquals(orMustBeMatching, orPattern.match(targetQ).isFound());
             assertEquals(orMustBeMatching, orPattern.match(targetQ).getBestMatch(false) != null);
-            assertEquals(orMustBeMatching, orPattern.match(targetQ).getMatches(true, false).take() != null);
-            assertEquals(orMustBeMatching, orPattern.match(targetQ).getMatches(false, false).take() != null);
+            assertEquals(orMustBeMatching, orPattern.match(targetQ).getMatches(false).take() != null);
             assertEquals(orMustBeMatching, orPattern.match(targetQ).getBestMatch(true) != null);
-            assertEquals(orMustBeMatching, orPattern.match(targetQ).getMatches(true, true).take() != null);
-            assertEquals(orMustBeMatching, orPattern.match(targetQ).getMatches(false, true).take() != null);
+            assertEquals(orMustBeMatching, orPattern.match(targetQ).getMatches(true).take() != null);
         }
     }
 

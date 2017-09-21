@@ -34,7 +34,7 @@ public class ScoreFilterTest {
                 assertEquals(isMatching, andOperator.match(multiTarget).getBestMatch(true) != null);
             assertTrue(countMatches(pattern.match(target), true)
                     >= countMatches(filterPattern.match(target), true));
-            OutputPort<Match> filteredPort = filterPattern.match(target).getMatches(rg.nextBoolean(), rg.nextBoolean());
+            OutputPort<Match> filteredPort = filterPattern.match(target).getMatches(rg.nextBoolean());
             streamPort(filteredPort).forEach(match -> assertTrue(match.getScore() >= scoreThreshold));
         }
     }

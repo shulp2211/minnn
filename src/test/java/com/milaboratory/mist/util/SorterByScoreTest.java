@@ -1,28 +1,8 @@
 package com.milaboratory.mist.util;
 
-import cc.redberry.pipe.OutputPort;
-import com.milaboratory.core.Range;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
-import com.milaboratory.mist.pattern.*;
-import org.junit.Test;
-
-import java.util.*;
-
-import static com.milaboratory.mist.pattern.MatchValidationType.*;
-import static com.milaboratory.mist.util.CommonTestTemplates.*;
-import static com.milaboratory.mist.util.CommonTestUtils.countPortValues;
-import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
-import static org.junit.Assert.*;
-
 public class SorterByScoreTest {
-    @Test
-    public void simplePredefinedMatchesTest() throws Exception {
-        predefinedMatchesApproximateSorterTest(true, false);
-    }
-
-    @Test
-    public void matchesWithMisplacedRangesTest() throws Exception {
+//    @Test
+//    public void matchesWithMisplacedRangesTest() throws Exception {
 //        NSequenceWithQuality seq = new NSequenceWithQuality("AATTAAGGCAAAGTAAATTGAGCA");
 //
 //        Match testMatch1 = new Match(1, 0, new ArrayList<MatchedItem>() {{
@@ -59,10 +39,10 @@ public class SorterByScoreTest {
 //        assertEquals(0, countPortValues(sorter4.getOutputPort(addInfiniteLimits(
 //                new ArrayList<OutputPort<Match>>() {{
 //                    add(testPort3.getCopy()); add(testPort1.getCopy()); }}))));
-    }
+//    }
 
-    @Test
-    public void matchesWithNullValuesTest() throws Exception {
+//    @Test
+//    public void matchesWithNullValuesTest() throws Exception {
 //        NSequenceWithQuality seq = new NSequenceWithQuality("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
 //        ArrayList<MatchedItem> testMatchedItemsSingle = new ArrayList<MatchedItem>() {{
 //            add(new MatchedRange(seq, (byte)1, 0, new Range(0, 40)));
@@ -117,66 +97,5 @@ public class SorterByScoreTest {
 //                countPortValues(sorterMulti2.getOutputPort(addInfiniteLimits(testPortsMultiWithNull1Copy2))));
 //        assertEquals(1,
 //                countPortValues(sorterMulti2.getOutputPort(addInfiniteLimits(testPortsMultiWithNull2Copy2))));
-    }
-
-    @Test
-    public void matchesFromOperatorsTest() throws Exception {
-//        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
-//        NSequenceWithQuality seq = new NSequenceWithQuality("ACTGCGATAAATTAGACAGTACGTATTAGACATTATTATTAGACAGAGACA");
-//
-//        ApproximateSorter sorterUnfair1 = new SorterByScore(getTestPatternAligner(), false,
-//                true, false, INTERSECTION);
-//        ApproximateSorter sorterUnfair2 = new SorterByScore(getTestPatternAligner(), false,
-//                true, false, ORDER);
-//        ApproximateSorter sorterFair1 = new SorterByScore(getTestPatternAligner(), false,
-//                true, true, INTERSECTION);
-//        ApproximateSorter sorterFair2 = new SorterByScore(getTestPatternAligner(), false,
-//                true, true, ORDER);
-//
-//        assertEquals(3, countPortValues(pattern.match(seq).getMatches()));
-//        assertEquals(3, countPortValues(sorterUnfair1.getOutputPort(addInfiniteLimits(
-//                new ArrayList<OutputPort<Match>>() {{
-//                    add(pattern.match(seq).getMatches()); }}))));
-//        assertEquals(3, countPortValues(sorterUnfair2.getOutputPort(addInfiniteLimits(
-//                new ArrayList<OutputPort<Match>>() {{
-//                    add(pattern.match(seq).getMatches()); }}))));
-//        assertEquals(3, countPortValues(sorterFair1.getOutputPort(addInfiniteLimits(
-//                new ArrayList<OutputPort<Match>>() {{
-//                    add(pattern.match(seq).getMatches()); }}))));
-//        assertEquals(3, countPortValues(sorterFair2.getOutputPort(addInfiniteLimits(
-//                new ArrayList<OutputPort<Match>>() {{
-//                    add(pattern.match(seq).getMatches()); }}))));
-//        assertEquals(6, countPortValues(sorterUnfair1.getOutputPort(addInfiniteLimits(
-//                new ArrayList<OutputPort<Match>>() {{
-//                    add(pattern.match(seq).getMatches()); add(pattern.match(seq).getMatches()); }}))));
-//        assertEquals(3, countPortValues(sorterUnfair2.getOutputPort(addInfiniteLimits(
-//                new ArrayList<OutputPort<Match>>() {{
-//                    add(pattern.match(seq).getMatches()); add(pattern.match(seq).getMatches()); }}))));
-//        assertEquals(6, countPortValues(sorterFair1.getOutputPort(addInfiniteLimits(
-//                new ArrayList<OutputPort<Match>>() {{
-//                    add(pattern.match(seq).getMatches()); add(pattern.match(seq).getMatches()); }}))));
-//        assertEquals(3, countPortValues(sorterFair2.getOutputPort(addInfiniteLimits(
-//                new ArrayList<OutputPort<Match>>() {{
-//                    add(pattern.match(seq).getMatches()); add(pattern.match(seq).getMatches()); }}))));
-    }
-
-    @Test
-    public void randomGeneratedMatchesTest() throws Exception {
-        randomMatchesApproximateSorterTest(true, false);
-    }
-
-    @Test
-    public void randomMatchesFromOperatorsTest() throws Exception {
-        randomMatchesFromOperatorsApproximateSorterTest(true);
-    }
-
-    @Test
-    public void fairSortingSimpleTest() throws Exception {
-        predefinedMatchesApproximateSorterTest(true, true);
-    }
-
-    @Test
-    public void fairSortingRandomTest() throws Exception {
-        randomMatchesApproximateSorterTest(true, true);
-    }
+//    }
 }

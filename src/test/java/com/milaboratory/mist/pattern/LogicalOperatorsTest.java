@@ -37,7 +37,7 @@ public class LogicalOperatorsTest {
 
         MultiNSequenceWithQuality mseq2 = new MultiNSequenceWithQualityImpl(
                 new NSequenceWithQuality("AACTTGCATAT"),
-                new NSequenceWithQuality("GTTATTACCA").getReverseComplement());
+                new NSequenceWithQuality("GTTATTACCA"));
 
         MultiNSequenceWithQuality mseq3 = createMultiNSeq("ATTAGACA");
 
@@ -71,12 +71,10 @@ public class LogicalOperatorsTest {
         OrOperator orOperatorS2_2 = new OrOperator(getTestPatternAligner(), new NotOperator(getTestPatternAligner(),
                 multiPattern2), multiPattern3);
 
-        Range ranges[] = {new Range(3, 11), new Range(0, 10, true)};
-
-        MatchingResult andResultS2_1 = andOperatorS2_1.match(mseq2, ranges);
-        MatchingResult orResultS2_1 = orOperatorS2_1.match(mseq2, ranges);
-        MatchingResult andResultS2_2 = andOperatorS2_2.match(mseq2, ranges);
-        MatchingResult orResultS2_2 = orOperatorS2_2.match(mseq2, ranges);
+        MatchingResult andResultS2_1 = andOperatorS2_1.match(mseq2);
+        MatchingResult orResultS2_1 = orOperatorS2_1.match(mseq2);
+        MatchingResult andResultS2_2 = andOperatorS2_2.match(mseq2);
+        MatchingResult orResultS2_2 = orOperatorS2_2.match(mseq2);
 
         assertFalse(andResultS2_1.isFound());
         assertTrue(orResultS2_1.isFound());
@@ -102,7 +100,7 @@ public class LogicalOperatorsTest {
         MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern1, pattern2, pattern3);
 
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQualityImpl(
-                new NSequenceWithQuality("ACAATTAGACA").getReverseComplement(),
+                new NSequenceWithQuality("ACAATTAGACA"),
                 new NSequenceWithQuality("GTTATTACCA"),
                 new NSequenceWithQuality("AACTTGCATAT"));
 
@@ -115,44 +113,24 @@ public class LogicalOperatorsTest {
         AndOperator andOperatorSingleFalse = new AndOperator(getTestPatternAligner(), orOperatorFalse);
         OrOperator orOperatorSingleFalse = new OrOperator(getTestPatternAligner(), andOperatorSingleFalse);
 
-        Range ranges[] = {new Range(1, 11, true), new Range(0, 10), new Range(2, 11)};
-        boolean reversed[] = {true, false, false};
-
-        MatchingResult notFalseResult = notOperatorFalse.match(mseq, reversed);
-        MatchingResult orFalseResult = orOperatorFalse.match(mseq, reversed);
-        MatchingResult andFalseResult = andOperatorFalse.match(mseq, reversed);
-        MatchingResult notTrueResult = notOperatorTrue.match(mseq, reversed);
-        MatchingResult orTrueResult = orOperatorTrue.match(mseq, reversed);
-        MatchingResult andTrueResult = andOperatorTrue.match(mseq, reversed);
-        MatchingResult andSingleFalseResult = andOperatorSingleFalse.match(mseq, reversed);
-        MatchingResult orSingleFalseResult = orOperatorSingleFalse.match(mseq, reversed);
-        MatchingResult notFalseResultR = notOperatorFalse.match(mseq, ranges, reversed);
-        MatchingResult orFalseResultR = orOperatorFalse.match(mseq, ranges, reversed);
-        MatchingResult andFalseResultR = andOperatorFalse.match(mseq, ranges, reversed);
-        MatchingResult notTrueResultR = notOperatorTrue.match(mseq, ranges, reversed);
-        MatchingResult orTrueResultR = orOperatorTrue.match(mseq, ranges, reversed);
-        MatchingResult andTrueResultR = andOperatorTrue.match(mseq, ranges, reversed);
-        MatchingResult andSingleFalseResultR = andOperatorSingleFalse.match(mseq, ranges, reversed);
-        MatchingResult orSingleFalseResultR = orOperatorSingleFalse.match(mseq, ranges, reversed);
+        MatchingResult notFalseResult = notOperatorFalse.match(mseq);
+        MatchingResult orFalseResult = orOperatorFalse.match(mseq);
+        MatchingResult andFalseResult = andOperatorFalse.match(mseq);
+        MatchingResult notTrueResult = notOperatorTrue.match(mseq);
+        MatchingResult orTrueResult = orOperatorTrue.match(mseq);
+        MatchingResult andTrueResult = andOperatorTrue.match(mseq);
+        MatchingResult andSingleFalseResult = andOperatorSingleFalse.match(mseq);
+        MatchingResult orSingleFalseResult = orOperatorSingleFalse.match(mseq);
 
         assertNull(notFalseResult.getBestMatch());
         assertNull(orFalseResult.getBestMatch());
         assertNull(andFalseResult.getBestMatch());
-        assertNull(notFalseResultR.getBestMatch());
-        assertNull(orFalseResultR.getBestMatch());
-        assertNull(andFalseResultR.getBestMatch());
         assertNotNull(notTrueResult.getBestMatch());
         assertEquals(NullMatchedRange.class, notTrueResult.getBestMatch().getMatchedRange().getClass());
         assertNotNull(orTrueResult.getBestMatch());
         assertNotNull(andTrueResult.getBestMatch());
-        assertNotNull(notTrueResultR.getBestMatch());
-        assertEquals(NullMatchedRange.class, notTrueResultR.getBestMatch().getMatchedRange().getClass());
-        assertNotNull(orTrueResultR.getBestMatch());
-        assertNotNull(andTrueResultR.getBestMatch());
         assertNull(andSingleFalseResult.getBestMatch());
         assertNull(orSingleFalseResult.getBestMatch());
-        assertNull(andSingleFalseResultR.getBestMatch());
-        assertNull(orSingleFalseResultR.getBestMatch());
 
         assertEquals(1, countMatches(notTrueResult, false));
         assertEquals(0, countMatches(notFalseResult, false));
@@ -171,7 +149,7 @@ public class LogicalOperatorsTest {
         assertEquals(0, countMatches(andSingleFalseResult, true));
         assertEquals(0, countMatches(orSingleFalseResult, true));
 
-        Match testMatch = andTrueResultR.getMatches().take();
+        Match testMatch = andTrueResult.getMatches().take();
         assertEquals("GTTATTACCA", testMatch.getMatchedRange(5).getValue().getSequence().toString());
         assertEquals("GCATAT", testMatch.getMatchedRange(6).getValue().getSequence().toString());
 
@@ -250,8 +228,10 @@ public class LogicalOperatorsTest {
             add(new GroupEdgePosition(new GroupEdge("5", false), 6));
         }};
 
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("TAGCC"), groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("CAGATGCA"), groups2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("TAGCC"),
+                groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("CAGATGCA"),
+                groups2);
         FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("A"));
         MultiPattern multiPattern1 = new MultiPattern(getTestPatternAligner(), pattern1, pattern3);
         MultiPattern multiPattern2 = new MultiPattern(getTestPatternAligner(), pattern3, pattern2);
@@ -262,9 +242,9 @@ public class LogicalOperatorsTest {
 
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQualityImpl(
                 new NSequenceWithQuality("ACAATTAGCCA"),
-                new NSequenceWithQuality("GTGCATCTGCCA"));
+                new NSequenceWithQuality("TGGCAGATGCAC"));
 
-        MatchingResult result = andOperator.match(mseq, false, true);
+        MatchingResult result = andOperator.match(mseq);
 
         assertEquals("1", result.getBestMatch().getMatchedGroupEdge("1", false).getGroupName());
         assertEquals(6, result.getBestMatch().getMatchedGroupEdge("3", false).getPosition());
@@ -295,15 +275,14 @@ public class LogicalOperatorsTest {
             }
         }
 
-        for (boolean byScore : new boolean[] {true, false})
-            for (boolean fairSorting : new boolean[] {true, false}) {
-                OutputPort<Match> matchOutputPort = result.getMatches(byScore, fairSorting);
-                for (int i = 0; i < 15; i++)
-                    assertNotNull(matchOutputPort.take());
-                assertNull(matchOutputPort.take());
-                for (int i = 0; i < 16; i++)
-                    assertNotNull(result.getMatches().take());
-            }
+        for (boolean fairSorting : new boolean[] {true, false}) {
+            OutputPort<Match> matchOutputPort = result.getMatches(fairSorting);
+            for (int i = 0; i < 15; i++)
+                assertNotNull(matchOutputPort.take());
+            assertNull(matchOutputPort.take());
+            for (int i = 0; i < 16; i++)
+                assertNotNull(result.getMatches().take());
+        }
     }
 
     @Test
