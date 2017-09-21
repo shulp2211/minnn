@@ -6,7 +6,6 @@ import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.mist.pattern.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
 import static com.milaboratory.mist.util.RangeTools.*;
@@ -16,7 +15,7 @@ public final class ApproximateSorter {
     private final ApproximateSorterConfiguration conf;
     private final ArrayList<SpecificOutputPort> unfairOutputPorts = new ArrayList<>();
     private final HashSet<IncompatibleIndexes> allIncompatibleIndexes = new HashSet<>();
-    private final HashSet<List<Integer>> unfairAlreadyReturnedCombinations = new HashSet<>();
+    private final HashSet<Integer> unfairReturnedCombinationsHashes = new HashSet<>();
 
     private int unfairSorterTakenValues = 0;
 
@@ -338,9 +337,8 @@ public final class ApproximateSorter {
      */
     private boolean alreadyReturned(int[] indexes) {
         if (!conf.fairSorting) {
-            List<Integer> indexesList = Arrays.stream(indexes).boxed().collect(Collectors.toList());
-            if (unfairAlreadyReturnedCombinations.contains(indexesList))
-                return false;
+            if (unfairReturnedCombinationsHashes.contains(Arrays.hashCode(indexes)))
+                return true;
         }
         return false;
     }
@@ -352,10 +350,11 @@ public final class ApproximateSorter {
      */
     private boolean checkOverlap(NSequenceWithQuality target, Range range0, Range range1) {
         PatternAligner patternAligner = conf.patternAligner;
+        int maxOverlap = patternAligner.maxOverlap();
         Range intersection = range0.intersection(range1);
-        return (intersection != null) && (((patternAligner.maxOverlap() != -1) && (patternAligner.maxOverlap()
-                < intersection.length())) || (patternAligner.overlapPenalty(target, intersection.getLower(),
-                intersection.length()) < patternAligner.penaltyThreshold()));
+        return (intersection != null) && (((maxOverlap != -1) && (maxOverlap < intersection.length()))
+                || (patternAligner.overlapPenalty(target, intersection.getLower(), intersection.length())
+                    < patternAligner.penaltyThreshold()));
     }
 
     /**
@@ -381,13 +380,27 @@ public final class ApproximateSorter {
                 .findFirst().orElse(null);
         if (currentPort == null) {
             Pattern currentPattern = conf.operandPatterns[operandIndex];
-            int matchFrom = (from == -1) ? conf.from() : Math.max(conf.from(), from);
+            int matchFrom = (from == -1) ? conf.from() : from;
             int matchTo = conf.to();
             int portLimit = unfairSorterPortLimits.get(currentPattern.getClass());
-            if (conf.matchValidationType == FOLLOWING) {
+            if ((conf.matchValidationType == FOLLOWING) && (operandIndex > 0)) {
                 int patternMaxLength = ((SinglePattern)currentPattern).estimateMaxLength();
-                if (patternMaxLength != -1)
-                    matchTo = Math.min(conf.to(), matchFrom + patternMaxLength);
+                if (patternMaxLength != -1) {
+                    int maxOverlap = conf.patternAligner.maxOverlap();
+                    boolean canEstimateMaxLength = false;
+                    int extraMaxLength = 0;
+                    if (maxOverlap == -1) {
+                        int previousPatternMaxLength = ((SinglePattern)(conf.operandPatterns[operandIndex - 1]))
+                                .estimateMaxLength();
+                        if (previousPatternMaxLength != -1) {
+                            extraMaxLength = previousPatternMaxLength - 1;
+                            canEstimateMaxLength = true;
+                        }
+                    } else
+                        canEstimateMaxLength = true;
+                    if (canEstimateMaxLength)
+                        matchTo = Math.min(conf.to(), matchFrom + patternMaxLength + extraMaxLength);
+                }
                 portLimit = specificPortLimit;
             }
             currentPort = new SpecificOutputPort(conf.multipleReads
@@ -414,14 +427,20 @@ public final class ApproximateSorter {
         Match[] matches = new Match[numberOfOperands];
         if (conf.specificOutputPorts) {
             int maxOverlap = conf.patternAligner.maxOverlap();
+            int previousMatchStart = -1;
             int previousMatchEnd = -1;
             for (int i = 0; i < numberOfOperands; i++) {
-                int thisMatchStart = (previousMatchEnd == -1) ? 0 : previousMatchEnd - maxOverlap;
+                int thisMatchStart = ((previousMatchStart == -1) || (previousMatchEnd == -1)) ? 0
+                        : Math.max(conf.from(),
+                            (maxOverlap == -1) ? previousMatchStart + 1 : previousMatchEnd - maxOverlap);
                 Match currentMatch = getPortWithParams(i, thisMatchStart).get(indexes[i]);
-                if (currentMatch != null)
+                if (currentMatch != null) {
+                    previousMatchStart = currentMatch.getRange().getFrom();
                     previousMatchEnd = currentMatch.getRange().getTo();
-                else
+                } else {
+                    previousMatchStart = -1;
                     previousMatchEnd = -1;
+                }
                 matches[i] = currentMatch;
             }
         } else
@@ -748,7 +767,7 @@ public final class ApproximateSorter {
         }
 
         private void rememberReturnedCombination(int[] indexes) {
-            unfairAlreadyReturnedCombinations.add(Arrays.stream(indexes).boxed().collect(Collectors.toList()));
+            unfairReturnedCombinationsHashes.add(Arrays.hashCode(indexes));
         }
     }
 }
