@@ -221,8 +221,8 @@ public final class ApproximateSorter {
             int firstFoundNullIndex = numberOfOperands - 1;
             boolean allPortsFinished = false;
             while (!allPortsFinished) {
+                currentMatches = getMatchesByIndexes(matchIndexes);
                 if (!alreadyReturned(matchIndexes)) {
-                    currentMatches = getMatchesByIndexes(matchIndexes);
                     if (Arrays.stream(currentMatches).noneMatch(Objects::isNull)) {
                         IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, matchIndexes);
                         if (incompatibleIndexes == null) {
@@ -375,14 +375,28 @@ public final class ApproximateSorter {
         return getPortWithParams(operandIndex, -1);
     }
 
+    /**
+     * Get SpecificOutputPort for specified operand index and "from" coordinate for operand pattern match() call.
+     *
+     * @param operandIndex operand index
+     * @param from from coordinate for operand pattern match() call, or -1 if conf.from() should be used
+     * @return new SpecificOutputPort with specified parameters
+     */
     private SpecificOutputPort getPortWithParams(int operandIndex, int from) {
         SpecificOutputPort currentPort = unfairOutputPorts.stream().filter(p -> p.paramsEqualTo(operandIndex, from))
                 .findFirst().orElse(null);
         if (currentPort == null) {
             Pattern currentPattern = conf.operandPatterns[operandIndex];
-            int matchFrom = (from == -1) ? conf.from() : from;
+            int matchFrom;
+            if (from == -1)
+                matchFrom = conf.from();
+            else if (from >= conf.from())
+                matchFrom = from;
+            else
+                throw new IllegalStateException("getPortWithParams: from = " + from + ", conf.from() = " + conf.from());
             int matchTo = conf.to();
             int portLimit = unfairSorterPortLimits.get(currentPattern.getClass());
+
             if ((conf.matchValidationType == FOLLOWING) && (operandIndex > 0)) {
                 int patternMaxLength = ((SinglePattern)currentPattern).estimateMaxLength();
                 if (patternMaxLength != -1) {
@@ -390,7 +404,7 @@ public final class ApproximateSorter {
                     boolean canEstimateMaxLength = false;
                     int extraMaxLength = 0;
                     if (maxOverlap == -1) {
-                        int previousPatternMaxLength = ((SinglePattern)(conf.operandPatterns[operandIndex - 1]))
+                        int previousPatternMaxLength = ((SinglePattern)conf.operandPatterns[operandIndex - 1])
                                 .estimateMaxLength();
                         if (previousPatternMaxLength != -1) {
                             extraMaxLength = previousPatternMaxLength - 1;
@@ -403,6 +417,7 @@ public final class ApproximateSorter {
                 }
                 portLimit = specificPortLimit;
             }
+
             currentPort = new SpecificOutputPort(conf.multipleReads
                     ? currentPattern.match(conf.target).getMatches(false)
                     : ((SinglePattern)currentPattern).match(conf.target.get(0), matchFrom, matchTo)
@@ -430,9 +445,8 @@ public final class ApproximateSorter {
             int previousMatchStart = -1;
             int previousMatchEnd = -1;
             for (int i = 0; i < numberOfOperands; i++) {
-                int thisMatchStart = ((previousMatchStart == -1) || (previousMatchEnd == -1)) ? 0
-                        : Math.max(conf.from(),
-                            (maxOverlap == -1) ? previousMatchStart + 1 : previousMatchEnd - maxOverlap);
+                int thisMatchStart = Math.max(conf.from(), ((previousMatchStart == -1) || (previousMatchEnd == -1)) ? 0
+                        : (maxOverlap == -1) ? previousMatchStart + 1 : previousMatchEnd - maxOverlap);
                 Match currentMatch = getPortWithParams(i, thisMatchStart).get(indexes[i]);
                 if (currentMatch != null) {
                     previousMatchStart = currentMatch.getRange().getFrom();
