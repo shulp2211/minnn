@@ -12,6 +12,7 @@ public final class ApproximateSorterConfiguration {
     private final int to;
     final PatternAligner patternAligner;
     final boolean multipleReads;
+    final boolean separateTargets;
     final boolean combineScoresBySum;
     final boolean fairSorting;
     final MatchValidationType matchValidationType;
@@ -23,6 +24,7 @@ public final class ApproximateSorterConfiguration {
      *
      * @param target target nucleotide sequence (or multiple sequences)
      * @param patternAligner pattern aligner that provides information about scoring and pattern overlap limits
+     * @param separateTargets true only for MultiPattern when each operand pattern gets its own part of multi-target
      * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
@@ -31,14 +33,15 @@ public final class ApproximateSorterConfiguration {
      * @param operandPatterns operand patterns
      */
     public ApproximateSorterConfiguration(MultiNSequenceWithQuality target, PatternAligner patternAligner,
-            boolean combineScoresBySum, boolean fairSorting, MatchValidationType matchValidationType,
-            int unfairSorterLimit, Pattern... operandPatterns) {
+            boolean separateTargets, boolean combineScoresBySum, boolean fairSorting,
+            MatchValidationType matchValidationType, int unfairSorterLimit, Pattern... operandPatterns) {
         this.operandPatterns = operandPatterns;
         this.target = target;
         this.from = -1;
         this.to = -1;
         this.patternAligner = patternAligner;
         this.multipleReads = true;
+        this.separateTargets = separateTargets;
         this.combineScoresBySum = combineScoresBySum;
         this.fairSorting = fairSorting;
         this.matchValidationType = matchValidationType;
@@ -50,11 +53,16 @@ public final class ApproximateSorterConfiguration {
                     "multipleReads = true, matchValidationType = " + matchValidationType);
         if (operandPatterns.length == 0)
             throw new IllegalArgumentException("Operand patterns array is empty!");
-        for (Pattern operandPattern : operandPatterns) {
-            if (!(operandPattern instanceof MultipleReadsOperator))
-                throw new IllegalArgumentException("Invalid combination of multipleReads and operand pattern class: "
-                        + "multipleReads = true, operand class: " + operandPattern.getClass());
-        }
+        for (Pattern operandPattern : operandPatterns)
+            if (!separateTargets) {
+                if (!(operandPattern instanceof MultipleReadsOperator))
+                    throw new IllegalArgumentException("Invalid combination of parameters: separateTargets = false, "
+                            + "multipleReads = true, operand class: " + operandPattern.getClass());
+            } else {
+                if (!(operandPattern instanceof SinglePattern))
+                    throw new IllegalArgumentException("Invalid combination of parameters: separateTargets = true, "
+                            + "multipleReads = true, operand class: " + operandPattern.getClass());
+            }
         if (target.numberOfSequences() == 1)
             throw new IllegalArgumentException("Invalid combination of multipleReads and target number of sequences: "
                     + "multipleReads = true, target number of sequences: 1");
@@ -83,6 +91,7 @@ public final class ApproximateSorterConfiguration {
         this.to = to;
         this.patternAligner = patternAligner;
         this.multipleReads = false;
+        this.separateTargets = false;
         this.combineScoresBySum = combineScoresBySum;
         this.fairSorting = fairSorting;
         this.matchValidationType = matchValidationType;
@@ -96,11 +105,10 @@ public final class ApproximateSorterConfiguration {
                     "multipleReads = false, matchValidationType = " + matchValidationType);
         if (operandPatterns.length == 0)
             throw new IllegalArgumentException("Operand patterns array is empty!");
-        for (Pattern operandPattern : operandPatterns) {
+        for (Pattern operandPattern : operandPatterns)
             if (!(operandPattern instanceof SinglePattern))
                 throw new IllegalArgumentException("Invalid combination of multipleReads and operand pattern class: "
                         + "multipleReads = false, operand class: " + operandPattern.getClass());
-        }
         if (target.numberOfSequences() != 1)
             throw new IllegalArgumentException("Invalid combination of multipleReads and target number of sequences: "
                     + "multipleReads = false, target number of sequences: " + target.numberOfSequences());

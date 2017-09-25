@@ -176,13 +176,16 @@ public final class ApproximateSorter {
             for (int i = 0; i < numberOfOperands; i++) {
                 if (conf.fairSorting) {
                     currentPort = conf.multipleReads
-                            ? conf.operandPatterns[i].match(conf.target).getMatches(true)
+                            ? (conf.separateTargets
+                                ? ((SinglePattern)conf.operandPatterns[i])
+                                    .match(conf.target.get(i)).getMatches(true)
+                                : conf.operandPatterns[i].match(conf.target).getMatches(true))
                             : ((SinglePattern)conf.operandPatterns[i])
                                 .match(conf.target.get(0), conf.from(), conf.to()).getMatches(true);
                     currentPortMatchesList = new ArrayList<>();
                     do {
                         currentMatch = currentPort.take();
-                        if ((currentMatch != null) || (areNullMatchesAllowed() && (allMatches.get(i).size() == 0)))
+                        if ((currentMatch != null) || (areNullMatchesAllowed() && (currentPortMatchesList.size() == 0)))
                             currentPortMatchesList.add(currentMatch);
                     } while (currentMatch != null);
                 } else
@@ -387,14 +390,18 @@ public final class ApproximateSorter {
                 .findFirst().orElse(null);
         if (currentPort == null) {
             Pattern currentPattern = conf.operandPatterns[operandIndex];
-            int matchFrom;
-            if (from == -1)
-                matchFrom = conf.from();
-            else if (from >= conf.from())
-                matchFrom = from;
-            else
-                throw new IllegalStateException("getPortWithParams: from = " + from + ", conf.from() = " + conf.from());
-            int matchTo = conf.to();
+            int matchFrom = -1;
+            int matchTo = -1;
+            if (!conf.multipleReads) {
+                if (from == -1)
+                    matchFrom = conf.from();
+                else if (from >= conf.from())
+                    matchFrom = from;
+                else
+                    throw new IllegalStateException("getPortWithParams: from = " + from
+                            + ", conf.from() = " + conf.from());
+                matchTo = conf.to();
+            }
             int portLimit = unfairSorterPortLimits.get(currentPattern.getClass());
 
             if ((conf.matchValidationType == FOLLOWING) && (operandIndex > 0)) {
@@ -419,9 +426,12 @@ public final class ApproximateSorter {
             }
 
             currentPort = new SpecificOutputPort(conf.multipleReads
-                    ? currentPattern.match(conf.target).getMatches(false)
-                    : ((SinglePattern)currentPattern).match(conf.target.get(0), matchFrom, matchTo)
-                        .getMatches(false),
+                    ? (conf.separateTargets
+                        ? ((SinglePattern)currentPattern)
+                            .match(conf.target.get(operandIndex)).getMatches(false)
+                        : currentPattern.match(conf.target).getMatches(false))
+                    : ((SinglePattern)currentPattern)
+                        .match(conf.target.get(0), matchFrom, matchTo).getMatches(false),
                     operandIndex, from, portLimit);
             unfairOutputPorts.add(currentPort);
         }
@@ -524,7 +534,7 @@ public final class ApproximateSorter {
         public Match take() {
             if (alwaysReturnNull) return null;
             if (conf.fairSorting) return takeSorted();
-            if (unfairSorterTakenValues++ > conf.unfairSorterLimit) {
+            if (++unfairSorterTakenValues > conf.unfairSorterLimit) {
                 alwaysReturnNull = true;
                 return null;
             }

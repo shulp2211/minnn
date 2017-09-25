@@ -13,7 +13,7 @@ public final class MultiPattern extends MultipleReadsOperator {
     public MultiPattern(PatternAligner patternAligner, SinglePattern... singlePatterns) {
         super(patternAligner, singlePatterns);
         for (byte i = 1; i <= singlePatterns.length; i++)
-            singlePatterns[i].setTargetId(i);
+            singlePatterns[i - 1].setTargetId(i);
     }
 
     @Override
@@ -45,8 +45,8 @@ public final class MultiPattern extends MultipleReadsOperator {
         @Override
         public OutputPort<Match> getMatches(boolean fairSorting) {
             ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, patternAligner,
-                    true, fairSorting, LOGICAL_AND, unfairSorterPortLimits.get(MultiPattern.class),
-                    singlePatterns);
+                    true, true, fairSorting, LOGICAL_AND,
+                    unfairSorterPortLimits.get(MultiPattern.class), singlePatterns);
             return new ApproximateSorter(conf).getOutputPort();
         }
     }
