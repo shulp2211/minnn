@@ -13,6 +13,7 @@ import static com.milaboratory.mist.util.UnfairSorterConfiguration.*;
 
 public final class ApproximateSorter {
     private final ApproximateSorterConfiguration conf;
+    private final OutputPort<Match> matchesOutputPort;
     private final ArrayList<SpecificOutputPort> unfairOutputPorts = new ArrayList<>();
     private final HashSet<IncompatibleIndexes> allIncompatibleIndexes = new HashSet<>();
     private final HashSet<Integer> unfairReturnedCombinationsHashes = new HashSet<>();
@@ -26,6 +27,7 @@ public final class ApproximateSorter {
      */
     public ApproximateSorter(ApproximateSorterConfiguration conf) {
         this.conf = conf;
+        this.matchesOutputPort = new MatchesOutputPort();
     }
 
     /**
@@ -34,7 +36,7 @@ public final class ApproximateSorter {
      * @return output port
      */
     public OutputPort<Match> getOutputPort() {
-        return new MatchesOutputPort();
+        return matchesOutputPort;
     }
 
     /**
@@ -221,9 +223,9 @@ public final class ApproximateSorter {
                 }
             }
         } else {
-            int firstFoundNullIndex = numberOfOperands - 1;
             boolean allPortsFinished = false;
             while (!allPortsFinished) {
+                int firstFoundNullIndex = numberOfOperands - 1;
                 currentMatches = getMatchesByIndexes(matchIndexes);
                 if (!alreadyReturned(matchIndexes)) {
                     if (Arrays.stream(currentMatches).noneMatch(Objects::isNull)) {
@@ -690,7 +692,7 @@ public final class ApproximateSorter {
                 previousMatchScores = new long[numberOfPatterns];
                 currentMatchScores = new long[numberOfPatterns];
                 for (int i = 0; i < numberOfPatterns; i++) {
-                    endedPorts[i] = (zeroIndexMatches[i] != null) && (getPortWithParams(i).get(1) != null);
+                    endedPorts[i] = (zeroIndexMatches[i] == null) || (getPortWithParams(i).get(1) == null);
                     if (!endedPorts[i]) {
                         if (conf.combineScoresBySum) {
                             previousMatchScores[i] = zeroIndexMatches[i].getScore();
