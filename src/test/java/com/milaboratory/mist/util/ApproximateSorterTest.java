@@ -2,11 +2,12 @@ package com.milaboratory.mist.util;
 
 import com.milaboratory.core.sequence.*;
 import com.milaboratory.mist.pattern.*;
+import com.milaboratory.test.TestUtil;
 import org.junit.Test;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class ApproximateSorterTest {
     @Test
@@ -167,6 +168,155 @@ public class ApproximateSorterTest {
 
     @Test
     public void randomTest() throws Exception {
+        ApproximateSorter sorter;
+        for (int i = 0; i < 5000; ++i) {
+            int singleOverlapPenalty = -rg.nextInt(1000) - 1;
+            int numberOfFragments = rg.nextInt(7) + 1;
+            int spaceLength = rg.nextInt(3);
+            boolean fairSorting = rg.nextBoolean();
+            long penaltyThreshold = 500 * singleOverlapPenalty;
+            int expectedMatchesNum;
+            boolean combineScoresBySum;
+            MatchValidationType matchValidationType;
+            switch (rg.nextInt(4)) {
+                case 0:
+                    matchValidationType = FOLLOWING;
+                    expectedMatchesNum = Math.max(0, numberOfFragments - 3);
+                    combineScoresBySum = true;
+                    penaltyThreshold = 0;
+                    break;
+                case 1:
+                    matchValidationType = ORDER;
+                    expectedMatchesNum = (numberOfFragments >= 4) ? 1 : 0;
+                    for (int j = numberOfFragments; j >= Math.max(5, numberOfFragments - 3); j--)
+                        expectedMatchesNum *= j;
+                    for (int j = 2; j <= numberOfFragments - 4; j++)
+                        expectedMatchesNum /= j;
+                    combineScoresBySum = true;
+                    break;
+                case 2:
+                    matchValidationType = INTERSECTION;
+                    expectedMatchesNum = numberOfFragments * (numberOfFragments - 1) * (numberOfFragments - 2)
+                            * (numberOfFragments - 3);
+                    combineScoresBySum = true;
+                    break;
+                default:
+                    matchValidationType = FIRST;
+                    expectedMatchesNum = (int)Math.pow(numberOfFragments, 4);
+                    combineScoresBySum = false;
+            }
 
+            PatternAligner patternAligner = getTestPatternAligner(penaltyThreshold, 2,
+                    -rg.nextInt(1000), singleOverlapPenalty);
+            NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    0, spaceLength);
+            NucleotideSequence fragment = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    50, 63);
+            for (int j = 0; j < numberOfFragments; j++) {
+                if (matchValidationType != FOLLOWING) {
+                    NucleotideSequence space = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                            0, spaceLength);
+
+                    target = SequencesUtils.concatenate(target, fragment, space);
+                } else
+                    target = SequencesUtils.concatenate(target, fragment);
+            }
+            final NSequenceWithQuality finalTarget = new NSequenceWithQuality(target.toString());
+
+            FuzzyMatchPattern pattern = new FuzzyMatchPattern(patternAligner, fragment);
+
+            sorter = new ApproximateSorter(new ApproximateSorterConfiguration(finalTarget, 0, finalTarget.size(),
+                    patternAligner, combineScoresBySum, fairSorting, matchValidationType,
+                    expectedMatchesNum + 1, pattern, pattern, pattern, pattern));
+
+            assertEquals(expectedMatchesNum, countPortValues(sorter.getOutputPort()));
+        }
+    }
+
+    @Test
+    public void specialCasesTest() throws Exception {
+        PatternAligner[] patternAligners = new PatternAligner[2];
+        String[] sequences = new String[2];
+        SinglePattern[] patterns = new SinglePattern[3];
+        NSequenceWithQuality[] targets = new NSequenceWithQuality[2];
+        ApproximateSorterConfiguration[] configurations = new ApproximateSorterConfiguration[3];
+
+        patternAligners[0] = getTestPatternAligner(-11000, 2, 0,
+                -200);
+        patternAligners[1] = getTestPatternAligner(-100, 0,
+                0, 0, true, 1);
+
+        sequences[0] = "ATGGGCGCAAATATAGGGAGCTCCGATCGACATCGGGTATCGCCCTGGTACGATCCCG";
+        sequences[1] = "GGCAAAGT";
+
+        patterns[0] = new FuzzyMatchPattern(patternAligners[0], new NucleotideSequence(sequences[0]));
+        patterns[1] = new FuzzyMatchPattern(patternAligners[1], new NucleotideSequence("GGCA"));
+        patterns[2] = new FuzzyMatchPattern(patternAligners[1], new NucleotideSequence("AAAGT"));
+
+        targets[0] = new NSequenceWithQuality(repeatString(sequences[0], 5));
+        targets[1] = new NSequenceWithQuality(sequences[1]);
+
+        configurations[0] = new ApproximateSorterConfiguration(targets[0], 0, targets[0].size(),
+                patternAligners[0], true, true, FOLLOWING, 0,
+                patterns[0], patterns[0], patterns[0], patterns[0]);
+        assertEquals(2, countPortValues(new ApproximateSorter(configurations[0]).getOutputPort()));
+
+        configurations[1] = new ApproximateSorterConfiguration(targets[1], 0, targets[1].size(),
+                patternAligners[1], true, false, ORDER, 0,
+                patterns[1], patterns[2]);
+        configurations[2] = new ApproximateSorterConfiguration(targets[1], 0, targets[1].size(),
+                patternAligners[1], true, false, ORDER, 1,
+                patterns[1], patterns[2]);
+        assertNull(new ApproximateSorter(configurations[1]).getOutputPort().take());
+        assertEquals(sequences[1], new ApproximateSorter(configurations[2]).getOutputPort().take().getValue()
+                .getSequence().toString());
+    }
+
+    @Test
+    public void matchesWithMisplacedRangesTest() throws Exception {
+        NSequenceWithQuality seq = new NSequenceWithQuality("AATTAAGGCAAAGTAAATTGAGCA");
+        for (boolean fairSorting : new boolean[] {true, false}) {
+            for (int i = 0; i <= 1; i++) {
+                PatternAligner patternAligner = getTestPatternAligner(-100, 0,
+                        0, 0, true, i);
+                FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("GGCA"));
+                FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("AAAGT"));
+                assertEquals(i, countPortValues(new ApproximateSorter(new ApproximateSorterConfiguration(seq,
+                        0, seq.size(), patternAligner, true, fairSorting, ORDER,
+                        10, pattern1, pattern2)).getOutputPort()));
+                assertEquals(0, countPortValues(new ApproximateSorter(new ApproximateSorterConfiguration(seq,
+                        0, seq.size(), patternAligner, true, fairSorting, ORDER,
+                        10, pattern2, pattern1)).getOutputPort()));
+                assertEquals(i, countPortValues(new ApproximateSorter(new ApproximateSorterConfiguration(seq,
+                        0, seq.size(), patternAligner, true, fairSorting, INTERSECTION,
+                        10, pattern1, pattern2)).getOutputPort()));
+                assertEquals(i, countPortValues(new ApproximateSorter(new ApproximateSorterConfiguration(seq,
+                        0, seq.size(), patternAligner, true, fairSorting, INTERSECTION,
+                        10, pattern2, pattern1)).getOutputPort()));
+            }
+        }
+    }
+
+    @Test
+    public void matchesWithNullValuesTest() throws Exception {
+        PatternAligner patternAligner = getTestPatternAligner();
+        NSequenceWithQuality seq = new NSequenceWithQuality("ATTA");
+        MultiNSequenceWithQuality mseq = new MultiNSequenceWithQualityImpl(seq, seq, seq);
+        FuzzyMatchPattern matchingPattern = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("A"));
+        FuzzyMatchPattern notMatchingPattern = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("CCC"));
+        MultiPattern matchingMPattern = new MultiPattern(patternAligner,
+                matchingPattern, matchingPattern, matchingPattern);
+        MultiPattern notMatchingMPattern = new MultiPattern(patternAligner,
+                matchingPattern, notMatchingPattern, matchingPattern);
+        NotOperator matchingNot = new NotOperator(patternAligner, notMatchingMPattern);
+        NotOperator notMatchingNot = new NotOperator(patternAligner, matchingMPattern);
+        AndOperator matchingAnd = new AndOperator(patternAligner, matchingMPattern, matchingNot);
+        AndOperator notMatchingAnd = new AndOperator(patternAligner, matchingAnd, notMatchingNot);
+        for (boolean fairSorting : new boolean[] {true, false}) {
+            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(mseq, patternAligner,
+                    false, false, fairSorting, LOGICAL_OR, 100,
+                    notMatchingAnd, matchingAnd, notMatchingAnd);
+            assertEquals(8, countPortValues(new ApproximateSorter(conf).getOutputPort()));
+        }
     }
 }

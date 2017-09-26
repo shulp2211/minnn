@@ -32,6 +32,12 @@ public class CommonTestUtils {
         return streamPort(port).count();
     }
 
+    public static void printPortValues(OutputPort<Match> port) {
+        long i = 0;
+        for (Match match : CUtils.it(port))
+            System.out.println(i++ + ": " + match.getRange() + " " + match.getScore() + " " + match.getValue());
+    }
+
     public static long countMatches(MatchingResult matchingResult, boolean fair) {
         return countPortValues(matchingResult.getMatches(fair));
     }
@@ -112,7 +118,8 @@ public class CommonTestUtils {
     }
 
     public static PatternAligner getTestPatternAligner(boolean zeroThreshold) {
-        if (zeroThreshold) return getTestPatternAligner(0, 0, 0, -1);
+        if (zeroThreshold) return getTestPatternAligner(0, 0, 0,
+                -1);
         else return getTestPatternAligner();
     }
 
@@ -122,7 +129,8 @@ public class CommonTestUtils {
 
     public static PatternAligner getTestPatternAligner(long penaltyThreshold, int bitapMaxErrors, long notResultScore,
                                                        long singleOverlapPenalty) {
-        return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty, true);
+        return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty,
+                true);
     }
 
     public static PatternAligner getTestPatternAligner(long penaltyThreshold, int bitapMaxErrors, long notResultScore,
