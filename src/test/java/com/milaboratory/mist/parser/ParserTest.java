@@ -142,6 +142,7 @@ public class ParserTest {
         testBadSample("A(1:TT)A + G(1:AC)A");
         testBadSample("A(1:TT)A & G(1:AC)A");
         testBadSample("[4:N]0");
+        testSample("[-7:A]T", "AT", new Range(0, 2));
     }
 
     @Test

@@ -33,7 +33,7 @@ final class ScoreThreshold {
         if ((start >= this.start) && (end <= this.end))
             return true;
         else if (((start < this.start) && (end <= this.start)) || ((start >= this.end) && (end > this.end))
-                || ((start < this.start) && (end >= this.end)))
+                || ((start <= this.start) && (end >= this.end)))
             return false;
         else throw new IllegalStateException("Intersection of specified range and this ScoreThreshold: this.start="
                 + this.start + ", this.end=" + this.end + ", start=" + start + ", end=" + end);
