@@ -63,9 +63,6 @@ public final class ApproximateSorterConfiguration {
                     throw new IllegalArgumentException("Invalid combination of parameters: separateTargets = true, "
                             + "multipleReads = true, operand class: " + operandPattern.getClass());
             }
-        if (target.numberOfSequences() == 1)
-            throw new IllegalArgumentException("Invalid combination of multipleReads and target number of sequences: "
-                    + "multipleReads = true, target number of sequences: 1");
     }
 
     /**
