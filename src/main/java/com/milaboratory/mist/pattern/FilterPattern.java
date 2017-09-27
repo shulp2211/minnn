@@ -68,7 +68,11 @@ public final class FilterPattern extends SinglePattern {
         private final int to;
 
         FilterMatchingResult(Filter filter, Pattern pattern, MultiNSequenceWithQuality targetMulti) {
-            this(filter, pattern, targetMulti, null, 0, 0);
+            this(filter, pattern,
+                    (targetMulti instanceof NSequenceWithQuality) ? null : targetMulti,
+                    (targetMulti instanceof NSequenceWithQuality) ? (NSequenceWithQuality)targetMulti : null,
+                    0,
+                    (targetMulti instanceof NSequenceWithQuality) ? ((NSequenceWithQuality)targetMulti).size() : 0);
         }
 
         FilterMatchingResult(Filter filter, Pattern pattern, NSequenceWithQuality targetSingle, int from, int to) {
