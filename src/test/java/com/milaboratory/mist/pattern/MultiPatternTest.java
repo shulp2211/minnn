@@ -31,38 +31,33 @@ public class MultiPatternTest {
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
                 new NucleotideSequence("ATTAGACA"));
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("TGGTAATAAC"));
+                new NucleotideSequence("TATTAC"));
         AndPattern pattern3 = new AndPattern(getTestPatternAligner(),
                 new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("AT")),
                 new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATGC")));
         MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern1, pattern2, pattern3);
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQualityImpl(
                 new NSequenceWithQuality("ACAATTAGACA"),
-                new NSequenceWithQuality("GTTATTACCA").getReverseComplement(),
-                new NSequenceWithQuality("AACTTGCATAT").getReverseComplement());
+                new NSequenceWithQuality("GTTATTACCA"),
+                new NSequenceWithQuality("AACTTGCATGCAT"));
         assertTrue(multiPattern.match(mseq).isFound());
-        assertTrue(multiPattern.match(mseq).isFound());
-        assertFalse(multiPattern.match(mseq).isFound());
-        assertFalse(multiPattern.match(mseq).isFound());
-        assertEquals("GCATAT", multiPattern.match(mseq)
+        assertEquals("ATGCAT", multiPattern.match(mseq)
                 .getMatches().take().getMatchedRange(2).getValue().getSequence().toString());
-        assertNull(multiPattern.match(mseq).getBestMatch());
-        assertNotNull(multiPattern.match(mseq).getBestMatch());
-        assertTrue(multiPattern.match(mseq).isFound());
     }
 
     @Test
     public void randomTest() throws Exception {
         for (int i = 0; i < 1000; i++) {
-            int sequencesNum = rg.nextInt(9) + 1;
+            int sequencesNum = rg.nextInt(10) + 1;
             NSequenceWithQuality[] sequences = new NSequenceWithQuality[sequencesNum];
             FuzzyMatchPattern[] patterns = new FuzzyMatchPattern[sequencesNum];
             boolean isMatching = true;
             for (int s = 0; s < sequencesNum; s++) {
-                NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1000);
-                NucleotideSequence motifSeq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 5);
-                NSequenceWithQuality seqQ = new NSequenceWithQuality(seq, SequenceQuality
-                        .getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, seq.getSequence().size()));
+                NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                        1, 1000);
+                NucleotideSequence motifSeq = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                        1, 5);
+                NSequenceWithQuality seqQ = new NSequenceWithQuality(seq.toString());
                 sequences[s] = seqQ;
                 patterns[s] = new FuzzyMatchPattern(getTestPatternAligner(), motifSeq);
                 isMatching = isMatching && seq.toString().contains(motifSeq.toString());
@@ -105,7 +100,7 @@ public class MultiPatternTest {
                 .getMatchedGroupEdge("ABC", false).getGroupName());
         assertEquals(11, result.getBestMatch()
                 .getMatchedGroupEdge("GH", false).getPosition());
-        assertEquals(1, matchOutputPort.take()
+        assertEquals(13, matchOutputPort.take()
                 .getMatchedGroupEdge("XYZ", true).getPosition());
         assertNull(matchOutputPort.take());
     }
@@ -154,8 +149,7 @@ public class MultiPatternTest {
 
     @Test
     public void scoringRandomTest() throws Exception {
-        int its = TestUtil.its(100, 200);
-        for (int i = 0; i < its; ++i) {
+        for (int i = 0; i < 1000; i++) {
             NucleotideSequence motifs[] = new NucleotideSequence[2];
             motifs[0] = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
             motifs[1] = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);

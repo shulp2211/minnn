@@ -268,9 +268,12 @@ public class PlusPatternTest {
         int its = TestUtil.its(100, 200);
         for (int i = 0; i < its; ++i) {
             int errorScorePenalty = -rg.nextInt(1000) - 1;
-            NucleotideSequence leftPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
-            NucleotideSequence middleLetter = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1);
-            NucleotideSequence rightPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
+            NucleotideSequence leftPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    5, 50);
+            NucleotideSequence middleLetter = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    1, 1);
+            NucleotideSequence rightPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    5, 50);
             NucleotideSequence motif1 = SequencesUtils.concatenate(leftPart, middleLetter);
             NucleotideSequence motif2 = SequencesUtils.concatenate(middleLetter, rightPart);
             NucleotideSequence target = SequencesUtils.concatenate(leftPart, middleLetter, rightPart);
@@ -278,14 +281,14 @@ public class PlusPatternTest {
                     SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
             FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), motif1);
             FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), motif2);
-            PlusPattern plusPattern1 = new PlusPattern(getTestPatternAligner(0, 0, 0,
-                    errorScorePenalty), pattern1, pattern2);
-            PlusPattern plusPattern2 = new PlusPattern(getTestPatternAligner(0, 0, 0,
-                    errorScorePenalty), pattern2, pattern1);
-            PlusPattern plusPattern3 = new PlusPattern(getTestPatternAligner(errorScorePenalty, 0, 0,
-                    errorScorePenalty), pattern1, pattern2);
-            PlusPattern plusPattern4 = new PlusPattern(getTestPatternAligner(errorScorePenalty, 0, 0,
-                    errorScorePenalty), pattern2, pattern1);
+            PlusPattern plusPattern1 = new PlusPattern(getTestPatternAligner(0, 0,
+                    0, errorScorePenalty), pattern1, pattern2);
+            PlusPattern plusPattern2 = new PlusPattern(getTestPatternAligner(0, 0,
+                    0, errorScorePenalty), pattern2, pattern1);
+            PlusPattern plusPattern3 = new PlusPattern(getTestPatternAligner(errorScorePenalty, 0,
+                    0, errorScorePenalty), pattern1, pattern2);
+            PlusPattern plusPattern4 = new PlusPattern(getTestPatternAligner(errorScorePenalty, 0,
+                    0, errorScorePenalty), pattern2, pattern1);
             assertNull(plusPattern1.match(targetQ).getBestMatch());
             assertNull(plusPattern2.match(targetQ).getBestMatch());
             assertEquals(pattern1.match(targetQ).getBestMatch().getScore()

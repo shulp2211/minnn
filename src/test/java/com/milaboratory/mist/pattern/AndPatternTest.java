@@ -54,7 +54,7 @@ public class AndPatternTest {
         assertEquals(true, andPattern6.match(nseq1).isFound());
         assertEquals(false, andPattern2.match(nseq1, new Range(12, 21)).isFound());
 
-        assertEquals(new Range(0, 17), andPattern3.match(nseq3, new Range(0, 24)).getBestMatch().getRange());
+        assertEquals(new Range(0, 17), andPattern3.match(nseq3, new Range(0, 19)).getBestMatch().getRange());
         assertEquals(new Range(11, 21), andPattern2.match(nseq1, new Range(1, 21)).getBestMatch().getRange());
         assertEquals(null, andPattern2.match(nseq1, new Range(11, 20)).getBestMatch());
 
@@ -267,9 +267,12 @@ public class AndPatternTest {
         int its = TestUtil.its(100, 200);
         for (int i = 0; i < its; ++i) {
             int errorScorePenalty = -rg.nextInt(1000) - 1;
-            NucleotideSequence leftPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
-            NucleotideSequence middleLetter = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1);
-            NucleotideSequence rightPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
+            NucleotideSequence leftPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    5, 50);
+            NucleotideSequence middleLetter = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    1, 1);
+            NucleotideSequence rightPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    5, 50);
             NucleotideSequence motif1 = SequencesUtils.concatenate(leftPart, middleLetter);
             NucleotideSequence motif2 = SequencesUtils.concatenate(middleLetter, rightPart);
             NucleotideSequence target = SequencesUtils.concatenate(leftPart, middleLetter, rightPart);
@@ -277,14 +280,14 @@ public class AndPatternTest {
                     SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
             FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), motif1);
             FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), motif2);
-            AndPattern andPattern1 = new AndPattern(getTestPatternAligner(0, 0, 0,
-                    errorScorePenalty), pattern1, pattern2);
-            AndPattern andPattern2 = new AndPattern(getTestPatternAligner(0, 0, 0,
-                    errorScorePenalty), pattern2, pattern1);
-            AndPattern andPattern3 = new AndPattern(getTestPatternAligner(errorScorePenalty, 0, 0,
-                    errorScorePenalty), pattern1, pattern2);
-            AndPattern andPattern4 = new AndPattern(getTestPatternAligner(errorScorePenalty, 0, 0,
-                    errorScorePenalty), pattern2, pattern1);
+            AndPattern andPattern1 = new AndPattern(getTestPatternAligner(0, 0,
+                    0, errorScorePenalty), pattern1, pattern2);
+            AndPattern andPattern2 = new AndPattern(getTestPatternAligner(0, 0,
+                    0, errorScorePenalty), pattern2, pattern1);
+            AndPattern andPattern3 = new AndPattern(getTestPatternAligner(errorScorePenalty, 0,
+                    0, errorScorePenalty), pattern1, pattern2);
+            AndPattern andPattern4 = new AndPattern(getTestPatternAligner(errorScorePenalty, 0,
+                    0, errorScorePenalty), pattern2, pattern1);
             assertNull(andPattern1.match(targetQ).getBestMatch());
             assertNull(andPattern2.match(targetQ).getBestMatch());
             assertEquals(pattern1.match(targetQ).getBestMatch().getScore()

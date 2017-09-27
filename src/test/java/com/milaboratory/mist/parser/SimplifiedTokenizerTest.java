@@ -57,7 +57,7 @@ public class SimplifiedTokenizerTest {
     public void randomTest() throws Exception {
         for (int i = 0; i < rg.nextInt(50) + 300; i++) {
             int nestedSingleLevel = rg.nextInt(7) + 1;
-            int nestedMultiLevel = rg.nextInt(7) + 1;
+            int nestedMultiLevel = rg.nextInt(5) + 1;
             ArrayList<SinglePattern> singlePatterns = new ArrayList<>();
             for (int j = 0; j < nestedSingleLevel; j++) {
                 singlePatterns.add(getRandomSinglePattern(singlePatterns.toArray(new SinglePattern[singlePatterns.size()])));

@@ -121,10 +121,10 @@ public class RepeatPatternTest {
         assertEquals(9, countMatches(result, false));
         result = pattern.match(nseq);
         OutputPort<Match> matches = result.getMatches(true);
-        assertEquals(new Range(32, 35), matches.take().getRange());
-        assertEquals("CC", matches.take().getValue().getSequence().toString());
-        assertEquals(new Range(33, 35), matches.take().getMatchedRanges().get(0).getRange());
-        assertEquals(new Range(39, 43), matches.take().getMatchedRange(0).getRange());
+        assertEquals(new Range(39, 43), matches.take().getRange());
+        assertEquals(new Range(32, 35), matches.take().getMatchedRanges().get(0).getRange());
+        assertEquals("CCC", matches.take().getValue().getSequence().toString());
+        assertEquals(new Range(40, 43), matches.take().getMatchedRange(0).getRange());
     }
 
     @Test

@@ -21,10 +21,13 @@ public class LogicalOperatorsTest {
 
     @Test
     public void logicTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GTTATTACCA"));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("ATTAGACA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("GTTATTACCA"));
         AndPattern pattern3 = new AndPattern(getTestPatternAligner(), new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("AT")), new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GCAT")));
+                new NucleotideSequence("AT")), new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("GCAT")));
         MultiPattern multiPattern1 = new MultiPattern(getTestPatternAligner(), pattern1, pattern2, pattern3);
         MultiPattern multiPattern2 = new MultiPattern(getTestPatternAligner(), pattern1, pattern3);
         MultiPattern multiPattern3 = new MultiPattern(getTestPatternAligner(), pattern3, pattern2);
@@ -92,8 +95,10 @@ public class LogicalOperatorsTest {
 
     @Test
     public void simpleTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GTTATTACCA"));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("ATTAGACA"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequence("GTTATTACCA"));
         AndPattern pattern3 = new AndPattern(getTestPatternAligner(),
                 new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("AT")),
                 new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GCAT")));
@@ -105,10 +110,14 @@ public class LogicalOperatorsTest {
                 new NSequenceWithQuality("AACTTGCATAT"));
 
         NotOperator notOperatorFalse = new NotOperator(getTestPatternAligner(), multiPattern);
-        OrOperator orOperatorTrue = new OrOperator(getTestPatternAligner(), notOperatorFalse, multiPattern, notOperatorFalse);
-        AndOperator andOperatorTrue = new AndOperator(getTestPatternAligner(), multiPattern, orOperatorTrue, multiPattern);
-        AndOperator andOperatorFalse = new AndOperator(getTestPatternAligner(), multiPattern, andOperatorTrue, orOperatorTrue, notOperatorFalse);
-        OrOperator orOperatorFalse = new OrOperator(getTestPatternAligner(), notOperatorFalse, notOperatorFalse, andOperatorFalse);
+        OrOperator orOperatorTrue = new OrOperator(getTestPatternAligner(),
+                notOperatorFalse, multiPattern, notOperatorFalse);
+        AndOperator andOperatorTrue = new AndOperator(getTestPatternAligner(),
+                multiPattern, orOperatorTrue, multiPattern);
+        AndOperator andOperatorFalse = new AndOperator(getTestPatternAligner(),
+                multiPattern, andOperatorTrue, orOperatorTrue, notOperatorFalse);
+        OrOperator orOperatorFalse = new OrOperator(getTestPatternAligner(),
+                notOperatorFalse, notOperatorFalse, andOperatorFalse);
         NotOperator notOperatorTrue = new NotOperator(getTestPatternAligner(), orOperatorFalse);
         AndOperator andOperatorSingleFalse = new AndOperator(getTestPatternAligner(), orOperatorFalse);
         OrOperator orOperatorSingleFalse = new OrOperator(getTestPatternAligner(), andOperatorSingleFalse);
@@ -311,10 +320,14 @@ public class LogicalOperatorsTest {
         AndPattern andPattern = new AndPattern(getTestPatternAligner(), fuzzyPattern, fuzzyPattern);
         PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(), fuzzyPattern, fuzzyPattern);
 
-        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"), andPattern.match(sequences[4]).getBestMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"), plusPattern.match(sequences[4]).getBestMatch().getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"), andPattern.match(sequences[4]).getMatches().take().getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"), plusPattern.match(sequences[4]).getMatches().take().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"),
+                andPattern.match(sequences[4]).getBestMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"),
+                plusPattern.match(sequences[4]).getBestMatch().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"),
+                andPattern.match(sequences[4]).getMatches().take().getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"),
+                plusPattern.match(sequences[4]).getMatches().take().getValue());
 
         MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), fuzzyPattern, andPattern, plusPattern);
         NotOperator notOperator = new NotOperator(getTestPatternAligner(), multiPattern);
@@ -325,11 +338,16 @@ public class LogicalOperatorsTest {
 
         MatchingResult result = andOperator.match(mseq);
 
-        assertEquals(new NSequenceWithQuality("ATTAGAA"), result.getBestMatch().getMatchedRange(0).getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"), result.getBestMatch().getMatchedRange(1).getValue());
-        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"), result.getBestMatch().getMatchedRange(2).getValue());
-        assertEquals(NullMatchedRange.class, result.getBestMatch().getMatchedRange(3).getClass());
-        assertEquals(new NSequenceWithQuality("ATTAGAA"), result.getBestMatch().getMatchedRange(14).getValue());
+        assertEquals(new NSequenceWithQuality("ATTAGAA"),
+                result.getBestMatch().getMatchedRange(0).getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"),
+                result.getBestMatch().getMatchedRange(1).getValue());
+        assertEquals(new NSequenceWithQuality("ACAGACATCTAGAA"),
+                result.getBestMatch().getMatchedRange(2).getValue());
+        assertEquals(NullMatchedRange.class,
+                result.getBestMatch().getMatchedRange(3).getClass());
+        assertEquals(new NSequenceWithQuality("ATTAGAA"),
+                result.getBestMatch().getMatchedRange(14).getValue());
 
         exception.expect(IndexOutOfBoundsException.class);
         result.getBestMatch().getMatchedRange(17);

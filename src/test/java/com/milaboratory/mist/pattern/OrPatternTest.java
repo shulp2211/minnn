@@ -51,7 +51,7 @@ public class OrPatternTest {
 
         assertEquals(new Range(0, 8), orPattern3.match(nseq3, new Range(0, 24)).getBestMatch().getRange());
         assertEquals(new Range(2, 6),
-                orPattern2.match(nseq2, new Range(1, 17)).getMatches(true).take().getRange());
+                orPattern2.match(nseq2, new Range(1, 8)).getMatches(true).take().getRange());
         assertEquals(null, orPattern2.match(nseq3, new Range(12, 21)).getBestMatch());
 
         exception.expect(IllegalArgumentException.class);
@@ -161,7 +161,7 @@ public class OrPatternTest {
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
                 new NucleotideSequence("CAGATGCA"), groupEdgePositions);
         OrPattern orPattern = new OrPattern(getTestPatternAligner(), pattern1, pattern2);
-        NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGCC");
+        NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGC");
         MatchingResult result = orPattern.match(nseq);
         OutputPort<Match> matchOutputPort = result.getMatches(true);
         Match match = matchOutputPort.take();

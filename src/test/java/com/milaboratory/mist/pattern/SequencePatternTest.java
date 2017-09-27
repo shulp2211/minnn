@@ -18,15 +18,15 @@ import static org.junit.Assert.*;
 public class SequencePatternTest {
     @Test
     public void maxErrorsRandomTest() throws Exception {
-        int its = TestUtil.its(1000, 2000);
-        for (int i = 0; i < its; ++i) {
+        for (int i = 0; i < 2000; i++) {
             int maxErrors = rg.nextInt(10);
             int targetLength = rg.nextInt(63 - maxErrors) + 1;
-            NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, targetLength, targetLength);
-            NucleotideSequence motif1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 50);
+            NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    targetLength, targetLength);
+            NucleotideSequence motif1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    1, 50);
             NucleotideSequence motif2 = getRandomSubsequence(target);
-            NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
-                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
+            NSequenceWithQuality targetQ = new NSequenceWithQuality(target.toString());
             NucleotideSequence motif1WithErrors = makeRandomErrors(motif1, maxErrors);
             NucleotideSequence motif2WithErrors = makeRandomErrors(motif2, maxErrors);
             PatternAligner fuzzyPatternAligner = getTestPatternAligner(maxErrors);
@@ -45,58 +45,54 @@ public class SequencePatternTest {
             assertTrue(pattern2.match(targetQ).getBestMatch(rg.nextBoolean()) != null);
             assertTrue(pattern2.match(targetQ).getMatches(rg.nextBoolean()).take() != null);
 
-            for (Boolean fairSorting: new Boolean[] {false, true}) {
-                long errorScorePenalty = -rg.nextInt(50) - 1;
-                int maxOverlap = rg.nextInt(5) - 1;
-                long penaltyThreshold;
-                boolean misplacedPatterns = false;
-                if (isMatchingPattern1) {
-                    Match match1 = pattern1.match(targetQ).getBestMatch(fairSorting);
-                    Match match2 = pattern2.match(targetQ).getBestMatch(fairSorting);
-                    penaltyThreshold = match1.getScore() + match2.getScore()
-                            + errorScorePenalty * (getIntersectionLength(match1.getRange(), match2.getRange())
-                            + (match2.getRange().getLower() > match1.getRange().getUpper() ?
-                            match2.getRange().getLower() - match1.getRange().getUpper() : 0));
-                    misplacedPatterns = (match1.getRange().getLower() >= match2.getRange().getLower())
-                            || checkFullIntersection(match1.getRange(), match2.getRange()) || ((maxOverlap != -1)
-                            && (getIntersectionLength(match1.getRange(), match2.getRange()) > maxOverlap));
-                } else {
-                    penaltyThreshold = pattern2.match(targetQ).getBestMatch(fairSorting).getScore();
-                    if ((targetLength <= maxErrors) || (motif1WithErrors.size() <= maxErrors))
-                        penaltyThreshold = 0;
-                }
-
-                boolean entirePatternMustMatch = isMatchingPattern1;
-                if (misplacedPatterns) {
-                    penaltyThreshold = Long.MIN_VALUE;
-                    OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(fairSorting);
-                    OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(fairSorting);
-                    List<Range> ranges1 = streamPort(port1).map(Match::getRange).collect(Collectors.toList());
-                    List<Range> ranges2 = streamPort(port2).map(Match::getRange).collect(Collectors.toList());
-
-                    entirePatternMustMatch = false;
-                    OUTER:
-                    for (Range range1: ranges1)
-                        for (Range range2: ranges2)
-                            if (!((range1.getLower() >= range2.getLower())
-                                    || checkFullIntersection(range1, range2) || ((maxOverlap != -1)
-                                    && (getIntersectionLength(range1, range2) > maxOverlap)))) {
-                                entirePatternMustMatch = true;
-                                break OUTER;
-                            }
-                }
-
-                SequencePattern sequencePattern = new SequencePattern(getTestPatternAligner(penaltyThreshold,
-                        0, 0, errorScorePenalty, true, maxOverlap),
-                        pattern1, pattern2);
-
-                if (!fairSorting)
-                    assertEquals(entirePatternMustMatch, sequencePattern.match(targetQ).isFound());
-                assertEquals(entirePatternMustMatch, sequencePattern.match(targetQ)
-                        .getBestMatch(fairSorting) != null);
-                assertEquals(entirePatternMustMatch, sequencePattern.match(targetQ)
-                        .getMatches(fairSorting).take() != null);
+            long errorScorePenalty = -rg.nextInt(50) - 1;
+            int maxOverlap = rg.nextInt(5) - 1;
+            long penaltyThreshold;
+            boolean misplacedPatterns = false;
+            if (isMatchingPattern1) {
+                Match match1 = pattern1.match(targetQ).getBestMatch(true);
+                Match match2 = pattern2.match(targetQ).getBestMatch(true);
+                penaltyThreshold = match1.getScore() + match2.getScore()
+                        + errorScorePenalty * (getIntersectionLength(match1.getRange(), match2.getRange())
+                        + (match2.getRange().getLower() > match1.getRange().getUpper() ?
+                        match2.getRange().getLower() - match1.getRange().getUpper() : 0));
+                misplacedPatterns = (match1.getRange().getLower() >= match2.getRange().getLower())
+                        || checkFullIntersection(match1.getRange(), match2.getRange()) || ((maxOverlap != -1)
+                        && (getIntersectionLength(match1.getRange(), match2.getRange()) > maxOverlap));
+            } else {
+                penaltyThreshold = pattern2.match(targetQ).getBestMatch(true).getScore();
+                if ((targetLength <= maxErrors) || (motif1WithErrors.size() <= maxErrors))
+                    penaltyThreshold = 0;
             }
+
+            boolean entirePatternMustMatch = isMatchingPattern1;
+            if (misplacedPatterns) {
+                penaltyThreshold = Long.MIN_VALUE;
+                OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(true);
+                OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(true);
+                List<Range> ranges1 = streamPort(port1).map(Match::getRange).collect(Collectors.toList());
+                List<Range> ranges2 = streamPort(port2).map(Match::getRange).collect(Collectors.toList());
+
+                entirePatternMustMatch = false;
+                OUTER:
+                for (Range range1: ranges1)
+                    for (Range range2: ranges2)
+                        if (!((range1.getLower() >= range2.getLower())
+                                || checkFullIntersection(range1, range2) || ((maxOverlap != -1)
+                                && (getIntersectionLength(range1, range2) > maxOverlap)))) {
+                            entirePatternMustMatch = true;
+                            break OUTER;
+                        }
+            }
+
+            SequencePattern sequencePattern = new SequencePattern(getTestPatternAligner(penaltyThreshold,
+                    0, 0, errorScorePenalty, true, maxOverlap),
+                    pattern1, pattern2);
+
+            assertEquals(entirePatternMustMatch, sequencePattern.match(targetQ)
+                    .getBestMatch(true) != null);
+            assertEquals(entirePatternMustMatch, sequencePattern.match(targetQ)
+                    .getMatches(true).take() != null);
         }
     }
 
@@ -105,9 +101,12 @@ public class SequencePatternTest {
         for (int i = 0; i < 5000; i++) {
             int errorScorePenalty = -rg.nextInt(1000) - 1;
             int middleInsertionSize = rg.nextInt(30) + 1;
-            NucleotideSequence leftPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
-            NucleotideSequence middleLetter = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1);
-            NucleotideSequence rightPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
+            NucleotideSequence leftPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    5, 50);
+            NucleotideSequence middleLetter = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    1, 1);
+            NucleotideSequence rightPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    5, 50);
             NucleotideSequence motif1 = SequencesUtils.concatenate(leftPart, middleLetter);
             NucleotideSequence motif2 = SequencesUtils.concatenate(middleLetter, rightPart);
             NucleotideSequence target1 = SequencesUtils.concatenate(leftPart, middleLetter, rightPart);
@@ -139,24 +138,25 @@ public class SequencePatternTest {
                     errorScorePenalty * middleInsertionSize,
                     0, 0, errorScorePenalty),
                     pattern3, pattern4);
-            assertNull(sequencePattern1.match(targetQ1).getBestMatch());
-            assertNull(sequencePattern2.match(targetQ1).getBestMatch());
-            assertEquals(pattern1.match(targetQ1).getBestMatch().getScore()
-                            + pattern2.match(targetQ1).getBestMatch().getScore() + errorScorePenalty,
-                    sequencePattern3.match(targetQ1).getBestMatch().getScore());
-            if ((pattern4.match(targetQ1).getBestMatch().getRange().getLower() == leftPart.size() + 1)
-                    && (countPortValues(pattern3.match(targetQ1).getMatches()) == 1))
-                assertNull(sequencePattern5.match(targetQ1).getBestMatch());
-            if ((pattern4.match(targetQ2).getBestMatch().getRange().getLower() == leftPart.size() + middleInsertionSize)
-                    && (countPortValues(pattern3.match(targetQ2).getMatches()) == 1)) {
-                assertNull(sequencePattern5.match(targetQ2).getBestMatch());
-                assertEquals(pattern3.match(targetQ2).getBestMatch().getScore()
-                                + pattern4.match(targetQ2).getBestMatch().getScore()
+            assertNull(sequencePattern1.match(targetQ1).getBestMatch(true));
+            assertNull(sequencePattern2.match(targetQ1).getBestMatch(true));
+            assertEquals(pattern1.match(targetQ1).getBestMatch(true).getScore()
+                            + pattern2.match(targetQ1).getBestMatch(true).getScore() + errorScorePenalty,
+                    sequencePattern3.match(targetQ1).getBestMatch(true).getScore());
+            if ((pattern4.match(targetQ1).getBestMatch(true).getRange().getLower() == leftPart.size() + 1)
+                    && (countPortValues(pattern3.match(targetQ1).getMatches(true)) == 1))
+                assertNull(sequencePattern5.match(targetQ1).getBestMatch(true));
+            if ((pattern4.match(targetQ2).getBestMatch(true).getRange().getLower()
+                    == leftPart.size()+ middleInsertionSize)
+                    && (countPortValues(pattern3.match(targetQ2).getMatches(true)) == 1)) {
+                assertNull(sequencePattern5.match(targetQ2).getBestMatch(true));
+                assertEquals(pattern3.match(targetQ2).getBestMatch(true).getScore()
+                                + pattern4.match(targetQ2).getBestMatch(true).getScore()
                                 + errorScorePenalty * middleInsertionSize,
-                        sequencePattern6.match(targetQ2).getBestMatch().getScore());
+                        sequencePattern6.match(targetQ2).getBestMatch(true).getScore());
             }
             if (!leftPart.toString().equals(rightPart.toString()))
-                assertNull(sequencePattern4.match(targetQ1).getBestMatch());
+                assertNull(sequencePattern4.match(targetQ1).getBestMatch(true));
         }
     }
 

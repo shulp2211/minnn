@@ -1,7 +1,6 @@
 package com.milaboratory.mist.cli;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -66,7 +65,6 @@ public class ParseActionTest {
         }
     }
 
-    @Ignore
     @Test
     public void examplesTest() throws Exception {
         String posR1 = EXAMPLES_PATH + "positional/polyfid10_R1.fastq.gz";
@@ -89,7 +87,7 @@ public class ParseActionTest {
 
         String configuration = " --input-format fastq --output-format fastq --copy-original-comments "
                 + "--match-score 0 --mismatch-score -7 --gap-score -11 --single-overlap-penalty -10 "
-                + "--bitap-max-errors 3 --threads 1 --first-read-number 1";
+                + "--bitap-max-errors 3 --threads 4 --first-read-number 1";
 
         String patternPos = "^(UMI:N{14})n{22}(SB:N{4}) \\ *";
         String penaltyPos = " --penalty-threshold -200";
@@ -100,25 +98,8 @@ public class ParseActionTest {
         String patternTwo = "^(SB1:N{5})[aagc || c]agtggtatcaacgcagagt(UMI:N{14}) \\ ^(SB2:N{5})gtcacatttctcagatcct";
         String penaltyTwo = " --penalty-threshold -130";
 
-        printExecutionTime("total", () -> {
-            exec(positionalArgs + configuration + penaltyPos + " --pattern " + inQuotes(patternPos));
-            exec(onesidedArgs + configuration + penaltyOne + " --pattern " + inQuotes(patternOne));
-            exec(twosidedArgs + configuration + penaltyTwo + " --pattern " + inQuotes(patternTwo));
-            return null;
-        });
-
-        System.out.println("sorting: " + callCounter.get("sorting") + " calls, " + timeCounter.get("sorting") + " ms");
-        System.out.println("alignment: " + callCounter.get("alignment") + " calls, " + timeCounter.get("alignment") + " ms");
-        System.out.println("generate: " + callCounter.get("generate") + " calls, " + timeCounter.get("generate") + " ms");
-        System.out.println("combine: " + callCounter.get("combine") + " calls, " + timeCounter.get("combine") + " ms");
-        System.out.println("take: " + callCounter.get("take") + " calls, " + timeCounter.get("take") + " ms");
-        System.out.println("calculate: " + callCounter.get("calculate") + " calls, " + timeCounter.get("calculate") + " ms");
-        System.out.println("stage1: " + timeCounter.get("stage1") + " ms");
-        System.out.println("stage2: " + timeCounter.get("stage2") + " ms");
-        System.out.println("stage3: " + timeCounter.get("stage3") + " ms");
-        System.out.println("isCompatible: " + callCounter.get("isCompatible") + " calls, "
-                + timeCounter.get("isCompatible") + " ms");
-        System.out.println("find: " + callCounter.get("find") + " calls, " + timeCounter.get("find") + " ms");
-        System.out.println("maxSize: " + maxSize);
+        exec(positionalArgs + configuration + penaltyPos + " --pattern " + inQuotes(patternPos));
+        exec(onesidedArgs + configuration + penaltyOne + " --pattern " + inQuotes(patternOne));
+        exec(twosidedArgs + configuration + penaltyTwo + " --pattern " + inQuotes(patternTwo));
     }
 }
