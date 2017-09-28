@@ -39,8 +39,7 @@ final class NormalParsers {
     }
 
     ArrayList<FoundToken> parseRepeatPatterns(List<BracketsPair> repeatPatternBracesPairs) throws ParserException {
-        // must be changed to Integer.MAX_VALUE when bitap wrapper for longer sequences will be implemented
-        final int MAX_REPEATS = 63;
+        final int MAX_REPEATS = Integer.MAX_VALUE;
 
         ArrayList<FoundToken> foundTokens = new ArrayList<>();
         for (BracketsPair bracesPair : repeatPatternBracesPairs) {
@@ -83,9 +82,9 @@ final class NormalParsers {
             if (minRepeats > maxRepeats)
                 throw new ParserException("Minimum number of repeats (" + minRepeats + ") is bigger than maximum ("
                         + maxRepeats + ")!");
-            if ((minRepeats < 1) || (maxRepeats < 1) || (minRepeats > MAX_REPEATS) || (maxRepeats > MAX_REPEATS))
-                throw new ParserException("Allowed number of repeats: min=1, max=" + MAX_REPEATS + "; found: from "
-                        + minRepeats + " to " + maxRepeats);
+            if ((minRepeats < 1) || (maxRepeats < 1))
+                throw new ParserException("Number of repeats must not be less than 1; found: min "
+                        + minRepeats + ", max " + maxRepeats);
 
             List<FoundGroupEdgePosition> foundGroupEdgePositions = new ArrayList<>();
             foundGroupEdgePositions.addAll(findGroupsOnBorder(bracesPair.start - 1, true, MAX_REPEATS));
