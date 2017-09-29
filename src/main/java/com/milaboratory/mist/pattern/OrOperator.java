@@ -24,6 +24,12 @@ public final class OrOperator extends MultipleReadsOperator {
         return new OrOperatorMatchingResult(patternAligner, operandPatterns, target);
     }
 
+    @Override
+    public long estimateComplexity() {
+        return Arrays.stream(operandPatterns).mapToLong(Pattern::estimateComplexity).max()
+                .orElseThrow(IllegalStateException::new);
+    }
+
     private static class OrOperatorMatchingResult extends MatchingResult {
         private final PatternAligner patternAligner;
         private final MultipleReadsOperator[] operandPatterns;

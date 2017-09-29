@@ -9,13 +9,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.PatternUtils.*;
+import static com.milaboratory.mist.util.UnfairSorterConfiguration.*;
 
-public final class RepeatPattern extends SinglePattern {
+public final class RepeatPattern extends SinglePattern implements CanBeSingleSequence, CanFixBorders {
     private final NucleotideSequence patternSeq;
     private final int minRepeats;
     private final int maxRepeats;
-    private final int fixedLeftBorder;
-    private final int fixedRightBorder;
+    private int fixedLeftBorder;
+    private int fixedRightBorder;
     private final List<GroupEdgePosition> groupEdgePositions;
 
     public RepeatPattern(PatternAligner patternAligner, NucleotideSequence patternSeq, int minRepeats, int maxRepeats) {
@@ -99,6 +100,38 @@ public final class RepeatPattern extends SinglePattern {
             return -1;
         else
             return maxRepeats + patternAligner.bitapMaxErrors();
+    }
+
+    @Override
+    public long estimateComplexity() {
+        long repeatsRangeLength = Math.min(maxRepeats, minRepeats + repeatsRangeEstimation) - minRepeats + 1;
+
+        if ((fixedLeftBorder != -1) || (fixedRightBorder != -1))
+            return Math.min(fixedSequenceMaxComplexity, repeatsRangeLength);
+        else
+            return notFixedSequenceMinComplexity + repeatsRangeLength * singleNucleotideComplexity
+                    * lettersComplexity.get(patternSeq.toString().charAt(0)) / minRepeats;
+    }
+
+    @Override
+    public boolean isSingleSequence() {
+        return true;
+    }
+
+    @Override
+    public void fixBorder(boolean left, int position) {
+        if (left)
+            if (fixedLeftBorder == -1)
+                fixedLeftBorder = position;
+            else
+                throw new IllegalStateException(toString() + ": trying to set fixed left border to " + position
+                        + " when it is already fixed!");
+        else
+            if (fixedRightBorder == -1)
+                fixedRightBorder = position;
+            else
+                throw new IllegalStateException(toString() + ": trying to set fixed right border to " + position
+                        + " when it is already fixed!");
     }
 
     private static class RepeatPatternMatchingResult extends MatchingResult {

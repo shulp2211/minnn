@@ -24,6 +24,11 @@ public final class AndOperator extends MultipleReadsOperator {
         return new AndOperatorMatchingResult(patternAligner, operandPatterns, target);
     }
 
+    @Override
+    public long estimateComplexity() {
+        return Arrays.stream(operandPatterns).mapToLong(Pattern::estimateComplexity).sum();
+    }
+
     private static class AndOperatorMatchingResult extends MatchingResult {
         private final PatternAligner patternAligner;
         private final MultipleReadsOperator[] operandPatterns;

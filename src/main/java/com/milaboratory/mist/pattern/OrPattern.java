@@ -13,7 +13,7 @@ import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterP
  * This pattern takes multiple SinglePattern arguments and matches best of them that is found, or not matches
  * if all arguments didn't match.
  */
-public final class OrPattern extends MultiplePatternsOperator {
+public final class OrPattern extends MultiplePatternsOperator implements CanFixBorders {
     public OrPattern(PatternAligner patternAligner, SinglePattern... operandPatterns) {
         super(patternAligner, false, operandPatterns);
     }
@@ -39,6 +39,18 @@ public final class OrPattern extends MultiplePatternsOperator {
                 maxLength = currentPatternMaxLength;
         }
         return maxLength;
+    }
+
+    @Override
+    public long estimateComplexity() {
+        return Arrays.stream(operandPatterns).mapToLong(Pattern::estimateComplexity).max()
+                .orElseThrow(IllegalStateException::new);
+    }
+
+    @Override
+    public void fixBorder(boolean left, int position) {
+        Arrays.stream(operandPatterns).filter(p -> p instanceof CanFixBorders)
+                .forEach(p -> ((CanFixBorders)p).fixBorder(left, position));
     }
 
     private static class OrPatternMatchingResult extends MatchingResult {

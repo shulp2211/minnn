@@ -31,6 +31,13 @@ public abstract class Pattern {
     }
 
     /**
+     * Estimate computational complexity of this pattern for unfair sorter.
+     *
+     * @return estimated computational complexity: bigger values mean higher complexity
+     */
+    public abstract long estimateComplexity();
+
+    /**
      * Check if argument patterns have compatible pattern aligners.
      *
      * @param patterns argument patterns

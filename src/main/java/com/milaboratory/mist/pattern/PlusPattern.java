@@ -9,7 +9,7 @@ import java.util.Arrays;
 import static com.milaboratory.mist.pattern.MatchValidationType.ORDER;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
 
-public final class PlusPattern extends MultiplePatternsOperator {
+public final class PlusPattern extends MultiplePatternsOperator implements CanFixBorders {
     public PlusPattern(PatternAligner patternAligner, SinglePattern... operandPatterns) {
         super(patternAligner, operandPatterns);
     }
@@ -22,6 +22,18 @@ public final class PlusPattern extends MultiplePatternsOperator {
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to) {
         return new PlusPatternMatchingResult(patternAligner, operandPatterns, target, from, to);
+    }
+
+    @Override
+    public long estimateComplexity() {
+        return Arrays.stream(operandPatterns).mapToLong(Pattern::estimateComplexity).sum();
+    }
+
+    @Override
+    public void fixBorder(boolean left, int position) {
+        int targetOperandIndex = left ? 0 : operandPatterns.length - 1;
+        if (operandPatterns[targetOperandIndex] instanceof CanFixBorders)
+            ((CanFixBorders)(operandPatterns[targetOperandIndex])).fixBorder(left, position);
     }
 
     private static class PlusPatternMatchingResult extends MatchingResult {

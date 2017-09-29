@@ -13,14 +13,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.pattern.PatternUtils.*;
+import static com.milaboratory.mist.util.UnfairSorterConfiguration.*;
 
-public final class FuzzyMatchPattern extends SinglePattern {
+public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingleSequence, CanFixBorders {
     private final ArrayList<NucleotideSequence> sequences;
     private final ArrayList<Motif<NucleotideSequence>> motifs;
     private final int leftCut;
     private final int rightCut;
-    private final int fixedLeftBorder;
-    private final int fixedRightBorder;
+    private int fixedLeftBorder;
+    private int fixedRightBorder;
     private final List<GroupEdgePosition> groupEdgePositions;
     private final ArrayList<Integer> groupMovements;
 
@@ -121,6 +122,36 @@ public final class FuzzyMatchPattern extends SinglePattern {
     @Override
     public int estimateMaxLength() {
         return sequences.get(0).size() + patternAligner.bitapMaxErrors();
+    }
+
+    @Override
+    public long estimateComplexity() {
+        if ((fixedLeftBorder != -1) || (fixedRightBorder != -1))
+            return Math.min(fixedSequenceMaxComplexity, sequences.size());
+        else
+            return notFixedSequenceMinComplexity + sequences.size() * (long)(singleNucleotideComplexity
+                    / sequences.get(0).toString().chars().mapToDouble(c -> 1.0 / lettersComplexity.get((char)c)).sum());
+    }
+
+    @Override
+    public boolean isSingleSequence() {
+        return true;
+    }
+
+    @Override
+    public void fixBorder(boolean left, int position) {
+        if (left)
+            if (fixedLeftBorder == -1)
+                fixedLeftBorder = position;
+            else
+                throw new IllegalStateException(toString() + ": trying to set fixed left border to " + position
+                        + " when it is already fixed!");
+        else
+            if (fixedRightBorder == -1)
+                fixedRightBorder = position;
+            else
+                throw new IllegalStateException(toString() + ": trying to set fixed right border to " + position
+                        + " when it is already fixed!");
     }
 
     private static class FuzzyMatchingResult extends MatchingResult {

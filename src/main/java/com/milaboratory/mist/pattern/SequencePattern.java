@@ -7,9 +7,9 @@ import com.milaboratory.mist.util.*;
 import java.util.Arrays;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.FOLLOWING;
-import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
+import static com.milaboratory.mist.util.UnfairSorterConfiguration.*;
 
-public final class SequencePattern extends MultiplePatternsOperator {
+public final class SequencePattern extends MultiplePatternsOperator implements CanBeSingleSequence, CanFixBorders {
     public SequencePattern(PatternAligner patternAligner, SinglePattern... operandPatterns) {
         super(patternAligner, operandPatterns);
     }
@@ -36,6 +36,29 @@ public final class SequencePattern extends MultiplePatternsOperator {
                 summaryLength += currentPatternMaxLength;
         }
         return summaryLength;
+    }
+
+    @Override
+    public long estimateComplexity() {
+        if (isSingleSequence())
+            return Arrays.stream(operandPatterns).mapToLong(Pattern::estimateComplexity).min()
+                    .orElseThrow(IllegalStateException::new)
+                    + fixedSequenceMaxComplexity * (operandPatterns.length - 1);
+        else
+            return Arrays.stream(operandPatterns).mapToLong(Pattern::estimateComplexity).sum();
+    }
+
+    @Override
+    public boolean isSingleSequence() {
+        return Arrays.stream(operandPatterns)
+                .allMatch(p -> p instanceof CanBeSingleSequence && ((CanBeSingleSequence)p).isSingleSequence());
+    }
+
+    @Override
+    public void fixBorder(boolean left, int position) {
+        int targetOperandIndex = left ? 0 : operandPatterns.length - 1;
+        if (operandPatterns[targetOperandIndex] instanceof CanFixBorders)
+            ((CanFixBorders)(operandPatterns[targetOperandIndex])).fixBorder(left, position);
     }
 
     private static class SequencePatternMatchingResult extends MatchingResult {

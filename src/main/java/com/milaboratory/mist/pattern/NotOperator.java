@@ -24,6 +24,11 @@ public final class NotOperator extends MultipleReadsOperator {
         return new NotOperatorMatchingResult(patternAligner, operandPatterns[0], target);
     }
 
+    @Override
+    public long estimateComplexity() {
+        return operandPatterns[0].estimateComplexity();
+    }
+
     private static class NotOperatorMatchingResult extends MatchingResult {
         private final PatternAligner patternAligner;
         private final MultipleReadsOperator operandPattern;

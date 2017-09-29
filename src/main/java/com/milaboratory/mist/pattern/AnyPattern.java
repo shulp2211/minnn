@@ -38,6 +38,11 @@ public final class AnyPattern extends SinglePattern {
         throw new IllegalStateException("estimateMaxLength() called for AnyPattern!");
     }
 
+    @Override
+    public long estimateComplexity() {
+        return 1;
+    }
+
     private static class AnyPatternMatchingResult extends MatchingResult {
         private final ArrayList<GroupEdge> groupEdges;
         private final NSequenceWithQuality target;

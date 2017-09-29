@@ -7,7 +7,6 @@ import java.io.File;
 
 import static com.milaboratory.mist.cli.CommandLineTestUtils.*;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
-import static com.milaboratory.mist.util.DebugUtils.*;
 import static com.milaboratory.mist.util.SystemUtils.*;
 import static com.milaboratory.mist.util.TestSettings.*;
 import static com.milaboratory.mist.Main.main;

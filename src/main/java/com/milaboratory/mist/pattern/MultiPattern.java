@@ -30,6 +30,11 @@ public final class MultiPattern extends MultipleReadsOperator {
         return new MultiPatternMatchingResult(patternAligner, singlePatterns, target);
     }
 
+    @Override
+    public long estimateComplexity() {
+        return Arrays.stream(singlePatterns).mapToLong(Pattern::estimateComplexity).sum();
+    }
+
     private static class MultiPatternMatchingResult extends MatchingResult {
         private final PatternAligner patternAligner;
         private final SinglePattern[] singlePatterns;

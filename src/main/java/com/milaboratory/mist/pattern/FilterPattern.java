@@ -11,7 +11,7 @@ import java.util.ArrayList;
  * and multiple patterns. It filters matches from pattern with specified Filter. For usage with MultipleReadsOperator
  * patterns, it must be wrapped with MultipleReadsFilterPattern.
  */
-public final class FilterPattern extends SinglePattern {
+public final class FilterPattern extends SinglePattern implements CanBeSingleSequence, CanFixBorders {
     private final Filter filter;
     private final Pattern pattern;
 
@@ -51,12 +51,28 @@ public final class FilterPattern extends SinglePattern {
     }
 
     @Override
+    public long estimateComplexity() {
+        return pattern.estimateComplexity();
+    }
+
+    @Override
     void setTargetId(byte targetId) {
         super.setTargetId(targetId);
         if (pattern instanceof SinglePattern)
             ((SinglePattern)pattern).setTargetId(targetId);
         else
             throw new IllegalStateException("setTargetId() called for argument of class " + pattern.getClass());
+    }
+
+    @Override
+    public boolean isSingleSequence() {
+        return pattern instanceof CanBeSingleSequence && ((CanBeSingleSequence)pattern).isSingleSequence();
+    }
+
+    @Override
+    public void fixBorder(boolean left, int position) {
+        if (pattern instanceof CanFixBorders)
+            ((CanFixBorders)pattern).fixBorder(left, position);
     }
 
     private static class FilterMatchingResult extends MatchingResult {

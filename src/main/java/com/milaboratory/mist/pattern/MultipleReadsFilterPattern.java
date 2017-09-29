@@ -27,4 +27,9 @@ public final class MultipleReadsFilterPattern extends MultipleReadsOperator {
     public MatchingResult match(MultiNSequenceWithQuality target) {
         return filterPattern.match(target);
     }
+
+    @Override
+    public long estimateComplexity() {
+        return filterPattern.estimateComplexity();
+    }
 }
