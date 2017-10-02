@@ -8,4 +8,16 @@ public interface CanFixBorders {
      * @param position coordinate for fixed border
      */
     void fixBorder(boolean left, int position);
+
+    /**
+     * Check whether this pattern already has fixed border.
+     *
+     * @param left true if we check left border, false for right border
+     * @return true if border is fixed
+     */
+    boolean isBorderFixed(boolean left);
+
+    default boolean isBorderFixed() {
+        return isBorderFixed(true) || isBorderFixed(false);
+    }
 }

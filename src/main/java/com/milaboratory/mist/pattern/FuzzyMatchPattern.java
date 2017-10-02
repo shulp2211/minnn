@@ -126,7 +126,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
 
     @Override
     public long estimateComplexity() {
-        if ((fixedLeftBorder != -1) || (fixedRightBorder != -1))
+        if (isBorderFixed())
             return Math.min(fixedSequenceMaxComplexity, sequences.size());
         else
             return notFixedSequenceMinComplexity + sequences.size() * (long)(singleNucleotideComplexity
@@ -152,6 +152,14 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
             else
                 throw new IllegalStateException(toString() + ": trying to set fixed right border to " + position
                         + " when it is already fixed!");
+    }
+
+    @Override
+    public boolean isBorderFixed(boolean left) {
+        if (left)
+            return fixedLeftBorder != -1;
+        else
+            return fixedRightBorder != -1;
     }
 
     private static class FuzzyMatchingResult extends MatchingResult {

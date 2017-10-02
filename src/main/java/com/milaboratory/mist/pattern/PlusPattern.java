@@ -36,6 +36,13 @@ public final class PlusPattern extends MultiplePatternsOperator implements CanFi
             ((CanFixBorders)(operandPatterns[targetOperandIndex])).fixBorder(left, position);
     }
 
+    @Override
+    public boolean isBorderFixed(boolean left) {
+        int targetOperandIndex = left ? 0 : operandPatterns.length - 1;
+        return operandPatterns[targetOperandIndex] instanceof CanFixBorders
+                && ((CanFixBorders)(operandPatterns[targetOperandIndex])).isBorderFixed(left);
+    }
+
     private static class PlusPatternMatchingResult extends MatchingResult {
         private final PatternAligner patternAligner;
         private final SinglePattern[] operandPatterns;

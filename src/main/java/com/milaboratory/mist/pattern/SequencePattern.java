@@ -61,6 +61,13 @@ public final class SequencePattern extends MultiplePatternsOperator implements C
             ((CanFixBorders)(operandPatterns[targetOperandIndex])).fixBorder(left, position);
     }
 
+    @Override
+    public boolean isBorderFixed(boolean left) {
+        int targetOperandIndex = left ? 0 : operandPatterns.length - 1;
+        return operandPatterns[targetOperandIndex] instanceof CanFixBorders
+                && ((CanFixBorders)(operandPatterns[targetOperandIndex])).isBorderFixed(left);
+    }
+
     private static class SequencePatternMatchingResult extends MatchingResult {
         private final PatternAligner patternAligner;
         private final SinglePattern[] operandPatterns;

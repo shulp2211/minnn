@@ -75,6 +75,11 @@ public final class FilterPattern extends SinglePattern implements CanBeSingleSeq
             ((CanFixBorders)pattern).fixBorder(left, position);
     }
 
+    @Override
+    public boolean isBorderFixed(boolean left) {
+        return pattern instanceof CanFixBorders && ((CanFixBorders)pattern).isBorderFixed(left);
+    }
+
     private static class FilterMatchingResult extends MatchingResult {
         private final Filter filter;
         private final Pattern pattern;

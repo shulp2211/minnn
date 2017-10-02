@@ -106,7 +106,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
     public long estimateComplexity() {
         long repeatsRangeLength = Math.min(maxRepeats, minRepeats + repeatsRangeEstimation) - minRepeats + 1;
 
-        if ((fixedLeftBorder != -1) || (fixedRightBorder != -1))
+        if (isBorderFixed())
             return Math.min(fixedSequenceMaxComplexity, repeatsRangeLength);
         else
             return notFixedSequenceMinComplexity + repeatsRangeLength * singleNucleotideComplexity
@@ -132,6 +132,14 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
             else
                 throw new IllegalStateException(toString() + ": trying to set fixed right border to " + position
                         + " when it is already fixed!");
+    }
+
+    @Override
+    public boolean isBorderFixed(boolean left) {
+        if (left)
+            return fixedLeftBorder != -1;
+        else
+            return fixedRightBorder != -1;
     }
 
     private static class RepeatPatternMatchingResult extends MatchingResult {
