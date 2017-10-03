@@ -3,10 +3,15 @@ package com.milaboratory.mist.util;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.mist.pattern.*;
 
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.stream.IntStream;
+
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
 
 public final class ApproximateSorterConfiguration {
     final Pattern[] operandPatterns;
+    private final Integer[] operandOrder;
     final MultiNSequenceWithQuality target;
     private final int from;
     private final int to;
@@ -47,6 +52,7 @@ public final class ApproximateSorterConfiguration {
         this.matchValidationType = matchValidationType;
         this.unfairSorterLimit = unfairSorterLimit;
         this.specificOutputPorts = false;
+        this.operandOrder = null;
         if (((matchValidationType == INTERSECTION) || (matchValidationType == ORDER)
                 || (matchValidationType == FOLLOWING) || (matchValidationType == FIRST)))
             throw new IllegalArgumentException("Invalid combination of multipleReads and matchValidationType flags: " +
@@ -95,6 +101,11 @@ public final class ApproximateSorterConfiguration {
         this.unfairSorterLimit = unfairSorterLimit;
         this.specificOutputPorts = !fairSorting
                 && ((matchValidationType == ORDER) || (matchValidationType == FOLLOWING));
+        if (this.specificOutputPorts) {
+            this.operandOrder = IntStream.range(0, operandPatterns.length).boxed().toArray(Integer[]::new);
+            Arrays.sort(this.operandOrder, Comparator.comparingLong(i -> operandPatterns[i].estimateComplexity()));
+        } else
+            this.operandOrder = null;
         if ((from < 0) || (to < 0))
             throw new IllegalArgumentException("Invalid from and to arguments: from = " + from + ", to = " + to);
         if ((matchValidationType == LOGICAL_AND) || (matchValidationType == LOGICAL_OR))
@@ -121,5 +132,12 @@ public final class ApproximateSorterConfiguration {
         if (multipleReads)
             throw new IllegalStateException("Trying to get \"to\" when multipleReads is true!");
         return to;
+    }
+
+    Integer[] operandOrder() {
+        if (specificOutputPorts)
+            return operandOrder;
+        else
+            throw new IllegalStateException("Trying to get \"operandOrder\" when specificOutputPorts is false!");
     }
 }
