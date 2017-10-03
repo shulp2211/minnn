@@ -43,8 +43,29 @@ public class CommonPatternTests {
 
         long[] expected = new long[19];
         expected[0] = notFixedSequenceMinComplexity + singleNucleotideComplexity / 8;
+        expected[1] = notFixedSequenceMinComplexity + (long)(singleNucleotideComplexity * 9 / (2 + 3.0 / 16));
+        expected[2] = 1;
+        expected[3] = 6;
+        expected[4] = notFixedSequenceMinComplexity + (singleNucleotideComplexity * 16 / 20);
+        expected[5] = notFixedSequenceMinComplexity + (singleNucleotideComplexity * 3 / 4);
+        expected[6] = 3;
+        expected[7] = expected[0] + fixedSequenceMaxComplexity;
+        expected[8] = expected[6] + fixedSequenceMaxComplexity * 2;
+        expected[9] = expected[2] + expected[5];
+        expected[10] = expected[0] * 2;
+        expected[11] = expected[0] + expected[9];
+        expected[12] = expected[4] + expected[10];
+        expected[13] = expected[11];
+        expected[14] = expected[1] + expected[10];
+        expected[15] = expected[13] + expected[14];
+        expected[16] = expected[0] + expected[4];
+        expected[17] = expected[15] + expected[16];
+        expected[18] = expected[15];
 
-        assertEquals(expected[0], patterns[0].estimateComplexity());
+        for (int i = 0; i <= 14; i++)
+            assertEquals(expected[i], patterns[i].estimateComplexity());
+        for (int i = 0; i <= 3; i++)
+            assertEquals(expected[i + 15], mPatterns[i].estimateComplexity());
     }
 
     @Test

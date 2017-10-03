@@ -129,7 +129,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
         if (isBorderFixed())
             return Math.min(fixedSequenceMaxComplexity, sequences.size());
         else
-            return notFixedSequenceMinComplexity + sequences.size() * (long)(singleNucleotideComplexity
+            return notFixedSequenceMinComplexity + (long)(sequences.size() * singleNucleotideComplexity
                     / sequences.get(0).toString().chars().mapToDouble(c -> 1.0 / lettersComplexity.get((char)c)).sum());
     }
 
