@@ -3,15 +3,13 @@ package com.milaboratory.mist.util;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.mist.pattern.*;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.stream.IntStream;
+import java.util.*;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
 
 public final class ApproximateSorterConfiguration {
     final Pattern[] operandPatterns;
-    private final Integer[] operandOrder;
+    private final ArrayList<Integer> operandOrder;
     final MultiNSequenceWithQuality target;
     private final int from;
     private final int to;
@@ -102,8 +100,27 @@ public final class ApproximateSorterConfiguration {
         this.specificOutputPorts = !fairSorting
                 && ((matchValidationType == ORDER) || (matchValidationType == FOLLOWING));
         if (this.specificOutputPorts) {
-            this.operandOrder = IntStream.range(0, operandPatterns.length).boxed().toArray(Integer[]::new);
-            Arrays.sort(this.operandOrder, Comparator.comparingLong(i -> operandPatterns[i].estimateComplexity()));
+            int numberOfOperands = operandPatterns.length;
+            this.operandOrder = new ArrayList<>();
+            Long[] patternComplexities = Arrays.stream(operandPatterns).map(Pattern::estimateComplexity)
+                    .toArray(Long[]::new);
+            long minComplexity = Long.MAX_VALUE;
+            int firstPatternIndex = 0;
+            for (int i = 0; i < numberOfOperands; i++)
+                if (minComplexity > patternComplexities[i]) {
+                    minComplexity = patternComplexities[i];
+                    firstPatternIndex = i;
+                }
+            this.operandOrder.add(firstPatternIndex);
+            while (this.operandOrder.size() < numberOfOperands) {
+                int leftIndex = Collections.min(this.operandOrder) - 1;
+                int rightIndex = Collections.max(this.operandOrder) + 1;
+                long leftComplexity = leftIndex < 0 ? Long.MAX_VALUE
+                        : patternComplexities[leftIndex];
+                long rightComplexity = rightIndex >= numberOfOperands ? Long.MAX_VALUE
+                        : patternComplexities[rightIndex];
+                this.operandOrder.add(leftComplexity > rightComplexity ? rightIndex : leftIndex);
+            }
         } else
             this.operandOrder = null;
         if ((from < 0) || (to < 0))
@@ -134,7 +151,7 @@ public final class ApproximateSorterConfiguration {
         return to;
     }
 
-    Integer[] operandOrder() {
+    ArrayList<Integer> operandOrder() {
         if (specificOutputPorts)
             return operandOrder;
         else

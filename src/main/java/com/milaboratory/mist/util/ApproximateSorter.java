@@ -377,19 +377,20 @@ public final class ApproximateSorter {
     }
 
     private SpecificOutputPort getPortWithParams(int operandIndex) {
-        return getPortWithParams(operandIndex, -1);
+        return getPortWithParams(operandIndex, -1, -1);
     }
 
     /**
-     * Get SpecificOutputPort for specified operand index and "from" coordinate for operand pattern match() call.
+     * Get SpecificOutputPort for specified operand index, "from" and "to" coordinates for operand pattern match() call.
      *
      * @param operandIndex operand index
      * @param from from coordinate for operand pattern match() call, or -1 if conf.from() should be used
+     * @param to to coordinate for operand pattern match() call, or -1 if conf.to() should be used
      * @return new SpecificOutputPort with specified parameters
      */
-    private SpecificOutputPort getPortWithParams(int operandIndex, int from) {
-        SpecificOutputPort currentPort = unfairOutputPorts.stream().filter(p -> p.paramsEqualTo(operandIndex, from))
-                .findFirst().orElse(null);
+    private SpecificOutputPort getPortWithParams(int operandIndex, int from, int to) {
+        SpecificOutputPort currentPort = unfairOutputPorts.stream().filter(p -> p.paramsEqualTo(operandIndex,
+                from, to)).findFirst().orElse(null);
         if (currentPort == null) {
             Pattern currentPattern = conf.operandPatterns[operandIndex];
             int matchFrom = -1;
@@ -402,27 +403,41 @@ public final class ApproximateSorter {
                 else
                     throw new IllegalStateException("getPortWithParams: from = " + from
                             + ", conf.from() = " + conf.from());
-                matchTo = conf.to();
+                if (to == -1)
+                    matchTo = conf.to();
+                else if (to <= conf.to())
+                    matchTo = to;
+                else
+                    throw new IllegalStateException("getPortWithParams: to = " + to
+                            + ", conf.to() = " + conf.to());
             }
             int portLimit = unfairSorterPortLimits.get(currentPattern.getClass());
 
-            if ((conf.matchValidationType == FOLLOWING) && (operandIndex > 0)) {
+            if ((conf.matchValidationType == FOLLOWING)
+                    && (((operandIndex > 0) && (from != -1) && (to == -1))
+                    || ((operandIndex < conf.operandPatterns.length - 1) && (from == -1) && (to != -1)))) {
                 int patternMaxLength = ((SinglePattern)currentPattern).estimateMaxLength();
                 if (patternMaxLength != -1) {
                     int maxOverlap = conf.patternAligner.maxOverlap();
                     boolean canEstimateMaxLength = false;
                     int extraMaxLength = 0;
                     if (maxOverlap == -1) {
-                        int previousPatternMaxLength = ((SinglePattern)conf.operandPatterns[operandIndex - 1])
+                        int overlappingPatternIndex = (from == -1) ? operandIndex + 1 : operandIndex - 1;
+                        int overlappingPatternMaxLength = ((SinglePattern)conf.operandPatterns[overlappingPatternIndex])
                                 .estimateMaxLength();
-                        if (previousPatternMaxLength != -1) {
-                            extraMaxLength = previousPatternMaxLength - 1;
+                        if (overlappingPatternMaxLength != -1) {
+                            extraMaxLength = overlappingPatternMaxLength - 1;
                             canEstimateMaxLength = true;
                         }
                     } else
                         canEstimateMaxLength = true;
-                    if (canEstimateMaxLength)
-                        matchTo = Math.min(conf.to(), matchFrom + patternMaxLength + extraMaxLength);
+
+                    if (canEstimateMaxLength) {
+                        if (from == -1)
+                            matchFrom = Math.max(conf.from(), matchTo - (patternMaxLength + extraMaxLength));
+                        else
+                            matchTo = Math.min(conf.to(), matchFrom + patternMaxLength + extraMaxLength);
+                    }
                 }
                 portLimit = specificPortLimit;
             }
@@ -434,7 +449,7 @@ public final class ApproximateSorter {
                         : currentPattern.match(conf.target).getMatches(false))
                     : ((SinglePattern)currentPattern)
                         .match(conf.target.get(0), matchFrom, matchTo).getMatches(false),
-                    operandIndex, from, portLimit);
+                    operandIndex, from, to, portLimit);
             unfairOutputPorts.add(currentPort);
         }
         return currentPort;
@@ -443,35 +458,45 @@ public final class ApproximateSorter {
     /**
      * Get array of matches by array of match indexes in output ports.
      *
-     * @param indexes array of indexes in output ports of pattern operands
+     * @param portValueIndexes array of indexes in output ports of pattern operands
      * @return array of matches
      */
-    private Match[] getMatchesByIndexes(int[] indexes) {
+    private Match[] getMatchesByIndexes(int[] portValueIndexes) {
         int numberOfOperands = conf.operandPatterns.length;
-        if (indexes.length != numberOfOperands)
-            throw new IllegalArgumentException("indexes length is " + indexes.length + ", number of operands: "
-                    + numberOfOperands);
+        if (portValueIndexes.length != numberOfOperands)
+            throw new IllegalArgumentException("portValueIndexes length is " + portValueIndexes.length
+                    + ", number of operands: " + numberOfOperands);
         Match[] matches = new Match[numberOfOperands];
         if (conf.specificOutputPorts) {
             int maxOverlap = conf.patternAligner.maxOverlap();
-            int previousMatchStart = -1;
-            int previousMatchEnd = -1;
-            for (int i = 0; i < numberOfOperands; i++) {
-                int thisMatchStart = Math.max(conf.from(), ((previousMatchStart == -1) || (previousMatchEnd == -1)) ? 0
-                        : (maxOverlap == -1) ? previousMatchStart + 1 : previousMatchEnd - maxOverlap);
-                Match currentMatch = getPortWithParams(i, thisMatchStart).get(indexes[i]);
-                if (currentMatch != null) {
-                    previousMatchStart = currentMatch.getRange().getFrom();
-                    previousMatchEnd = currentMatch.getRange().getTo();
-                } else {
-                    previousMatchStart = -1;
-                    previousMatchEnd = -1;
+            ArrayList<Integer> operandOrder = conf.operandOrder();
+            int firstOperandIndex = operandOrder.get(0);
+            matches[firstOperandIndex] = getPortWithParams(firstOperandIndex).get(portValueIndexes[firstOperandIndex]);
+            for (int i = 1; i < numberOfOperands; i++) {
+                int currentOperandIndex = operandOrder.get(i);
+                Match previousMatch = matches[currentOperandIndex > firstOperandIndex
+                        ? currentOperandIndex - 1 : currentOperandIndex + 1];
+                Match currentMatch = null;
+                if (previousMatch != null) {
+                    Range previousMatchRange = previousMatch.getRange();
+                    int previousMatchStart = previousMatchRange.getFrom();
+                    int previousMatchEnd = previousMatchRange.getTo();
+                    int estimatedMaxOverlap = Math.min(previousMatchRange.length() - 1,
+                            maxOverlap == -1 ? Integer.MAX_VALUE : maxOverlap);
+                    int thisMatchStart = -1;
+                    int thisMatchEnd = -1;
+                    if (currentOperandIndex > firstOperandIndex)
+                        thisMatchStart = previousMatchEnd - estimatedMaxOverlap;
+                    else
+                        thisMatchEnd = previousMatchStart + estimatedMaxOverlap;
+                    currentMatch = getPortWithParams(currentOperandIndex, thisMatchStart, thisMatchEnd)
+                            .get(portValueIndexes[currentOperandIndex]);
                 }
-                matches[i] = currentMatch;
+                matches[currentOperandIndex] = currentMatch;
             }
         } else
             for (int i = 0; i < numberOfOperands; i++)
-                matches[i] = getPortWithParams(i).get(indexes[i]);
+                matches[i] = getPortWithParams(i).get(portValueIndexes[i]);
 
         return matches;
     }

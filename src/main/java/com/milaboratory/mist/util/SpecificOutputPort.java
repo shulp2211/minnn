@@ -10,13 +10,15 @@ final class SpecificOutputPort implements OutputPort<Match> {
     private final ArrayList<Match> cachedMatches = new ArrayList<>();
     private final int operandIndex;
     private final int from;
+    private final int to;
     private final int portLimit;
     private boolean finished = false;
 
-    SpecificOutputPort(OutputPort<Match> port, int operandIndex, int from, int portLimit) {
+    SpecificOutputPort(OutputPort<Match> port, int operandIndex, int from, int to, int portLimit) {
         this.port = port;
         this.operandIndex = operandIndex;
         this.from = from;
+        this.to = to;
         this.portLimit = portLimit;
     }
 
@@ -58,8 +60,8 @@ final class SpecificOutputPort implements OutputPort<Match> {
             throw new IndexOutOfBoundsException("index: " + index + ", cachedMatches size: " + cachedMatches.size());
     }
 
-    boolean paramsEqualTo(int operandIndex, int from) {
-        return (operandIndex == this.operandIndex) && (from == this.from);
+    boolean paramsEqualTo(int operandIndex, int from, int to) {
+        return (operandIndex == this.operandIndex) && (from == this.from) && (to == this.to);
     }
 
     boolean isFinished() {
