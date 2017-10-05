@@ -46,7 +46,7 @@ public final class ParseAction implements Action {
         MistDataFormat outputFormat = parameterNames.get(params.outputFormat);
         ReadProcessor readProcessor = new ReadProcessor(params.inputFileNames, params.outputFileNames, pattern,
                 params.oriented, params.fairSorting, params.firstReadNumber, params.threads, params.copyOldComments,
-                inputFormat, outputFormat);
+                inputFormat, outputFormat, params.testIOSpeed);
         readProcessor.processReadsParallel();
     }
 
@@ -137,6 +137,10 @@ public final class ParseAction implements Action {
         @Parameter(description = "Write comment from original read to the beginning of comment of parsed read.",
                 names = {"--copy-original-comments"})
         boolean copyOldComments = false;
+
+        @Parameter(description = "Copy input files to output without processing; used for debug purpose only.",
+                names = {"--test-io-speed"})
+        boolean testIOSpeed = false;
 
         @Override
         public void validate() {

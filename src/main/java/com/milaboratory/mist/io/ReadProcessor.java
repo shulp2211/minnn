@@ -35,10 +35,11 @@ public final class ReadProcessor {
     private final MistDataFormat inputFormat;
     private final MistDataFormat outputFormat;
     private final ReadsNumber readsNumber;
+    private final boolean testIOSpeed;
 
     public ReadProcessor(List<String> inputFileNames, List<String> outputFileNames, Pattern pattern,
             boolean orientedReads, boolean fairSorting, int firstReadNumber, int threads, boolean copyOldComments,
-            MistDataFormat inputFormat, MistDataFormat outputFormat) {
+            MistDataFormat inputFormat, MistDataFormat outputFormat, boolean testIOSpeed) {
         if ((inputFormat == MIF) && (inputFileNames.size() > 1))
             throw exitWithError("Mif data format uses single file; specified " + inputFileNames.size()
                     + " input files!");
@@ -76,6 +77,7 @@ public final class ReadProcessor {
             this.readsNumber = detectReadsNumber();
         else
             throw new IllegalStateException("Unknown input format: " + inputFormat);
+        this.testIOSpeed = testIOSpeed;
     }
 
     public void processReadsParallel() {
@@ -104,8 +106,8 @@ public final class ReadProcessor {
                 SequenceRead read = inputReads.take();
                 return (read == null) ? null : new ProcessorInput(read, reverseMatch);
             };
-            OutputPort<ParsedRead> parsedReadsPort = new ParallelProcessor<>(processorInputs, new ReadParserProcessor(),
-                    threads);
+            OutputPort<ParsedRead> parsedReadsPort = new ParallelProcessor<>(processorInputs,
+                    testIOSpeed ? new TestIOSpeedProcessor() : new ReadParserProcessor(), threads);
             OrderedOutputPort<ParsedRead> orderedReadsPort = new OrderedOutputPort<>(parsedReadsPort,
                     object -> object.getOriginalRead().getId());
             parsedReads.add(orderedReadsPort);
@@ -260,6 +262,13 @@ public final class ReadProcessor {
                 return new ParsedRead(input.read, parsedRead, getGroupsFromMatch(bestMatch), input.reverseMatch,
                         bestMatch.getScore());
             }
+        }
+    }
+
+    private class TestIOSpeedProcessor implements Processor<ProcessorInput, ParsedRead> {
+        @Override
+        public ParsedRead process(ProcessorInput input) {
+            return new ParsedRead(input.read, input.read, new ArrayList<>(), false, 0);
         }
     }
 }
