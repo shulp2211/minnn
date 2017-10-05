@@ -223,9 +223,11 @@ public final class ApproximateSorter {
                 }
             }
         } else {
+            int[] operandOrder = conf.operandOrder();
             boolean allPortsFinished = false;
             while (!allPortsFinished) {
-                int firstFoundNullIndex = numberOfOperands - 1;
+                // all variables with "Unordered" suffix must be converted with operandOrder[] before using as index
+                int firstFoundNullIndexUnordered = numberOfOperands - 1;
                 currentMatches = getMatchesByIndexes(matchIndexes);
                 if (!alreadyReturned(matchIndexes)) {
                     if (Arrays.stream(currentMatches).noneMatch(Objects::isNull)) {
@@ -236,24 +238,25 @@ public final class ApproximateSorter {
                                 allMatchesFiltered.add(combinedMatch);
                         }
                     } else
-                        for (int i = 0; i < numberOfOperands - 1; i++)
-                            if (currentMatches[i] == null) {
-                                firstFoundNullIndex = i;
+                        for (int indexUnordered = 0; indexUnordered < numberOfOperands - 1; indexUnordered++)
+                            if (currentMatches[operandOrder[indexUnordered]] == null) {
+                                firstFoundNullIndexUnordered = indexUnordered;
                                 break;
                             }
                 }
 
                 // update matchIndexes
-                if (currentMatches[firstFoundNullIndex] == null) {
-                    if (firstFoundNullIndex == 0)
+                if (currentMatches[operandOrder[firstFoundNullIndexUnordered]] == null) {
+                    if (firstFoundNullIndexUnordered == 0)
                         allPortsFinished = true;
                     else {
-                        matchIndexes[firstFoundNullIndex - 1]++;
-                        for (int i = firstFoundNullIndex; i < numberOfOperands; i++)
-                            matchIndexes[i] = 0;
+                        matchIndexes[operandOrder[firstFoundNullIndexUnordered - 1]]++;
+                        for (int indexUnordered = firstFoundNullIndexUnordered; indexUnordered < numberOfOperands;
+                                indexUnordered++)
+                            matchIndexes[operandOrder[indexUnordered]] = 0;
                     }
                 } else
-                    matchIndexes[numberOfOperands - 1]++;
+                    matchIndexes[operandOrder[numberOfOperands - 1]]++;
             }
         }
 
@@ -469,11 +472,11 @@ public final class ApproximateSorter {
         Match[] matches = new Match[numberOfOperands];
         if (conf.specificOutputPorts) {
             int maxOverlap = conf.patternAligner.maxOverlap();
-            ArrayList<Integer> operandOrder = conf.operandOrder();
-            int firstOperandIndex = operandOrder.get(0);
+            int[] operandOrder = conf.operandOrder();
+            int firstOperandIndex = operandOrder[0];
             matches[firstOperandIndex] = getPortWithParams(firstOperandIndex).get(portValueIndexes[firstOperandIndex]);
             for (int i = 1; i < numberOfOperands; i++) {
-                int currentOperandIndex = operandOrder.get(i);
+                int currentOperandIndex = operandOrder[i];
                 Match previousMatch = matches[currentOperandIndex > firstOperandIndex
                         ? currentOperandIndex - 1 : currentOperandIndex + 1];
                 Match currentMatch = null;
