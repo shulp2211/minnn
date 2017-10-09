@@ -43,6 +43,7 @@ public final class UnfairSorterConfiguration {
                 .forEach(l -> lettersComplexity.put(Character.toLowerCase(l),
                         lettersComplexity.get(l) + smallLetterExtraComplexity));
     }
+    public static final String nLetters = "Nn";
     public static final int specificPortLimit = 3;
     public static final int approximateSorterStage1Depth = 3;
     public static final long fixedSequenceMaxComplexity = 50;

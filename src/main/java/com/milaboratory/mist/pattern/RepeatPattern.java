@@ -108,9 +108,11 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
 
         if (isBorderFixed())
             return Math.min(fixedSequenceMaxComplexity, repeatsRangeLength);
-        else
+        else {
+            int minRepeatsFactor = nLetters.contains(patternSeq.toString()) ? 1 : minRepeats;
             return notFixedSequenceMinComplexity + repeatsRangeLength * singleNucleotideComplexity
-                    * lettersComplexity.get(patternSeq.toString().charAt(0)) / minRepeats;
+                    * lettersComplexity.get(patternSeq.toString().charAt(0)) / minRepeatsFactor;
+        }
     }
 
     @Override

@@ -12,7 +12,7 @@ public class CommonPatternTests {
     public void estimateComplexityTest() throws Exception {
         PatternAligner patternAligner = getRandomPatternAligner();
 
-        SinglePattern[] patterns = new SinglePattern[15];
+        SinglePattern[] patterns = new SinglePattern[16];
         patterns[0] = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("ATTAGACA"));
         patterns[1] = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("CNNNC"),
                 2, 2, -1, -1,
@@ -21,51 +21,54 @@ public class CommonPatternTests {
                 0, 0, 1, -1);
         patterns[3] = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("NNNNTNNAN"),
                 1, 2, 1, 8);
-        patterns[4] = new RepeatPattern(patternAligner, new NucleotideSequence("N"), 20, 20);
-        patterns[5] = new RepeatPattern(patternAligner, new NucleotideSequence("A"), 4, 6);
-        patterns[6] = new RepeatPattern(patternAligner, new NucleotideSequence("B"),
+        patterns[4] = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("NNN"),
+                1, 0, -1, -1);
+        patterns[5] = new RepeatPattern(patternAligner, new NucleotideSequence("N"), 20, 20);
+        patterns[6] = new RepeatPattern(patternAligner, new NucleotideSequence("A"), 4, 6);
+        patterns[7] = new RepeatPattern(patternAligner, new NucleotideSequence("B"),
                 8, 10, 4, -1,
                 getRandomGroupsForFuzzyMatch(8));
-        patterns[7] = new SequencePattern(patternAligner, patterns[0], patterns[4]);
-        patterns[8] = new SequencePattern(patternAligner, patterns[6], patterns[1], patterns[0]);
-        patterns[9] = new PlusPattern(patternAligner, patterns[2], patterns[5]);
-        patterns[10] = new PlusPattern(patternAligner, patterns[0], patterns[0]);
-        patterns[11] = new SequencePattern(patternAligner, patterns[9], patterns[0]);
-        patterns[12] = new SequencePattern(patternAligner, patterns[4], patterns[10]);
-        patterns[13] = new OrPattern(patternAligner, patterns[6], patterns[10], patterns[11]);
-        patterns[14] = new AndPattern(patternAligner, patterns[1], patterns[10]);
+        patterns[8] = new SequencePattern(patternAligner, patterns[0], patterns[5]);
+        patterns[9] = new SequencePattern(patternAligner, patterns[7], patterns[1], patterns[0]);
+        patterns[10] = new PlusPattern(patternAligner, patterns[2], patterns[6]);
+        patterns[11] = new PlusPattern(patternAligner, patterns[0], patterns[0]);
+        patterns[12] = new SequencePattern(patternAligner, patterns[10], patterns[0]);
+        patterns[13] = new SequencePattern(patternAligner, patterns[5], patterns[11]);
+        patterns[14] = new OrPattern(patternAligner, patterns[7], patterns[11], patterns[12]);
+        patterns[15] = new AndPattern(patternAligner, patterns[1], patterns[11]);
 
         MultipleReadsOperator[] mPatterns = new MultipleReadsOperator[4];
-        mPatterns[0] = new MultiPattern(patternAligner, patterns[13], patterns[14]);
+        mPatterns[0] = new MultiPattern(patternAligner, patterns[14], patterns[15]);
         mPatterns[1] = new MultiPattern(patternAligner, patterns[0], patterns[4]);
         mPatterns[2] = new AndOperator(patternAligner, mPatterns[0], mPatterns[1]);
         mPatterns[3] = new OrOperator(patternAligner, mPatterns[0], mPatterns[1]);
 
-        long[] expected = new long[19];
+        long[] expected = new long[20];
         expected[0] = notFixedSequenceMinComplexity + singleNucleotideComplexity / 8;
         expected[1] = notFixedSequenceMinComplexity + (long)(singleNucleotideComplexity * 9 / (2 + 3.0 / 16));
         expected[2] = 1;
         expected[3] = 6;
-        expected[4] = notFixedSequenceMinComplexity + (singleNucleotideComplexity * 16 / 20);
-        expected[5] = notFixedSequenceMinComplexity + (singleNucleotideComplexity * 3 / 4);
-        expected[6] = 3;
-        expected[7] = expected[0] + fixedSequenceMaxComplexity;
-        expected[8] = expected[6] + fixedSequenceMaxComplexity * 2;
-        expected[9] = expected[2] + expected[5];
-        expected[10] = expected[0] * 2;
-        expected[11] = expected[0] + expected[9];
-        expected[12] = expected[4] + expected[10];
-        expected[13] = expected[11];
-        expected[14] = expected[1] + expected[10];
-        expected[15] = expected[13] + expected[14];
-        expected[16] = expected[0] + expected[4];
-        expected[17] = expected[15] + expected[16];
-        expected[18] = expected[15];
+        expected[4] = notFixedSequenceMinComplexity + singleNucleotideComplexity * 32;
+        expected[5] = notFixedSequenceMinComplexity + singleNucleotideComplexity * 16;
+        expected[6] = notFixedSequenceMinComplexity + (singleNucleotideComplexity * 3 / 4);
+        expected[7] = 3;
+        expected[8] = expected[0] + fixedSequenceMaxComplexity;
+        expected[9] = expected[7] + fixedSequenceMaxComplexity * 2;
+        expected[10] = expected[2] + expected[6];
+        expected[11] = expected[0] * 2;
+        expected[12] = expected[0] + expected[10];
+        expected[13] = expected[5] + expected[11];
+        expected[14] = expected[12];
+        expected[15] = expected[1] + expected[11];
+        expected[16] = expected[14] + expected[15];
+        expected[17] = expected[0] + expected[4];
+        expected[18] = expected[16] + expected[17];
+        expected[19] = expected[17];
 
-        for (int i = 0; i <= 14; i++)
+        for (int i = 0; i <= 15; i++)
             assertEquals(expected[i], patterns[i].estimateComplexity());
         for (int i = 0; i <= 3; i++)
-            assertEquals(expected[i + 15], mPatterns[i].estimateComplexity());
+            assertEquals(expected[i + 16], mPatterns[i].estimateComplexity());
     }
 
     @Test

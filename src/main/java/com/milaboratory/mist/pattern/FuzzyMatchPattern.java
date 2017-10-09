@@ -128,6 +128,9 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
     public long estimateComplexity() {
         if (isBorderFixed())
             return Math.min(fixedSequenceMaxComplexity, sequences.size());
+        else if (sequences.get(0).toString().chars().allMatch(c -> nLetters.contains(Character.toString((char)c))))
+            return notFixedSequenceMinComplexity + sequences.size() * singleNucleotideComplexity
+                    * lettersComplexity.get(sequences.get(0).toString().charAt(0));
         else
             return notFixedSequenceMinComplexity + (long)(sequences.size() * singleNucleotideComplexity
                     / sequences.get(0).toString().chars().mapToDouble(c -> 1.0 / lettersComplexity.get((char)c)).sum());
