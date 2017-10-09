@@ -101,4 +101,16 @@ public class ParseActionTest {
         exec(onesidedArgs + configuration + penaltyOne + " --pattern " + inQuotes(patternOne));
         exec(twosidedArgs + configuration + penaltyTwo + " --pattern " + inQuotes(patternTwo));
     }
+
+    @Test
+    public void specialCaseTest1() throws Exception {
+        String R1 = EXAMPLES_PATH + "positional/polyfid10_R1.fastq.gz";
+        String R2 = EXAMPLES_PATH + "positional/polyfid10_R2.fastq.gz";
+        String outR1 = TEMP_DIR + "outputR1.fastq";
+        String outR2 = TEMP_DIR + "outputR2.fastq";
+        String argsIO = "parse --input " + R1 + " " + R2 + " --output " + outR1 + " " + outR2;
+        String query = argsIO + " --pattern \"NN(G1:N{12})N{22}TCAG\\NN(G2:N{12})N{22}TCAG\" --threads 3 "
+                + "--bitap-max-errors 1 --mismatch-score -1 --penalty-threshold -73";
+        exec(query);
+    }
 }

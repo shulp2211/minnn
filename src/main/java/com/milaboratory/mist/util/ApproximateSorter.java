@@ -229,21 +229,19 @@ public final class ApproximateSorter {
                 // all variables with "Unordered" suffix must be converted with operandOrder[] before using as index
                 int firstFoundNullIndexUnordered = numberOfOperands - 1;
                 currentMatches = getMatchesByIndexes(matchIndexes);
-                if (!alreadyReturned(matchIndexes)) {
-                    if (Arrays.stream(currentMatches).noneMatch(Objects::isNull)) {
-                        IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, matchIndexes);
-                        if (incompatibleIndexes == null) {
-                            Match combinedMatch = combineMatches(currentMatches);
-                            if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
-                                allMatchesFiltered.add(combinedMatch);
+                if (!alreadyReturned(matchIndexes) && Arrays.stream(currentMatches).noneMatch(Objects::isNull)) {
+                    IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, matchIndexes);
+                    if (incompatibleIndexes == null) {
+                        Match combinedMatch = combineMatches(currentMatches);
+                        if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
+                            allMatchesFiltered.add(combinedMatch);
+                    }
+                } else
+                    for (int indexUnordered = 0; indexUnordered < numberOfOperands - 1; indexUnordered++)
+                        if (currentMatches[operandOrder[indexUnordered]] == null) {
+                            firstFoundNullIndexUnordered = indexUnordered;
+                            break;
                         }
-                    } else
-                        for (int indexUnordered = 0; indexUnordered < numberOfOperands - 1; indexUnordered++)
-                            if (currentMatches[operandOrder[indexUnordered]] == null) {
-                                firstFoundNullIndexUnordered = indexUnordered;
-                                break;
-                            }
-                }
 
                 // update matchIndexes
                 if (currentMatches[operandOrder[firstFoundNullIndexUnordered]] == null) {
