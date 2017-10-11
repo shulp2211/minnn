@@ -391,7 +391,7 @@ public class FuzzyMatchPatternTest {
     @Test
     public void groupEdgeMovementTest() throws Exception {
         for (int i = 0; i < 1000; i++) {
-            int length = rg.nextInt(63) + 1;
+            int length = rg.nextInt(100) + 1;
             PatternAligner patternAligner = getTestPatternAligner(true);
             RandomCuts randomCuts = new RandomCuts(length);
             List<GroupEdgePosition> randomGroupEdges = getRandomGroupsForFuzzyMatch(length);

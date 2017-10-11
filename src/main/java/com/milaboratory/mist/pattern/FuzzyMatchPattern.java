@@ -128,12 +128,23 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
     public long estimateComplexity() {
         if (isBorderFixed())
             return Math.min(fixedSequenceMaxComplexity, sequences.size());
-        else if (sequences.get(0).toString().chars().allMatch(c -> nLetters.contains(Character.toString((char)c))))
-            return notFixedSequenceMinComplexity + sequences.size() * singleNucleotideComplexity
-                    * lettersComplexity.get(sequences.get(0).toString().charAt(0));
         else
-            return notFixedSequenceMinComplexity + (long)(sequences.size() * singleNucleotideComplexity
-                    / sequences.get(0).toString().chars().mapToDouble(c -> 1.0 / lettersComplexity.get((char)c)).sum());
+            return notFixedSequenceMinComplexity + (long)(sequences.size()
+                    * estimateSequenceComplexity(sequences.get(0).toString()));
+    }
+
+    /**
+     * Estimate complexity for single sequence. Used in estimateComplexity() and in bitap matching
+     * for long (>63 nucleotides) sequences.
+     *
+     * @param s nucleotide sequence string
+     * @return estimated complexity for this sequence
+     */
+    private static double estimateSequenceComplexity(String s) {
+        if (s.chars().allMatch(c -> nLetters.contains(Character.toString((char)c))))
+            return singleNucleotideComplexity * lettersComplexity.get(s.charAt(0));
+        else
+            return singleNucleotideComplexity / s.chars().mapToDouble(c -> 1.0 / lettersComplexity.get((char)c)).sum();
     }
 
     @Override
@@ -217,6 +228,8 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
             private final boolean fairSorting;
             private final List<BitapPattern> bitapPatterns;
             private final List<BitapMatcherFilter> bitapMatcherFilters;
+            private final ArrayList<Integer> bitapPositionCorrections;
+            private final int BITAP_MAX_LENGTH = 63;
 
             /* Current index in lists of sequences and bitap patterns.
              * Index represents combination of numbers of cut nucleotides on the left and right sides. */
@@ -251,7 +264,27 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                 this.to = to;
                 this.targetId = targetId;
                 this.fairSorting = fairSorting;
-                this.bitapPatterns = motifs.stream().map(Motif::getBitapPattern).collect(Collectors.toList());
+                this.bitapPatterns = new ArrayList<>();
+                this.bitapPositionCorrections = new ArrayList<>();
+                for (int i = 0; i < sequences.size(); i++) {
+                    NucleotideSequence currentSequence = sequences.get(i);
+                    if (currentSequence.size() > BITAP_MAX_LENGTH) {
+                        String seqString = currentSequence.toString();
+                        int seqLength = currentSequence.size();
+                        String seqStart = seqString.substring(0, BITAP_MAX_LENGTH);
+                        String seqEnd = seqString.substring(seqLength - BITAP_MAX_LENGTH, seqLength);
+                        if (estimateSequenceComplexity(seqStart) > estimateSequenceComplexity(seqEnd)) {
+                            this.bitapPatterns.add(new NucleotideSequence(seqEnd).toMotif().getBitapPattern());
+                            this.bitapPositionCorrections.add(0);
+                        } else {
+                            this.bitapPatterns.add(new NucleotideSequence(seqStart).toMotif().getBitapPattern());
+                            this.bitapPositionCorrections.add(seqLength - BITAP_MAX_LENGTH);
+                        }
+                    } else {
+                        this.bitapPatterns.add(motifs.get(i).getBitapPattern());
+                        this.bitapPositionCorrections.add(0);
+                    }
+                }
                 if (!fixedBorder && !fairSorting) {
                     this.bitapMatcherFilters = bitapPatterns.stream().map(bp -> new BitapMatcherFilter(
                             bp.substitutionAndIndelMatcherLast(0, target.getSequence(), from, to)))
@@ -281,7 +314,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
             private Match takeUnfair() {
                 while (currentNumBitapErrors <= maxErrors) {
                     while (currentIndex < sequences.size()) {
-                        int position = bitapMatcherFilters.get(currentIndex).findNext();
+                        int position = correctBitapPosition(bitapMatcherFilters.get(currentIndex).findNext());
                         if (position == -1) {
                             bitapMatcherFilters.set(currentIndex, new BitapMatcherFilter(bitapPatterns.get(currentIndex)
                                     .substitutionAndIndelMatcherLast(currentNumBitapErrors + 1,
@@ -349,7 +382,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                     NucleotideSequence currentSeq = sequences.get(currentIndex);
                     HashSet<Range> uniqueRanges = new HashSet<>();
                     do {
-                        matchLastPosition = currentBitapFilter.findNext();
+                        matchLastPosition = correctBitapPosition(currentBitapFilter.findNext());
                         if (matchLastPosition != -1) {
                             alignment = patternAligner.align(currentSeq, target, matchLastPosition);
                             if ((alignment.getScore() >= patternAligner.penaltyThreshold())
@@ -423,6 +456,29 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
 
                 allMatches = new Match[allMatchesList.size()];
                 allMatchesList.toArray(allMatches);
+            }
+
+            /**
+             * Apply correction to position found by bitap, if needed. Correction may be needed for long sequence
+             * when bitap is searching for part of the sequence.
+             *
+             * @param position position found by bitap
+             * @return position with correction
+             */
+            private int correctBitapPosition(int position) {
+                if (position == -1)
+                    return -1;
+                int correction = bitapPositionCorrections.get(currentIndex);
+                if (correction == 0)
+                    return position;
+                else {
+                    int targetLength = target.size();
+                    int correctPosition = position + correction;
+                    if (correctPosition >= targetLength + maxErrors)
+                        return -1;
+                    else
+                        return Math.min(correctPosition, targetLength - 1);
+                }
             }
         }
     }

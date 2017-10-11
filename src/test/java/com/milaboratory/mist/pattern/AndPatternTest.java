@@ -191,12 +191,11 @@ public class AndPatternTest {
 
     @Test
     public void maxErrorsRandomTest() throws Exception {
-        int its = TestUtil.its(1000, 2000);
-        for (int i = 0; i < its; ++i) {
+        for (int i = 0; i < 2000; i++) {
             int maxErrors = rg.nextInt(10);
-            int targetLength = rg.nextInt(63 - maxErrors) + 1;
+            int targetLength = rg.nextInt(100 - maxErrors) + 1;
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, targetLength, targetLength);
-            NucleotideSequence motif1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 50);
+            NucleotideSequence motif1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 70);
             NucleotideSequence motif2 = getRandomSubsequence(target);
             NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
                     SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));

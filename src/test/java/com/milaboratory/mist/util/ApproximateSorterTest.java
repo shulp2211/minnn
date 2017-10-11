@@ -211,7 +211,7 @@ public class ApproximateSorterTest {
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
                     0, spaceLength);
             NucleotideSequence fragment = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
-                    50, 63);
+                    50, 100);
             for (int j = 0; j < numberOfFragments; j++) {
                 if (matchValidationType != FOLLOWING) {
                     NucleotideSequence space = TestUtil.randomSequence(NucleotideSequence.ALPHABET,

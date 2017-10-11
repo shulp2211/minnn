@@ -20,11 +20,11 @@ public class SequencePatternTest {
     public void maxErrorsRandomTest() throws Exception {
         for (int i = 0; i < 2000; i++) {
             int maxErrors = rg.nextInt(10);
-            int targetLength = rg.nextInt(63 - maxErrors) + 1;
+            int targetLength = rg.nextInt(100 - maxErrors) + 1;
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
                     targetLength, targetLength);
             NucleotideSequence motif1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
-                    1, 50);
+                    1, 70);
             NucleotideSequence motif2 = getRandomSubsequence(target);
             NSequenceWithQuality targetQ = new NSequenceWithQuality(target.toString());
             NucleotideSequence motif1WithErrors = makeRandomErrors(motif1, maxErrors);

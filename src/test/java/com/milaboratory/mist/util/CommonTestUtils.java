@@ -294,7 +294,7 @@ public class CommonTestUtils {
     }
 
     public static FuzzyMatchPattern getRandomFuzzyPattern(PatternAligner patternAligner, boolean withGroups) {
-        int length = rg.nextInt(63) + 1;
+        int length = rg.nextInt(150) + 1;
         RandomBorders randomBorders = new RandomBorders(length);
         RandomCuts randomCuts = new RandomCuts(length);
         NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, length, length);
