@@ -147,9 +147,10 @@ final class NormalTokenizer extends Tokenizer {
                 case '<':
                     if (lastTokenChar == '<')
                         tokenRepeats++;
-                    else if (lastTokenChar == '>')
-                        throw new ParserException("Unexpected '>' character after '<'!");
                     else {
+                        if (lastTokenChar == '>')
+                            borderTokens.add(new BorderToken(false,
+                                    tokenRepeats, tokenStart, currentPosition));
                         tokenStart = currentPosition;
                         tokenRepeats = 1;
                         lastTokenChar = '<';
@@ -158,9 +159,10 @@ final class NormalTokenizer extends Tokenizer {
                 case '>':
                     if (lastTokenChar == '>')
                         tokenRepeats++;
-                    else if (lastTokenChar == '<')
-                        throw new ParserException("Unexpected '<' character after '>'!");
                     else {
+                        if (lastTokenChar == '<')
+                            borderTokens.add(new BorderToken(true,
+                                    tokenRepeats, tokenStart, currentPosition));
                         tokenStart = currentPosition;
                         tokenRepeats = 1;
                         lastTokenChar = '>';

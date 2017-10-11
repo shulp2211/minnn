@@ -75,14 +75,24 @@ public class ParserTest {
         testBadSample("<A{3}");
         testSample("[^ATTAGACA]", "ATTAGACAA", new Range(0, 8));
         testSample("[ATTAGACA$]", "GATTAGACA", new Range(1, 9));
-        testSample("<{2}[0:^ATTAGACA$]>{2}", "ATTAGACA", new Range(0, 8));
-        testSample("<{2}^[0:ATTAGACA]$>{2}", "ATTAGACA", new Range(0, 8));
-        testSample("^<{2}[0:ATTAGACA]>{2}$", "ATTAGACA", new Range(0, 8));
-        testSample("<{2}[0:^ATTAGACA$]>{2}", "ATTAGACA", new Range(0, 8));
-        testSample("<{2}[0:^ATTAGACA]", "ATTAGACA", new Range(0, 8));
-        testSample("<{2}^[0:ATTAGACA]", "ATTAGACA", new Range(0, 8));
-        testSample("^<{2}[0:ATTAGACA]", "ATTAGACA", new Range(0, 8));
-        testSample("<{2}[0:^ATTAGACA]", "ATTAGACA", new Range(0, 8));
+        testSample("[0:<{2}^ATTAGACA$>{2}]", "ATTAGACA", new Range(0, 8));
+        testSample("[0:^<{2}ATTAGACA>{2}$]", "ATTAGACA", new Range(0, 8));
+        testSample("^[0:<{2}ATTAGACA>{2}]$", "ATTAGACA", new Range(0, 8));
+        testSample("<{2}(0:^ATTAGACA$)>{2}", "ATTAGACA", new Range(0, 8));
+        testSample("<{2}^(0:ATTAGACA)$>{2}", "ATTAGACA", new Range(0, 8));
+        testSample("^<{2}(0:ATTAGACA)>{2}$", "ATTAGACA", new Range(0, 8));
+        testSample("<{2}(0:^ATTAGACA$)>{2}", "ATTAGACA", new Range(0, 8));
+        testBadSample("<{2}[0:^ATTAGACA$]>{2}");
+        testBadSample("<{2}^[0:ATTAGACA]$>{2}");
+        testBadSample("^<{2}[0:ATTAGACA]>{2}$");
+        testBadSample("<{2}[0:^ATTAGACA$]>{2}");
+        testSample("[0:<{2}^ATTAGACA]", "ATTAGACA", new Range(0, 8));
+        testSample("[0:^<{2}ATTAGACA]", "ATTAGACA", new Range(0, 8));
+        testSample("^[0:<{2}ATTAGACA]", "ATTAGACA", new Range(0, 8));
+        testBadSample("<{2}[0:^ATTAGACA]");
+        testBadSample("<{2}^[0:ATTAGACA]");
+        testBadSample("^<{2}[0:ATTAGACA]");
+        testBadSample("<{2}[0:^ATTAGACA]");
         testBadSample("[^0:ATTAGACA]");
         testSample("^[ATTAGACA]", "ATTAGACAA", new Range(0, 8));
         testSample("[ATTAGACA]$", "GATTAGACA", new Range(1, 9));
@@ -122,8 +132,10 @@ public class ParserTest {
         testBadSample("<*");
         testBadSample("A^");
         testSample(" ( TEST1 : [  [  (TEST2:  *  )  ]  ] ) ", "AT", new Range(0, 2));
-        testSample("<{1}[[ATTA>+<{1}GACA]>+<AATA$>{1}]&^<(X:GCGC)", "CGCTTACAT", new Range(0, 9));
-        testBadSample("AT><TA");
+        testSample("[[<{1}ATTA>+<{1}GACA]>+<AATA$>{1}]&^(X:<GCGC)", "CGCTTACAT", new Range(0, 9));
+        testSample("AT><TA", "AA", new Range(0, 2));
+        testSample("AT><TA", "ATA", new Range(0, 3));
+        testSample("ATTA>><<<GACA", "ATTCA", new Range(0, 5));
         testBadSample("A^$A");
         testBadSample("A+$^A");
         testBadSample("A+^#A");
@@ -187,7 +199,7 @@ public class ParserTest {
         assertEquals(0, testGroups1.stream().filter(g -> g.getGroupName().equals("4")).count());
 
         ArrayList<MatchedGroup> testGroups2 = getGroupsFromSample(
-                "<(1:[[^[0:[AA+T]+G]TG]>]<<ATAT(2:G+G+TG+[(3:T+GA>{1})]C)C)$", "AATTGTGTTATGAGATGATAGCC");
+                "(1:[[^[0:[<AA+T]+G]TG>]]<<ATAT(2:G+G+TG+[(3:T+GA>{1})]C)C)$", "AATTGTGTTATGAGATGATAGCC");
         assertGroupRange(testGroups2, "1", new Range(0, 23));
         assertGroupRange(testGroups2, "2", new Range(11, 22));
         assertGroupRange(testGroups2, "3", new Range(18, 21));

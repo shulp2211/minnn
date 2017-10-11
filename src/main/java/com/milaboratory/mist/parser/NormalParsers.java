@@ -750,7 +750,7 @@ final class NormalParsers {
             }
         }
 
-        if ((tokenPosition != -1) && !query.substring(tokenPosition, position).matches(".*\\\\.*")
+        if ((tokenPosition != -1) && !query.substring(tokenPosition, position).matches(".*((\\\\)|\\[|]).*")
                 && !isAnyNucleotide(tokenPosition, position))
             return foundIndex;
         else
