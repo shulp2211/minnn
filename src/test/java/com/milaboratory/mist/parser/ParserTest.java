@@ -65,12 +65,30 @@ public class ParserTest {
                 new Range(1, 20));
         testBadSample("^^ATTAGACA");
         testBadSample("ATTAGACA$$");
-        testBadSample("^[^ATTAGACA]");
-        testBadSample("[ATTAGACA$]$");
+        testSample("^[^ATTAGACA]", "ATTAGACA", new Range(0, 8));
+        testSample("[ATTAGACA$]$", "ATTAGACA", new Range(0, 8));
+        testSample("^[ATTAGACA]", "ATTAGACA", new Range(0, 8));
+        testSample("[ATTAGACA]$", "ATTAGACA", new Range(0, 8));
+        testSample("^[ATTA + GACA]", "ATTAGACA", new Range(0, 8));
+        testSample("[ATTA + GACA]$", "ATTAGACA", new Range(0, 8));
+        testSample("^[0:[0:ATTA][0:GACA]]", "ATTAGACA", new Range(0, 8));
+        testSample("[0:[0:ATTA][0:GACA]]$", "ATTAGACA", new Range(0, 8));
+        testSample("^[GACA & ATTA]", "ATTAGACA", new Range(0, 8));
+        testSample("[GACA & ATTA]$", "ATTAGACA", new Range(0, 8));
+        testSample("^[GACA || ATTA]", "ATTAGACA", new Range(0, 4));
+        testSample("[GACA || ATTA]$", "ATTAGACA", new Range(4, 8));
+        testSample("^[^ATTAGACA]", "GATTAGACA", null);
+        testSample("[ATTAGACA$]$", "ATTAGACAG", null);
+        testSample("^[ATTAGACA]", "GATTAGACA", null);
+        testSample("[ATTAGACA]$", "ATTAGACAG", null);
+        testSample("^[ATTA + GACA]", "GATTAGACA", null);
+        testSample("[ATTA + GACA]$", "ATTAGACAG", null);
         testBadSample("^^A{3}");
         testBadSample("A{3}$$");
-        testBadSample("^[^A{3}]");
-        testBadSample("[A{3}$]$");
+        testBadSample("^^[A{3}]");
+        testBadSample("[A{3}]$$");
+        testSample("^[^A{3}]", "TAAA", null);
+        testSample("[A{3}$]$", "AAAT", null);
         testBadSample("<[<AAA]");
         testBadSample("<A{3}");
         testSample("[^ATTAGACA]", "ATTAGACAA", new Range(0, 8));
@@ -186,6 +204,12 @@ public class ParserTest {
         testBadSample("A(1:TT)A \\ G(1:AC)A");
         testBadSample("T~A&&");
         testBadSample("T~[A&&A]");
+        testMultiSample("[[^[A]\\T]&&[G$\\C]]", "AG TC", true);
+        testMultiSample("[[A\\^T]&&[G\\[C]$]]", "AG TC", true);
+        testBadSample("[^[A\\T]&&[G\\C]]");
+        testBadSample("[[A\\T]&&[G\\C]$]");
+        testBadSample("^[[A\\T]&&[G\\C]]");
+        testBadSample("[[A\\T]&&[G\\C]]$");
     }
 
     @Test

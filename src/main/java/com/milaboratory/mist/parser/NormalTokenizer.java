@@ -38,10 +38,10 @@ final class NormalTokenizer extends Tokenizer {
         normalParsers.parseFuzzyMatchPatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         normalParsers.parseAnyPatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
         clearGarbageTokens(normalParsers, tokenizedString, false);
-        normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+        normalParsers.parseFilters(tokenizedString, false).forEach(tokenizedString::tokenizeSubstring);
         clearGarbageTokens(normalParsers, tokenizedString, false);
         normalParsers.parseSequencePatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
-        normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+        normalParsers.parseFilters(tokenizedString, false).forEach(tokenizedString::tokenizeSubstring);
 
         int maxBracketsNestedLevel = squareBracketsPairs.stream().mapToInt(bp -> bp.nestedLevel).max().orElse(0);
 
@@ -51,11 +51,11 @@ final class NormalTokenizer extends Tokenizer {
                 normalParsers.parseSingleReadOperators(tokenizedString, operatorRegexp, currentNestedLevel)
                         .forEach(tokenizedString::tokenizeSubstring);
                 clearGarbageTokens(normalParsers, tokenizedString, false);
-                normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+                normalParsers.parseFilters(tokenizedString, false).forEach(tokenizedString::tokenizeSubstring);
                 clearGarbageTokens(normalParsers, tokenizedString, false);
             }
             normalParsers.parseSequencePatterns(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
-            normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+            normalParsers.parseFilters(tokenizedString, false).forEach(tokenizedString::tokenizeSubstring);
         }
 
         // MultiPatterns
@@ -63,7 +63,7 @@ final class NormalTokenizer extends Tokenizer {
         for (int currentNestedLevel = maxBracketsNestedLevel; currentNestedLevel >= -1; currentNestedLevel--) {
             normalParsers.parseSingleReadOperators(tokenizedString, " *\\\\ *", currentNestedLevel)
                     .forEach(tokenizedString::tokenizeSubstring);
-            normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+            normalParsers.parseFilters(tokenizedString, true).forEach(tokenizedString::tokenizeSubstring);
         }
 
         // multiple reads operators
@@ -72,7 +72,7 @@ final class NormalTokenizer extends Tokenizer {
             for (String operatorRegexp : new String[]{".*~ *", " *&& *", " *\\|\\| *"}) {
                 normalParsers.parseMultiReadOperators(tokenizedString, operatorRegexp, currentNestedLevel)
                         .forEach(tokenizedString::tokenizeSubstring);
-                normalParsers.parseScoreFilters(tokenizedString).forEach(tokenizedString::tokenizeSubstring);
+                normalParsers.parseFilters(tokenizedString, true).forEach(tokenizedString::tokenizeSubstring);
             }
             clearGarbageTokens(normalParsers, tokenizedString, true);
         }

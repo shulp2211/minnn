@@ -330,13 +330,15 @@ final class NormalParsers {
     }
 
     /**
-     * Parse score filters and remove square brackets around completely parsed patterns by merging them into patterns.
-     * It will parse score filters only around completely parsed patterns, and it will be called multiple times.
+     * Parse score and stick filters; and remove square brackets, ^ and $ tokens around completely parsed patterns
+     * by merging them into patterns. Also call fixBorder() for operand patterns if needed.
+     * It will parse filters only around completely parsed patterns, and it will be called multiple times.
      *
      * @param tokenizedString tokenized string object for query string
+     * @param scoreOnly if true, parse score filters only; don't search for ^ and $ tokens
      * @return list of found tokens
      */
-    ArrayList<FoundToken> parseScoreFilters(TokenizedString tokenizedString) throws ParserException {
+    ArrayList<FoundToken> parseFilters(TokenizedString tokenizedString, boolean scoreOnly) throws ParserException {
         ArrayList<FoundToken> foundTokens = new ArrayList<>();
         ArrayList<Token> tokens = tokenizedString.getTokens(0, tokenizedString.getFullLength());
         for (int i = 1; i < tokens.size() - 1; i++) {
@@ -347,15 +349,21 @@ final class NormalParsers {
                 String previousString = previousToken.getString();
                 String nextString = nextToken.getString();
                 boolean bracketsFound = false;
+                boolean leftStick = false;
+                boolean rightStick = false;
                 int bracketsRelativeStart;
                 int bracketsRelativeEnd;
                 int leftTokenizedCharactersNum = 0;
                 int rightTokenizedCharactersNum = 0;
                 boolean noMoreNestedBrackets = false;
                 while (!noMoreNestedBrackets) {
-                    Matcher previousMatcher = Pattern.compile(" *\\[( *-?\\d+ *:)? *$").matcher(previousString);
+                    Matcher previousMatcher = scoreOnly
+                            ? Pattern.compile(" *\\[( *-?\\d+ *:)? *$").matcher(previousString)
+                            : Pattern.compile(" *\\^? *\\[( *-?\\d+ *:)? *$").matcher(previousString);
                     if (previousMatcher.find()) {
-                        Matcher nextMatcher = Pattern.compile("^ *] *").matcher(nextString);
+                        Matcher nextMatcher = scoreOnly
+                                ? Pattern.compile("^ *] *").matcher(nextString)
+                                : Pattern.compile("^ *] *\\$? *").matcher(nextString);
                         if (nextMatcher.find()) {
                             bracketsFound = true;
                             bracketsRelativeStart = previousMatcher.start();
@@ -364,6 +372,8 @@ final class NormalParsers {
                             rightTokenizedCharactersNum += bracketsRelativeEnd;
                             previousString = previousString.substring(0, bracketsRelativeStart);
                             nextString = nextString.substring(bracketsRelativeEnd);
+                            leftStick = !scoreOnly && previousMatcher.group().contains("^");
+                            rightStick = !scoreOnly && nextMatcher.group().contains("$");
                         } else
                             noMoreNestedBrackets = true;
                     } else
@@ -378,15 +388,26 @@ final class NormalParsers {
                     List<ScoreThreshold> foundScoreThresholds = scoreThresholds.stream()
                             .filter(st -> (st.start >= tokenStart) && (st.start < currentToken.getStartCoordinate()))
                             .collect(Collectors.toList());
+                    SinglePattern wrappedPattern = null;
+                    if (leftStick || rightStick) {
+                        wrappedPattern = currentToken.getSinglePattern();
+                        if (leftStick)
+                            wrappedPattern = wrapWithStickFilter(wrappedPattern, true, 0);
+                        if (rightStick)
+                            wrappedPattern = wrapWithStickFilter(wrappedPattern, false, -2);
+                    }
                     if (!foundScoreThresholds.isEmpty()) {
                         long scoreThreshold = foundScoreThresholds.stream().mapToLong(st -> st.threshold).max()
                                 .orElseThrow(IllegalStateException::new);
                         foundToken = new FoundToken(currentToken.getPattern() instanceof SinglePattern
-                                ? wrapWithScoreFilter(currentToken.getSinglePattern(), scoreThreshold)
+                                ? wrapWithScoreFilter(
+                                        wrappedPattern != null ? wrappedPattern : currentToken.getSinglePattern(),
+                                scoreThreshold)
                                 : wrapWithScoreFilter(currentToken.getMultipleReadsOperator(), scoreThreshold),
                                 tokenStart, tokenEnd);
                     } else
-                        foundToken = new FoundToken(currentToken.getPattern(), tokenStart, tokenEnd);
+                        foundToken = new FoundToken(wrappedPattern != null ? wrappedPattern : currentToken.getPattern(),
+                                tokenStart, tokenEnd);
                     foundTokens.add(foundToken);
                 }
             }
@@ -695,7 +716,7 @@ final class NormalParsers {
         }
 
         if ((markerPosition != -1)
-                && !query.substring(markerPosition + 1, position).matches(".*[\\^$+&|\\\\].*")
+                && !query.substring(markerPosition + 1, position).matches(".*[\\^$\\[\\]+&|\\\\].*")
                 && !isAnyNucleotide(markerPosition + 1, position))
             return markerPosition;
         else
@@ -716,7 +737,7 @@ final class NormalParsers {
         }
 
         if ((markerPosition != -1)
-                && !query.substring(position + 1, markerPosition).matches(".*[\\^$+&|\\\\].*")
+                && !query.substring(position + 1, markerPosition).matches(".*[\\^$+&|\\[\\]\\\\].*")
                 && !isAnyNucleotide(position + 1, markerPosition))
             return markerPosition;
         else
@@ -832,6 +853,15 @@ final class NormalParsers {
 
     private MultipleReadsOperator wrapWithScoreFilter(MultipleReadsOperator multiReadPattern, long scoreThreshold) {
         return new MultipleReadsFilterPattern(patternAligner, new ScoreFilter(scoreThreshold), multiReadPattern);
+    }
+
+    private SinglePattern wrapWithStickFilter(SinglePattern singlePattern, boolean left, int position) {
+        if (singlePattern instanceof FuzzyMatchPattern || singlePattern instanceof RepeatPattern) {
+            ((CanFixBorders)singlePattern).fixBorder(left, position);
+            return singlePattern;
+        } else if (singlePattern instanceof CanFixBorders)
+            ((CanFixBorders)singlePattern).fixBorder(left, position);
+        return new FilterPattern(patternAligner, new StickFilter(left, position), singlePattern);
     }
 
     /**
