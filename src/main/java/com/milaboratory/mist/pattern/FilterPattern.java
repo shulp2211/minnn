@@ -103,6 +103,8 @@ public final class FilterPattern extends SinglePattern implements CanBeSingleSeq
         private FilterMatchingResult(Filter filter, Pattern pattern, MultiNSequenceWithQuality targetMulti,
                                      NSequenceWithQuality targetSingle, int from, int to) {
             this.filter = filter;
+            if (filter instanceof StickFilter)
+                ((StickFilter)filter).fixPosition(targetSingle);
             this.pattern = pattern;
             this.targetMulti = targetMulti;
             this.targetSingle = targetSingle;
