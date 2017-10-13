@@ -10,6 +10,7 @@ final class SimplifiedSyntaxStrings {
     final static String GROUP_EDGE_NAME = "GroupEdge";
     final static String GROUP_EDGE_POSITION_NAME = "GroupEdgePosition";
     final static String SCORE_FILTER_NAME = "ScoreFilter";
+    final static String STICK_FILTER_NAME = "StickFilter";
     final static String FUZZY_MATCH_PATTERN_NAME = "FuzzyMatchPattern";
     final static String REPEAT_PATTERN_NAME = "RepeatPattern";
     final static String ANY_PATTERN_NAME = "AnyPattern";
@@ -28,4 +29,5 @@ final class SimplifiedSyntaxStrings {
     final static String GROUP_EDGE_POSITION_START = GROUP_EDGE_POSITION_NAME + "(" + GROUP_EDGE_START;
     // FILTER_PATTERN_NAME here will also match on MULTIPLE_READS_FILTER_PATTERN_NAME
     final static String SCORE_FILTER_START = FILTER_PATTERN_NAME + "(" + SCORE_FILTER_NAME + "(";
+    final static String STICK_FILTER_START = FILTER_PATTERN_NAME + "(" + STICK_FILTER_NAME + "(";
 }

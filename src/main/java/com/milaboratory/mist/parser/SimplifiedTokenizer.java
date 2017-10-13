@@ -45,6 +45,7 @@ final class SimplifiedTokenizer extends Tokenizer {
                 case GROUP_EDGE_NAME:
                 case GROUP_EDGE_POSITION_NAME:
                 case SCORE_FILTER_NAME:
+                case STICK_FILTER_NAME:
                     break;
                 case FUZZY_MATCH_PATTERN_NAME:
                     ArrayList<GroupEdgePosition> groupEdgePositionsFuzzy;

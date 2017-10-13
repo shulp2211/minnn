@@ -207,6 +207,9 @@ final class SimplifiedParsers {
             case SCORE_FILTER_NAME:
                 filter = parseScoreFilter(filterString, filterStartingPart);
                 break;
+            case STICK_FILTER_NAME:
+                filter = parseStickFilter(filterString, filterStartingPart);
+                break;
             default:
                 throw new ParserException("Wrong filter name: " + filterName);
         }
@@ -228,6 +231,35 @@ final class SimplifiedParsers {
                 "score threshold");
 
         return new ScoreFilter(scoreThreshold);
+    }
+
+    private static StickFilter parseStickFilter(String str, String startingPart) throws ParserException {
+        if (!str.substring(0, startingPart.length()).equals(startingPart))
+            throw new ParserException("Incorrect StickFilter start in " + str + ", expected: " + startingPart);
+        if (!str.substring(str.length() - 1).equals(")"))
+            throw new ParserException("Missing closing parenthesis in " + str);
+
+        int commaPosition = nonQuotedIndexOf(getAllQuotes(str), str, ", ", 0);
+        if (commaPosition == -1)
+            throw new ParserException("Missing ', ' in " + str);
+
+        boolean left;
+        switch (str.substring(startingPart.length(), commaPosition)) {
+            case "true":
+                left = true;
+                break;
+            case "false":
+                left = false;
+                break;
+            default:
+                throw new ParserException("Failed to parse stick filter left side flag from " + str);
+        }
+
+        int position = toInt(str.substring(commaPosition + 2, str.length() - 1), "position");
+        if (position < 0)
+            throw new ParserException("Position is negative in " + str);
+
+        return new StickFilter(left, position);
     }
 
     /**

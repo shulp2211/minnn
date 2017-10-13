@@ -354,7 +354,7 @@ public class CommonTestUtils {
                 patterns[i] = getRandomBasicPattern(patternAligner);
         } else
             patterns = singlePatterns;
-        switch (rg.nextInt(6)) {
+        switch (rg.nextInt(7)) {
             case 0:
                 return patterns[0];
             case 1:
@@ -366,8 +366,11 @@ public class CommonTestUtils {
             case 4:
                 return new OrPattern(patternAligner, patterns);
             case 5:
-            default:
                 return new FilterPattern(patternAligner, new ScoreFilter(-rg.nextInt(75)), patterns[0]);
+            case 6:
+            default:
+                return new FilterPattern(patternAligner, new StickFilter(rg.nextBoolean(), rg.nextInt(30)),
+                        patterns[0]);
         }
     }
 
