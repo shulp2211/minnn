@@ -218,7 +218,7 @@ final class SimplifiedParsers {
             return new FilterPattern(patternAligner, filter, tokenizedSubstring.get(1).getSinglePattern());
     }
 
-    static ScoreFilter parseScoreFilter(String str, String startingPart) throws ParserException {
+    private static ScoreFilter parseScoreFilter(String str, String startingPart) throws ParserException {
         if (!str.substring(0, startingPart.length()).equals(startingPart))
             throw new ParserException("Incorrect ScoreFilter start in " + str + ", expected: " + startingPart);
         if (!str.substring(str.length() - 1).equals(")"))

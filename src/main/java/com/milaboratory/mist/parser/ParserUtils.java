@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import static com.milaboratory.mist.parser.BracketsDetector.*;
 import static com.milaboratory.mist.parser.BracketsType.*;
-import static com.milaboratory.mist.parser.SimplifiedParsers.parseScoreFilter;
 import static com.milaboratory.mist.parser.SimplifiedSyntaxStrings.*;
 
 public final class ParserUtils {
@@ -136,8 +135,8 @@ public final class ParserUtils {
                         int filterEndCoordinate = getEndByStart(parentheses,
                                 currentPosition + SCORE_FILTER_START.length() - 1);
                         String scoreFilterSubstring = query.substring(filterStartCoordinate, filterEndCoordinate + 1);
-                        long scoreThreshold = parseScoreFilter(scoreFilterSubstring, SCORE_FILTER_NAME + "(")
-                                .getScoreThreshold();
+                        long scoreThreshold = toLong(scoreFilterSubstring.substring(SCORE_FILTER_NAME.length() + 1,
+                                scoreFilterSubstring.length() - 1), "score threshold");
                         int currentNestedLevel = 0;
                         for (ScoreThreshold currentScoreThreshold : scoreThresholds)
                             if (currentScoreThreshold.contains(startCoordinate, endCoordinate))
