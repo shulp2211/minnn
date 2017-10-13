@@ -122,18 +122,19 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
 
     @Override
     public void fixBorder(boolean left, int position) {
-        if (left)
+        if (left) {
             if (fixedLeftBorder == -1)
                 fixedLeftBorder = position;
-            else
+            else if (fixedLeftBorder != position)
                 throw new IllegalStateException(toString() + ": trying to set fixed left border to " + position
-                        + " when it is already fixed!");
-        else
+                        + " when it is already fixed at " + fixedLeftBorder + "!");
+        } else {
             if (fixedRightBorder == -1)
                 fixedRightBorder = position;
-            else
+            else if (fixedRightBorder != position)
                 throw new IllegalStateException(toString() + ": trying to set fixed right border to " + position
-                        + " when it is already fixed!");
+                        + " when it is already fixed at " + fixedRightBorder + "!");
+        }
     }
 
     @Override
