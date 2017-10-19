@@ -42,23 +42,25 @@ public class CommonTestUtils {
         return countPortValues(matchingResult.getMatches(fair));
     }
 
-    public static NucleotideSequence makeRandomInsertions(NucleotideSequence seq, int number) {
-        NucleotideSequence result = seq;
+    public static NucleotideSequenceCaseSensitive makeRandomInsertions(NucleotideSequenceCaseSensitive seq,
+                                                                       int number) {
+        NucleotideSequenceCaseSensitive result = seq;
         int currentLength;
         int currentInsertPosition;
         for (int i = 0; i < number; i++) {
             currentLength = seq.size() + i;
             currentInsertPosition = rg.nextInt(currentLength);
             result = SequencesUtils.concatenate(result.getRange(0, currentInsertPosition),
-                    TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1),
+                    TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET, 1, 1),
                     result.getRange(currentInsertPosition, currentLength));
         }
         return result;
     }
 
-    public static NucleotideSequence makeRandomDeletions(NucleotideSequence seq, int number) {
+    public static NucleotideSequenceCaseSensitive makeRandomDeletions(NucleotideSequenceCaseSensitive seq,
+                                                                      int number) {
         assertTrue(seq.size() > number);
-        NucleotideSequence result = seq;
+        NucleotideSequenceCaseSensitive result = seq;
         int currentLength;
         int currentDeletePosition;
         for (int i = 0; i < number; i++) {
@@ -70,20 +72,21 @@ public class CommonTestUtils {
         return result;
     }
 
-    public static NucleotideSequence makeRandomReplacements(NucleotideSequence seq, int number) {
-        NucleotideSequence result = seq;
+    public static NucleotideSequenceCaseSensitive makeRandomReplacements(NucleotideSequenceCaseSensitive seq,
+                                                                         int number) {
+        NucleotideSequenceCaseSensitive result = seq;
         int currentPosition;
         for (int i = 0; i < number; i++) {
             currentPosition = rg.nextInt(seq.size());
             result = SequencesUtils.concatenate(result.getRange(0, currentPosition),
-                    TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1),
+                    TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET, 1, 1),
                     result.getRange(currentPosition + 1, seq.size()));
         }
         return result;
     }
 
-    public static NucleotideSequence makeRandomErrors(NucleotideSequence seq, int number) {
-        NucleotideSequence result = seq;
+    public static NucleotideSequenceCaseSensitive makeRandomErrors(NucleotideSequenceCaseSensitive seq, int number) {
+        NucleotideSequenceCaseSensitive result = seq;
         for (int i = 0; i < number; i++) {
             switch (rg.nextInt(3)) {
                 case 0:
@@ -109,8 +112,9 @@ public class CommonTestUtils {
         return seq.getRange(Math.min(position1, position2), Math.max(position1, position2) + 1);
     }
 
-    public static LinearGapAlignmentScoring<NucleotideSequence> getTestScoring() {
-        return new LinearGapAlignmentScoring<>(NucleotideSequence.ALPHABET, 0, -9, -10);
+    public static LinearGapAlignmentScoring<NucleotideSequenceCaseSensitive> getTestScoring() {
+        return new LinearGapAlignmentScoring<>(NucleotideSequenceCaseSensitive.ALPHABET,
+                0, -9, -10);
     }
 
     public static PatternAligner getTestPatternAligner() {
@@ -150,8 +154,8 @@ public class CommonTestUtils {
                                                        int fixedLeftBorder) {
         return new PatternAligner() {
             @Override
-            public Alignment<NucleotideSequence> align(NucleotideSequence pattern, NSequenceWithQuality target,
-                                                       int rightMatchPosition) {
+            public Alignment<NucleotideSequenceCaseSensitive> align(NucleotideSequenceCaseSensitive pattern,
+                    NSequenceWithQuality target, int rightMatchPosition) {
                 if (fixedLeftBorder == -1) {
                     int leftMatchPosition = rightMatchPosition + 1 - pattern.size() - bitapMaxErrors;
                     if (leftMatchPosition < 0) leftMatchPosition = 0;
@@ -297,7 +301,8 @@ public class CommonTestUtils {
         int length = rg.nextInt(150) + 1;
         RandomBorders randomBorders = new RandomBorders(length);
         RandomCuts randomCuts = new RandomCuts(length);
-        NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, length, length);
+        NucleotideSequenceCaseSensitive seq = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
+                length, length);
         return new FuzzyMatchPattern(patternAligner, seq, randomCuts.left, randomCuts.right,
                 randomBorders.left, randomBorders.right,
                 withGroups ? getRandomGroupsForFuzzyMatch(length) : new ArrayList<>());
@@ -307,7 +312,8 @@ public class CommonTestUtils {
         int minRepeats = rg.nextInt(10) + 1;
         int maxRepeats = rg.nextInt(100) + minRepeats;
         RandomBorders randomBorders = new RandomBorders(maxRepeats);
-        NucleotideSequence seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 1);
+        NucleotideSequenceCaseSensitive seq = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
+                1, 1);
         return new RepeatPattern(patternAligner, seq, minRepeats, maxRepeats, randomBorders.left, randomBorders.right,
                 withGroups ? getRandomGroupsForFuzzyMatch(maxRepeats) : new ArrayList<>());
     }
