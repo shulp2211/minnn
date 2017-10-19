@@ -3,11 +3,8 @@ package com.milaboratory.mist.pattern;
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.alignment.Alignment;
-import com.milaboratory.core.motif.BitapMatcherFilter;
-import com.milaboratory.core.motif.BitapPattern;
-import com.milaboratory.core.motif.Motif;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.motif.*;
+import com.milaboratory.core.sequence.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,7 +13,7 @@ import static com.milaboratory.mist.pattern.PatternUtils.*;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.*;
 
 public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingleSequence, CanFixBorders {
-    private final ArrayList<NucleotideSequence> sequences;
+    private final ArrayList<NucleotideSequenceCaseSensitive> sequences;
     private final ArrayList<Motif<NucleotideSequence>> motifs;
     private final int leftCut;
     private final int rightCut;
@@ -25,16 +22,16 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
     private final List<GroupEdgePosition> groupEdgePositions;
     private final ArrayList<Integer> groupMovements;
 
-    public FuzzyMatchPattern(PatternAligner patternAligner, NucleotideSequence patternSeq) {
+    public FuzzyMatchPattern(PatternAligner patternAligner, NucleotideSequenceCaseSensitive patternSeq) {
         this(patternAligner, patternSeq, new ArrayList<>());
     }
 
-    public FuzzyMatchPattern(PatternAligner patternAligner, NucleotideSequence patternSeq, int leftCut, int rightCut,
-                int fixedLeftBorder, int fixedRightBorder) {
+    public FuzzyMatchPattern(PatternAligner patternAligner, NucleotideSequenceCaseSensitive patternSeq,
+                int leftCut, int rightCut, int fixedLeftBorder, int fixedRightBorder) {
         this(patternAligner, patternSeq, leftCut, rightCut, fixedLeftBorder, fixedRightBorder, new ArrayList<>());
     }
 
-    public FuzzyMatchPattern(PatternAligner patternAligner, NucleotideSequence patternSeq,
+    public FuzzyMatchPattern(PatternAligner patternAligner, NucleotideSequenceCaseSensitive patternSeq,
                 List<GroupEdgePosition> groupEdgePositions) {
         this(patternAligner, patternSeq, 0, 0, -1, -1, groupEdgePositions);
     }
@@ -53,8 +50,9 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
      *                         -2 - x means coordinate from the end of target; fixedRightBorder is inclusive
      * @param groupEdgePositions list of group edges and their positions
      */
-    public FuzzyMatchPattern(PatternAligner patternAligner, NucleotideSequence patternSeq, int leftCut, int rightCut,
-                int fixedLeftBorder, int fixedRightBorder, List<GroupEdgePosition> groupEdgePositions) {
+    public FuzzyMatchPattern(PatternAligner patternAligner, NucleotideSequenceCaseSensitive patternSeq,
+                int leftCut, int rightCut, int fixedLeftBorder, int fixedRightBorder,
+                List<GroupEdgePosition> groupEdgePositions) {
         super(patternAligner);
         int size = patternSeq.size();
         if (leftCut + rightCut >= size)
@@ -69,14 +67,15 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
         this.groupMovements = new ArrayList<>();
         if ((leftCut == 0) && (rightCut == 0)) {
             sequences.add(patternSeq);
-            motifs.add(patternSeq.toMotif());
+            motifs.add(patternSeq.toNucleotideSequence().toMotif());
             groupMovements.add(0);
         } else
             for (int i = 0; i <= leftCut; i++)
                 for (int j = 0; j <= rightCut; j++) {
-                    NucleotideSequence seq = new NucleotideSequence(patternSeq.toString().substring(i, size - j));
+                    NucleotideSequenceCaseSensitive seq = new NucleotideSequenceCaseSensitive(patternSeq.toString()
+                            .substring(i, size - j));
                     sequences.add(seq);
-                    motifs.add(seq.toMotif());
+                    motifs.add(seq.toNucleotideSequence().toMotif());
                     groupMovements.add(-i);
                 }
         this.fixedLeftBorder = fixedLeftBorder;
@@ -179,7 +178,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
 
     private static class FuzzyMatchingResult extends MatchingResult {
         private final PatternAligner patternAligner;
-        private final ArrayList<NucleotideSequence> sequences;
+        private final ArrayList<NucleotideSequenceCaseSensitive> sequences;
         private final ArrayList<Motif<NucleotideSequence>> motifs;
         private final int fixedLeftBorder;
         private final int fixedRightBorder;
@@ -190,7 +189,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
         private final int to;
         private final byte targetId;
 
-        FuzzyMatchingResult(PatternAligner patternAligner, ArrayList<NucleotideSequence> sequences,
+        FuzzyMatchingResult(PatternAligner patternAligner, ArrayList<NucleotideSequenceCaseSensitive> sequences,
                             ArrayList<Motif<NucleotideSequence>> motifs, int fixedLeftBorder, int fixedRightBorder,
                             List<GroupEdgePosition> groupEdgePositions, ArrayList<Integer> groupMovements,
                             NSequenceWithQuality target, int from, int to, byte targetId) {
@@ -215,7 +214,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
 
         private static class FuzzyMatchOutputPort implements OutputPort<Match> {
             private final PatternAligner patternAligner;
-            private final ArrayList<NucleotideSequence> sequences;
+            private final ArrayList<NucleotideSequenceCaseSensitive> sequences;
             private final int fixedLeftBorder;
             private final int fixedRightBorder;
             private final boolean fixedBorder;
@@ -248,7 +247,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
              * bigger number of errors. Separate HashSet for each pattern index. */
             private ArrayList<HashSet<Integer>> alreadyReturnedPositions;
 
-            FuzzyMatchOutputPort(PatternAligner patternAligner, ArrayList<NucleotideSequence> sequences,
+            FuzzyMatchOutputPort(PatternAligner patternAligner, ArrayList<NucleotideSequenceCaseSensitive> sequences,
                                  ArrayList<Motif<NucleotideSequence>> motifs, int fixedLeftBorder, int fixedRightBorder,
                                  List<GroupEdgePosition> groupEdgePositions, ArrayList<Integer> groupMovements,
                                  NSequenceWithQuality target, int from, int to, byte targetId, boolean fairSorting) {
@@ -268,7 +267,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                 this.bitapPatterns = new ArrayList<>();
                 this.bitapPositionCorrections = new ArrayList<>();
                 for (int i = 0; i < sequences.size(); i++) {
-                    NucleotideSequence currentSequence = sequences.get(i);
+                    NucleotideSequenceCaseSensitive currentSequence = sequences.get(i);
                     if (currentSequence.size() > BITAP_MAX_LENGTH) {
                         String seqString = currentSequence.toString();
                         int seqLength = currentSequence.size();
@@ -327,8 +326,8 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                                 continue;
                             else
                                 currentReturnedPositions.add(position);
-                            Alignment<NucleotideSequence> alignment = patternAligner.align(sequences.get(currentIndex),
-                                        target, position);
+                            Alignment<NucleotideSequenceCaseSensitive> alignment = patternAligner.align(
+                                    sequences.get(currentIndex), target, position);
                             if (alignment.getScore() >= patternAligner.penaltyThreshold())
                                 return generateMatch(alignment, target, targetId,
                                         fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
@@ -375,12 +374,12 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
              */
             private void fillAllMatchesForFairSorting() {
                 ArrayList<Match> allMatchesList = new ArrayList<>();
-                Alignment<NucleotideSequence> alignment;
+                Alignment<NucleotideSequenceCaseSensitive> alignment;
                 int matchLastPosition;
 
                 for (currentIndex = 0; currentIndex < sequences.size(); currentIndex++) {
                     BitapMatcherFilter currentBitapFilter = bitapMatcherFilters.get(currentIndex);
-                    NucleotideSequence currentSeq = sequences.get(currentIndex);
+                    NucleotideSequenceCaseSensitive currentSeq = sequences.get(currentIndex);
                     HashSet<Range> uniqueRanges = new HashSet<>();
                     do {
                         matchLastPosition = correctBitapPosition(currentBitapFilter.findNext());
@@ -407,12 +406,12 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
             private void fillAllMatchesForFixedLeftBorder() {
                 ArrayList<Match> allMatchesList = new ArrayList<>();
                 PatternAligner patternAligner = this.patternAligner.setLeftBorder(fixedLeftBorder);
-                Alignment<NucleotideSequence> alignment;
+                Alignment<NucleotideSequenceCaseSensitive> alignment;
 
                 for (currentIndex = 0; currentIndex < sequences.size(); currentIndex++) {
                     if (bitapMatcherFilters.get(currentIndex).findNext() == -1)
                         continue;
-                    NucleotideSequence currentSeq = sequences.get(currentIndex);
+                    NucleotideSequenceCaseSensitive currentSeq = sequences.get(currentIndex);
                     HashSet<Range> uniqueRanges = new HashSet<>();
                     for (int rightBorder = Math.max(fixedLeftBorder, fixedLeftBorder + currentSeq.size()
                             - patternAligner.bitapMaxErrors() - 1);
@@ -442,12 +441,12 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                 ArrayList<Match> allMatchesList = new ArrayList<>();
                 PatternAligner patternAligner = (fixedLeftBorder == -1) ? this.patternAligner
                         : this.patternAligner.setLeftBorder(fixedLeftBorder);
-                Alignment<NucleotideSequence> alignment;
+                Alignment<NucleotideSequenceCaseSensitive> alignment;
 
                 for (currentIndex = 0; currentIndex < sequences.size(); currentIndex++) {
                     if (bitapMatcherFilters.get(currentIndex).findNext() == -1)
                         continue;
-                    NucleotideSequence currentSeq = sequences.get(currentIndex);
+                    NucleotideSequenceCaseSensitive currentSeq = sequences.get(currentIndex);
                     alignment = patternAligner.align(currentSeq, target, fixedRightBorder);
                     if (alignment.getScore() >= patternAligner.penaltyThreshold())
                         allMatchesList.add(generateMatch(alignment, target, targetId,

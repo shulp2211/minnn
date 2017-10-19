@@ -12,25 +12,26 @@ import static com.milaboratory.mist.pattern.PatternUtils.*;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.*;
 
 public final class RepeatPattern extends SinglePattern implements CanBeSingleSequence, CanFixBorders {
-    private final NucleotideSequence patternSeq;
+    private final NucleotideSequenceCaseSensitive patternSeq;
     private final int minRepeats;
     private final int maxRepeats;
     private int fixedLeftBorder;
     private int fixedRightBorder;
     private final List<GroupEdgePosition> groupEdgePositions;
 
-    public RepeatPattern(PatternAligner patternAligner, NucleotideSequence patternSeq, int minRepeats, int maxRepeats) {
+    public RepeatPattern(PatternAligner patternAligner, NucleotideSequenceCaseSensitive patternSeq,
+                         int minRepeats, int maxRepeats) {
         this(patternAligner, patternSeq, minRepeats, maxRepeats, new ArrayList<>());
     }
 
-    public RepeatPattern(PatternAligner patternAligner, NucleotideSequence patternSeq, int minRepeats, int maxRepeats,
-                         int fixedLeftBorder, int fixedRightBorder) {
+    public RepeatPattern(PatternAligner patternAligner, NucleotideSequenceCaseSensitive patternSeq,
+                         int minRepeats, int maxRepeats, int fixedLeftBorder, int fixedRightBorder) {
         this(patternAligner, patternSeq, minRepeats, maxRepeats, fixedLeftBorder, fixedRightBorder, new ArrayList<>());
 
     }
 
-    public RepeatPattern(PatternAligner patternAligner, NucleotideSequence patternSeq, int minRepeats, int maxRepeats,
-                         List<GroupEdgePosition> groupEdgePositions) {
+    public RepeatPattern(PatternAligner patternAligner, NucleotideSequenceCaseSensitive patternSeq,
+                         int minRepeats, int maxRepeats, List<GroupEdgePosition> groupEdgePositions) {
         this(patternAligner, patternSeq, minRepeats, maxRepeats, -1, -1, groupEdgePositions);
     }
 
@@ -39,7 +40,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
      * Calls FuzzyMatchPattern to find matches for each number of repeats.
      *
      * @param patternAligner pattern aligner, for FuzzyMatchPattern
-     * @param patternSeq 1 character nucleotide sequence to repeat
+     * @param patternSeq 1 character case sensitive nucleotide sequence to repeat
      * @param minRepeats minimum number of repeats; minimum allowed value is 1
      * @param maxRepeats maximum number of repeats; use Integer.MAX_VALUE to match without maximum limit of repeats
      * @param fixedLeftBorder position in target where must be the left border, for FuzzyMatchPattern
@@ -47,8 +48,9 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
      * @param groupEdgePositions list of group edges and their positions, for FuzzyMatchPattern.
      *                           Group edges beyond the right border of motif will be moved to the right border.
      */
-    public RepeatPattern(PatternAligner patternAligner, NucleotideSequence patternSeq, int minRepeats, int maxRepeats,
-                         int fixedLeftBorder, int fixedRightBorder, List<GroupEdgePosition> groupEdgePositions) {
+    public RepeatPattern(PatternAligner patternAligner, NucleotideSequenceCaseSensitive patternSeq,
+                         int minRepeats, int maxRepeats, int fixedLeftBorder, int fixedRightBorder,
+                         List<GroupEdgePosition> groupEdgePositions) {
         super(patternAligner);
         this.patternSeq = patternSeq;
         if ((minRepeats < 1) || (maxRepeats < minRepeats))
@@ -147,7 +149,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
 
     private static class RepeatPatternMatchingResult extends MatchingResult {
         private final PatternAligner patternAligner;
-        private final NucleotideSequence patternSeq;
+        private final NucleotideSequenceCaseSensitive patternSeq;
         private final int minRepeats;
         private final int maxRepeats;
         private final int fixedLeftBorder;
@@ -158,7 +160,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
         private final int to;
         private final byte targetId;
 
-        RepeatPatternMatchingResult(PatternAligner patternAligner, NucleotideSequence patternSeq,
+        RepeatPatternMatchingResult(PatternAligner patternAligner, NucleotideSequenceCaseSensitive patternSeq,
                                     int minRepeats, int maxRepeats, int fixedLeftBorder, int fixedRightBorder,
                                     List<GroupEdgePosition> groupEdgePositions,
                                     NSequenceWithQuality target, int from, int to, byte targetId) {
@@ -183,7 +185,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
 
         private static class RepeatPatternOutputPort implements OutputPort<Match> {
             private final PatternAligner patternAligner;
-            private final NucleotideSequence patternSeq;
+            private final NucleotideSequenceCaseSensitive patternSeq;
             private final int minRepeats;
             private final int maxRepeats;
             private final int fixedLeftBorder;
@@ -201,7 +203,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
              * Section is valid when number of errors (index2) isn't bigger than bitapMaxErrors in PatternAligner. */
             private final int[][] longestValidSections;
 
-            private final NucleotideSequence[] sequences;
+            private final NucleotideSequenceCaseSensitive[] sequences;
             private boolean noMoreMatches = false;
 
             // Data structures used for unfair sorting.
@@ -216,7 +218,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
             private boolean sortingPerformed = false;
             private int takenValues = 0;
 
-            RepeatPatternOutputPort(PatternAligner patternAligner, NucleotideSequence patternSeq,
+            RepeatPatternOutputPort(PatternAligner patternAligner, NucleotideSequenceCaseSensitive patternSeq,
                                     int minRepeats, int maxRepeats, int fixedLeftBorder, int fixedRightBorder,
                                     List<GroupEdgePosition> groupEdgePositions,
                                     NSequenceWithQuality target, int from, int to, byte targetId, boolean fairSorting) {
@@ -254,11 +256,13 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                         for (int j = 0; j <= maxErrors; j++)
                             longestValidSections[i][j] = calculateLongestValidSection(i, j);
                     }
-                    this.sequences = new NucleotideSequence[Math.max(1, maxRepeats - minRepeats + 1)];
+                    this.sequences = new NucleotideSequenceCaseSensitive[Math.max(1, maxRepeats - minRepeats + 1)];
                     for (int i = 0; i < this.sequences.length; i++) {
-                        NucleotideSequence[] sequencesToConcatenate = new NucleotideSequence[minRepeats + i];
+                        NucleotideSequenceCaseSensitive[] sequencesToConcatenate
+                                = new NucleotideSequenceCaseSensitive[minRepeats + i];
                         Arrays.fill(sequencesToConcatenate, patternSeq);
-                        NucleotideSequence currentSequence = SequencesUtils.concatenate(sequencesToConcatenate);
+                        NucleotideSequenceCaseSensitive currentSequence = SequencesUtils
+                                .concatenate(sequencesToConcatenate);
                         this.sequences[i] = currentSequence;
                     }
                 } else {
@@ -292,7 +296,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                         if (!uniqueRangesUnfair.contains(currentRange)) {
                             uniqueRangesUnfair.add(currentRange);
                             int repeats = Math.max(minRepeats, Math.min(maxRepeats, currentRepeats));
-                            Alignment<NucleotideSequence> alignment = patternAligner.align(
+                            Alignment<NucleotideSequenceCaseSensitive> alignment = patternAligner.align(
                                     sequences[repeats - minRepeats], target,
                                     currentRange.getUpper() - 1);
                             Range targetRange = alignment.getSequence2Range();
@@ -428,7 +432,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
              */
             private ArrayList<Match> getMatchesList(HashSet<Range> uniqueRanges, PatternAligner aligner) {
                 ArrayList<Match> allMatchesList = new ArrayList<>();
-                Alignment<NucleotideSequence> alignment;
+                Alignment<NucleotideSequenceCaseSensitive> alignment;
                 HashSet<UniqueAlignedSequence> uniqueAlignedSequences = new HashSet<>();
 
                 for (Range range : uniqueRanges) {
@@ -531,7 +535,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                             .forEach(l -> allMatchingLetters.put(Character.toLowerCase(l), allMatchingLetters.get(l)));
                 }
 
-                TargetSections(String targetSubstring, NucleotideSequence patternSeq) {
+                TargetSections(String targetSubstring, NucleotideSequenceCaseSensitive patternSeq) {
                     String matchingLetters = allMatchingLetters.get(patternSeq.toString().charAt(0));
                     if (matchingLetters == null)
                         throw new IllegalArgumentException("Wrong patternSeq for RepeatPattern: "

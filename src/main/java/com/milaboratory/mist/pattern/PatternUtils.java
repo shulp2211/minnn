@@ -3,7 +3,7 @@ package com.milaboratory.mist.pattern;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.alignment.Alignment;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,8 +36,8 @@ public final class PatternUtils {
     /**
      * Generate match from alignment, for FuzzyMatchPattern and RepeatPattern.
      */
-    static Match generateMatch(Alignment<NucleotideSequence> alignment, NSequenceWithQuality target, byte targetId,
-                               List<GroupEdgePosition> groupEdgePositions) {
+    static Match generateMatch(Alignment<NucleotideSequenceCaseSensitive> alignment, NSequenceWithQuality target,
+                               byte targetId, List<GroupEdgePosition> groupEdgePositions) {
         Range foundRange = alignment.getSequence2Range();
         long foundScore = (long)alignment.getScore();
         MatchedRange matchedRange = new MatchedRange(target, targetId, 0, foundRange);

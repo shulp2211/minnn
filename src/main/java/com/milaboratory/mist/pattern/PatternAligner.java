@@ -2,19 +2,19 @@ package com.milaboratory.mist.pattern;
 
 import com.milaboratory.core.alignment.Alignment;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 
 public interface PatternAligner {
     /**
      * Returned alignment will have maximal score equals zero.
      *
-     * @param pattern nucleotide sequence from pattern
+     * @param pattern case sensitive nucleotide sequence from pattern
      * @param target target nucleotide sequence with quality
      * @param rightMatchPosition right position of found bitap match, inclusive
      * @return alignment with score less or equals than zero
      */
-    Alignment<NucleotideSequence> align(NucleotideSequence pattern, NSequenceWithQuality target, int rightMatchPosition);
-
+    Alignment<NucleotideSequenceCaseSensitive> align(NucleotideSequenceCaseSensitive pattern,
+            NSequenceWithQuality target, int rightMatchPosition);
     /**
      * Penalty threshold, negative value.
      *
@@ -50,7 +50,7 @@ public interface PatternAligner {
      * @param maxRepeats maximum number of motif repeats for this RepeatPattern
      * @return negative penalty value
      */
-    default long repeatsPenalty(NucleotideSequence motif, int repeats, int maxRepeats) {
+    default long repeatsPenalty(NucleotideSequenceCaseSensitive motif, int repeats, int maxRepeats) {
         return 0;
     }
 
