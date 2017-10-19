@@ -1,6 +1,6 @@
 package com.milaboratory.mist.parser;
 
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 import com.milaboratory.mist.pattern.*;
 
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ final class SimplifiedParsers {
                         + " in FuzzyMatchPattern arguments (probably, insufficient arguments): " + str);
         }
 
-        NucleotideSequence seq = toNSeq(str.substring(0, commaPositions[0]));
+        NucleotideSequenceCaseSensitive seq = toNSeq(str.substring(0, commaPositions[0]));
         int leftCut = toInt(str.substring(commaPositions[0] + 2, commaPositions[1]), "leftCut");
         int rightCut = toInt(str.substring(commaPositions[1] + 2, commaPositions[2]), "rightCut");
         int fixedLeftBorder = toInt(str.substring(commaPositions[2] + 2, commaPositions[3]),
@@ -82,7 +82,7 @@ final class SimplifiedParsers {
                         + " in RepeatPattern arguments (probably, insufficient arguments): " + str);
         }
 
-        NucleotideSequence seq = toNSeq(str.substring(0, commaPositions[0]));
+        NucleotideSequenceCaseSensitive seq = toNSeq(str.substring(0, commaPositions[0]));
         int minRepeats = toInt(str.substring(commaPositions[0] + 2, commaPositions[1]), "minRepeats");
         int maxRepeats = toInt(str.substring(commaPositions[1] + 2, commaPositions[2]), "maxRepeats");
         int fixedLeftBorder = toInt(str.substring(commaPositions[2] + 2, commaPositions[3]),

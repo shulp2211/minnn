@@ -1,6 +1,6 @@
 package com.milaboratory.mist.parser;
 
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 import com.milaboratory.mist.pattern.*;
 
 import java.util.*;
@@ -46,7 +46,8 @@ final class NormalParsers {
             if (bracesPair.start == 0)
                 throw new ParserException("Found '{' without nucleotide in the start of query!");
             String arguments = query.substring(bracesPair.start + 1, bracesPair.end);
-            NucleotideSequence patternSeq = toNSeq(query.substring(bracesPair.start - 1, bracesPair.start));
+            NucleotideSequenceCaseSensitive patternSeq = toNSeq(query.substring(
+                    bracesPair.start - 1, bracesPair.start));
 
             int startStickPosition = findStartStick(bracesPair.start - 1);
             int endStickPosition = findEndStick(bracesPair.end);
@@ -116,7 +117,7 @@ final class NormalParsers {
                 // ignore group names that matched as nucleotide sequences
                 if (nucleotideString.isEmpty())
                     continue;
-                NucleotideSequence patternSeq = toNSeq(nucleotideString);
+                NucleotideSequenceCaseSensitive patternSeq = toNSeq(nucleotideString);
 
                 List<FoundGroupEdgePosition> foundGroupEdgePositions = findGroupsForFuzzyPattern(start, end);
                 foundGroupEdgePositions.stream().filter(fe -> (fe.start != -1) && (fe.end != -1))

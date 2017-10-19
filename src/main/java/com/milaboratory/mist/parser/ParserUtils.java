@@ -271,15 +271,16 @@ public final class ParserUtils {
     }
 
     /**
-     * Get nucleotide sequence from string or throw ParserException if failed.
+     * Get case sensitive nucleotide sequence from string or throw ParserException if failed.
      *
      * @param str string containing nucleotide sequence
-     * @return NucleotideSequence object
-     * @throws ParserException if NucleotideSequence constructor throws IllegalArgumentException, or if sequence is empty
+     * @return NucleotideSequenceCaseSensitive object
+     * @throws ParserException if NucleotideSequenceCaseSensitive constructor throws IllegalArgumentException,
+     *                         or if sequence is empty
      */
-    static NucleotideSequence toNSeq(String str) throws ParserException {
+    static NucleotideSequenceCaseSensitive toNSeq(String str) throws ParserException {
         try {
-            NucleotideSequence seq = new NucleotideSequence(str.trim());
+            NucleotideSequenceCaseSensitive seq = new NucleotideSequenceCaseSensitive(str.trim());
             if (seq.size() < 1)
                 throw new ParserException("Failed to parse nucleotide sequence from string \"" + str + "\"");
             return seq;
