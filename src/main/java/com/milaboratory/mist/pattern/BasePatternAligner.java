@@ -1,27 +1,25 @@
 package com.milaboratory.mist.pattern;
 
-import com.milaboratory.core.alignment.Aligner;
-import com.milaboratory.core.alignment.Alignment;
-import com.milaboratory.core.alignment.BandedLinearAligner;
-import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
+import com.milaboratory.core.Range;
+import com.milaboratory.core.alignment.*;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 
 public class BasePatternAligner implements PatternAligner {
-    private final LinearGapAlignmentScoring<NucleotideSequence> scoring;
+    private final PatternAndTargetAlignmentScoring scoring;
     private final long penaltyThreshold;
     private final long singleOverlapPenalty;
     private final int bitapMaxErrors;
     private final int maxOverlap;
     private final int leftBorder;
 
-    public BasePatternAligner(LinearGapAlignmentScoring<NucleotideSequence> scoring, long penaltyThreshold,
-                              long singleOverlapPenalty, int bitapMaxErrors, int maxOverlap) {
+    public BasePatternAligner(PatternAndTargetAlignmentScoring scoring, long penaltyThreshold,
+            long singleOverlapPenalty, int bitapMaxErrors, int maxOverlap) {
         this(scoring, penaltyThreshold, singleOverlapPenalty, bitapMaxErrors, maxOverlap, -1);
     }
 
-    private BasePatternAligner(LinearGapAlignmentScoring<NucleotideSequence> scoring, long penaltyThreshold,
-                              long singleOverlapPenalty, int bitapMaxErrors, int maxOverlap, int leftBorder) {
+    private BasePatternAligner(PatternAndTargetAlignmentScoring scoring, long penaltyThreshold,
+            long singleOverlapPenalty, int bitapMaxErrors, int maxOverlap, int leftBorder) {
         this.scoring = scoring;
         this.penaltyThreshold = penaltyThreshold;
         this.singleOverlapPenalty = singleOverlapPenalty;
@@ -31,18 +29,16 @@ public class BasePatternAligner implements PatternAligner {
     }
 
     @Override
-    public Alignment<NucleotideSequence> align(NucleotideSequence pattern, NSequenceWithQuality target,
-                                               int rightMatchPosition) {
+    public Alignment<NucleotideSequenceCaseSensitive> align(NucleotideSequenceCaseSensitive pattern,
+            NSequenceWithQuality target, int rightMatchPosition) {
         if (leftBorder == -1) {
-            int leftMatchPosition = rightMatchPosition + 1 - pattern.size() - bitapMaxErrors;
-            if (leftMatchPosition < 0) leftMatchPosition = 0;
-            return BandedLinearAligner.alignLeftAdded(scoring, pattern, target.getSequence(),
-                    0, pattern.size(), 0, leftMatchPosition,
-                    rightMatchPosition - leftMatchPosition + 1, bitapMaxErrors, bitapMaxErrors);
+            return PatternAndTargetAligner.alignLeftAdded(scoring, pattern, target, rightMatchPosition, bitapMaxErrors);
         } else {
-            NucleotideSequence targetPart = target.getSubSequence(leftBorder, rightMatchPosition + 1)
-                    .getSequence();
-            Alignment<NucleotideSequence> partAlignment = Aligner.alignGlobal(scoring, pattern, targetPart);
+            Range targetRange = new Range(leftBorder, rightMatchPosition + 1);
+            NSequenceWithQuality targetPart = new NSequenceWithQuality(target.getSequence().getRange(targetRange),
+                    target.getQuality().getRange(targetRange));
+            Alignment<NucleotideSequenceCaseSensitive> partAlignment = PatternAndTargetAligner.alignGlobal(scoring,
+                    pattern, targetPart);
             return new Alignment<>(pattern, partAlignment.getAbsoluteMutations(),
                     partAlignment.getSequence1Range(), partAlignment.getSequence2Range().move(leftBorder),
                     partAlignment.getScore());

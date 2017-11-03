@@ -6,9 +6,8 @@ import com.beust.jcommander.Parameters;
 import com.milaboratory.cli.Action;
 import com.milaboratory.cli.ActionHelper;
 import com.milaboratory.cli.ActionParameters;
-import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
+import com.milaboratory.core.alignment.PatternAndTargetAlignmentScoring;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.mist.output_converter.MatchedGroup;
 import com.milaboratory.mist.parser.Parser;
 import com.milaboratory.mist.parser.ParserException;
@@ -26,8 +25,9 @@ public class ReportAction implements Action {
 
     @Override
     public void go(ActionHelper helper) throws Exception {
-        LinearGapAlignmentScoring<NucleotideSequence> scoring = new LinearGapAlignmentScoring<>(
-                DEFAULT_ALPHABET, params.matchScore, params.mismatchScore, params.gapScore);
+        PatternAndTargetAlignmentScoring scoring = new PatternAndTargetAlignmentScoring(params.matchScore,
+                params.mismatchScore, params.gapScore, params.usePatternLength, params.goodQuality,
+                params.badQuality, params.maxQualityPenalty);
         PatternAligner patternAligner = new BasePatternAligner(scoring, params.penaltyThreshold,
                 params.singleOverlapPenalty, params.bitapMaxErrors, params.maxOverlap);
         Parser patternParser = new Parser(patternAligner);
@@ -118,6 +118,24 @@ public class ReportAction implements Action {
         @Parameter(description = "Score for gap or insertion.",
                 names = {"--gap-score"})
         int gapScore = DEFAULT_GAP_SCORE;
+
+        @Parameter(description = "Use pattern length for scoring: longer patterns will have smaller score penalties.",
+                names = {"--use-pattern-length"})
+        boolean usePatternLength = false;
+
+        @Parameter(description = "This or better quality value will be considered good quality, " +
+                "without score penalties.",
+                names = {"--good-quality-value"})
+        byte goodQuality = DEFAULT_GOOD_QUALITY;
+
+        @Parameter(description = "This or worse quality value will be considered bad quality, " +
+                "with maximal score penalty.",
+                names = {"--bad-quality-value"})
+        byte badQuality = DEFAULT_BAD_QUALITY;
+
+        @Parameter(description = "Maximal score penalty for bad quality nucleotide in target.",
+                names = {"--max-quality-penalty"})
+        int maxQualityPenalty = DEFAULT_MAX_QUALITY_PENALTY;
 
         @Parameter(description = "Score threshold, matches with score lower than this will not go to output.",
                 names = {"--penalty-threshold"})
