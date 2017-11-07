@@ -22,12 +22,12 @@ public class LogicalOperatorsTest {
     @Test
     public void logicTest() throws Exception {
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("ATTAGACA"));
+                new NucleotideSequenceCaseSensitive("attagaca"));
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("GTTATTACCA"));
-        AndPattern pattern3 = new AndPattern(getTestPatternAligner(), new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("AT")), new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("GCAT")));
+                new NucleotideSequenceCaseSensitive("gttattacca"));
+        AndPattern pattern3 = new AndPattern(getTestPatternAligner(),
+                new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequenceCaseSensitive("at")),
+                new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequenceCaseSensitive("gcat")));
         MultiPattern multiPattern1 = new MultiPattern(getTestPatternAligner(), pattern1, pattern2, pattern3);
         MultiPattern multiPattern2 = new MultiPattern(getTestPatternAligner(), pattern1, pattern3);
         MultiPattern multiPattern3 = new MultiPattern(getTestPatternAligner(), pattern3, pattern2);
@@ -96,12 +96,12 @@ public class LogicalOperatorsTest {
     @Test
     public void simpleTest() throws Exception {
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("ATTAGACA"));
+                new NucleotideSequenceCaseSensitive("attagaca"));
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("GTTATTACCA"));
+                new NucleotideSequenceCaseSensitive("gttattacca"));
         AndPattern pattern3 = new AndPattern(getTestPatternAligner(),
-                new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("AT")),
-                new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GCAT")));
+                new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequenceCaseSensitive("at")),
+                new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequenceCaseSensitive("gcat")));
         MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern1, pattern2, pattern3);
 
         MultiNSequenceWithQuality mseq = new MultiNSequenceWithQualityImpl(
@@ -168,7 +168,7 @@ public class LogicalOperatorsTest {
 
     @Test
     public void groupNamesTest() throws Exception {
-        NucleotideSequence testSeq = new NucleotideSequence("GTGGTTGTGTTGT");
+        NucleotideSequenceCaseSensitive testSeq = new NucleotideSequenceCaseSensitive("gtggttgtgttgt");
         ArrayList<GroupEdgePosition> groups1 = new ArrayList<GroupEdgePosition>() {{
             add(new GroupEdgePosition(new GroupEdge("ABC", true), 1));
             add(new GroupEdgePosition(new GroupEdge("ABC", false), 3));
@@ -212,7 +212,8 @@ public class LogicalOperatorsTest {
     public void groupsInNotTest() throws Exception {
         ArrayList<GroupEdgePosition> groups = new ArrayList<GroupEdgePosition>() {{
             add(new GroupEdgePosition(new GroupEdge("0", true), 0)); }};
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("A"), groups);
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("a"), groups);
         MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern);
 
         exception.expect(IllegalStateException.class);
@@ -237,11 +238,12 @@ public class LogicalOperatorsTest {
             add(new GroupEdgePosition(new GroupEdge("5", false), 6));
         }};
 
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("TAGCC"),
-                groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("CAGATGCA"),
-                groups2);
-        FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("A"));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("tagcc"), groups1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("cagatgca"), groups2);
+        FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("a"));
         MultiPattern multiPattern1 = new MultiPattern(getTestPatternAligner(), pattern1, pattern3);
         MultiPattern multiPattern2 = new MultiPattern(getTestPatternAligner(), pattern3, pattern2);
         MultiPattern multiPattern3 = new MultiPattern(getTestPatternAligner(), pattern3, pattern3);
@@ -297,7 +299,7 @@ public class LogicalOperatorsTest {
     @Test
     public void alignmentTest() throws Exception {
         FuzzyMatchPattern fuzzyPattern = new FuzzyMatchPattern(getTestPatternAligner(2),
-                new NucleotideSequence("ATTAGACA"));
+                new NucleotideSequenceCaseSensitive("attagaca"));
 
         NSequenceWithQuality[] sequences = {
                 new NSequenceWithQuality("ATTAGTTA"),
@@ -356,10 +358,11 @@ public class LogicalOperatorsTest {
     @Test
     public void scoringRandomTest() throws Exception {
         for (int i = 0; i < 2000; i++) {
-            NucleotideSequence motifs[] = new NucleotideSequence[4];
+            NucleotideSequenceCaseSensitive motifs[] = new NucleotideSequenceCaseSensitive[4];
             FuzzyMatchPattern fuzzyPatterns[] = new FuzzyMatchPattern[4];
             for (int j = 0; j < 4; ++j) {
-                motifs[j] = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 10);
+                motifs[j] = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
+                        1, 10);
                 fuzzyPatterns[j] = new FuzzyMatchPattern(getTestPatternAligner(), motifs[j]);
             }
             MultiNSequenceWithQuality targets[] = new MultiNSequenceWithQuality[2];
@@ -406,7 +409,8 @@ public class LogicalOperatorsTest {
     public void incompatiblePatternAlignersTest() throws Exception {
         PatternAligner incompatibleAligner = getTestPatternAligner(0, 0,
                 0, 0, false);
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("A"));
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("a"));
         MultiPattern mpattern = new MultiPattern(getTestPatternAligner(), pattern, pattern);
         exception.expect(IllegalStateException.class);
         new OrOperator(incompatibleAligner, mpattern, mpattern);

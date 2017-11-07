@@ -2,6 +2,7 @@ package com.milaboratory.mist.util;
 
 import cc.redberry.pipe.CUtils;
 import cc.redberry.pipe.OutputPort;
+import com.milaboratory.core.Range;
 import com.milaboratory.core.alignment.*;
 import com.milaboratory.core.sequence.*;
 import com.milaboratory.mist.pattern.*;
@@ -14,6 +15,7 @@ import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.stream.*;
 
+import static com.milaboratory.mist.cli.Defaults.*;
 import static com.milaboratory.mist.pattern.PatternUtils.invertCoordinate;
 import static com.milaboratory.mist.util.CommonTestUtils.RandomStringType.*;
 import static org.junit.Assert.*;
@@ -112,9 +114,9 @@ public class CommonTestUtils {
         return seq.getRange(Math.min(position1, position2), Math.max(position1, position2) + 1);
     }
 
-    public static LinearGapAlignmentScoring<NucleotideSequenceCaseSensitive> getTestScoring() {
-        return new LinearGapAlignmentScoring<>(NucleotideSequenceCaseSensitive.ALPHABET,
-                0, -9, -10);
+    public static PatternAndTargetAlignmentScoring getTestScoring() {
+        return new PatternAndTargetAlignmentScoring(0, -9, -10, false,
+                DEFAULT_GOOD_QUALITY, DEFAULT_BAD_QUALITY, 0);
     }
 
     public static PatternAligner getTestPatternAligner() {
@@ -157,15 +159,14 @@ public class CommonTestUtils {
             public Alignment<NucleotideSequenceCaseSensitive> align(NucleotideSequenceCaseSensitive pattern,
                     NSequenceWithQuality target, int rightMatchPosition) {
                 if (fixedLeftBorder == -1) {
-                    int leftMatchPosition = rightMatchPosition + 1 - pattern.size() - bitapMaxErrors;
-                    if (leftMatchPosition < 0) leftMatchPosition = 0;
-                    return BandedLinearAligner.alignLeftAdded(getTestScoring(), pattern, target.getSequence(),
-                            0, pattern.size(), 0, leftMatchPosition,
-                            rightMatchPosition - leftMatchPosition + 1, bitapMaxErrors, bitapMaxErrors);
+                    return PatternAndTargetAligner.alignLeftAdded(getTestScoring(), pattern, target,
+                            rightMatchPosition, bitapMaxErrors);
                 } else {
-                    NucleotideSequence targetPart = target.getSubSequence(fixedLeftBorder, rightMatchPosition + 1)
-                            .getSequence();
-                    Alignment<NucleotideSequence> partAlignment = Aligner.alignGlobal(getTestScoring(), pattern, targetPart);
+                    Range targetRange = new Range(fixedLeftBorder, rightMatchPosition + 1);
+                    NSequenceWithQuality targetPart = new NSequenceWithQuality(
+                            target.getSequence().getRange(targetRange), target.getQuality().getRange(targetRange));
+                    Alignment<NucleotideSequenceCaseSensitive> partAlignment = PatternAndTargetAligner.alignGlobal(
+                            getTestScoring(), pattern, targetPart);
                     return new Alignment<>(pattern, partAlignment.getAbsoluteMutations(),
                             partAlignment.getSequence1Range(), partAlignment.getSequence2Range().move(fixedLeftBorder),
                             partAlignment.getScore());

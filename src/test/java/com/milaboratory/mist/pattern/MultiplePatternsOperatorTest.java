@@ -1,6 +1,6 @@
 package com.milaboratory.mist.pattern;
 
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -31,9 +31,9 @@ public class MultiplePatternsOperatorTest {
         }};
 
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("GTGGTTGTGTTGT"), groups1);
+                new NucleotideSequenceCaseSensitive("gtggttgtgttgt"), groups1);
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("GTGGTTGTGTTGT"), groups2);
+                new NucleotideSequenceCaseSensitive("gtggttgtgttgt"), groups2);
         exception.expect(IllegalStateException.class);
         new AndPattern(getTestPatternAligner(), pattern1, pattern2);
     }
@@ -56,9 +56,9 @@ public class MultiplePatternsOperatorTest {
         }};
         
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("GTGGTTGTGTTGT"), groups1);
+                new NucleotideSequenceCaseSensitive("gtggttgtgttgt"), groups1);
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("GTGGTTGTGTTGT"), groups2);
+                new NucleotideSequenceCaseSensitive("gtggttgtgttgt"), groups2);
         exception.expect(IllegalStateException.class);
         new PlusPattern(getTestPatternAligner(), pattern1, pattern2);
     }
@@ -75,7 +75,7 @@ public class MultiplePatternsOperatorTest {
         }};
         
         FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("GTGGTTGTGTTGT"), groups);
+                new NucleotideSequenceCaseSensitive("gtggttgtgttgt"), groups);
         exception.expect(IllegalStateException.class);
         new AndPattern(getTestPatternAligner(), pattern, pattern);
     }
@@ -84,7 +84,8 @@ public class MultiplePatternsOperatorTest {
     public void incompatiblePatternAlignersTest() throws Exception {
         PatternAligner incompatibleAligner = getTestPatternAligner(0, 0,
                 0, 0, false);
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("A"));
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("a"));
         exception.expect(IllegalStateException.class);
         new AndPattern(incompatibleAligner, pattern, pattern);
     }

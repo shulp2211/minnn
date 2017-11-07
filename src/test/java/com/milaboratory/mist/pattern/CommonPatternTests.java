@@ -1,6 +1,6 @@
 package com.milaboratory.mist.pattern;
 
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 import org.junit.Test;
 
 import static com.milaboratory.mist.util.CommonTestUtils.*;
@@ -13,19 +13,21 @@ public class CommonPatternTests {
         PatternAligner patternAligner = getRandomPatternAligner();
 
         SinglePattern[] patterns = new SinglePattern[16];
-        patterns[0] = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("ATTAGACA"));
-        patterns[1] = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("CNNNC"),
+        patterns[0] = new FuzzyMatchPattern(patternAligner, new NucleotideSequenceCaseSensitive("ATTAGACA"));
+        patterns[1] = new FuzzyMatchPattern(patternAligner, new NucleotideSequenceCaseSensitive("CNNNC"),
                 2, 2, -1, -1,
                 getRandomGroupsForFuzzyMatch(5));
-        patterns[2] = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("WWATTNB"),
+        patterns[2] = new FuzzyMatchPattern(patternAligner, new NucleotideSequenceCaseSensitive("WWATTNB"),
                 0, 0, 1, -1);
-        patterns[3] = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("NNNNTNNAN"),
+        patterns[3] = new FuzzyMatchPattern(patternAligner, new NucleotideSequenceCaseSensitive("NNNNTNNAN"),
                 1, 2, 1, 8);
-        patterns[4] = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("NNN"),
+        patterns[4] = new FuzzyMatchPattern(patternAligner, new NucleotideSequenceCaseSensitive("NNN"),
                 1, 0, -1, -1);
-        patterns[5] = new RepeatPattern(patternAligner, new NucleotideSequence("N"), 20, 20);
-        patterns[6] = new RepeatPattern(patternAligner, new NucleotideSequence("A"), 4, 6);
-        patterns[7] = new RepeatPattern(patternAligner, new NucleotideSequence("B"),
+        patterns[5] = new RepeatPattern(patternAligner, new NucleotideSequenceCaseSensitive("N"),
+                20, 20);
+        patterns[6] = new RepeatPattern(patternAligner, new NucleotideSequenceCaseSensitive("A"),
+                4, 6);
+        patterns[7] = new RepeatPattern(patternAligner, new NucleotideSequenceCaseSensitive("B"),
                 8, 10, 4, -1,
                 getRandomGroupsForFuzzyMatch(8));
         patterns[8] = new SequencePattern(patternAligner, patterns[0], patterns[5]);

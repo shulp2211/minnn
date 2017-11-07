@@ -2,10 +2,7 @@ package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
-import com.milaboratory.core.sequence.SequenceQuality;
-import com.milaboratory.core.sequence.SequencesUtils;
+import com.milaboratory.core.sequence.*;
 import com.milaboratory.test.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
@@ -22,10 +19,14 @@ public class OrPatternTest {
 
     @Test
     public void simpleTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTAGACA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("TTTAG"));
-        FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("AGTA"));
-        FuzzyMatchPattern pattern4 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("AGTAG"));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("attagaca"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("tttag"));
+        FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("agta"));
+        FuzzyMatchPattern pattern4 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("agtag"));
         NSequenceWithQuality nseq1 = new NSequenceWithQuality("ACTGCGATAAATTAGACGTACGTAA");
         NSequenceWithQuality nseq2 = new NSequenceWithQuality("TTAGTAGAGTATTTAGAGA");
         NSequenceWithQuality nseq3 = new NSequenceWithQuality("ATTAGACAAGTAATTAGACATTAG");
@@ -60,15 +61,17 @@ public class OrPatternTest {
 
     @Test
     public void randomMatchTest() throws Exception {
-        int its = TestUtil.its(1000, 10000);
-        for (int i = 0; i < its; ++i) {
-            NucleotideSequence seqLeft = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, 40);
-            NucleotideSequence seqMotif1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 60);
-            NucleotideSequence seqMotif2 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 60);
-            NucleotideSequence seqRight = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 0, 40);
-            NucleotideSequence fullSeq = SequencesUtils.concatenate(seqLeft, seqMotif1, seqRight);
-            NSequenceWithQuality target = new NSequenceWithQuality(fullSeq,
-                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, fullSeq.getSequence().size()));
+        for (int i = 0; i < 10000; i++) {
+            NucleotideSequenceCaseSensitive seqLeft = TestUtil.randomSequence(
+                    NucleotideSequenceCaseSensitive.ALPHABET, 0, 40);
+            NucleotideSequenceCaseSensitive seqMotif1 = TestUtil.randomSequence(
+                    NucleotideSequenceCaseSensitive.ALPHABET, 1, 60);
+            NucleotideSequenceCaseSensitive seqMotif2 = TestUtil.randomSequence(
+                    NucleotideSequenceCaseSensitive.ALPHABET, 1, 60);
+            NucleotideSequenceCaseSensitive seqRight = TestUtil.randomSequence(
+                    NucleotideSequenceCaseSensitive.ALPHABET, 0, 40);
+            NucleotideSequenceCaseSensitive fullSeq = SequencesUtils.concatenate(seqLeft, seqMotif1, seqRight);
+            NSequenceWithQuality target = new NSequenceWithQuality(fullSeq.toString());
             FuzzyMatchPattern patternMotif1 = new FuzzyMatchPattern(getTestPatternAligner(), seqMotif1);
             FuzzyMatchPattern patternMotif2 = new FuzzyMatchPattern(getTestPatternAligner(), seqMotif2);
             OrPattern orPattern1 = new OrPattern(getTestPatternAligner(), patternMotif2, patternMotif1);
@@ -98,8 +101,10 @@ public class OrPatternTest {
 
     @Test
     public void allMatchesTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GACA"));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("atta"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("gaca"));
         NSequenceWithQuality nseq = new NSequenceWithQuality("GACATTATTATTAGACAGACATTAGACATTATTAGACAGACATTAATTA");
         OrPattern orPattern1 = new OrPattern(getTestPatternAligner(), pattern1, pattern2);
         OrPattern orPattern2 = new OrPattern(getTestPatternAligner(), pattern1, pattern1, pattern2);
@@ -121,8 +126,10 @@ public class OrPatternTest {
 
     @Test
     public void quickSearchTest() throws Exception {
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATA"));
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("GAT"));
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("ata"));
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("gat"));
         OrPattern orPattern = new OrPattern(getTestPatternAligner(), pattern1, pattern2);
         NSequenceWithQuality nseq1 = new NSequenceWithQuality("ATATATATTATA");
         NSequenceWithQuality nseq2 = new NSequenceWithQuality("GCGGTGCGTAGCG");
@@ -157,9 +164,9 @@ public class OrPatternTest {
         }};
 
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("TAGCC"), groupEdgePositions);
+                new NucleotideSequenceCaseSensitive("tagcc"), groupEdgePositions);
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("CAGATGCA"), groupEdgePositions);
+                new NucleotideSequenceCaseSensitive("cagatgca"), groupEdgePositions);
         OrPattern orPattern = new OrPattern(getTestPatternAligner(), pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGC");
         MatchingResult result = orPattern.match(nseq);
@@ -173,17 +180,18 @@ public class OrPatternTest {
 
     @Test
     public void maxErrorsRandomTest() throws Exception {
-        int its = TestUtil.its(1000, 2000);
-        for (int i = 0; i < its; ++i) {
+        for (int i = 0; i < 2000; i++) {
             int targetLength = rg.nextInt(100) + 1;
-            NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET, targetLength, targetLength);
-            NucleotideSequence motif1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 50);
-            NucleotideSequence motif2 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 50);
-            NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
-                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
+            NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+                    targetLength, targetLength);
+            NucleotideSequenceCaseSensitive motif1 = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
+                    1, 50);
+            NucleotideSequenceCaseSensitive motif2 = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
+                    1, 50);
+            NSequenceWithQuality targetQ = new NSequenceWithQuality(target.toString());
             int maxErrors = rg.nextInt(10);
-            NucleotideSequence motif1WithErrors = makeRandomErrors(motif1, maxErrors);
-            NucleotideSequence motif2WithErrors = makeRandomErrors(motif2, maxErrors);
+            NucleotideSequenceCaseSensitive motif1WithErrors = makeRandomErrors(motif1, maxErrors);
+            NucleotideSequenceCaseSensitive motif2WithErrors = makeRandomErrors(motif2, maxErrors);
             FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(maxErrors), motif1WithErrors);
             FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(maxErrors), motif2WithErrors);
             boolean targetContainsPattern1 = target.toString().contains(motif1.toString());
@@ -220,13 +228,13 @@ public class OrPatternTest {
 
     @Test
     public void scoringRandomTest() throws Exception {
-        int its = TestUtil.its(100, 200);
-        for (int i = 0; i < its; ++i) {
-            NucleotideSequence motif1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
-            NucleotideSequence motif2 = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 5, 50);
-            NucleotideSequence target = SequencesUtils.concatenate(motif1, motif2);
-            NSequenceWithQuality targetQ = new NSequenceWithQuality(target,
-                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE, target.getSequence().size()));
+        for (int i = 0; i < 1000; i++) {
+            NucleotideSequenceCaseSensitive motif1 = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
+                    5, 50);
+            NucleotideSequenceCaseSensitive motif2 = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
+                    5, 50);
+            NucleotideSequenceCaseSensitive target = SequencesUtils.concatenate(motif1, motif2);
+            NSequenceWithQuality targetQ = new NSequenceWithQuality(target.toString());
             FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), motif1);
             FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), motif2);
             OrPattern orPattern1 = new OrPattern(getTestPatternAligner(), pattern1, pattern2);

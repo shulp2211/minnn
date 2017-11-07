@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive.fromNucleotideSequence;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static com.milaboratory.mist.util.RangeTools.checkFullIntersection;
 import static com.milaboratory.mist.util.RangeTools.getIntersectionLength;
@@ -23,12 +24,13 @@ public class SequencePatternTest {
             int targetLength = rg.nextInt(100 - maxErrors) + 1;
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
                     targetLength, targetLength);
-            NucleotideSequence motif1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
+            NucleotideSequenceCaseSensitive motif1 = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
                     1, 70);
-            NucleotideSequence motif2 = getRandomSubsequence(target);
+            NucleotideSequenceCaseSensitive motif2 = fromNucleotideSequence(getRandomSubsequence(target),
+                    true);
             NSequenceWithQuality targetQ = new NSequenceWithQuality(target.toString());
-            NucleotideSequence motif1WithErrors = makeRandomErrors(motif1, maxErrors);
-            NucleotideSequence motif2WithErrors = makeRandomErrors(motif2, maxErrors);
+            NucleotideSequenceCaseSensitive motif1WithErrors = makeRandomErrors(motif1, maxErrors);
+            NucleotideSequenceCaseSensitive motif2WithErrors = makeRandomErrors(motif2, maxErrors);
             PatternAligner fuzzyPatternAligner = getTestPatternAligner(maxErrors);
             FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(fuzzyPatternAligner, motif1WithErrors);
             FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(fuzzyPatternAligner, motif2WithErrors);
@@ -101,25 +103,21 @@ public class SequencePatternTest {
         for (int i = 0; i < 5000; i++) {
             int errorScorePenalty = -rg.nextInt(1000) - 1;
             int middleInsertionSize = rg.nextInt(30) + 1;
-            NucleotideSequence leftPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
-                    5, 50);
-            NucleotideSequence middleLetter = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
-                    1, 1);
-            NucleotideSequence rightPart = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
-                    5, 50);
-            NucleotideSequence motif1 = SequencesUtils.concatenate(leftPart, middleLetter);
-            NucleotideSequence motif2 = SequencesUtils.concatenate(middleLetter, rightPart);
-            NucleotideSequence target1 = SequencesUtils.concatenate(leftPart, middleLetter, rightPart);
-            NucleotideSequence middleInsertion = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
-                    middleInsertionSize, middleInsertionSize);
-            NucleotideSequence target2 = SequencesUtils.concatenate(leftPart, middleInsertion, rightPart);
+            NucleotideSequenceCaseSensitive leftPart = TestUtil.randomSequence(
+                    NucleotideSequenceCaseSensitive.ALPHABET, 5, 50);
+            NucleotideSequenceCaseSensitive middleLetter = TestUtil.randomSequence(
+                    NucleotideSequenceCaseSensitive.ALPHABET, 1, 1);
+            NucleotideSequenceCaseSensitive rightPart = TestUtil.randomSequence(
+                    NucleotideSequenceCaseSensitive.ALPHABET, 5, 50);
+            NucleotideSequenceCaseSensitive motif1 = SequencesUtils.concatenate(leftPart, middleLetter);
+            NucleotideSequenceCaseSensitive motif2 = SequencesUtils.concatenate(middleLetter, rightPart);
+            NucleotideSequenceCaseSensitive target1 = SequencesUtils.concatenate(leftPart, middleLetter, rightPart);
+            NucleotideSequenceCaseSensitive middleInsertion = TestUtil.randomSequence(
+                    NucleotideSequenceCaseSensitive.ALPHABET, middleInsertionSize, middleInsertionSize);
+            NucleotideSequenceCaseSensitive target2 = SequencesUtils.concatenate(leftPart, middleInsertion, rightPart);
 
-            NSequenceWithQuality targetQ1 = new NSequenceWithQuality(target1,
-                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE,
-                            target1.getSequence().size()));
-            NSequenceWithQuality targetQ2 = new NSequenceWithQuality(target2,
-                    SequenceQuality.getUniformQuality(SequenceQuality.GOOD_QUALITY_VALUE,
-                            target2.getSequence().size()));
+            NSequenceWithQuality targetQ1 = new NSequenceWithQuality(target1.toString());
+            NSequenceWithQuality targetQ2 = new NSequenceWithQuality(target2.toString());
             FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), motif1);
             FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), motif2);
             FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(getTestPatternAligner(), leftPart);
@@ -177,9 +175,9 @@ public class SequencePatternTest {
         }};
 
         FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("ATAGA"), groupsEdgePositions1);
+                new NucleotideSequenceCaseSensitive("ataga"), groupsEdgePositions1);
         FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("GATTC"), groupsEdgePositions2);
+                new NucleotideSequenceCaseSensitive("gattc"), groupsEdgePositions2);
         SequencePattern sequencePattern = new SequencePattern(getTestPatternAligner(-10, 0,
                 0, -5, true, 2, -1), pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("ATAGATTC");

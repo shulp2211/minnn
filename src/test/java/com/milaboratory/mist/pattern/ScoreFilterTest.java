@@ -4,6 +4,7 @@ import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 import com.milaboratory.test.TestUtil;
 import org.junit.Test;
 
@@ -18,7 +19,8 @@ public class ScoreFilterTest {
             String seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 300).toString();
             NSequenceWithQuality target = new NSequenceWithQuality(seq);
             MultiNSequenceWithQuality multiTarget = createMultiNSeq(seq, 2);
-            NucleotideSequence motif = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 20);
+            NucleotideSequenceCaseSensitive motif = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
+                    1, 20);
             FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(rg.nextInt(5)), motif);
             FilterPattern filterPattern = new FilterPattern(getTestPatternAligner(),
                     new ScoreFilter(scoreThreshold), pattern);

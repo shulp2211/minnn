@@ -1,6 +1,6 @@
 package com.milaboratory.mist.parser;
 
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 import com.milaboratory.mist.pattern.*;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,8 +29,9 @@ public class SimplifiedTokenizerTest {
         }};
 
         FuzzyMatchPattern fuzzyMatchPattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
-                new NucleotideSequence("GTGGTTGTGTTGT"), groups);
-        FuzzyMatchPattern fuzzyMatchPattern2 = new FuzzyMatchPattern(getTestPatternAligner(), new NucleotideSequence("ATTG"));
+                new NucleotideSequenceCaseSensitive("gtggttgtgttgt"), groups);
+        FuzzyMatchPattern fuzzyMatchPattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+                new NucleotideSequenceCaseSensitive("attg"));
         AndPattern andPattern = new AndPattern(getTestPatternAligner(), fuzzyMatchPattern2, fuzzyMatchPattern2);
         PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(), andPattern, fuzzyMatchPattern2);
         OrPattern orPattern = new OrPattern(getTestPatternAligner(), plusPattern, andPattern);

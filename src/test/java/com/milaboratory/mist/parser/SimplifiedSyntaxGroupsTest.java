@@ -1,6 +1,6 @@
 package com.milaboratory.mist.parser;
 
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 import com.milaboratory.mist.pattern.*;
 import org.junit.Rule;
 import org.junit.Test;
@@ -63,10 +63,10 @@ public class SimplifiedSyntaxGroupsTest {
                 ArrayList<GroupEdgePosition> groupEdgePositions2 = new ArrayList<>();
                 groupEdgePositions1.add(new GroupEdgePosition(new GroupEdge(randomGroupName, true), 0));
                 groupEdgePositions2.add(new GroupEdgePosition(new GroupEdge(randomGroupName, false), 1));
-                FuzzyMatchPattern fuzzyMatchPattern = new FuzzyMatchPattern(patternAligner, new NucleotideSequence("A"),
-                        groupEdgePositions1);
-                RepeatPattern repeatPattern = new RepeatPattern(patternAligner, new NucleotideSequence("A"),
-                        1, 2, groupEdgePositions2);
+                FuzzyMatchPattern fuzzyMatchPattern = new FuzzyMatchPattern(patternAligner,
+                        new NucleotideSequenceCaseSensitive("a"), groupEdgePositions1);
+                RepeatPattern repeatPattern = new RepeatPattern(patternAligner,
+                        new NucleotideSequenceCaseSensitive("a"), 1, 2, groupEdgePositions2);
                 PlusPattern plusPattern1 = new PlusPattern(patternAligner, getRandomBasicPattern(patternAligner),
                         new FilterPattern(patternAligner, new ScoreFilter(0), fuzzyMatchPattern),
                         getRandomBasicPattern(patternAligner));
@@ -119,9 +119,9 @@ public class SimplifiedSyntaxGroupsTest {
         groupEdgePositions1.add(new GroupEdgePosition(new GroupEdge(randomGroupName, true), 0));
         groupEdgePositions2.add(new GroupEdgePosition(new GroupEdge(randomGroupName, false), 1));
         FuzzyMatchPattern fuzzyMatchPattern1 = new FuzzyMatchPattern(getRandomPatternAligner(),
-                new NucleotideSequence("A"), groupEdgePositions1);
+                new NucleotideSequenceCaseSensitive("a"), groupEdgePositions1);
         FuzzyMatchPattern fuzzyMatchPattern2 = new FuzzyMatchPattern(getRandomPatternAligner(),
-                new NucleotideSequence("A"), groupEdgePositions2);
+                new NucleotideSequenceCaseSensitive("a"), groupEdgePositions2);
         Pattern invalidPattern = getRandomPatternNotInList(validGroupPartNotCommonObjectNames,
                 fuzzyMatchPattern1, fuzzyMatchPattern2);
         exception.expect(ParserException.class);
