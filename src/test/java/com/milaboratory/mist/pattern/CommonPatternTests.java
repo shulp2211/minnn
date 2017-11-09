@@ -12,7 +12,7 @@ public class CommonPatternTests {
     public void estimateComplexityTest() throws Exception {
         PatternAligner patternAligner = getRandomPatternAligner();
 
-        SinglePattern[] patterns = new SinglePattern[16];
+        SinglePattern[] patterns = new SinglePattern[21];
         patterns[0] = new FuzzyMatchPattern(patternAligner, new NucleotideSequenceCaseSensitive("ATTAGACA"));
         patterns[1] = new FuzzyMatchPattern(patternAligner, new NucleotideSequenceCaseSensitive("CNNNC"),
                 2, 2, -1, -1,
@@ -38,6 +38,14 @@ public class CommonPatternTests {
         patterns[13] = new SequencePattern(patternAligner, patterns[5], patterns[11]);
         patterns[14] = new OrPattern(patternAligner, patterns[7], patterns[11], patterns[12]);
         patterns[15] = new AndPattern(patternAligner, patterns[1], patterns[11]);
+        patterns[16] = new FuzzyMatchPattern(patternAligner, new NucleotideSequenceCaseSensitive("attagaca"));
+        patterns[17] = new FuzzyMatchPattern(patternAligner, new NucleotideSequenceCaseSensitive("atTAGAca"));
+        patterns[18] = new FuzzyMatchPattern(patternAligner, new NucleotideSequenceCaseSensitive("WwATTnB"));
+        patterns[19] = new RepeatPattern(patternAligner, new NucleotideSequenceCaseSensitive("a"),
+                4, 6);
+        patterns[20] = new RepeatPattern(patternAligner, new NucleotideSequenceCaseSensitive("b"),
+                8, 10, -1, -1,
+                getRandomGroupsForFuzzyMatch(8));
 
         MultipleReadsOperator[] mPatterns = new MultipleReadsOperator[4];
         mPatterns[0] = new MultiPattern(patternAligner, patterns[14], patterns[15]);
@@ -45,7 +53,7 @@ public class CommonPatternTests {
         mPatterns[2] = new AndOperator(patternAligner, mPatterns[0], mPatterns[1]);
         mPatterns[3] = new OrOperator(patternAligner, mPatterns[0], mPatterns[1]);
 
-        long[] expected = new long[20];
+        long[] expected = new long[25];
         expected[0] = notFixedSequenceMinComplexity + singleNucleotideComplexity / 8;
         expected[1] = notFixedSequenceMinComplexity + (long)(singleNucleotideComplexity * 9 / (2 + 3.0 / 16));
         expected[2] = 1;
@@ -62,15 +70,25 @@ public class CommonPatternTests {
         expected[13] = expected[5] + expected[11];
         expected[14] = expected[12];
         expected[15] = expected[1] + expected[11];
-        expected[16] = expected[14] + expected[15];
-        expected[17] = expected[0] + expected[4];
-        expected[18] = expected[16] + expected[17];
-        expected[19] = expected[17];
+        expected[16] = notFixedSequenceMinComplexity + (long)(singleNucleotideComplexity
+                / (8.0 / (1 + smallLetterExtraComplexity)));
+        expected[17] = notFixedSequenceMinComplexity + (long)(singleNucleotideComplexity
+                / (4 + 4.0 / (1 + smallLetterExtraComplexity)));
+        expected[18] = notFixedSequenceMinComplexity + (long)(singleNucleotideComplexity / (1.0 / 4
+                + 1.0 / (4 + smallLetterExtraComplexity) + 3 + 1.0 / (16 + smallLetterExtraComplexity) + 1.0 / 9));
+        expected[19] = notFixedSequenceMinComplexity + (singleNucleotideComplexity
+                * 3 * (1 + smallLetterExtraComplexity) / 4);
+        expected[20] = notFixedSequenceMinComplexity + (singleNucleotideComplexity
+                * 3 * (9 + smallLetterExtraComplexity) / 8);
+        expected[21] = expected[14] + expected[15];
+        expected[22] = expected[0] + expected[4];
+        expected[23] = expected[21] + expected[22];
+        expected[24] = expected[22];
 
-        for (int i = 0; i <= 15; i++)
+        for (int i = 0; i <= 20; i++)
             assertEquals(expected[i], patterns[i].estimateComplexity());
         for (int i = 0; i <= 3; i++)
-            assertEquals(expected[i + 16], mPatterns[i].estimateComplexity());
+            assertEquals(expected[i + 21], mPatterns[i].estimateComplexity());
     }
 
     @Test

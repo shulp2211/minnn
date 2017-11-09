@@ -8,7 +8,7 @@ import java.util.HashSet;
 public final class UnfairSorterConfiguration {
     public static final HashMap<Class, Integer> unfairSorterPortLimits = new HashMap<>();
     public static final HashMap<Character, Integer> lettersComplexity = new HashMap<>();
-    private static final int smallLetterExtraComplexity = 3;
+    public static final int smallLetterExtraComplexity = 3;
     static {
         unfairSorterPortLimits.put(FuzzyMatchPattern.class, 100);
         unfairSorterPortLimits.put(RepeatPattern.class, 100);
