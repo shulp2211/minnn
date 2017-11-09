@@ -114,6 +114,14 @@ public class CommonTestUtils {
         return seq.getRange(Math.min(position1, position2), Math.max(position1, position2) + 1);
     }
 
+    public static NSequenceWithQuality setRandomQuality(String seq) {
+        int length = seq.length();
+        byte[] quality = new byte[length];
+        for (int i = 0; i < length; i++)
+            quality[i] = (byte)(rg.nextInt(DEFAULT_GOOD_QUALITY + 1 - DEFAULT_BAD_QUALITY) + DEFAULT_BAD_QUALITY);
+        return new NSequenceWithQuality(new NucleotideSequence(seq), new SequenceQuality(quality));
+    }
+
     public static PatternAndTargetAlignmentScoring getTestScoring() {
         return new PatternAndTargetAlignmentScoring(0, -9, -10, false,
                 DEFAULT_GOOD_QUALITY, DEFAULT_BAD_QUALITY, 0);
