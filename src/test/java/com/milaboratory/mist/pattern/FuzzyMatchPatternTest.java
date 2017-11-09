@@ -94,6 +94,36 @@ public class FuzzyMatchPatternTest {
     }
 
     @Test
+    public void uppercaseLettersTest() throws Exception {
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(-30, 1,
+                0, -1), new NucleotideSequenceCaseSensitive("cgATTAcgA"));
+        NSequenceWithQuality target = new NSequenceWithQuality("TCGATTTACGACTGATTACGATTATTACGATTATCGATTACGTCGATTACAGA");
+        OutputPort<Match> matches = pattern.match(target).getMatches(true);
+
+        Match match = matches.take();
+        assertEquals(new Range(12, 21), match.getRange());
+        assertEquals(-9, match.getScore());
+        match = matches.take();
+        assertEquals(new Range(34, 43), match.getRange());
+        assertEquals(-9, match.getScore());
+        match = matches.take();
+        assertEquals(new Range(43, 53), match.getRange());
+        assertEquals(-10, match.getScore());
+
+        /* bitap finds insertion where it is not allowed, and aligner turns it into 1 mismatch and 1 insertion
+           in allowed place */
+        match = matches.take();
+        assertEquals(new Range(27, 37), match.getRange());
+        assertEquals(-19, match.getScore());
+
+        /* bitap finds insertion where it is not allowed, and aligner turns it into 3 mismatches */
+        match = matches.take();
+        assertEquals(new Range(2, 11), match.getRange());
+        assertEquals(-27, match.getScore());
+        assertNull(matches.take());
+    }
+
+    @Test
     public void randomMatchTest() throws Exception {
         for (int i = 0; i < 30000; i++) {
             NucleotideSequenceCaseSensitive seqM = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
