@@ -13,6 +13,15 @@ public class BasePatternAligner implements PatternAligner {
     private final int maxOverlap;
     private final int leftBorder;
 
+    /**
+     * Basic configuration class for scoring and alignment for patterns.
+     *
+     * @param scoring scoring for pattern and target alignment
+     * @param penaltyThreshold 0 or negative; matches with score below this threshold will be considered invalid
+     * @param singleOverlapPenalty 0 or negative; this is penalty for 1 nucleotide overlap between 2 patterns
+     * @param bitapMaxErrors 0 or positive; maximum allowed number of errors for bitap
+     * @param maxOverlap 0 or positive; maximum allowed number of overlapped nucleotides between 2 patterns
+     */
     public BasePatternAligner(PatternAndTargetAlignmentScoring scoring, long penaltyThreshold,
             long singleOverlapPenalty, int bitapMaxErrors, int maxOverlap) {
         this(scoring, penaltyThreshold, singleOverlapPenalty, bitapMaxErrors, maxOverlap, -1);
