@@ -65,6 +65,35 @@ public class RepeatPatternTest {
     }
 
     @Test
+    public void uppercaseLettersTest() throws Exception {
+        PatternAligner patternAligner = getTestPatternAligner(-30, 2,
+                0, -1);
+        RepeatPattern pattern1 = new RepeatPattern(patternAligner, new NucleotideSequenceCaseSensitive("a"),
+                4, 4);
+        RepeatPattern pattern2 = new RepeatPattern(patternAligner, new NucleotideSequenceCaseSensitive("A"),
+                4, 4);
+        NSequenceWithQuality target = new NSequenceWithQuality("AATA");
+        OutputPort<Match> matches1 = pattern1.match(target).getMatches(true);
+        OutputPort<Match> matches2 = pattern2.match(target).getMatches(true);
+
+        Match match = matches1.take();
+        assertEquals(new Range(0, 4), match.getRange());
+        assertEquals(-9, match.getScore());
+        match = matches1.take();
+        assertEquals(new Range(0, 3), match.getRange());
+        assertEquals(-19, match.getScore());
+        match = matches1.take();
+        assertEquals(new Range(0, 2), match.getRange());
+        assertEquals(-20, match.getScore());
+        assertNull(matches1.take());
+
+        match = matches2.take();
+        assertEquals(new Range(0, 4), match.getRange());
+        assertEquals(-9, match.getScore());
+        assertNull(matches2.take());
+    }
+
+    @Test
     public void randomMatchTest() throws Exception {
         for (int i = 0; i < 10000; i++) {
             int minRepeats = rg.nextInt(10) + 1;
