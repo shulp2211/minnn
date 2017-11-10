@@ -65,4 +65,23 @@ public final class PatternUtils {
 
         return new Match(1, foundScore, matchedItems);
     }
+
+    /**
+     * Check if there is at least 1 uppercase letter in the specified range in pattern nucleotide sequence.
+     * Specified range is allowed to be out of bounds of sequence.
+     *
+     * @param sequence case sensitive nucleotide sequence
+     * @param from starting coordinate, inclusive
+     * @param to ending coordinate, exclusive
+     * @return true if there is at least 1 uppercase letter in the specified range
+     */
+    public static boolean containsUppercase(NucleotideSequenceCaseSensitive sequence, int from, int to) {
+        from = Math.max(0, from);
+        to = Math.min(sequence.size(), to);
+        for (int i = from; i < to; i++) {
+            if (Character.isUpperCase(sequence.symbolAt(i)))
+                return true;
+        }
+        return false;
+    }
 }
