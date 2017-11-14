@@ -90,7 +90,7 @@ public final class AnyPattern extends SinglePattern {
                 matchedItems.add(new MatchedRange(target, targetId, 0, new Range(from, to)));
                 matchedItems.addAll(groupEdges.stream().map(ge -> new MatchedGroupEdge(target, targetId, 0,
                         ge, ge.isStart() ? 0 : target.size())).collect(Collectors.toList()));
-                return new Match(1, 0, matchedItems);
+                return new Match(1, 0, -1, -1, matchedItems);
             }
         }
     }

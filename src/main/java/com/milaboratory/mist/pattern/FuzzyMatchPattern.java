@@ -326,12 +326,14 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                                 continue;
                             else
                                 currentReturnedPositions.add(position);
+                            NucleotideSequenceCaseSensitive currentSeq = sequences.get(currentIndex);
                             Alignment<NucleotideSequenceCaseSensitive> alignment = patternAligner.align(
-                                    sequences.get(currentIndex), target, position);
+                                    currentSeq, target, position);
                             if (alignment.getScore() >= patternAligner.penaltyThreshold())
                                 return generateMatch(alignment, target, targetId,
+                                        firstUppercase(currentSeq), lastUppercase(currentSeq),
                                         fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
-                                                sequences.get(currentIndex).size()));
+                                                currentSeq.size()));
                         }
                     }
                     currentIndex = 0;
@@ -389,8 +391,9 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                                     && !uniqueRanges.contains(alignment.getSequence2Range())) {
                                 uniqueRanges.add(alignment.getSequence2Range());
                                 allMatchesList.add(generateMatch(alignment, target, targetId,
+                                        firstUppercase(currentSeq), lastUppercase(currentSeq),
                                         fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
-                                        sequences.get(currentIndex).size())));
+                                        currentSeq.size())));
                             }
                         }
                     } while (matchLastPosition != -1);
@@ -424,8 +427,9 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                                     && !uniqueRanges.contains(alignment.getSequence2Range())) {
                                 uniqueRanges.add(alignment.getSequence2Range());
                                 allMatchesList.add(generateMatch(alignment, target, targetId,
+                                        firstUppercase(currentSeq), lastUppercase(currentSeq),
                                         fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
-                                        sequences.get(currentIndex).size())));
+                                        currentSeq.size())));
                             }
                         }
                 }
@@ -450,8 +454,9 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                     alignment = patternAligner.align(currentSeq, target, fixedRightBorder);
                     if (alignment.getScore() >= patternAligner.penaltyThreshold())
                         allMatchesList.add(generateMatch(alignment, target, targetId,
+                                firstUppercase(currentSeq), lastUppercase(currentSeq),
                                 fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
-                                sequences.get(currentIndex).size())));
+                                currentSeq.size())));
                 }
 
                 allMatches = new Match[allMatchesList.size()];

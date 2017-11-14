@@ -186,6 +186,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
         private static class RepeatPatternOutputPort implements OutputPort<Match> {
             private final PatternAligner patternAligner;
             private final NucleotideSequenceCaseSensitive patternSeq;
+            private final boolean uppercasePattern;
             private final int minRepeats;
             private final int maxRepeats;
             private final int fixedLeftBorder;
@@ -234,6 +235,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                     noMoreMatches = true;
 
                 this.patternSeq = patternSeq;
+                this.uppercasePattern = Character.isUpperCase(patternSeq.symbolAt(0));
                 this.minRepeats = minRepeats;
                 this.maxRepeats = Math.min(maxRepeats, to - from);
                 maxRepeats = this.maxRepeats;
@@ -296,6 +298,8 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                         if (!uniqueRangesUnfair.contains(currentRange)) {
                             uniqueRangesUnfair.add(currentRange);
                             int repeats = Math.max(minRepeats, Math.min(maxRepeats, currentRepeats));
+                            int firstUppercase = uppercasePattern ? 0 : -1;
+                            int lastUppercase = uppercasePattern ? repeats - 1 : -1;
                             Alignment<NucleotideSequenceCaseSensitive> alignment = patternAligner.align(
                                     sequences[repeats - minRepeats], target,
                                     currentRange.getUpper() - 1);
@@ -305,7 +309,8 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                                     && !uniqueAlignedSequencesUnfair.contains(alignedSequence)) {
                                 uniqueAlignedSequencesUnfair.add(alignedSequence);
                                 pointToNextUnfairMatch();
-                                return overrideMatchScore(generateMatch(alignment, target, targetId,
+                                return overrideMatchScore(generateMatch(
+                                        alignment, target, targetId, firstUppercase, lastUppercase,
                                         fixGroupEdgePositions(groupEdgePositions, 0, targetRange.length())),
                                         repeats);
                             }
@@ -437,6 +442,8 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
 
                 for (Range range : uniqueRanges) {
                     int repeats = Math.max(minRepeats, Math.min(maxRepeats, range.length()));
+                    int firstUppercase = uppercasePattern ? 0 : -1;
+                    int lastUppercase = uppercasePattern ? repeats - 1 : -1;
                     alignment = aligner.align(sequences[repeats - minRepeats], target,
                             range.getUpper() - 1);
                     Range targetRange = alignment.getSequence2Range();
@@ -444,7 +451,8 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                     if ((alignment.getScore() >= aligner.penaltyThreshold())
                             && !uniqueAlignedSequences.contains(alignedSequence)) {
                         uniqueAlignedSequences.add(alignedSequence);
-                        allMatchesList.add(overrideMatchScore(generateMatch(alignment, target, targetId,
+                        allMatchesList.add(overrideMatchScore(
+                                generateMatch(alignment, target, targetId, firstUppercase, lastUppercase,
                                 fixGroupEdgePositions(groupEdgePositions, 0, targetRange.length())), repeats));
                     }
                 }
@@ -453,8 +461,9 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
             }
 
             private Match overrideMatchScore(Match match, int repeats) {
-                return new Match(match.getNumberOfPatterns(), match.getScore() + patternAligner.repeatsPenalty(
-                        patternSeq, repeats, maxRepeats), match.getMatchedItems());
+                return new Match(match.getNumberOfPatterns(),
+                        match.getScore() + patternAligner.repeatsPenalty(patternSeq, repeats, maxRepeats),
+                        match.getLeftUppercaseDistance(), match.getRightUppercaseDistance(), match.getMatchedItems());
             }
 
             /**

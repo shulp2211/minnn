@@ -35,9 +35,18 @@ public final class PatternUtils {
 
     /**
      * Generate match from alignment, for FuzzyMatchPattern and RepeatPattern.
+     *
+     * @param alignment alignment for pattern and target
+     * @param target target
+     * @param targetId target id, comes from SinglePattern (FuzzyMatch or Repeat) that generates this match
+     * @param firstUppercase position of the first uppercase letter in the pattern; or -1 if all letters are lowercase
+     * @param lastUppercase position of the last uppercase letter in the pattern; or -1 if all letters are lowercase
+     * @param groupEdgePositions group edge positions in the pattern; must be already corrected
+     *                           with fixGroupEdgePositions()
+     * @return generated match
      */
     static Match generateMatch(Alignment<NucleotideSequenceCaseSensitive> alignment, NSequenceWithQuality target,
-                               byte targetId, List<GroupEdgePosition> groupEdgePositions) {
+            byte targetId, int firstUppercase, int lastUppercase, List<GroupEdgePosition> groupEdgePositions) {
         Range foundRange = alignment.getSequence2Range();
         long foundScore = (long)alignment.getScore();
         MatchedRange matchedRange = new MatchedRange(target, targetId, 0, foundRange);
@@ -45,43 +54,72 @@ public final class PatternUtils {
         matchedItems.add(matchedRange);
 
         for (GroupEdgePosition groupEdgePosition : groupEdgePositions) {
-            int foundGroupEdgePosition = alignment.convertToSeq2Position(groupEdgePosition.getPosition());
-            if (foundGroupEdgePosition == -1)
-                if (groupEdgePosition.getPosition() < alignment.getSequence1Range().getLower())
-                    foundGroupEdgePosition = foundRange.getLower();
-                else if (groupEdgePosition.getPosition() > alignment.getSequence1Range().getUpper())
-                    foundGroupEdgePosition = foundRange.getUpper();
-                else
-                    throw new IllegalStateException("Unexpected state when converting group edge positions: "
-                            + "Sequence1Range=" + alignment.getSequence1Range()
-                            + ", Sequence2Range=" + alignment.getSequence2Range()
-                            + ", GroupEdgePosition=" + groupEdgePosition.getPosition());
-            else if (foundGroupEdgePosition < 0)
-                foundGroupEdgePosition = invertCoordinate(foundGroupEdgePosition);
+            int foundGroupEdgePosition = toSeq2Position(alignment, groupEdgePosition.getPosition());
             MatchedGroupEdge matchedGroupEdge = new MatchedGroupEdge(target, targetId, 0,
                     groupEdgePosition.getGroupEdge(), foundGroupEdgePosition);
             matchedItems.add(matchedGroupEdge);
         }
 
-        return new Match(1, foundScore, matchedItems);
+        if (((firstUppercase != -1) && (firstUppercase < alignment.getSequence1Range().getLower()))
+                || ((lastUppercase != -1) && (lastUppercase >= alignment.getSequence1Range().getUpper())))
+            throw new IllegalArgumentException("Uppercase position out of bounds of the pattern: firstUppercase="
+                    + firstUppercase + ", lastUppercase=" + lastUppercase + ", pattern range "
+                    + alignment.getSequence1Range());
+        int leftUppercaseDistance = (firstUppercase == -1) ? -1
+                : toSeq2Position(alignment, firstUppercase) - foundRange.getLower();
+        int rightUppercaseDistance = (lastUppercase == -1) ? -1
+                : foundRange.getUpper() - 1 - toSeq2Position(alignment, lastUppercase);
+
+        return new Match(1, foundScore, leftUppercaseDistance, rightUppercaseDistance, matchedItems);
     }
 
     /**
-     * Check if there is at least 1 uppercase letter in the specified range in pattern nucleotide sequence.
-     * Specified range is allowed to be out of bounds of sequence.
+     * Convert position in the pattern to position in the target; used for group edges and uppercase letter positions.
+     *
+     * @param alignment alignment for pattern and target
+     * @param seq1Position position in the pattern
+     * @return position in the target
+     */
+    private static int toSeq2Position(Alignment<NucleotideSequenceCaseSensitive> alignment, int seq1Position) {
+        int seq2Position = alignment.convertToSeq2Position(seq1Position);
+        if (seq2Position == -1) {
+            if (seq1Position < alignment.getSequence1Range().getLower())
+                seq2Position = alignment.getSequence2Range().getLower();
+            else if (seq1Position > alignment.getSequence1Range().getUpper())
+                seq2Position = alignment.getSequence2Range().getUpper();
+            else
+                throw new IllegalStateException("Unexpected state when converting pattern position to target: "
+                        + "Sequence1Range=" + alignment.getSequence1Range()
+                        + ", Sequence2Range=" + alignment.getSequence2Range()
+                        + ", seq1Position=" + seq1Position);
+        } else if (seq2Position < 0)
+            seq2Position = invertCoordinate(seq2Position);
+        return seq2Position;
+    }
+
+    /**
+     * Get position of first uppercase letter in sequence.
      *
      * @param sequence case sensitive nucleotide sequence
-     * @param from starting coordinate, inclusive
-     * @param to ending coordinate, exclusive
-     * @return true if there is at least 1 uppercase letter in the specified range
+     * @return position of first uppercase letter, or -1 if all sequence is lowercase
      */
-    public static boolean containsUppercase(NucleotideSequenceCaseSensitive sequence, int from, int to) {
-        from = Math.max(0, from);
-        to = Math.min(sequence.size(), to);
-        for (int i = from; i < to; i++) {
+    public static int firstUppercase(NucleotideSequenceCaseSensitive sequence) {
+        for (int i = 0; i < sequence.size(); i++)
             if (Character.isUpperCase(sequence.symbolAt(i)))
-                return true;
-        }
-        return false;
+                return i;
+        return -1;
+    }
+
+    /**
+     * Get position of last uppercase letter in sequence.
+     *
+     * @param sequence case sensitive nucleotide sequence
+     * @return position of last uppercase letter, or -1 if all sequence is lowercase
+     */
+    public static int lastUppercase(NucleotideSequenceCaseSensitive sequence) {
+        for (int i = sequence.size() - 1; i >= 0; i--)
+            if (Character.isUpperCase(sequence.symbolAt(i)))
+                return i;
+        return -1;
     }
 }

@@ -369,23 +369,24 @@ public class CommonTestUtils {
                 patterns[i] = getRandomBasicPattern(patternAligner);
         } else
             patterns = singlePatterns;
-        switch (rg.nextInt(7)) {
+        boolean foundAnyPattern = Arrays.stream(patterns).anyMatch(p -> p instanceof AnyPattern);
+        switch (patterns[0] instanceof AnyPattern ? 0 : rg.nextInt(foundAnyPattern ? 3 : 7)) {
             case 0:
                 return patterns[0];
             case 1:
-                return new AndPattern(patternAligner, patterns);
-            case 2:
-                return new PlusPattern(patternAligner, patterns);
-            case 3:
-                return new SequencePattern(patternAligner, patterns);
-            case 4:
-                return new OrPattern(patternAligner, patterns);
-            case 5:
                 return new FilterPattern(patternAligner, new ScoreFilter(-rg.nextInt(75)), patterns[0]);
-            case 6:
-            default:
+            case 2:
                 return new FilterPattern(patternAligner, new StickFilter(rg.nextBoolean(), rg.nextInt(30)),
                         patterns[0]);
+            case 3:
+                return new AndPattern(patternAligner, patterns);
+            case 4:
+                return new PlusPattern(patternAligner, patterns);
+            case 5:
+                return new SequencePattern(patternAligner, patterns);
+            case 6:
+            default:
+                return new OrPattern(patternAligner, patterns);
         }
     }
 

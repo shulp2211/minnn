@@ -9,15 +9,24 @@ public final class Match {
     private final int numberOfPatterns;
     private final long score;
 
-    /**
-     * This list contains both matched ranges and matched group edges.
-     */
+    /* First uppercase letter position; used for calculating max overlap and insertion with other match;
+       -1 means no restrictions for overlaps and insertions */
+    private final int leftUppercaseDistance;
+
+    /* First uppercase letter position if count from right to left of this match;
+       or -1 for no overlap and insertion restrictions */
+    private final int rightUppercaseDistance;
+
+    // This list contains both matched ranges and matched group edges.
     private final ArrayList<MatchedItem> matchedItems;
 
-    public Match(int numberOfPatterns, long score, ArrayList<MatchedItem> matchedItems) {
+    public Match(int numberOfPatterns, long score, int leftUppercaseDistance, int rightUppercaseDistance,
+                 ArrayList<MatchedItem> matchedItems) {
         if (score > 0) throw new IllegalArgumentException("Score must not be positive!");
         this.numberOfPatterns = numberOfPatterns;
         this.score = score;
+        this.leftUppercaseDistance = leftUppercaseDistance;
+        this.rightUppercaseDistance = rightUppercaseDistance;
         this.matchedItems = matchedItems;
     }
 
@@ -132,5 +141,13 @@ public final class Match {
 
     public long getScore() {
         return score;
+    }
+
+    public int getLeftUppercaseDistance() {
+        return leftUppercaseDistance;
+    }
+
+    public int getRightUppercaseDistance() {
+        return rightUppercaseDistance;
     }
 }

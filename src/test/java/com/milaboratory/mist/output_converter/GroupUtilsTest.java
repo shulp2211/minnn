@@ -45,8 +45,10 @@ public class GroupUtilsTest {
             add(new MatchedGroupEdge(seqMulti2, (byte)1, 1, new GroupEdge("3", false), 8));
         }};
 
-        Match testMatchSingle = new Match(1, -5, testMatchedItemsSingle);
-        Match testMatchMulti = new Match(2, -11, testMatchedItemsMulti);
+        Match testMatchSingle = new Match(1, -5, -1, -1,
+                testMatchedItemsSingle);
+        Match testMatchMulti = new Match(2, -11, -1, -1,
+                testMatchedItemsMulti);
         ArrayList<MatchedGroup> groupsSingle = getGroupsFromMatch(testMatchSingle);
         ArrayList<MatchedGroup> groupsMulti = getGroupsFromMatch(testMatchMulti);
 
@@ -74,7 +76,8 @@ public class GroupUtilsTest {
             add(new MatchedGroupEdge(seq, (byte)1, 0, new GroupEdge("0", true), 0));
             add(new MatchedGroupEdge(seq, (byte)1, 0, new GroupEdge("0", false), 0));
         }};
-        Match testMatch = new Match(1, 0, testMatchedItems);
+        Match testMatch = new Match(1, 0, -1, -1,
+                testMatchedItems);
 
         exception.expect(IllegalStateException.class);
         getGroupsFromMatch(testMatch);
@@ -89,7 +92,8 @@ public class GroupUtilsTest {
             add(new MatchedGroupEdge(seq, (byte)1, 0, new GroupEdge("0", true), 0));
             add(new MatchedGroupEdge(seq, (byte)1, 1, new GroupEdge("0", false), 1));
         }};
-        Match testMatch = new Match(2, 0, testMatchedItems);
+        Match testMatch = new Match(2, 0, -1, -1,
+                testMatchedItems);
 
         exception.expect(IllegalStateException.class);
         getGroupsFromMatch(testMatch);

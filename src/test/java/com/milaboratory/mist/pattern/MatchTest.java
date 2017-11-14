@@ -38,8 +38,10 @@ public class MatchTest {
             add(new MatchedGroupEdge(seq1, (byte)1, 1, new GroupEdge("3", false), 8));
         }};
 
-        Match testMatch1 = new Match(1, -10, testMatchedItems1);
-        Match testMatch2 = new Match(2, -5, testMatchedItems2);
+        Match testMatch1 = new Match(1, -10, 1, 2,
+                testMatchedItems1);
+        Match testMatch2 = new Match(2, -5, -1, -1,
+                testMatchedItems2);
 
         assertEquals(1, testMatch1.getNumberOfPatterns());
         assertEquals(2, testMatch2.getNumberOfPatterns());
@@ -82,6 +84,10 @@ public class MatchTest {
         assertEquals(1, testMatch2.getMatchedGroupEdge("3", true).getPatternIndex());
         assertEquals(2, testMatch1.getMatchedGroupEdgesByPattern(0).size());
         assertEquals(6, testMatch2.getMatchedGroupEdgesByPattern(1).size());
+        assertEquals(1, testMatch1.getLeftUppercaseDistance());
+        assertEquals(2, testMatch1.getRightUppercaseDistance());
+        assertEquals(-1, testMatch2.getLeftUppercaseDistance());
+        assertEquals(-1, testMatch2.getRightUppercaseDistance());
         assertEquals("0", testMatch2.getMatchedGroupEdgesByPattern(0).get(0).getGroupName());
 
         exception.expect(IllegalStateException.class);

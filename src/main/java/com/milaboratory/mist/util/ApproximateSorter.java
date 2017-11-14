@@ -82,7 +82,8 @@ public final class ApproximateSorter {
             if (allMatchesAreNull)
                 return null;
             else
-                return new Match(patternIndex, combineMatchScores(matches), matchedItems);
+                return new Match(patternIndex, combineMatchScores(matches),
+                        -1, -1, matchedItems);
         } else if (conf.matchValidationType == FIRST) {
             boolean matchExist = false;
             int bestMatchPort = 0;
@@ -99,25 +100,56 @@ public final class ApproximateSorter {
             } else
                 return null;
         } else {
+            /* combining matches for FOLLOWING, ORDER and INTERSECTION:
+               matches must already be checked for compatibility with findIncompatibleIndexes() */
             NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
             byte targetId = matches[0].getMatchedRange().getTargetId();
-            Range[] ranges = new Range[matches.length];
             ArrayList<ArrayList<MatchedGroupEdge>> matchedGroupEdgesFromOperands = new ArrayList<>();
+            ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
 
             for (int i = 0; i < matches.length; i++) {
                 matchedGroupEdgesFromOperands.add(new ArrayList<>());
                 matchedGroupEdgesFromOperands.get(i).addAll(matches[i].getMatchedGroupEdges());
-                ranges[i] = matches[i].getRange();
             }
 
-            Arrays.sort(ranges, Comparator.comparingInt(Range::getLower));
-            CombinedRange combinedRange = combineRanges(conf.patternAligner, matchedGroupEdgesFromOperands,
-                    target, conf.matchValidationType == FOLLOWING, ranges);
-            matchedItems.addAll(combinedRange.getMatchedGroupEdges());
-            matchedItems.add(new MatchedRange(target, targetId, 0, combinedRange.getRange()));
+            Match[] sortedMatches = matches.clone();
+            Arrays.sort(sortedMatches, Comparator.comparingInt(m -> m.getRange().getLower()));
 
-            return new Match(1, combineMatchScores(matches) + combinedRange.getScorePenalty(),
-                    matchedItems);
+            long rangesCombinationPenalty = 0;
+            for (int i = 0; i < sortedMatches.length; i++) {
+                Range rangeI = sortedMatches[i].getRange();
+                int maxIntersection = 0;
+                for (int j = i - 1; j >= 0; j--) {
+                    Range rangeJ = sortedMatches[j].getRange();
+                    Range intersection = rangeI.intersection(rangeJ);
+                    if (intersection != null) {
+                        rangesCombinationPenalty += conf.patternAligner.overlapPenalty(target, intersection.getLower(),
+                                intersection.length());
+                        maxIntersection = Math.max(maxIntersection, intersection.length());
+                    }
+                    if ((conf.matchValidationType == FOLLOWING) && (j == i - 1)
+                            && (rangeI.getLower() > rangeJ.getUpper()))
+                        rangesCombinationPenalty += conf.patternAligner.insertionPenalty(target, rangeJ.getUpper(),
+                                rangeI.getLower() - rangeJ.getUpper());
+                }
+                if (maxIntersection > 0) {
+                    for (MatchedGroupEdge matchedGroupEdge : matchedGroupEdgesFromOperands.get(i)) {
+                        if (matchedGroupEdge.getPosition() >= rangeI.getLower() + maxIntersection)
+                            matchedGroupEdges.add(matchedGroupEdge);
+                        else
+                            matchedGroupEdges.add(matchedGroupEdge.overridePosition(rangeI.getLower()
+                                    + maxIntersection));
+                    }
+                } else
+                    matchedGroupEdges.addAll(matchedGroupEdgesFromOperands.get(i));
+            }
+
+            matchedItems.addAll(matchedGroupEdges);
+            matchedItems.add(new MatchedRange(target, targetId, 0, combineRanges(sortedMatches)));
+
+            return new Match(1, combineMatchScores(matches) + rangesCombinationPenalty,
+                    sortedMatches[0].getLeftUppercaseDistance(),
+                    sortedMatches[sortedMatches.length - 1].getRightUppercaseDistance(), matchedItems);
         }
     }
 
@@ -274,6 +306,7 @@ public final class ApproximateSorter {
             throw new IllegalArgumentException("matches length is " + matches.length + ", indexes length is "
                 + indexes.length + "; they must be equal!");
 
+        NSequenceWithQuality target;
         IncompatibleIndexes result = null;
         switch (conf.matchValidationType) {
             case LOGICAL_OR:
@@ -281,16 +314,15 @@ public final class ApproximateSorter {
             case FIRST:
                 break;
             case INTERSECTION:
+                target = matches[0].getMatchedRange().getTarget();
                 Range ranges[] = new Range[matches.length];
 
                 OUTER:
                 for (int i = 0; i < matches.length; i++) {
-                    if (matches[i] == null) continue;
-                    Range currentRange = matches[i].getRange();
-                    ranges[i] = currentRange;
+                    ranges[i] = matches[i].getRange();
                     for (int j = 0; j < i; j++)     // Compare with all previously added matches
                         if (checkFullIntersection(ranges[i], ranges[j])
-                                || checkOverlap(matches[0].getMatchedRange().getTarget(), ranges[i], ranges[j])) {
+                                || checkOverlap(target, matches[i], matches[j])) {
                             result = new IncompatibleIndexes(j, indexes[j], i, indexes[i]);
                             break OUTER;
                         }
@@ -298,18 +330,22 @@ public final class ApproximateSorter {
                 break;
             case ORDER:
             case FOLLOWING:
+                target = matches[0].getMatchedRange().getTarget();
+                Match currentMatch;
+                Match previousMatch;
                 Range currentRange;
                 Range previousRange;
 
                 for (int i = 1; i < matches.length; i++) {
-                    if (matches[i] == null) continue;
-                    NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
-                    currentRange = matches[i].getRange();
-                    previousRange = matches[i - 1].getRange();
+                    currentMatch = matches[i];
+                    previousMatch = matches[i - 1];
+                    currentRange = currentMatch.getRange();
+                    previousRange = previousMatch.getRange();
                     if ((previousRange.getLower() >= currentRange.getLower())
                             || checkFullIntersection(previousRange, currentRange)
-                            || checkOverlap(target, previousRange, currentRange)
-                            || checkInsertionPenalty(target, previousRange, currentRange)) {
+                            || checkOverlap(target, previousMatch, currentMatch)
+                            || ((conf.matchValidationType == FOLLOWING)
+                                && checkInsertion(target, previousMatch, currentMatch))) {
                         result = new IncompatibleIndexes(i - 1, indexes[i - 1], i, indexes[i]);
                         break;
                     }
@@ -350,31 +386,52 @@ public final class ApproximateSorter {
     }
 
     /**
-     * Check is overlap too big to invalidate this combination of ranges.
+     * Check is overlap too big to invalidate this combination of matches.
      *
-     * @return true if overlap is too big and this combination of ranges is invalid
+     * @return true if overlap is too big and this combination of matches is invalid
      */
-    private boolean checkOverlap(NSequenceWithQuality target, Range range0, Range range1) {
-        PatternAligner patternAligner = conf.patternAligner;
-        int maxOverlap = patternAligner.maxOverlap();
-        Range intersection = range0.intersection(range1);
-        return (intersection != null) && (((maxOverlap != -1) && (maxOverlap < intersection.length()))
-                || (patternAligner.overlapPenalty(target, intersection.getLower(), intersection.length())
-                    < patternAligner.penaltyThreshold()));
+    private boolean checkOverlap(NSequenceWithQuality target, Match match0, Match match1) {
+        Range intersection = match0.getRange().intersection(match1.getRange());
+        if (intersection == null)
+            return false;
+        else {
+            PatternAligner patternAligner = conf.patternAligner;
+            int overlap = intersection.length();
+            int maxOverlap = (patternAligner.maxOverlap() == -1) ? Integer.MAX_VALUE : patternAligner.maxOverlap();
+            int maxOverlapLeft, maxOverlapRight;
+            if (match0.getRange().getLower() < match1.getRange().getLower()) {
+                maxOverlapLeft = (match0.getRightUppercaseDistance() == -1) ? Integer.MAX_VALUE
+                        : match0.getRightUppercaseDistance() - 1;
+                maxOverlapRight = (match1.getLeftUppercaseDistance() == -1) ? Integer.MAX_VALUE
+                        : match1.getLeftUppercaseDistance() - 1;
+            } else {
+                maxOverlapLeft = (match1.getRightUppercaseDistance() == -1) ? Integer.MAX_VALUE
+                        : match1.getRightUppercaseDistance() - 1;
+                maxOverlapRight = (match0.getLeftUppercaseDistance() == -1) ? Integer.MAX_VALUE
+                        : match0.getLeftUppercaseDistance() - 1;
+            }
+            maxOverlap = Math.min(maxOverlap, Math.min(maxOverlapLeft, maxOverlapRight));
+            return (maxOverlap < overlap) || (patternAligner.overlapPenalty(target, intersection.getLower(), overlap)
+                    < patternAligner.penaltyThreshold());
+        }
     }
 
     /**
-     * Check is insertion penalty between ranges too big to invalidate this combination of ranges.
+     * Check is insertion between matches too big to invalidate this combination of matches.
+     * Must be called only for FOLLOWING match validation type!
      *
-     * @return true if insertion penalty is too big and this combination of ranges is invalid
+     * @return true if insertion penalty is too big and this combination of matches is invalid
      */
-    private boolean checkInsertionPenalty(NSequenceWithQuality target, Range range0, Range range1) {
-        PatternAligner patternAligner = conf.patternAligner;
-        if (conf.matchValidationType == FOLLOWING) {
-            int insertionLength = range1.getLower() - range0.getUpper();
-            return (insertionLength > 0) && (patternAligner.insertionPenalty(target, range0.getUpper(), insertionLength)
-                    < patternAligner.penaltyThreshold());
-        } else return false;
+    private boolean checkInsertion(NSequenceWithQuality target, Match leftMatch, Match rightMatch) {
+        int insertionLength = rightMatch.getRange().getLower() - leftMatch.getRange().getUpper();
+        if (insertionLength <= 0)
+            return false;
+        else {
+            PatternAligner patternAligner = conf.patternAligner;
+            return (patternAligner.insertionPenalty(target, leftMatch.getRange().getUpper(), insertionLength)
+                        < patternAligner.penaltyThreshold())
+                    || (leftMatch.getRightUppercaseDistance() == 0) || (rightMatch.getLeftUppercaseDistance() == 0);
+        }
     }
 
     private SpecificOutputPort getPortWithParams(int operandIndex) {

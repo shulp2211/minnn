@@ -1,11 +1,7 @@
 package com.milaboratory.mist.util;
 
 import com.milaboratory.core.Range;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.mist.pattern.MatchedGroupEdge;
-import com.milaboratory.mist.pattern.PatternAligner;
-
-import java.util.ArrayList;
+import com.milaboratory.mist.pattern.Match;
 
 public final class RangeTools {
     /**
@@ -72,11 +68,10 @@ public final class RangeTools {
         if (ranges.length == 0)
             throw new IllegalArgumentException("Cannot combine 0 ranges.");
 
-        int lower = ranges[0].getLower();
-        int upper = ranges[0].getUpper();
+        int lower = Integer.MAX_VALUE;
+        int upper = Integer.MIN_VALUE;
 
-        for (int i = 1; i < ranges.length; i++) {
-            Range range = ranges[i];
+        for (Range range : ranges) {
             lower = Math.min(lower, range.getLower());
             upper = Math.max(upper, range.getUpper());
         }
@@ -84,49 +79,20 @@ public final class RangeTools {
         return new Range(lower, upper, false);
     }
 
-    /**
-     * Combine ranges in target, calculate score penalty for intersections and update coordinates in matched group edges.
-     *
-     * @param patternAligner pattern aligner; used to get score penalties for intersections
-     * @param matchedGroupEdgesFromOperands matched group edges without corrections for intersections
-     * @param target target
-     * @param insertionPenalty true if there must be score penalty for insertions between ranges
-     *                         (must be true if matchValidationType == FOLLOWING)
-     * @param ranges ranges to combine, must be sorted by left border ascending
-     * @return matched group edges with corrections, combined range and total score penalty
-     */
-    static CombinedRange combineRanges(PatternAligner patternAligner,
-            ArrayList<ArrayList<MatchedGroupEdge>> matchedGroupEdgesFromOperands, NSequenceWithQuality target,
-            boolean insertionPenalty, Range... ranges) {
-        ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
+    public static Range combineRanges(Match... matches) {
+        if (matches.length == 0)
+            throw new IllegalArgumentException("Cannot combine ranges from 0 matches.");
 
-        if (ranges.length == 0)
-            throw new IllegalArgumentException("Cannot combine 0 ranges.");
+        int lower = Integer.MAX_VALUE;
+        int upper = Integer.MIN_VALUE;
 
-        long totalPenalty = 0;
-        for (int i = 0; i < ranges.length; i++) {
-            int maxIntersection = 0;
-            for (int j = i - 1; j >= 0; j--) {
-                Range intersection = ranges[i].intersection(ranges[j]);
-                if (intersection != null) {
-                    totalPenalty += patternAligner.overlapPenalty(target, intersection.getLower(), intersection.length());
-                    maxIntersection = Math.max(maxIntersection, intersection.length());
-                }
-                if (insertionPenalty && (j == i - 1) && (ranges[i].getLower() > ranges[j].getUpper()))
-                    totalPenalty += patternAligner.insertionPenalty(target, ranges[j].getUpper(),
-                            ranges[i].getLower() - ranges[j].getUpper());
-            }
-            if (maxIntersection > 0) {
-                for (MatchedGroupEdge matchedGroupEdge : matchedGroupEdgesFromOperands.get(i)) {
-                    if (matchedGroupEdge.getPosition() >= ranges[i].getLower() + maxIntersection)
-                        matchedGroupEdges.add(matchedGroupEdge);
-                    else
-                        matchedGroupEdges.add(matchedGroupEdge.overridePosition(ranges[i].getLower() + maxIntersection));
-                }
-            } else
-                matchedGroupEdges.addAll(matchedGroupEdgesFromOperands.get(i));
+        Range range;
+        for (Match match : matches) {
+            range = match.getRange();
+            lower = Math.min(lower, range.getLower());
+            upper = Math.max(upper, range.getUpper());
         }
 
-        return new CombinedRange(matchedGroupEdges, combineRanges(ranges), totalPenalty);
+        return new Range(lower, upper, false);
     }
 }
