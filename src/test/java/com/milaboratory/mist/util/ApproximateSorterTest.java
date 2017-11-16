@@ -5,6 +5,8 @@ import com.milaboratory.mist.pattern.*;
 import com.milaboratory.test.TestUtil;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
@@ -323,5 +325,60 @@ public class ApproximateSorterTest {
                     notMatchingAnd, matchingAnd, notMatchingAnd);
             assertEquals(8, countPortValues(new ApproximateSorter(conf).getOutputPort()));
         }
+    }
+
+    @Test
+    public void uppercaseLettersTest() throws Exception {
+        PatternAligner patternAligner = getTestPatternAligner(-100,
+                0, 0, -1, true, 1);
+        String[] sequences = new String[] { "aaa", "aaA", "aAa", "att", "Att", "aTt" };
+        FuzzyMatchPattern[] patterns = Arrays.stream(sequences)
+                .map(s -> new FuzzyMatchPattern(patternAligner, new NucleotideSequenceCaseSensitive(s)))
+                .toArray(FuzzyMatchPattern[]::new);
+        NSequenceWithQuality targets[] = new NSequenceWithQuality[]
+                { new NSequenceWithQuality("AAATT"), new NSequenceWithQuality("AAACATT") };
+        FuzzyMatchPattern[][] patternPairs = new FuzzyMatchPattern[][] {
+                { patterns[0], patterns[3] },   // 0
+                { patterns[1], patterns[3] },   // 1
+                { patterns[2], patterns[3] },   // 2
+                { patterns[0], patterns[4] },   // 3
+                { patterns[0], patterns[5] },   // 4
+                { patterns[1], patterns[4] },   // 5
+                { patterns[2], patterns[5] },   // 6
+                { patterns[1], patterns[5] },   // 7
+                { patterns[2], patterns[4] }    // 8
+        };
+        for (MatchValidationType matchValidationType : new MatchValidationType[] { INTERSECTION, ORDER, FOLLOWING })
+            for (int i = 0; i < patternPairs.length; i++) {
+                final int pairNum = i;
+                ApproximateSorterConfiguration[] conf = Arrays.stream(targets)
+                        .map(t -> new ApproximateSorterConfiguration(t,
+                            0, t.size(), patternAligner, true, true,
+                            matchValidationType, 0, patternPairs[pairNum]))
+                        .toArray(ApproximateSorterConfiguration[]::new);
+                switch (pairNum) {
+                    case 0:
+                        assertTrue(matchFound(conf[0]));
+                        assertTrue(matchFound(conf[1]));
+                        break;
+                    case 1:
+                    case 3:
+                    case 5:
+                    case 7:
+                    case 8:
+                        assertFalse(matchFound(conf[0]));
+                        assertEquals(matchValidationType != FOLLOWING, matchFound(conf[1]));
+                        break;
+                    case 2:
+                    case 4:
+                    case 6:
+                        assertFalse(matchFound(conf[0]));
+                        assertTrue(matchFound(conf[1]));
+                }
+            }
+    }
+
+    private boolean matchFound(ApproximateSorterConfiguration conf) {
+        return new ApproximateSorter(conf).getOutputPort().take() != null;
     }
 }
