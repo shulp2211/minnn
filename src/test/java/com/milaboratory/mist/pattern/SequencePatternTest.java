@@ -24,13 +24,13 @@ public class SequencePatternTest {
             int targetLength = rg.nextInt(100 - maxErrors) + 1;
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
                     targetLength, targetLength);
-            NucleotideSequenceCaseSensitive motif1 = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
-                    1, 70);
+            NucleotideSequenceCaseSensitive motif1 = fromNucleotideSequence(TestUtil.randomSequence(
+                    NucleotideSequence.ALPHABET, 1, 70), true);
             NucleotideSequenceCaseSensitive motif2 = fromNucleotideSequence(getRandomSubsequence(target),
                     true);
             NSequenceWithQuality targetQ = new NSequenceWithQuality(target.toString());
-            NucleotideSequenceCaseSensitive motif1WithErrors = makeRandomErrors(motif1, maxErrors);
-            NucleotideSequenceCaseSensitive motif2WithErrors = makeRandomErrors(motif2, maxErrors);
+            NucleotideSequenceCaseSensitive motif1WithErrors = toLowerCase(makeRandomErrors(motif1, maxErrors));
+            NucleotideSequenceCaseSensitive motif2WithErrors = toLowerCase(makeRandomErrors(motif2, maxErrors));
             PatternAligner fuzzyPatternAligner = getTestPatternAligner(maxErrors);
             FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(fuzzyPatternAligner, motif1WithErrors);
             FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(fuzzyPatternAligner, motif2WithErrors);
@@ -100,8 +100,8 @@ public class SequencePatternTest {
 
     @Test
     public void scoringRandomTest() throws Exception {
-        for (int i = 0; i < 5000; i++) {
-            int errorScorePenalty = -rg.nextInt(1000) - 1;
+        for (int i = 0; i < 10000; i++) {
+            int overlapPenalty = -rg.nextInt(1000) - 1;
             int middleInsertionSize = rg.nextInt(30) + 1;
             NucleotideSequenceCaseSensitive leftPart = TestUtil.randomSequence(
                     NucleotideSequenceCaseSensitive.ALPHABET, 5, 50);
@@ -112,46 +112,58 @@ public class SequencePatternTest {
             NucleotideSequenceCaseSensitive motif1 = SequencesUtils.concatenate(leftPart, middleLetter);
             NucleotideSequenceCaseSensitive motif2 = SequencesUtils.concatenate(middleLetter, rightPart);
             NucleotideSequenceCaseSensitive target1 = SequencesUtils.concatenate(leftPart, middleLetter, rightPart);
-            NucleotideSequenceCaseSensitive middleInsertion = TestUtil.randomSequence(
-                    NucleotideSequenceCaseSensitive.ALPHABET, middleInsertionSize, middleInsertionSize);
+            NucleotideSequenceCaseSensitive middleInsertion = fromNucleotideSequence(TestUtil.randomSequence(
+                    NucleotideSequence.ALPHABET, middleInsertionSize, middleInsertionSize), true);
             NucleotideSequenceCaseSensitive target2 = SequencesUtils.concatenate(leftPart, middleInsertion, rightPart);
 
             NSequenceWithQuality targetQ1 = new NSequenceWithQuality(target1.toString());
             NSequenceWithQuality targetQ2 = new NSequenceWithQuality(target2.toString());
+
+            boolean leftPartUppercaseEnd = Character.isUpperCase(leftPart.symbolAt(leftPart.size() - 1));
+            boolean middleLetterUppercase = Character.isUpperCase(middleLetter.symbolAt(0));
+            boolean rightPartUppercaseStart = Character.isUpperCase(rightPart.symbolAt(0));
+
             FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), motif1);
             FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), motif2);
             FuzzyMatchPattern pattern3 = new FuzzyMatchPattern(getTestPatternAligner(), leftPart);
             FuzzyMatchPattern pattern4 = new FuzzyMatchPattern(getTestPatternAligner(), rightPart);
             SequencePattern sequencePattern1 = new SequencePattern(getTestPatternAligner(0,
-                    0, 0, errorScorePenalty), pattern1, pattern2);
+                    0, 0, overlapPenalty), pattern1, pattern2);
             SequencePattern sequencePattern2 = new SequencePattern(getTestPatternAligner(0,
-                    0, 0, errorScorePenalty), pattern2, pattern1);
-            SequencePattern sequencePattern3 = new SequencePattern(getTestPatternAligner(errorScorePenalty,
-                    0, 0, errorScorePenalty), pattern1, pattern2);
-            SequencePattern sequencePattern4 = new SequencePattern(getTestPatternAligner(errorScorePenalty,
-                    0, 0, errorScorePenalty), pattern2, pattern1);
+                    0, 0, overlapPenalty), pattern2, pattern1);
+            SequencePattern sequencePattern3 = new SequencePattern(getTestPatternAligner(overlapPenalty,
+                    0, 0, overlapPenalty), pattern1, pattern2);
+            SequencePattern sequencePattern4 = new SequencePattern(getTestPatternAligner(overlapPenalty,
+                    0, 0, overlapPenalty), pattern2, pattern1);
             SequencePattern sequencePattern5 = new SequencePattern(getTestPatternAligner(0,
-                    0, 0, errorScorePenalty), pattern3, pattern4);
+                    0, 0, overlapPenalty), pattern3, pattern4);
             SequencePattern sequencePattern6 = new SequencePattern(getTestPatternAligner(
-                    errorScorePenalty * middleInsertionSize,
-                    0, 0, errorScorePenalty),
-                    pattern3, pattern4);
+                    overlapPenalty * middleInsertionSize,
+                    0, 0, overlapPenalty), pattern3, pattern4);
+
             assertNull(sequencePattern1.match(targetQ1).getBestMatch(true));
             assertNull(sequencePattern2.match(targetQ1).getBestMatch(true));
-            assertEquals(pattern1.match(targetQ1).getBestMatch(true).getScore()
-                            + pattern2.match(targetQ1).getBestMatch(true).getScore() + errorScorePenalty,
-                    sequencePattern3.match(targetQ1).getBestMatch(true).getScore());
+            if (leftPartUppercaseEnd || middleLetterUppercase || rightPartUppercaseStart) {
+                assertNull(sequencePattern3.match(targetQ1).getBestMatch());
+                assertNull(sequencePattern4.match(targetQ1).getBestMatch());
+            } else
+                assertEquals(pattern1.match(targetQ1).getBestMatch(true).getScore()
+                                + pattern2.match(targetQ1).getBestMatch(true).getScore() + overlapPenalty,
+                        sequencePattern3.match(targetQ1).getBestMatch(true).getScore());
             if ((pattern4.match(targetQ1).getBestMatch(true).getRange().getLower() == leftPart.size() + 1)
-                    && (countPortValues(pattern3.match(targetQ1).getMatches(true)) == 1))
+                    && (countMatches(pattern3.match(targetQ1), true) == 1))
                 assertNull(sequencePattern5.match(targetQ1).getBestMatch(true));
             if ((pattern4.match(targetQ2).getBestMatch(true).getRange().getLower()
-                    == leftPart.size()+ middleInsertionSize)
-                    && (countPortValues(pattern3.match(targetQ2).getMatches(true)) == 1)) {
+                    == leftPart.size() + middleInsertionSize)
+                    && (countMatches(pattern3.match(targetQ2), true) == 1)) {
                 assertNull(sequencePattern5.match(targetQ2).getBestMatch(true));
-                assertEquals(pattern3.match(targetQ2).getBestMatch(true).getScore()
-                                + pattern4.match(targetQ2).getBestMatch(true).getScore()
-                                + errorScorePenalty * middleInsertionSize,
-                        sequencePattern6.match(targetQ2).getBestMatch(true).getScore());
+                if (leftPartUppercaseEnd || rightPartUppercaseStart)
+                    assertNull(sequencePattern6.match(targetQ2).getBestMatch());
+                else
+                    assertEquals(pattern3.match(targetQ2).getBestMatch(true).getScore()
+                                    + pattern4.match(targetQ2).getBestMatch(true).getScore()
+                                    + overlapPenalty * middleInsertionSize,
+                            sequencePattern6.match(targetQ2).getBestMatch(true).getScore());
             }
             if (!leftPart.toString().equals(rightPart.toString()))
                 assertNull(sequencePattern4.match(targetQ1).getBestMatch(true));

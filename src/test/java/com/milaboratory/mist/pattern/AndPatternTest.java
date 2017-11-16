@@ -208,13 +208,13 @@ public class AndPatternTest {
             int targetLength = rg.nextInt(100 - maxErrors) + 1;
             NucleotideSequence target = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
                     targetLength, targetLength);
-            NucleotideSequenceCaseSensitive motif1 = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
-                    1, 70);
+            NucleotideSequenceCaseSensitive motif1 = fromNucleotideSequence(TestUtil.randomSequence(
+                    NucleotideSequence.ALPHABET, 1, 70), true);
             NucleotideSequenceCaseSensitive motif2 = fromNucleotideSequence(getRandomSubsequence(target),
                     true);
             NSequenceWithQuality targetQ = new NSequenceWithQuality(target.toString());
-            NucleotideSequenceCaseSensitive motif1WithErrors = makeRandomErrors(motif1, maxErrors);
-            NucleotideSequenceCaseSensitive motif2WithErrors = makeRandomErrors(motif2, maxErrors);
+            NucleotideSequenceCaseSensitive motif1WithErrors = toLowerCase(makeRandomErrors(motif1, maxErrors));
+            NucleotideSequenceCaseSensitive motif2WithErrors = toLowerCase(makeRandomErrors(motif2, maxErrors));
             PatternAligner fuzzyPatternAligner = getTestPatternAligner(maxErrors);
             FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(fuzzyPatternAligner, motif1WithErrors);
             FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(fuzzyPatternAligner, motif2WithErrors);
@@ -277,8 +277,8 @@ public class AndPatternTest {
 
     @Test
     public void scoringRandomTest() throws Exception {
-        for (int i = 0; i < 1000; i++) {
-            int errorScorePenalty = -rg.nextInt(1000) - 1;
+        for (int i = 0; i < 10000; i++) {
+            int overlapPenalty = -rg.nextInt(1000) - 1;
             NucleotideSequenceCaseSensitive leftPart = TestUtil.randomSequence(
                     NucleotideSequenceCaseSensitive.ALPHABET, 5, 50);
             NucleotideSequenceCaseSensitive middleLetter = TestUtil.randomSequence(
@@ -289,23 +289,34 @@ public class AndPatternTest {
             NucleotideSequenceCaseSensitive motif2 = SequencesUtils.concatenate(middleLetter, rightPart);
             NucleotideSequenceCaseSensitive target = SequencesUtils.concatenate(leftPart, middleLetter, rightPart);
             NSequenceWithQuality targetQ = new NSequenceWithQuality(target.toString());
+
+            boolean leftPartUppercaseEnd = Character.isUpperCase(leftPart.symbolAt(leftPart.size() - 1));
+            boolean middlePartUppercase = Character.isUpperCase(middleLetter.symbolAt(0));
+            boolean rightPartUppercaseStart = Character.isUpperCase(rightPart.symbolAt(0));
+
             FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(), motif1);
             FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(), motif2);
             AndPattern andPattern1 = new AndPattern(getTestPatternAligner(0, 0,
-                    0, errorScorePenalty), pattern1, pattern2);
+                    0, overlapPenalty), pattern1, pattern2);
             AndPattern andPattern2 = new AndPattern(getTestPatternAligner(0, 0,
-                    0, errorScorePenalty), pattern2, pattern1);
-            AndPattern andPattern3 = new AndPattern(getTestPatternAligner(errorScorePenalty, 0,
-                    0, errorScorePenalty), pattern1, pattern2);
-            AndPattern andPattern4 = new AndPattern(getTestPatternAligner(errorScorePenalty, 0,
-                    0, errorScorePenalty), pattern2, pattern1);
+                    0, overlapPenalty), pattern2, pattern1);
+            AndPattern andPattern3 = new AndPattern(getTestPatternAligner(overlapPenalty, 0,
+                    0, overlapPenalty), pattern1, pattern2);
+            AndPattern andPattern4 = new AndPattern(getTestPatternAligner(overlapPenalty, 0,
+                    0, overlapPenalty), pattern2, pattern1);
+
             assertNull(andPattern1.match(targetQ).getBestMatch());
             assertNull(andPattern2.match(targetQ).getBestMatch());
-            assertEquals(pattern1.match(targetQ).getBestMatch().getScore()
-                    + pattern2.match(targetQ).getBestMatch().getScore() + errorScorePenalty,
-                    andPattern3.match(targetQ).getBestMatch().getScore());
-            assertEquals(andPattern3.match(targetQ).getBestMatch().getScore(),
-                    andPattern4.match(targetQ).getBestMatch().getScore());
+            if (leftPartUppercaseEnd || middlePartUppercase || rightPartUppercaseStart) {
+                assertNull(andPattern3.match(targetQ).getBestMatch());
+                assertNull(andPattern4.match(targetQ).getBestMatch());
+            } else {
+                assertEquals(pattern1.match(targetQ).getBestMatch().getScore()
+                                + pattern2.match(targetQ).getBestMatch().getScore() + overlapPenalty,
+                        andPattern3.match(targetQ).getBestMatch().getScore());
+                assertEquals(andPattern3.match(targetQ).getBestMatch().getScore(),
+                        andPattern4.match(targetQ).getBestMatch().getScore());
+            }
         }
     }
 }

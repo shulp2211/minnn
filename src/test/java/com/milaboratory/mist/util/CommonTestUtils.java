@@ -106,6 +106,10 @@ public class CommonTestUtils {
         return result;
     }
 
+    public static NucleotideSequenceCaseSensitive toLowerCase(NucleotideSequenceCaseSensitive seq) {
+        return new NucleotideSequenceCaseSensitive(seq.toString().toLowerCase());
+    }
+
     public static NucleotideSequence getRandomSubsequence(NucleotideSequence seq) {
         assertTrue(seq.size() > 0);
         int position1 = rg.nextInt(seq.size());
