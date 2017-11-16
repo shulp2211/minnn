@@ -333,7 +333,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                                 return generateMatch(alignment, target, targetId,
                                         firstUppercase(currentSeq), lastUppercase(currentSeq),
                                         fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
-                                                currentSeq.size()));
+                                                currentSeq.size()), 0);
                         }
                     }
                     currentIndex = 0;
@@ -393,7 +393,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                                 allMatchesList.add(generateMatch(alignment, target, targetId,
                                         firstUppercase(currentSeq), lastUppercase(currentSeq),
                                         fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
-                                        currentSeq.size())));
+                                        currentSeq.size()), 0));
                             }
                         }
                     } while (matchLastPosition != -1);
@@ -429,7 +429,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                                 allMatchesList.add(generateMatch(alignment, target, targetId,
                                         firstUppercase(currentSeq), lastUppercase(currentSeq),
                                         fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
-                                        currentSeq.size())));
+                                        currentSeq.size()), 0));
                             }
                         }
                 }
@@ -456,7 +456,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                         allMatchesList.add(generateMatch(alignment, target, targetId,
                                 firstUppercase(currentSeq), lastUppercase(currentSeq),
                                 fixGroupEdgePositions(groupEdgePositions, groupMovements.get(currentIndex),
-                                currentSeq.size())));
+                                currentSeq.size()), 0));
                 }
 
                 allMatches = new Match[allMatchesList.size()];

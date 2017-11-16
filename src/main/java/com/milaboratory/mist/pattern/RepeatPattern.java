@@ -309,10 +309,9 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                                     && !uniqueAlignedSequencesUnfair.contains(alignedSequence)) {
                                 uniqueAlignedSequencesUnfair.add(alignedSequence);
                                 pointToNextUnfairMatch();
-                                return overrideMatchScore(generateMatch(
-                                        alignment, target, targetId, firstUppercase, lastUppercase,
-                                        fixGroupEdgePositions(groupEdgePositions, 0, targetRange.length())),
-                                        repeats);
+                                return generateMatch(alignment, target, targetId, firstUppercase, lastUppercase,
+                                        fixGroupEdgePositions(groupEdgePositions, 0, targetRange.length()),
+                                        patternAligner.repeatsPenalty(patternSeq, repeats, maxRepeats));
                             }
                         }
                     }
@@ -451,19 +450,13 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                     if ((alignment.getScore() >= aligner.penaltyThreshold())
                             && !uniqueAlignedSequences.contains(alignedSequence)) {
                         uniqueAlignedSequences.add(alignedSequence);
-                        allMatchesList.add(overrideMatchScore(
-                                generateMatch(alignment, target, targetId, firstUppercase, lastUppercase,
-                                fixGroupEdgePositions(groupEdgePositions, 0, targetRange.length())), repeats));
+                        allMatchesList.add(generateMatch(alignment, target, targetId, firstUppercase, lastUppercase,
+                                fixGroupEdgePositions(groupEdgePositions, 0, targetRange.length()),
+                                        patternAligner.repeatsPenalty(patternSeq, repeats, maxRepeats)));
                     }
                 }
 
                 return allMatchesList;
-            }
-
-            private Match overrideMatchScore(Match match, int repeats) {
-                return new Match(match.getNumberOfPatterns(),
-                        match.getScore() + patternAligner.repeatsPenalty(patternSeq, repeats, maxRepeats),
-                        match.getLeftUppercaseDistance(), match.getRightUppercaseDistance(), match.getMatchedItems());
             }
 
             /**
