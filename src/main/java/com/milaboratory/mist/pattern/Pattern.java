@@ -26,6 +26,14 @@ public abstract class Pattern {
      */
     public abstract ArrayList<GroupEdge> getGroupEdges();
 
+    /**
+     * Get list of group edges that are inside specified read.
+     *
+     * @param patternIndex pattern index: this is read number, starting from 0
+     * @return list of group edges that are inside specified read
+     */
+    public abstract ArrayList<GroupEdge> getGroupEdges(int patternIndex);
+
     public PatternAligner getPatternAligner() {
         return patternAligner;
     }

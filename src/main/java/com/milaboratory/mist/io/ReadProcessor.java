@@ -236,16 +236,29 @@ public final class ReadProcessor {
                             .collect(Collectors.toCollection(ArrayList::new));
                     ArrayList<MatchedGroup> groupsNotInsideMain = getGroupsInsideMain(currentGroups,
                             mainGroup.getRange(), false);
-                    String mistComments = groupsToReadDescription(groupsNotInsideMain, mainGroupName, false)
-                            + (((groupsNotInsideMain.size() == 0) || (groupsInsideMain.size() == 0)) ? "" : '~')
-                            + groupsToReadDescription(groupsInsideMain, mainGroupName, true);
-                    String comments = copyOldComments ? input.read.getRead(i).getDescription() : "";
-                    if (copyOldComments && (input.reverseMatch || !mistComments.equals("")))
-                        comments += "~";
+                    String groupsInsideMainDescription = groupsToReadDescription(groupsInsideMain, mainGroupName,
+                            true);
+                    String groupsNotInsideMainDescription = groupsToReadDescription(groupsNotInsideMain, mainGroupName,
+                            false);
+                    String notMatchedGroupsDescription = descriptionForNotMatchedGroups(pattern, i, currentGroups);
+
+                    StringBuilder comments = new StringBuilder();
+                    if (copyOldComments)
+                        comments.append(input.read.getRead(i).getDescription());
+                    if ((comments.length() != 0) && (input.reverseMatch
+                            || (groupsNotInsideMainDescription.length() != 0)))
+                        comments.append("~");
                     if (input.reverseMatch)
-                        comments += "|~";
-                    comments += mistComments;
-                    reads[i] = new SingleReadImpl(0, mainGroup.getValue(), comments);
+                        comments.append("|~");
+                    comments.append(groupsNotInsideMainDescription);
+                    if ((comments.length() != 0) && ((groupsInsideMainDescription.length() != 0)))
+                        comments.append("~");
+                    comments.append(groupsInsideMainDescription);
+                    if ((comments.length() != 0) && (notMatchedGroupsDescription.length() != 0))
+                        comments.append("~");
+                    comments.append(notMatchedGroupsDescription);
+
+                    reads[i] = new SingleReadImpl(0, mainGroup.getValue(), comments.toString());
                 }
 
                 SequenceRead parsedRead;

@@ -1,10 +1,10 @@
 package com.milaboratory.mist.output_converter;
 
 import com.milaboratory.core.Range;
-import com.milaboratory.mist.pattern.Match;
-import com.milaboratory.mist.pattern.MatchedGroupEdge;
+import com.milaboratory.mist.pattern.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 public final class GroupUtils {
@@ -83,6 +83,21 @@ public final class GroupUtils {
             }
             if (i < groups.size() - 1)
                 descriptionBuilder.append('~');
+        }
+        return descriptionBuilder.toString();
+    }
+
+    public static String descriptionForNotMatchedGroups(Pattern topLevelPattern, int patternIndex,
+                                                        ArrayList<MatchedGroup> matchedGroups) {
+        HashSet<String> matchedGroupNames = matchedGroups.stream().map(MatchedGroup::getGroupName)
+                .collect(Collectors.toCollection(HashSet::new));
+        HashSet<String> notMatchedGroupNames = topLevelPattern.getGroupEdges(patternIndex).stream()
+                .map(GroupEdge::getGroupName).filter(gn -> !matchedGroupNames.contains(gn))
+                .collect(Collectors.toCollection(HashSet::new));
+        StringBuilder descriptionBuilder = new StringBuilder();
+        for (String notMatchedGroupName : notMatchedGroupNames) {
+            descriptionBuilder.append(notMatchedGroupName);
+            descriptionBuilder.append("~~");
         }
         return descriptionBuilder.toString();
     }
