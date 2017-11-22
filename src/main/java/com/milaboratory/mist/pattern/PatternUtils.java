@@ -15,6 +15,24 @@ public final class PatternUtils {
     }
 
     /**
+     * Returns minimal value from valid values when -1 represents invalid value, or -1 if all values are invalid.
+     *
+     * @param values values
+     * @return minimal value from valid values when -1 represents invalid value, or -1 if all values are invalid
+     */
+    public static int minValid(int... values) {
+        int result = -1;
+        for (int value : values)
+            if (value != -1) {
+                if (result == -1)
+                    result = value;
+                else
+                    result = Math.min(result, value);
+            }
+        return result;
+    }
+
+    /**
      * Fix group edge positions to make them not get beyond the right border of pattern sequence; and move group
      * edge positions if specified.
      *
@@ -121,6 +139,32 @@ public final class PatternUtils {
     public static int lastUppercase(NucleotideSequenceCaseSensitive sequence) {
         for (int i = sequence.size() - 1; i >= 0; i--)
             if (Character.isUpperCase(sequence.symbolAt(i)))
+                return i;
+        return -1;
+    }
+
+    /**
+     * Get position of first uppercase letter in string.
+     *
+     * @param str string of letters
+     * @return position of first uppercase letter, or -1 if all string is lowercase
+     */
+    public static int firstUppercase(String str) {
+        for (int i = 0; i < str.length(); i++)
+            if (Character.isUpperCase(str.charAt(i)))
+                return i;
+        return -1;
+    }
+
+    /**
+     * Get position of last uppercase letter in string.
+     *
+     * @param str string of letters
+     * @return position of last uppercase letter, or -1 if all string is lowercase
+     */
+    public static int lastUppercase(String str) {
+        for (int i = str.length() - 1; i >= 0; i--)
+            if (Character.isUpperCase(str.charAt(i)))
                 return i;
         return -1;
     }

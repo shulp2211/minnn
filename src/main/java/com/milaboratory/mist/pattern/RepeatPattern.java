@@ -101,7 +101,13 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
         if (maxRepeats == Integer.MAX_VALUE)
             return -1;
         else
-            return maxRepeats + patternAligner.bitapMaxErrors();
+            return maxRepeats + (Character.isUpperCase(patternSeq.symbolAt(0)) ? 0
+                    : patternAligner.bitapMaxErrors());
+    }
+
+    @Override
+    public int estimateMaxOverlap() {
+        return Character.isUpperCase(patternSeq.symbolAt(0)) ? 0 : maxRepeats - 1;
     }
 
     @Override
@@ -113,7 +119,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
         else {
             int minRepeatsFactor = nLetters.contains(patternSeq.toString()) ? 1 : minRepeats;
             return notFixedSequenceMinComplexity + repeatsRangeLength * singleNucleotideComplexity
-                    * lettersComplexity.get(patternSeq.toString().charAt(0)) / minRepeatsFactor;
+                    * lettersComplexity.get(patternSeq.symbolAt(0)) / minRepeatsFactor;
         }
     }
 
@@ -538,7 +544,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                 }
 
                 TargetSections(String targetSubstring, NucleotideSequenceCaseSensitive patternSeq) {
-                    String matchingLetters = allMatchingLetters.get(patternSeq.toString().charAt(0));
+                    String matchingLetters = allMatchingLetters.get(patternSeq.symbolAt(0));
                     if (matchingLetters == null)
                         throw new IllegalArgumentException("Wrong patternSeq for RepeatPattern: "
                                 + patternSeq);

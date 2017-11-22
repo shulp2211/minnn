@@ -69,6 +69,15 @@ public abstract class SinglePattern extends Pattern {
         return -1;
     }
 
+    /**
+     * Return estimated max overlap for this pattern, or if it is unavailable for this pattern, return -1.
+     *
+     * @return estimated max overlap for this pattern, or -1 if it is unavailable
+     */
+    public int estimateMaxOverlap() {
+        return -1;
+    }
+
     void setTargetId(byte targetId) {
         if (targetId < 1)
             throw new IllegalArgumentException("targetId must be positive; found " + targetId);

@@ -8,6 +8,7 @@ import com.milaboratory.mist.pattern.*;
 import java.util.*;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.*;
+import static com.milaboratory.mist.pattern.PatternUtils.minValid;
 import static com.milaboratory.mist.util.RangeTools.*;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.*;
 
@@ -474,15 +475,18 @@ public final class ApproximateSorter {
             if ((conf.matchValidationType == FOLLOWING)
                     && (((operandIndex > 0) && (from != -1) && (to == -1))
                     || ((operandIndex < conf.operandPatterns.length - 1) && (from == -1) && (to != -1)))) {
-                int patternMaxLength = ((SinglePattern)currentPattern).estimateMaxLength();
+                SinglePattern currentSinglePattern = (SinglePattern)currentPattern;
+                int patternMaxLength = currentSinglePattern.estimateMaxLength();
+
                 if (patternMaxLength != -1) {
-                    int maxOverlap = conf.patternAligner.maxOverlap();
                     boolean canEstimateMaxLength = false;
                     int extraMaxLength = 0;
+                    int overlappingPatternIndex = (from == -1) ? operandIndex + 1 : operandIndex - 1;
+                    SinglePattern overlappingPattern = (SinglePattern)conf.operandPatterns[overlappingPatternIndex];
+                    int maxOverlap = minValid(conf.patternAligner.maxOverlap(),
+                            currentSinglePattern.estimateMaxOverlap(), overlappingPattern.estimateMaxOverlap());
                     if (maxOverlap == -1) {
-                        int overlappingPatternIndex = (from == -1) ? operandIndex + 1 : operandIndex - 1;
-                        int overlappingPatternMaxLength = ((SinglePattern)conf.operandPatterns[overlappingPatternIndex])
-                                .estimateMaxLength();
+                        int overlappingPatternMaxLength = overlappingPattern.estimateMaxLength();
                         if (overlappingPatternMaxLength != -1) {
                             extraMaxLength = overlappingPatternMaxLength - 1;
                             canEstimateMaxLength = true;
@@ -532,18 +536,19 @@ public final class ApproximateSorter {
             matches[firstOperandIndex] = getPortWithParams(firstOperandIndex).get(portValueIndexes[firstOperandIndex]);
             for (int i = 1; i < numberOfOperands; i++) {
                 int currentOperandIndex = operandOrder[i];
-                Match previousMatch = matches[currentOperandIndex > firstOperandIndex
-                        ? currentOperandIndex - 1 : currentOperandIndex + 1];
+                boolean previousMatchIsLeft = currentOperandIndex > firstOperandIndex;
+                Match previousMatch = matches[previousMatchIsLeft ? currentOperandIndex - 1 : currentOperandIndex + 1];
                 Match currentMatch = null;
                 if (previousMatch != null) {
                     Range previousMatchRange = previousMatch.getRange();
                     int previousMatchStart = previousMatchRange.getFrom();
                     int previousMatchEnd = previousMatchRange.getTo();
-                    int estimatedMaxOverlap = Math.min(previousMatchRange.length() - 1,
-                            maxOverlap == -1 ? Integer.MAX_VALUE : maxOverlap);
+                    int estimatedMaxOverlap = minValid(maxOverlap, previousMatchRange.length() - 1,
+                            previousMatchIsLeft ? previousMatch.getRightUppercaseDistance()
+                                    : previousMatch.getLeftUppercaseDistance());
                     int thisMatchStart = -1;
                     int thisMatchEnd = -1;
-                    if (currentOperandIndex > firstOperandIndex)
+                    if (previousMatchIsLeft)
                         thisMatchStart = previousMatchEnd - estimatedMaxOverlap;
                     else
                         thisMatchEnd = previousMatchStart + estimatedMaxOverlap;

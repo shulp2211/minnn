@@ -124,6 +124,34 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
     }
 
     @Override
+    public int estimateMaxOverlap() {
+        String seq0 = sequences.get(0).toString();
+        String currentSeq;
+        int maxOverlap = -1;
+        int position = 0;
+        int uppercasePosition;
+        while (position <= leftCut) {
+            currentSeq = seq0.substring(position);  // try what will be if we cut off the last found uppercase letter
+            uppercasePosition = firstUppercase(currentSeq);
+            if (uppercasePosition == -1)
+                return currentSeq.length() - 1;
+            maxOverlap = Math.max(maxOverlap, Math.max(0, uppercasePosition - 1));
+            position += uppercasePosition + 1;
+        }
+        position = seq0.length() - 1;
+        while (position >= seq0.length() - 1 - rightCut) {
+            currentSeq = seq0.substring(0, position + 1);
+            uppercasePosition = lastUppercase(currentSeq);
+            if (uppercasePosition == -1)
+                return currentSeq.length() - 1;
+            maxOverlap = Math.max(maxOverlap, Math.max(0, currentSeq.length() - uppercasePosition - 2));
+            position = uppercasePosition - 1;
+        }
+
+        return maxOverlap;
+    }
+
+    @Override
     public long estimateComplexity() {
         if (isBorderFixed())
             return Math.min(fixedSequenceMaxComplexity, sequences.size());
