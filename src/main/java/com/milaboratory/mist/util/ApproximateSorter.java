@@ -435,8 +435,23 @@ public final class ApproximateSorter {
         }
     }
 
+    /**
+     * Estimate max overlap for current operand pattern.
+     *
+     * @param operandIndex index of current operand pattern in operandPatterns array
+     * @param previousMatch found match of other overlapping pattern
+     * @param overlappingPatternIsLeft true if the other overlapping pattern is on the left from current
+     * @return estimated max overlap; 0 or positive
+     */
+    private int estimateMaxOverlap(int operandIndex, Match previousMatch, boolean overlappingPatternIsLeft) {
+        return minValid(conf.patternAligner.maxOverlap(), previousMatch.getRange().length() - 1,
+                overlappingPatternIsLeft ? previousMatch.getRightUppercaseDistance()
+                        : previousMatch.getLeftUppercaseDistance(),
+                ((SinglePattern)conf.operandPatterns[operandIndex]).estimateMaxOverlap());
+    }
+
     private SpecificOutputPort getPortWithParams(int operandIndex) {
-        return getPortWithParams(operandIndex, -1, -1);
+        return getPortWithParams(operandIndex, -1, -1, -1);
     }
 
     /**
@@ -445,9 +460,10 @@ public final class ApproximateSorter {
      * @param operandIndex operand index
      * @param from from coordinate for operand pattern match() call, or -1 if conf.from() should be used
      * @param to to coordinate for operand pattern match() call, or -1 if conf.to() should be used
+     * @param estimatedMaxOverlap estimated max overlap between this and previous match, or -1 if not used
      * @return new SpecificOutputPort with specified parameters
      */
-    private SpecificOutputPort getPortWithParams(int operandIndex, int from, int to) {
+    private SpecificOutputPort getPortWithParams(int operandIndex, int from, int to, int estimatedMaxOverlap) {
         SpecificOutputPort currentPort = unfairOutputPorts.stream().filter(p -> p.paramsEqualTo(operandIndex,
                 from, to)).findFirst().orElse(null);
         if (currentPort == null) {
@@ -475,31 +491,13 @@ public final class ApproximateSorter {
             if ((conf.matchValidationType == FOLLOWING)
                     && (((operandIndex > 0) && (from != -1) && (to == -1))
                     || ((operandIndex < conf.operandPatterns.length - 1) && (from == -1) && (to != -1)))) {
-                SinglePattern currentSinglePattern = (SinglePattern)currentPattern;
-                int patternMaxLength = currentSinglePattern.estimateMaxLength();
+                int patternMaxLength = ((SinglePattern)currentPattern).estimateMaxLength();
 
                 if (patternMaxLength != -1) {
-                    boolean canEstimateMaxLength = false;
-                    int extraMaxLength = 0;
-                    int overlappingPatternIndex = (from == -1) ? operandIndex + 1 : operandIndex - 1;
-                    SinglePattern overlappingPattern = (SinglePattern)conf.operandPatterns[overlappingPatternIndex];
-                    int maxOverlap = minValid(conf.patternAligner.maxOverlap(),
-                            currentSinglePattern.estimateMaxOverlap(), overlappingPattern.estimateMaxOverlap());
-                    if (maxOverlap == -1) {
-                        int overlappingPatternMaxLength = overlappingPattern.estimateMaxLength();
-                        if (overlappingPatternMaxLength != -1) {
-                            extraMaxLength = overlappingPatternMaxLength - 1;
-                            canEstimateMaxLength = true;
-                        }
-                    } else
-                        canEstimateMaxLength = true;
-
-                    if (canEstimateMaxLength) {
-                        if (from == -1)
-                            matchFrom = Math.max(conf.from(), matchTo - (patternMaxLength + extraMaxLength));
-                        else
-                            matchTo = Math.min(conf.to(), matchFrom + patternMaxLength + extraMaxLength);
-                    }
+                    if (from == -1)
+                        matchFrom = Math.max(conf.from(), matchTo - patternMaxLength - estimatedMaxOverlap);
+                    else
+                        matchTo = Math.min(conf.to(), matchFrom + patternMaxLength + estimatedMaxOverlap);
                 }
                 portLimit = specificPortLimit;
             }
@@ -543,17 +541,16 @@ public final class ApproximateSorter {
                     Range previousMatchRange = previousMatch.getRange();
                     int previousMatchStart = previousMatchRange.getFrom();
                     int previousMatchEnd = previousMatchRange.getTo();
-                    int estimatedMaxOverlap = minValid(maxOverlap, previousMatchRange.length() - 1,
-                            previousMatchIsLeft ? previousMatch.getRightUppercaseDistance()
-                                    : previousMatch.getLeftUppercaseDistance());
+                    int estimatedMaxOverlap = estimateMaxOverlap(currentOperandIndex, previousMatch,
+                            previousMatchIsLeft);
                     int thisMatchStart = -1;
                     int thisMatchEnd = -1;
                     if (previousMatchIsLeft)
                         thisMatchStart = previousMatchEnd - estimatedMaxOverlap;
                     else
                         thisMatchEnd = previousMatchStart + estimatedMaxOverlap;
-                    currentMatch = getPortWithParams(currentOperandIndex, thisMatchStart, thisMatchEnd)
-                            .get(portValueIndexes[currentOperandIndex]);
+                    currentMatch = getPortWithParams(currentOperandIndex, thisMatchStart, thisMatchEnd,
+                            estimatedMaxOverlap).get(portValueIndexes[currentOperandIndex]);
                 }
                 matches[currentOperandIndex] = currentMatch;
             }
