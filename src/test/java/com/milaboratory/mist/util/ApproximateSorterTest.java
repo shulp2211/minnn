@@ -239,11 +239,11 @@ public class ApproximateSorterTest {
 
     @Test
     public void specialCasesTest() throws Exception {
-        PatternAligner[] patternAligners = new PatternAligner[3];
+        PatternAligner[] patternAligners = new PatternAligner[4];
         String[] sequences = new String[2];
-        SinglePattern[] patterns = new SinglePattern[7];
+        SinglePattern[] patterns = new SinglePattern[10];
         NSequenceWithQuality[] targets = new NSequenceWithQuality[3];
-        ApproximateSorterConfiguration[] configurations = new ApproximateSorterConfiguration[4];
+        ApproximateSorterConfiguration[] configurations = new ApproximateSorterConfiguration[5];
 
         patternAligners[0] = getTestPatternAligner(-11000, 2, 0,
                 -200);
@@ -252,6 +252,9 @@ public class ApproximateSorterTest {
         patternAligners[2] = new BasePatternAligner(new PatternAndTargetAlignmentScoring(0,
                 -1, -10, false, (byte)0, (byte)34, -4),
                 -100, -10, 1, 2);
+        patternAligners[3] = new BasePatternAligner(new PatternAndTargetAlignmentScoring(0,
+                -7, -11, false, (byte)0, (byte)34, -4),
+                -200, -10, 3, 2);
 
         sequences[0] = "atgggcgcaaatatagggagctccgatcgacatcgggtatcgccctggtacgatcccg";
         sequences[1] = "ggcaaagt";
@@ -265,6 +268,12 @@ public class ApproximateSorterTest {
         patterns[5] = new RepeatPattern(patternAligners[2], new NucleotideSequenceCaseSensitive("N"),
                 22, 22);
         patterns[6] = new FuzzyMatchPattern(patternAligners[2], new NucleotideSequenceCaseSensitive("TCAG"));
+        patterns[7] = new RepeatPattern(patternAligners[3], new NucleotideSequenceCaseSensitive("N"),
+                14, 14, 0, -1);
+        patterns[8] = new RepeatPattern(patternAligners[3], new NucleotideSequenceCaseSensitive("n"),
+                22, 22);
+        patterns[9] = new RepeatPattern(patternAligners[3], new NucleotideSequenceCaseSensitive("N"),
+                4, 4);
 
         targets[0] = new NSequenceWithQuality(repeatString(sequences[0], 5));
         targets[1] = new NSequenceWithQuality(sequences[1]);
@@ -294,6 +303,11 @@ public class ApproximateSorterTest {
                 patternAligners[2], true, false, FOLLOWING, 3,
                 patterns[3], patterns[4], patterns[5], patterns[6]);
         assertNotNull(new ApproximateSorter(configurations[3]).getOutputPort().take());
+
+        configurations[4] = new ApproximateSorterConfiguration(targets[2], 0, targets[2].size(),
+                patternAligners[3], true, false, FOLLOWING, 100,
+                patterns[7], patterns[8], patterns[9]);
+        assertNotNull(new ApproximateSorter(configurations[4]).getOutputPort().take());
     }
 
     @Test
