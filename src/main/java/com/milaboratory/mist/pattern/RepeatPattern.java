@@ -100,9 +100,11 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
     public int estimateMaxLength() {
         if (maxRepeats == Integer.MAX_VALUE)
             return -1;
-        else
-            return maxRepeats + (Character.isUpperCase(patternSeq.symbolAt(0)) ? 0
-                    : patternAligner.bitapMaxErrors());
+        else {
+            boolean useBitapMaxErrors = Character.isLowerCase(patternSeq.symbolAt(0))
+                    && !nLetters.contains(patternSeq.toString());
+            return maxRepeats + (useBitapMaxErrors ? patternAligner.bitapMaxErrors() : 0);
+        }
     }
 
     @Override
