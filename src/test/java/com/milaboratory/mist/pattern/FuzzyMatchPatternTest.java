@@ -479,4 +479,34 @@ public class FuzzyMatchPatternTest {
             }
         }
     }
+
+    @Test
+    public void estimateMaxOverlapTest() throws Exception {
+        PatternAligner patternAligner = getTestPatternAligner();
+        NucleotideSequenceCaseSensitive[] sequences = new NucleotideSequenceCaseSensitive[5];
+        FuzzyMatchPattern[] patterns = new FuzzyMatchPattern[6];
+
+        sequences[0] = new NucleotideSequenceCaseSensitive("attagaca");
+        sequences[1] = new NucleotideSequenceCaseSensitive("ATTAGACA");
+        sequences[2] = new NucleotideSequenceCaseSensitive("aaAaa");
+        sequences[3] = new NucleotideSequenceCaseSensitive("tTtttttt");
+        sequences[4] = new NucleotideSequenceCaseSensitive("nNnnnnnnnNnnn");
+        patterns[0] = new FuzzyMatchPattern(patternAligner, sequences[0]);
+        patterns[1] = new FuzzyMatchPattern(patternAligner, sequences[1]);
+        patterns[2] = new FuzzyMatchPattern(patternAligner, sequences[2], 0, 2,
+                -1, -1);
+        patterns[3] = new FuzzyMatchPattern(patternAligner, sequences[3], 2, 1,
+                -1, -1);
+        patterns[4] = new FuzzyMatchPattern(patternAligner, sequences[4], 2, 3,
+                -1, -1);
+        patterns[5] = new FuzzyMatchPattern(patternAligner, sequences[4], 0, 4,
+                -1, -1);
+
+        assertEquals(7, patterns[0].estimateMaxOverlap());
+        assertEquals(0, patterns[1].estimateMaxOverlap());
+        assertEquals(1, patterns[2].estimateMaxOverlap());
+        assertEquals(5, patterns[3].estimateMaxOverlap());
+        assertEquals(6, patterns[4].estimateMaxOverlap());
+        assertEquals(6, patterns[5].estimateMaxOverlap());
+    }
 }
