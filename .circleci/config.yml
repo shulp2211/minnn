@@ -12,17 +12,17 @@ jobs:
     steps:
       - checkout
 
+      - restore_cache:
+          keys:
+          - dependencies-{{ checksum "pom.xml" }}
+          - dependencies-
+
       - run:
           command: |
               git submodule sync --recursive
               git submodule update --init --recursive
               cd milib
               mvn clean install -DskipTests
-
-      - restore_cache:
-          keys:
-          - dependencies-{{ checksum "pom.xml" }}
-          - dependencies-
 
       - run: mvn dependency:go-offline
 
