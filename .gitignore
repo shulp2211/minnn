@@ -6,3 +6,4 @@ doc/_build
 .flooignore
 out
 classes/artifacts
+!.idea/codeStyleSettings.xml
