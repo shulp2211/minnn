@@ -91,10 +91,10 @@ public class ParseActionTest {
         String patternPos = "^(UMI:N{14})n{22}(SB:N{4}) \\ *";
         String penaltyPos = " --penalty-threshold -200";
 
-        String patternOne = "^(SB:N{5})[aagc || c]agtggtatcaacgcagagt(UMI:N{14}) \\ *";
+        String patternOne = "(SB:N{5})[aagc || c]agtggtatcaacgcagagt(UMI:N{14}) \\ *";
         String penaltyOne = " --penalty-threshold -100";
 
-        String patternTwo = "^(SB1:N{5})[aagc || c]agtggtatcaacgcagagt(UMI:N{14}) \\ ^(SB2:N{5})gtcacatttctcagatcct";
+        String patternTwo = "(SB1:N{5})[aagc || c]agtggtatcaacgcagagt(UMI:N{14}) \\ (SB2:N{5})gtcacatttctcagatcct";
         String penaltyTwo = " --penalty-threshold -130";
 
         exec(positionalArgs + configuration + penaltyPos + " --pattern " + inQuotes(patternPos));
