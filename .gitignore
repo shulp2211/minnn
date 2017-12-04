@@ -7,3 +7,4 @@ doc/_build
 out
 classes/artifacts
 !.idea/codeStyleSettings.xml
+dependency-reduced-pom.xml
