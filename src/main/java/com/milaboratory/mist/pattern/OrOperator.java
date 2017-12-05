@@ -30,7 +30,7 @@ public final class OrOperator extends MultipleReadsOperator {
                 .orElseThrow(IllegalStateException::new);
     }
 
-    private static class OrOperatorMatchingResult extends MatchingResult {
+    private static class OrOperatorMatchingResult implements MatchingResult {
         private final PatternAligner patternAligner;
         private final MultipleReadsOperator[] operandPatterns;
         private final MultiNSequenceWithQuality target;

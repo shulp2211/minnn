@@ -43,7 +43,7 @@ public final class AnyPattern extends SinglePattern {
         return 1;
     }
 
-    private static class AnyPatternMatchingResult extends MatchingResult {
+    private static class AnyPatternMatchingResult implements MatchingResult {
         private final ArrayList<GroupEdge> groupEdges;
         private final NSequenceWithQuality target;
         private final int from;

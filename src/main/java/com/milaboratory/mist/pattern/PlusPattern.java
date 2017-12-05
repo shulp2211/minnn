@@ -43,7 +43,7 @@ public final class PlusPattern extends MultiplePatternsOperator implements CanFi
                 && ((CanFixBorders)(operandPatterns[targetOperandIndex])).isBorderFixed(left);
     }
 
-    private static class PlusPatternMatchingResult extends MatchingResult {
+    private static class PlusPatternMatchingResult implements MatchingResult {
         private final PatternAligner patternAligner;
         private final SinglePattern[] operandPatterns;
         private final NSequenceWithQuality target;

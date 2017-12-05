@@ -59,7 +59,7 @@ public final class OrPattern extends MultiplePatternsOperator implements CanFixB
                 && ((CanFixBorders)p).isBorderFixed(left));
     }
 
-    private static class OrPatternMatchingResult extends MatchingResult {
+    private static class OrPatternMatchingResult implements MatchingResult {
         private final PatternAligner patternAligner;
         private final SinglePattern[] operandPatterns;
         private final NSequenceWithQuality target;

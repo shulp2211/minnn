@@ -155,7 +155,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
             return fixedRightBorder != -1;
     }
 
-    private static class RepeatPatternMatchingResult extends MatchingResult {
+    private static class RepeatPatternMatchingResult implements MatchingResult {
         private final PatternAligner patternAligner;
         private final NucleotideSequenceCaseSensitive patternSeq;
         private final int minRepeats;

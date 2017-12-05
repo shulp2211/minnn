@@ -35,7 +35,7 @@ public final class MultiPattern extends MultipleReadsOperator {
         return Arrays.stream(singlePatterns).mapToLong(Pattern::estimateComplexity).sum();
     }
 
-    private static class MultiPatternMatchingResult extends MatchingResult {
+    private static class MultiPatternMatchingResult implements MatchingResult {
         private final PatternAligner patternAligner;
         private final SinglePattern[] singlePatterns;
         private final MultiNSequenceWithQuality target;
