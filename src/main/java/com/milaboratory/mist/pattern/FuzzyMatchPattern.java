@@ -204,7 +204,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
             return fixedRightBorder != -1;
     }
 
-    private static class FuzzyMatchingResult extends MatchingResult {
+    private static class FuzzyMatchingResult implements MatchingResult {
         private final PatternAligner patternAligner;
         private final ArrayList<NucleotideSequenceCaseSensitive> sequences;
         private final ArrayList<Motif<NucleotideSequence>> motifs;

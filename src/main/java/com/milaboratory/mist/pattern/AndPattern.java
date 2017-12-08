@@ -29,7 +29,7 @@ public final class AndPattern extends MultiplePatternsOperator {
         return Arrays.stream(operandPatterns).mapToLong(Pattern::estimateComplexity).sum();
     }
 
-    private static class AndPatternMatchingResult extends MatchingResult {
+    private static class AndPatternMatchingResult implements MatchingResult {
         private final PatternAligner patternAligner;
         private final SinglePattern[] operandPatterns;
         private final NSequenceWithQuality target;

@@ -29,7 +29,7 @@ public final class AndOperator extends MultipleReadsOperator {
         return Arrays.stream(operandPatterns).mapToLong(Pattern::estimateComplexity).sum();
     }
 
-    private static class AndOperatorMatchingResult extends MatchingResult {
+    private static class AndOperatorMatchingResult implements MatchingResult {
         private final PatternAligner patternAligner;
         private final MultipleReadsOperator[] operandPatterns;
         private final MultiNSequenceWithQuality target;

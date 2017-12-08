@@ -80,7 +80,7 @@ public final class FilterPattern extends SinglePattern implements CanBeSingleSeq
         return pattern instanceof CanFixBorders && ((CanFixBorders)pattern).isBorderFixed(left);
     }
 
-    private static class FilterMatchingResult extends MatchingResult {
+    private static class FilterMatchingResult implements MatchingResult {
         private final Filter filter;
         private final Pattern pattern;
         private final MultiNSequenceWithQuality targetMulti;

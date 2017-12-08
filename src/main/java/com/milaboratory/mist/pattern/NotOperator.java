@@ -29,7 +29,7 @@ public final class NotOperator extends MultipleReadsOperator {
         return operandPatterns[0].estimateComplexity();
     }
 
-    private static class NotOperatorMatchingResult extends MatchingResult {
+    private static class NotOperatorMatchingResult implements MatchingResult {
         private final PatternAligner patternAligner;
         private final MultipleReadsOperator operandPattern;
         private final MultiNSequenceWithQuality target;

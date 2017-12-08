@@ -2,21 +2,21 @@ package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
 
-public abstract class MatchingResult {
+public interface MatchingResult {
     /**
      * Get iterator for all match results
      *
      * @param fairSorting true if we need fair sorting, otherwise false
      * @return OutputPort iterator for all match results
      */
-    public abstract OutputPort<Match> getMatches(boolean fairSorting);
+    OutputPort<Match> getMatches(boolean fairSorting);
 
     /**
      * Get iterator for all match results
      *
      * @return OutputPort iterator for all match results
      */
-    public OutputPort<Match> getMatches() {
+    default OutputPort<Match> getMatches() {
         return getMatches(false);
     }
 
@@ -26,7 +26,7 @@ public abstract class MatchingResult {
      * @param fairSorting true if we need fair sorting, otherwise false
      * @return best matching result
      */
-    public Match getBestMatch(boolean fairSorting) {
+    default Match getBestMatch(boolean fairSorting) {
         return getMatches(fairSorting).take();
     }
 
@@ -35,7 +35,7 @@ public abstract class MatchingResult {
      *
      * @return best matching result
      */
-    public Match getBestMatch() {
+    default Match getBestMatch() {
         return getBestMatch(false);
     }
 
@@ -44,7 +44,7 @@ public abstract class MatchingResult {
      *
      * @return true if pattern matched
      */
-    public boolean isFound() {
+    default boolean isFound() {
         return getMatches(false).take() != null;
     }
 }

@@ -68,7 +68,7 @@ public final class SequencePattern extends MultiplePatternsOperator implements C
                 && ((CanFixBorders)(operandPatterns[targetOperandIndex])).isBorderFixed(left);
     }
 
-    private static class SequencePatternMatchingResult extends MatchingResult {
+    private static class SequencePatternMatchingResult implements MatchingResult {
         private final PatternAligner patternAligner;
         private final SinglePattern[] operandPatterns;
         private final NSequenceWithQuality target;
