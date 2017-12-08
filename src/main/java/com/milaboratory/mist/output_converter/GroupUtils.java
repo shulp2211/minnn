@@ -66,7 +66,6 @@ public final class GroupUtils {
         StringBuilder descriptionBuilder = new StringBuilder();
         for (int i = 0; i < groups.size(); i++) {
             MatchedGroup currentGroup = groups.get(i);
-            descriptionBuilder.append("group~");
             descriptionBuilder.append(currentGroup.getGroupName());
             descriptionBuilder.append('~');
             descriptionBuilder.append(currentGroup.getValue().getSequence().toString());
@@ -82,7 +81,7 @@ public final class GroupUtils {
                 descriptionBuilder.append('}');
             }
             if (i < groups.size() - 1)
-                descriptionBuilder.append('~');
+                descriptionBuilder.append('|');
         }
         return descriptionBuilder.toString();
     }
@@ -95,9 +94,14 @@ public final class GroupUtils {
                 .map(GroupEdge::getGroupName).filter(gn -> !matchedGroupNames.contains(gn))
                 .collect(Collectors.toCollection(HashSet::new));
         StringBuilder descriptionBuilder = new StringBuilder();
+        boolean firstGroupName = true;
         for (String notMatchedGroupName : notMatchedGroupNames) {
+            if (firstGroupName)
+                firstGroupName = false;
+            else
+                descriptionBuilder.append("|");
             descriptionBuilder.append(notMatchedGroupName);
-            descriptionBuilder.append("~~");
+            descriptionBuilder.append("~");
         }
         return descriptionBuilder.toString();
     }
