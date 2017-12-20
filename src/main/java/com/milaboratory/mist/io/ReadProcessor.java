@@ -274,8 +274,7 @@ public final class ReadProcessor {
                     default:
                         parsedRead = new MultiRead(reads);
                 }
-                return new ParsedRead(input.read, parsedRead, getGroupsFromMatch(bestMatch), reverseMatch,
-                        bestMatch.getScore());
+                return new ParsedRead(input.read, parsedRead, reverseMatch, bestMatch);
             }
         }
     }
@@ -283,7 +282,7 @@ public final class ReadProcessor {
     private class TestIOSpeedProcessor implements Processor<ProcessorInput, ParsedRead> {
         @Override
         public ParsedRead process(ProcessorInput input) {
-            return new ParsedRead(input.read, input.read, new ArrayList<>(), false, 0);
+            return new ParsedRead(input.read, input.read, false, null);
         }
     }
 }
