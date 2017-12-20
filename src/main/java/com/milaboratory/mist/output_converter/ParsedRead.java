@@ -1,13 +1,19 @@
 package com.milaboratory.mist.output_converter;
 
 import com.milaboratory.core.io.sequence.SequenceRead;
+import com.milaboratory.mist.io.IO;
 import com.milaboratory.mist.pattern.Match;
+import com.milaboratory.primitivio.annotations.Serializable;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.milaboratory.mist.output_converter.GroupUtils.getGroupsFromMatch;
 
+@Serializable(by = IO.ParsedReadSerializer.class)
 public final class ParsedRead {
     private final SequenceRead originalRead;
     private final SequenceRead parsedRead;
@@ -51,5 +57,22 @@ public final class ParsedRead {
 
     public long getBestMatchScore() {
         return bestMatchScore;
+    }
+
+    public static ParsedRead read(DataInput input) {
+        try {
+            int dummy = input.readInt();
+            return new ParsedRead(null);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void write(DataOutput output, ParsedRead object) {
+        try {
+            output.writeInt(0);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
