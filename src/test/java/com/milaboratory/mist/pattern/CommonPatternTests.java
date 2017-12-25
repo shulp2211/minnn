@@ -107,7 +107,14 @@ public class CommonPatternTests {
                     new MultiPattern(patternAligner, pattern));
 
             if (pattern instanceof CanFixBorders) {
-                if (((CanFixBorders)pattern).isBorderFixed())
+                boolean isBorderFixed = false;
+                try {
+                    tryToFixBorder(tryToFixBorder(pattern, true, 0), false, 0);
+                    tryToFixBorder(tryToFixBorder(pattern, true, 1), false, 1);
+                } catch (IllegalStateException e) {
+                    isBorderFixed = true;
+                }
+                if (isBorderFixed)
                     assertTrue(pattern.estimateComplexity() <= fixedSequenceMaxComplexity);
                 else
                     assertTrue(pattern.estimateComplexity() >= notFixedSequenceMinComplexity);
@@ -118,6 +125,10 @@ public class CommonPatternTests {
                 assertEquals(pattern.estimateComplexity(), notOperator.estimateComplexity());
             assertEquals(pattern.estimateComplexity(), mFilterPattern.estimateComplexity());
         }
+    }
+
+    private SinglePattern tryToFixBorder(SinglePattern pattern, boolean left, int position) {
+        return ((CanFixBorders)pattern).fixBorder(left, position);
     }
 
     @Test
@@ -160,7 +171,7 @@ public class CommonPatternTests {
                 (byte)25, (byte)6, -1);
         patternAligners[0] = getTestPatternAligner();
         patternAligners[1] = getTestPatternAligner(-40, 1, 0,
-                -1, true, -1, -1, scorings[0]);
+                -1, -1, -1, scorings[0]);
         sequences[0] = "t";
         targets[0] = new NSequenceWithQuality(sequences[0]);
         patterns[0] = new RepeatPattern(patternAligners[1], new NucleotideSequenceCaseSensitive("c"),

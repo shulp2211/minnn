@@ -5,6 +5,7 @@ import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.mist.util.*;
 
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.ORDER;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
@@ -21,7 +22,7 @@ public final class PlusPattern extends MultiplePatternsOperator implements CanFi
 
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to) {
-        return new PlusPatternMatchingResult(patternAligner, operandPatterns, target, from, to);
+        return new PlusPatternMatchingResult(target, from, to);
     }
 
     @Override
@@ -30,30 +31,23 @@ public final class PlusPattern extends MultiplePatternsOperator implements CanFi
     }
 
     @Override
-    public void fixBorder(boolean left, int position) {
+    public SinglePattern fixBorder(boolean left, int position) {
         int targetOperandIndex = left ? 0 : operandPatterns.length - 1;
-        if (operandPatterns[targetOperandIndex] instanceof CanFixBorders)
-            ((CanFixBorders)(operandPatterns[targetOperandIndex])).fixBorder(left, position);
+        if (operandPatterns[targetOperandIndex] instanceof CanFixBorders) {
+            SinglePattern newOperand = ((CanFixBorders)(operandPatterns[targetOperandIndex])).fixBorder(left, position);
+            return new PlusPattern(patternAligner, IntStream.range(0, operandPatterns.length)
+                    .mapToObj((int i) -> (i == targetOperandIndex ? newOperand : operandPatterns[i]))
+                    .toArray(SinglePattern[]::new));
+        } else
+            return this;
     }
 
-    @Override
-    public boolean isBorderFixed(boolean left) {
-        int targetOperandIndex = left ? 0 : operandPatterns.length - 1;
-        return operandPatterns[targetOperandIndex] instanceof CanFixBorders
-                && ((CanFixBorders)(operandPatterns[targetOperandIndex])).isBorderFixed(left);
-    }
-
-    private static class PlusPatternMatchingResult implements MatchingResult {
-        private final PatternAligner patternAligner;
-        private final SinglePattern[] operandPatterns;
+    private class PlusPatternMatchingResult implements MatchingResult {
         private final NSequenceWithQuality target;
         private final int from;
         private final int to;
 
-        PlusPatternMatchingResult(PatternAligner patternAligner, SinglePattern[] operandPatterns,
-                                  NSequenceWithQuality target, int from, int to) {
-            this.patternAligner = patternAligner;
-            this.operandPatterns = operandPatterns;
+        PlusPatternMatchingResult(NSequenceWithQuality target, int from, int to) {
             this.target = target;
             this.from = from;
             this.to = to;

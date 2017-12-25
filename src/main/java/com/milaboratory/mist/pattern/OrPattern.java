@@ -25,7 +25,7 @@ public final class OrPattern extends MultiplePatternsOperator implements CanFixB
 
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to) {
-        return new OrPatternMatchingResult(patternAligner, operandPatterns, target, from, to);
+        return new OrPatternMatchingResult(target, from, to);
     }
 
     @Override
@@ -48,28 +48,18 @@ public final class OrPattern extends MultiplePatternsOperator implements CanFixB
     }
 
     @Override
-    public void fixBorder(boolean left, int position) {
-        Arrays.stream(operandPatterns).filter(p -> p instanceof CanFixBorders)
-                .forEach(p -> ((CanFixBorders)p).fixBorder(left, position));
+    public SinglePattern fixBorder(boolean left, int position) {
+        return new OrPattern(patternAligner, Arrays.stream(operandPatterns)
+                .map(p -> (p instanceof CanFixBorders ? ((CanFixBorders)p).fixBorder(left, position) : p))
+                .toArray(SinglePattern[]::new));
     }
 
-    @Override
-    public boolean isBorderFixed(boolean left) {
-        return Arrays.stream(operandPatterns).allMatch(p -> p instanceof CanFixBorders
-                && ((CanFixBorders)p).isBorderFixed(left));
-    }
-
-    private static class OrPatternMatchingResult implements MatchingResult {
-        private final PatternAligner patternAligner;
-        private final SinglePattern[] operandPatterns;
+    private class OrPatternMatchingResult implements MatchingResult {
         private final NSequenceWithQuality target;
         private final int from;
         private final int to;
 
-        OrPatternMatchingResult(PatternAligner patternAligner, SinglePattern[] operandPatterns,
-                                       NSequenceWithQuality target, int from, int to) {
-            this.patternAligner = patternAligner;
-            this.operandPatterns = operandPatterns;
+        OrPatternMatchingResult(NSequenceWithQuality target, int from, int to) {
             this.target = target;
             this.from = from;
             this.to = to;

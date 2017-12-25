@@ -30,7 +30,7 @@ public final class AnyPattern extends SinglePattern {
 
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to) {
-        return new AnyPatternMatchingResult(groupEdges, target, from, to, targetId);
+        return new AnyPatternMatchingResult(target, from, to);
     }
 
     @Override
@@ -43,54 +43,37 @@ public final class AnyPattern extends SinglePattern {
         return 1;
     }
 
-    private static class AnyPatternMatchingResult implements MatchingResult {
-        private final ArrayList<GroupEdge> groupEdges;
+    private class AnyPatternMatchingResult implements MatchingResult {
         private final NSequenceWithQuality target;
         private final int from;
         private final int to;
-        private final byte targetId;
 
-        AnyPatternMatchingResult(ArrayList<GroupEdge> groupEdges, NSequenceWithQuality target, int from, int to,
-                                 byte targetId) {
-            this.groupEdges = groupEdges;
+        AnyPatternMatchingResult(NSequenceWithQuality target, int from, int to) {
             this.target = target;
             this.from = from;
             this.to = to;
-            this.targetId = targetId;
         }
 
         @Override
         public OutputPort<Match> getMatches(boolean fairSorting) {
-            return new AnyPatternOutputPort(groupEdges, target, from, to, targetId);
+            return new AnyPatternOutputPort();
         }
 
-        private static class AnyPatternOutputPort implements OutputPort<Match> {
-            private final ArrayList<GroupEdge> groupEdges;
-            private final NSequenceWithQuality target;
-            private final int from;
-            private final int to;
-            private final byte targetId;
+        private class AnyPatternOutputPort implements OutputPort<Match> {
             private boolean firstTake = true;
-
-            AnyPatternOutputPort(ArrayList<GroupEdge> groupEdges, NSequenceWithQuality target, int from, int to,
-                                 byte targetId) {
-                this.groupEdges = groupEdges;
-                this.target = target;
-                this.from = from;
-                this.to = to;
-                this.targetId = targetId;
-            }
 
             @Override
             public Match take() {
                 if (!firstTake) return null;
                 firstTake = false;
 
-                ArrayList<MatchedItem> matchedItems = new ArrayList<>();
-                matchedItems.add(new MatchedRange(target, targetId, 0, new Range(from, to)));
-                matchedItems.addAll(groupEdges.stream().map(ge -> new MatchedGroupEdge(target, targetId, 0,
-                        ge, ge.isStart() ? 0 : target.size())).collect(Collectors.toList()));
-                return new Match(1, 0, -1, -1, matchedItems);
+                MatchedRange matchedRange = new MatchedRange(target, targetId, 0, new Range(from, to));
+                ArrayList<MatchedGroupEdge> matchedGroupEdges = groupEdges.stream()
+                        .map(ge -> new MatchedGroupEdge(target, targetId, 0, ge,
+                                ge.isStart() ? 0 : target.size()))
+                        .collect(Collectors.toCollection(ArrayList::new));
+                return new Match(1, 0, -1, -1,
+                        matchedGroupEdges, matchedRange);
             }
         }
     }

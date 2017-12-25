@@ -94,12 +94,15 @@ public class ReportAction implements Action {
     @Parameters(commandDescription =
             "Find match and groups in query and display report on the screen.")
     private static final class ParseActionParameters extends ActionParameters {
+        @Parameter(description = "--pattern <pattern_query> --target <sequence>")
+        private Void description;
+
         @Parameter(description = "Query, pattern specified in MiST format.",
-                names = {"--pattern"})
+                names = {"--pattern"}, order = 0, required = true)
         String query = null;
 
         @Parameter(description = "Target nucleotide sequence, where to search.",
-                names = {"--target"})
+                names = {"--target"}, order = 1, required = true)
         String target = null;
 
         @Parameter(description = "Use fair sorting and fair best match by score for all patterns.",
