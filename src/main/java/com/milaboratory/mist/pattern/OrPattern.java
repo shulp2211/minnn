@@ -66,7 +66,7 @@ public final class OrPattern extends MultiplePatternsOperator implements CanFixB
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean fairSorting) {
+        public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
             ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, patternAligner,
                     false, fairSorting, FIRST, unfairSorterPortLimits.get(OrPattern.class),
                     operandPatterns);

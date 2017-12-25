@@ -25,7 +25,7 @@ public final class StickFilter implements Filter {
     }
 
     @Override
-    public Match checkMatch(Match match) {
+    public MatchIntermediate checkMatch(MatchIntermediate match) {
         if (position < 0)
             throw new IllegalStateException("Position (" + position + ") is negative on checkMatch() stage!");
         MatchedRange[] matchedRanges = match.getMatchedRanges();

@@ -167,11 +167,11 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean fairSorting) {
+        public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
             return new RepeatPatternOutputPort(fairSorting);
         }
 
-        private class RepeatPatternOutputPort implements OutputPort<Match> {
+        private class RepeatPatternOutputPort implements OutputPort<MatchIntermediate> {
             private final boolean uppercasePattern;
             private final int maxRepeats;
             private final boolean fixedBorder;
@@ -193,7 +193,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
             private int currentPosition = 0;
 
             // Data structures used for fair sorting and for matching in fixed position.
-            private Match[] allMatches;
+            private MatchIntermediate[] allMatches;
             private boolean sortingPerformed = false;
             private int takenValues = 0;
 
@@ -235,8 +235,8 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
             }
 
             @Override
-            public Match take() {
-                Match match;
+            public MatchIntermediate take() {
+                MatchIntermediate match;
                 if (noMoreMatches)
                     match = null;
                 else if (fixedBorder)
@@ -249,7 +249,7 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                 return match;
             }
 
-            private Match takeUnfair() {
+            private MatchIntermediate takeUnfair() {
                 while (!noMoreMatches) {
                     int currentLongestSection = longestValidSections[currentPosition][currentMaxErrors];
                     if (Math.max(minRepeats, currentRepeats) <= currentLongestSection) {
@@ -295,19 +295,19 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                 }
             }
 
-            private Match takeFair() {
+            private MatchIntermediate takeFair() {
                 if (!sortingPerformed) {
                     fillAllMatchesForFairSorting();
-                    Arrays.sort(allMatches, Comparator.comparingInt((Match match) -> match.getRange().length())
-                            .reversed());
-                    Arrays.sort(allMatches, Comparator.comparingLong(Match::getScore).reversed());
+                    Arrays.sort(allMatches,
+                            Comparator.comparingInt((MatchIntermediate match) -> match.getRange().length()).reversed());
+                    Arrays.sort(allMatches, Comparator.comparingLong(MatchIntermediate::getScore).reversed());
                     sortingPerformed = true;
                 }
                 if (takenValues == allMatches.length) return null;
                 return allMatches[takenValues++];
             }
 
-            private Match takeFromFixedPosition() {
+            private MatchIntermediate takeFromFixedPosition() {
                 if (!sortingPerformed) {
                     if (fixedRightBorder != -1)
                         fillAllMatchesForFixedRightBorder();
@@ -315,9 +315,9 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                         fillAllMatchesForFixedLeftBorder();
                     else throw new IllegalArgumentException("Wrong call of takeFromFixedPosition: fixedLeftBorder="
                                 + fixedLeftBorder + ", fixedRightBorder=" + fixedRightBorder);
-                    Arrays.sort(allMatches, Comparator.comparingInt((Match match) -> match.getRange().length())
-                            .reversed());
-                    Arrays.sort(allMatches, Comparator.comparingLong(Match::getScore).reversed());
+                    Arrays.sort(allMatches,
+                            Comparator.comparingInt((MatchIntermediate match) -> match.getRange().length()).reversed());
+                    Arrays.sort(allMatches, Comparator.comparingLong(MatchIntermediate::getScore).reversed());
                     sortingPerformed = true;
                 }
                 if (takenValues == allMatches.length) return null;
@@ -338,8 +338,8 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                             uniqueRanges.add(new Range(i + from, Math.min(to, i + repeats + from)));
                     }
 
-                ArrayList<Match> allMatchesList = getMatchesList(uniqueRanges, patternAligner);
-                allMatches = new Match[allMatchesList.size()];
+                ArrayList<MatchIntermediate> allMatchesList = getMatchesList(uniqueRanges, patternAligner);
+                allMatches = new MatchIntermediate[allMatchesList.size()];
                 allMatchesList.toArray(allMatches);
             }
 
@@ -357,8 +357,9 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                             uniqueRanges.add(new Range(i + from, Math.min(to, i + repeats + from)));
                     }
 
-                ArrayList<Match> allMatchesList = getMatchesList(uniqueRanges, patternAligner.setLeftBorder(from));
-                allMatches = new Match[allMatchesList.size()];
+                ArrayList<MatchIntermediate> allMatchesList = getMatchesList(uniqueRanges,
+                        patternAligner.setLeftBorder(from));
+                allMatches = new MatchIntermediate[allMatchesList.size()];
                 allMatchesList.toArray(allMatches);
             }
 
@@ -381,8 +382,8 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                     }
                 }
 
-                ArrayList<Match> allMatchesList = getMatchesList(uniqueRanges, aligner);
-                allMatches = new Match[allMatchesList.size()];
+                ArrayList<MatchIntermediate> allMatchesList = getMatchesList(uniqueRanges, aligner);
+                allMatches = new MatchIntermediate[allMatchesList.size()];
                 allMatchesList.toArray(allMatches);
             }
 
@@ -394,8 +395,8 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
              * @param aligner pattern aligner, maybe configured for matching with fixed border
              * @return list of aligned matches
              */
-            private ArrayList<Match> getMatchesList(HashSet<Range> uniqueRanges, PatternAligner aligner) {
-                ArrayList<Match> allMatchesList = new ArrayList<>();
+            private ArrayList<MatchIntermediate> getMatchesList(HashSet<Range> uniqueRanges, PatternAligner aligner) {
+                ArrayList<MatchIntermediate> allMatchesList = new ArrayList<>();
                 Alignment<NucleotideSequenceCaseSensitive> alignment;
                 HashSet<UniqueAlignedSequence> uniqueAlignedSequences = new HashSet<>();
 

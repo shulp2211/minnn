@@ -8,7 +8,7 @@ import com.milaboratory.cli.ActionHelper;
 import com.milaboratory.cli.ActionParameters;
 import com.milaboratory.core.alignment.PatternAndTargetAlignmentScoring;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
-import com.milaboratory.mist.output_converter.MatchedGroup;
+import com.milaboratory.mist.outputconverter.MatchedGroup;
 import com.milaboratory.mist.parser.Parser;
 import com.milaboratory.mist.parser.ParserException;
 import com.milaboratory.mist.pattern.*;
@@ -16,7 +16,6 @@ import com.milaboratory.mist.pattern.*;
 import java.util.ArrayList;
 
 import static com.milaboratory.mist.cli.Defaults.*;
-import static com.milaboratory.mist.output_converter.GroupUtils.getGroupsFromMatch;
 import static com.milaboratory.mist.parser.ParserUtils.parseMultiTargetString;
 import static com.milaboratory.mist.util.SystemUtils.exitWithError;
 
@@ -49,14 +48,14 @@ public class ReportAction implements Action {
             throw exitWithError("Pattern is for single target, but found multi-target!");
         if (pattern instanceof MultipleReadsOperator && target.numberOfSequences() == 1)
             throw exitWithError("Pattern is for multi-target, but found single target!");
-        Match bestMatch = pattern instanceof SinglePattern
+        MatchIntermediate bestMatch = pattern instanceof SinglePattern
                 ? pattern.match(target.get(0)).getBestMatch(params.fairSorting)
                 : pattern.match(target).getBestMatch(params.fairSorting);
 
         if (bestMatch == null)
             System.out.println("Pattern not found in the target.");
         else {
-            ArrayList<MatchedGroup> matchedGroups = getGroupsFromMatch(bestMatch);
+            ArrayList<MatchedGroup> matchedGroups = bestMatch.getGroups();
             if (target.numberOfSequences() == 1) {
                 System.out.println("Found match in range " + bestMatch.getRange() + ": "
                         + bestMatch.getValue().getSequence() + "\n");

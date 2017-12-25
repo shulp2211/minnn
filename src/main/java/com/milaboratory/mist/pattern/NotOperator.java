@@ -39,28 +39,28 @@ public final class NotOperator extends MultipleReadsOperator {
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean fairSorting) {
+        public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
             return new NotOperatorOutputPort(patternAligner, operandPattern.match(target).getMatches(fairSorting));
         }
 
-        private class NotOperatorOutputPort implements OutputPort<Match> {
-            private final OutputPort<Match> operandPort;
+        private class NotOperatorOutputPort implements OutputPort<MatchIntermediate> {
+            private final OutputPort<MatchIntermediate> operandPort;
             private boolean firstCall = true;
             private boolean operandIsMatching;
 
-            NotOperatorOutputPort(PatternAligner patternAligner, OutputPort<Match> operandPort) {
+            NotOperatorOutputPort(PatternAligner patternAligner, OutputPort<MatchIntermediate> operandPort) {
                 this.operandPort = operandPort;
             }
 
             @Override
-            public Match take() {
+            public MatchIntermediate take() {
                 if (!firstCall) return null;
                 operandIsMatching = (operandPort.take() != null);
                 firstCall = false;
                 if (operandIsMatching)
                     return null;
                 else {
-                    return new Match(1, patternAligner.notResultScore(),
+                    return new MatchIntermediate(1, patternAligner.notResultScore(),
                             -1, -1,
                             new ArrayList<>(), new NullMatchedRange(0));
                 }

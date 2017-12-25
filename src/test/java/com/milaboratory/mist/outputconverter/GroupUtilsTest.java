@@ -1,4 +1,4 @@
-package com.milaboratory.mist.output_converter;
+package com.milaboratory.mist.outputconverter;
 
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.*;
@@ -9,7 +9,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 
-import static com.milaboratory.mist.output_converter.GroupUtils.*;
+import static com.milaboratory.mist.outputconverter.GroupUtils.*;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static com.milaboratory.mist.util.CommonTestUtils.RandomStringType.*;
 import static org.junit.Assert.*;

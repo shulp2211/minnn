@@ -42,10 +42,8 @@ public final class ParseAction implements Action {
             throw exitWithError(e.getMessage());
         }
         MistDataFormat inputFormat = parameterNames.get(params.inputFormat);
-        MistDataFormat outputFormat = parameterNames.get(params.outputFormat);
-        ReadProcessor readProcessor = new ReadProcessor(params.inputFileNames, params.outputFileNames, pattern,
-                params.oriented, params.fairSorting, params.firstReadNumber, params.threads, params.copyOldComments,
-                inputFormat, outputFormat, params.testIOSpeed);
+        ReadProcessor readProcessor = new ReadProcessor(params.inputFileNames, params.outputFileName, pattern,
+                params.oriented, params.fairSorting, params.threads, inputFormat, params.testIOSpeed);
         readProcessor.processReadsParallel();
     }
 
@@ -75,19 +73,13 @@ public final class ParseAction implements Action {
                 names = {"--input"}, order = 1, variableArity = true)
         List<String> inputFileNames = new ArrayList<>();
 
-        @Parameter(description = "Output files. Single file means that there is 1 read or multi-read file; " +
-                "multiple files mean that there is 1 file for each read. " +
-                "If not specified, stdout will be used.",
-                names = {"--output"}, order = 2, variableArity = true)
-        List<String> outputFileNames = new ArrayList<>();
+        @Parameter(description = "Output file in \"mif\" format. If not specified, stdout will be used.",
+                names = {"--output"}, order = 2)
+        String outputFileName = null;
 
         @Parameter(description = "Input data format. \"fastq\" (default) or \"mif\".",
                 names = {"--input-format"})
         String inputFormat = DEFAULT_INPUT_FORMAT;
-
-        @Parameter(description = "Output data format. \"fastq\" (default) or \"mif\".",
-                names = {"--output-format"})
-        String outputFormat = DEFAULT_OUTPUT_FORMAT;
 
         @Parameter(description = "By default, if there are 2 or more reads, 2 last reads are checked in direct " +
                 "and reverse order. With this flag, only in direct order.",
@@ -144,17 +136,9 @@ public final class ParseAction implements Action {
                 names = {"--devel-parser-syntax"})
         boolean simplifiedSyntax = false;
 
-        @Parameter(description = "First read number, default is 1.",
-                names = {"--first-read-number"})
-        int firstReadNumber = 1;
-
         @Parameter(description = "Number of threads for parsing reads.",
                 names = {"--threads"})
         int threads = DEFAULT_THREADS;
-
-        @Parameter(description = "Write comment from original read to the beginning of comment of parsed read.",
-                names = {"--copy-original-comments"})
-        boolean copyOldComments = false;
 
         @Parameter(description = "Copy input files to output without processing; used for debug purpose only.",
                 names = {"--test-io-speed"}, hidden = true)
@@ -166,8 +150,6 @@ public final class ParseAction implements Action {
                 throw new ParameterException("Pattern not specified!");
             if (parameterNames.get(inputFormat) == null)
                 throw new ParameterException("Unknown input format: " + inputFormat);
-            if (parameterNames.get(outputFormat) == null)
-                throw new ParameterException("Unknown output format: " + outputFormat);
         }
     }
 }

@@ -38,7 +38,7 @@ public final class OrOperator extends MultipleReadsOperator {
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean fairSorting) {
+        public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
             ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, patternAligner,
                     false, false, fairSorting, LOGICAL_OR,
                     unfairSorterPortLimits.get(OrOperator.class), operandPatterns);

@@ -9,14 +9,14 @@ public interface MatchingResult {
      * @param fairSorting true if we need fair sorting, otherwise false
      * @return OutputPort iterator for all match results
      */
-    OutputPort<Match> getMatches(boolean fairSorting);
+    OutputPort<MatchIntermediate> getMatches(boolean fairSorting);
 
     /**
      * Get iterator for all match results
      *
      * @return OutputPort iterator for all match results
      */
-    default OutputPort<Match> getMatches() {
+    default OutputPort<MatchIntermediate> getMatches() {
         return getMatches(false);
     }
 
@@ -26,7 +26,7 @@ public interface MatchingResult {
      * @param fairSorting true if we need fair sorting, otherwise false
      * @return best matching result
      */
-    default Match getBestMatch(boolean fairSorting) {
+    default MatchIntermediate getBestMatch(boolean fairSorting) {
         return getMatches(fairSorting).take();
     }
 
@@ -35,7 +35,7 @@ public interface MatchingResult {
      *
      * @return best matching result
      */
-    default Match getBestMatch() {
+    default MatchIntermediate getBestMatch() {
         return getBestMatch(false);
     }
 

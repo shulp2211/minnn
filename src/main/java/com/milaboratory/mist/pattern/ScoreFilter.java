@@ -13,7 +13,7 @@ public final class ScoreFilter implements Filter {
     }
 
     @Override
-    public Match checkMatch(Match match) {
+    public MatchIntermediate checkMatch(MatchIntermediate match) {
         if (match.getScore() < scoreThreshold)
             return null;
         else return match;

@@ -54,7 +54,7 @@ public final class PlusPattern extends MultiplePatternsOperator implements CanFi
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean fairSorting) {
+        public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
             ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, patternAligner,
                     true, fairSorting, ORDER, unfairSorterPortLimits.get(PlusPattern.class),
                     operandPatterns);

@@ -43,7 +43,7 @@ public final class MultiPattern extends MultipleReadsOperator {
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean fairSorting) {
+        public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
             ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, patternAligner,
                     true, true, fairSorting, LOGICAL_AND,
                     unfairSorterPortLimits.get(MultiPattern.class), singlePatterns);

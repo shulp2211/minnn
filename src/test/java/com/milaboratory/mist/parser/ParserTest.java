@@ -2,14 +2,14 @@ package com.milaboratory.mist.parser;
 
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.*;
-import com.milaboratory.mist.output_converter.MatchedGroup;
+import com.milaboratory.mist.outputconverter.MatchedGroup;
 import com.milaboratory.mist.pattern.*;
 import org.junit.Test;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.milaboratory.mist.output_converter.GroupUtils.getGroupsFromMatch;
+import static com.milaboratory.mist.outputconverter.GroupUtils.getGroupsFromMatch;
 import static com.milaboratory.mist.parser.ParserUtils.parseMultiTargetString;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static com.milaboratory.mist.util.CommonTestUtils.RandomStringType.*;

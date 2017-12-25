@@ -79,7 +79,7 @@ public final class SequencePattern extends MultiplePatternsOperator implements C
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean fairSorting) {
+        public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
             ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, patternAligner,
                     true, fairSorting, FOLLOWING, unfairSorterPortLimits.get(SequencePattern.class),
                     operandPatterns);
