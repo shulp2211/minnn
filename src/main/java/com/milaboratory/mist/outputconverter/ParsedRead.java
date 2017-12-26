@@ -53,7 +53,7 @@ public final class ParsedRead {
 
     public static void write(PrimitivO output, ParsedRead object) {
         output.writeObject(object.getOriginalRead());
-        output.writeObject(object.isReverseMatch());
+        output.writeBoolean(object.isReverseMatch());
         output.writeObject(object.getBestMatch());
     }
 }
