@@ -80,17 +80,14 @@ public final class ReadProcessor {
             totalReads++;
             if (parsedRead.getBestMatch() != null) {
                 if (writer == null)
-                    try {
-                        writer = createWriter(parsedRead.getBestMatch().getMatchedGroupEdges());
-                    } catch (IOException e) {
-                        throw exitWithError(e.getMessage());
-                    }
+                    writer = createWriter(parsedRead.getBestMatch().getMatchedGroupEdges());
                 writer.write(parsedRead);
                 matchedReads++;
             }
         }
-        if (writer != null)
-            writer.close();
+        if (writer == null)
+            writer = createWriter(new ArrayList<>());
+        writer.close();
 
         long elapsedTime = System.currentTimeMillis() - startTime;
         System.out.println("\nProcessing time: " + nanoTimeToString(elapsedTime * 1000000));
@@ -144,11 +141,15 @@ public final class ReadProcessor {
         }
     }
 
-    private MifWriter createWriter(ArrayList<MatchedGroupEdge> matchedGroupEdges) throws IOException {
+    private MifWriter createWriter(ArrayList<MatchedGroupEdge> matchedGroupEdges) {
         if (outputFileName == null)
             return new MifWriter(System.out, matchedGroupEdges);
         else
-            return new MifWriter(outputFileName, matchedGroupEdges);
+            try {
+                return new MifWriter(outputFileName, matchedGroupEdges);
+            } catch (IOException e) {
+                throw exitWithError(e.getMessage());
+            }
     }
 
     private class ProcessorInput {
