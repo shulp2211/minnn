@@ -23,7 +23,7 @@ import static com.milaboratory.mist.io.MistDataFormatNames.parameterNames;
 import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.util.SystemUtils.exitWithError;
 
-public final class ParseAction implements Action {
+public final class ExtractAction implements Action {
     private final ParseActionParameters params = new ParseActionParameters();
 
     @Override
@@ -49,7 +49,7 @@ public final class ParseAction implements Action {
 
     @Override
     public String command() {
-        return "parse";
+        return "extract";
     }
 
     @Override
@@ -61,7 +61,7 @@ public final class ParseAction implements Action {
             "Read target nucleotide sequence and find groups and patterns as specified in query.")
     private static final class ParseActionParameters extends ActionParameters {
         @Parameter(description = "--pattern <pattern_query>")
-        private Void description;
+        private String description;
 
         @Parameter(description = "Query, pattern specified in MiST format.",
                 names = {"--pattern"}, order = 0, required = true)
