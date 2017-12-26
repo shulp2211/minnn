@@ -97,7 +97,7 @@ public class MultiPatternTest {
                 new NSequenceWithQuality("ATAGGAGGGTAGCCACAATTAGCCA"),
                 new NSequenceWithQuality("GTGCATCTGCCATTTTCAATGCATTAG"));
         MatchingResult result = multiPattern.match(mseq);
-        OutputPort<Match> matchOutputPort = result.getMatches();
+        OutputPort<MatchIntermediate> matchOutputPort = result.getMatches();
         assertEquals("ABC", result.getBestMatch()
                 .getMatchedGroupEdge("ABC", false).getGroupName());
         assertEquals(11, result.getBestMatch()

@@ -30,13 +30,13 @@ public class CommonTestUtils {
         return StreamSupport.stream(CUtils.it(port).spliterator(), false);
     }
 
-    public static long countPortValues(OutputPort<Match> port) {
+    public static long countPortValues(OutputPort<MatchIntermediate> port) {
         return streamPort(port).count();
     }
 
-    public static void printPortValues(OutputPort<Match> port) {
+    public static void printPortValues(OutputPort<MatchIntermediate> port) {
         long i = 0;
-        for (Match match : CUtils.it(port))
+        for (MatchIntermediate match : CUtils.it(port))
             System.out.println(i++ + ": " + match.getRange() + " " + match.getScore() + " " + match.getValue());
     }
 

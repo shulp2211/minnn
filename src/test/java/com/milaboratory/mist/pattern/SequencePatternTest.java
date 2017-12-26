@@ -52,8 +52,8 @@ public class SequencePatternTest {
             long penaltyThreshold;
             boolean misplacedPatterns = false;
             if (isMatchingPattern1) {
-                Match match1 = pattern1.match(targetQ).getBestMatch(true);
-                Match match2 = pattern2.match(targetQ).getBestMatch(true);
+                MatchIntermediate match1 = pattern1.match(targetQ).getBestMatch(true);
+                MatchIntermediate match2 = pattern2.match(targetQ).getBestMatch(true);
                 penaltyThreshold = match1.getScore() + match2.getScore()
                         + errorScorePenalty * (getIntersectionLength(match1.getRange(), match2.getRange())
                         + (match2.getRange().getLower() > match1.getRange().getUpper() ?
@@ -70,10 +70,10 @@ public class SequencePatternTest {
             boolean entirePatternMustMatch = isMatchingPattern1;
             if (misplacedPatterns) {
                 penaltyThreshold = Long.MIN_VALUE;
-                OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(true);
-                OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(true);
-                List<Range> ranges1 = streamPort(port1).map(Match::getRange).collect(Collectors.toList());
-                List<Range> ranges2 = streamPort(port2).map(Match::getRange).collect(Collectors.toList());
+                OutputPort<MatchIntermediate> port1 = pattern1.match(targetQ).getMatches(true);
+                OutputPort<MatchIntermediate> port2 = pattern2.match(targetQ).getMatches(true);
+                List<Range> ranges1 = streamPort(port1).map(MatchIntermediate::getRange).collect(Collectors.toList());
+                List<Range> ranges2 = streamPort(port2).map(MatchIntermediate::getRange).collect(Collectors.toList());
 
                 entirePatternMustMatch = false;
                 OUTER:
@@ -195,7 +195,7 @@ public class SequencePatternTest {
                 pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("ATAGATTC");
         MatchingResult result = sequencePattern.match(nseq);
-        OutputPort<Match> matchOutputPort = result.getMatches(true);
+        OutputPort<MatchIntermediate> matchOutputPort = result.getMatches(true);
         Match match = matchOutputPort.take();
         assertEquals(5, match.getMatchedGroupEdge("A", true).getPosition());
         assertEquals(5, match.getMatchedGroupEdge("A", false).getPosition());

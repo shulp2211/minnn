@@ -112,8 +112,8 @@ public class OrPatternTest {
         assertNotNull(orPattern2.match(nseq).getBestMatch());
         assertEquals(48, countMatches(orPattern1.match(nseq), true));
         assertEquals(384, countMatches(orPattern2.match(nseq), true));
-        OutputPort<Match> matchesPattern1 = orPattern1.match(nseq).getMatches(true);
-        OutputPort<Match> matchesPattern2 = orPattern2.match(nseq).getMatches(true);
+        OutputPort<MatchIntermediate> matchesPattern1 = orPattern1.match(nseq).getMatches(true);
+        OutputPort<MatchIntermediate> matchesPattern2 = orPattern2.match(nseq).getMatches(true);
         for (int i = 0; i < 48; i++) {
             assertNotNull(matchesPattern1.take().getValue());
         }
@@ -170,7 +170,7 @@ public class OrPatternTest {
         OrPattern orPattern = new OrPattern(getTestPatternAligner(), pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGC");
         MatchingResult result = orPattern.match(nseq);
-        OutputPort<Match> matchOutputPort = result.getMatches(true);
+        OutputPort<MatchIntermediate> matchOutputPort = result.getMatches(true);
         Match match = matchOutputPort.take();
         assertEquals(4, match.getMatchedGroupEdge("2", true).getPosition());
         assertEquals(4, match.getMatchedGroupEdge("1", false).getPosition());

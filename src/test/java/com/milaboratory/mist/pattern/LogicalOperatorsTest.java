@@ -11,7 +11,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 
-import static com.milaboratory.mist.outputconverter.GroupUtils.getGroupsFromMatch;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
@@ -158,7 +157,7 @@ public class LogicalOperatorsTest {
         assertEquals(0, countMatches(andSingleFalseResult, true));
         assertEquals(0, countMatches(orSingleFalseResult, true));
 
-        Match testMatch = andTrueResult.getMatches().take();
+        MatchIntermediate testMatch = andTrueResult.getMatches().take();
         assertEquals("GTTATTACCA", testMatch.getMatchedRange(5).getValue().getSequence().toString());
         assertEquals("GCATAT", testMatch.getMatchedRange(6).getValue().getSequence().toString());
 
@@ -263,8 +262,8 @@ public class LogicalOperatorsTest {
         assertTrue(result.getBestMatch().getMatchedGroupEdge("5", true).isStart());
         assertFalse(result.getBestMatch().getMatchedGroupEdge("5", false).isStart());
 
-        assertEquals(5, getGroupsFromMatch(result.getBestMatch()).size());
-        for (MatchedGroup group : getGroupsFromMatch(result.getBestMatch())) {
+        assertEquals(5, result.getBestMatch().getGroups().size());
+        for (MatchedGroup group : result.getBestMatch().getGroups()) {
             switch (group.getGroupName()) {
                 case "1":
                     assertEquals(new Range(5, 6), group.getRange());
@@ -287,7 +286,7 @@ public class LogicalOperatorsTest {
         }
 
         for (boolean fairSorting : new boolean[] {true, false}) {
-            OutputPort<Match> matchOutputPort = result.getMatches(fairSorting);
+            OutputPort<MatchIntermediate> matchOutputPort = result.getMatches(fairSorting);
             for (int i = 0; i < 15; i++)
                 assertNotNull(matchOutputPort.take());
             assertNull(matchOutputPort.take());

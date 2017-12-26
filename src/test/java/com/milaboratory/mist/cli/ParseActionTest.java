@@ -1,6 +1,7 @@
 package com.milaboratory.mist.cli;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -21,6 +22,7 @@ public class ParseActionTest {
             throw exitWithError("Directory for temporary output files " + TEMP_DIR + " does not exist!");
     }
 
+    @Ignore
     @Test
     public void simpleTest() throws Exception {
         for (String suffix : new String[] {"", ".gz"}) {
@@ -64,6 +66,7 @@ public class ParseActionTest {
         }
     }
 
+    @Ignore
     @Test
     public void examplesTest() throws Exception {
         String posR1 = EXAMPLES_PATH + "positional/polyfid10_R1.fastq.gz";
@@ -102,6 +105,7 @@ public class ParseActionTest {
         exec(twosidedArgs + configuration + penaltyTwo + " --pattern " + inQuotes(patternTwo));
     }
 
+    @Ignore
     @Test
     public void specialCaseTest1() throws Exception {
         String R1 = EXAMPLES_PATH + "positional/polyfid10_R1.fastq.gz";

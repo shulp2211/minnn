@@ -73,10 +73,10 @@ public class RepeatPatternTest {
         RepeatPattern pattern2 = new RepeatPattern(patternAligner, new NucleotideSequenceCaseSensitive("A"),
                 4, 4);
         NSequenceWithQuality target = new NSequenceWithQuality("AATA");
-        OutputPort<Match> matches1 = pattern1.match(target).getMatches(true);
-        OutputPort<Match> matches2 = pattern2.match(target).getMatches(true);
+        OutputPort<MatchIntermediate> matches1 = pattern1.match(target).getMatches(true);
+        OutputPort<MatchIntermediate> matches2 = pattern2.match(target).getMatches(true);
 
-        Match match = matches1.take();
+        MatchIntermediate match = matches1.take();
         assertEquals(new Range(0, 4), match.getRange());
         assertEquals(-9, match.getScore());
         match = matches1.take();
@@ -142,10 +142,10 @@ public class RepeatPatternTest {
         NSequenceWithQuality nseq = new NSequenceWithQuality(
                 "ATCGGAATGTTGTTGTTGTTGTGTATAAAGGACCCAGAGCCCCATGTTGTAGTGTC");
         MatchingResult result = pattern.match(nseq);
-        Match bestMatch1 = result.getBestMatch();
-        Match firstMatch = result.getMatches(true).take();
-        Match bestMatch2 = result.getBestMatch();
-        Match bestMatch3 = result.getBestMatch();
+        MatchIntermediate bestMatch1 = result.getBestMatch();
+        MatchIntermediate firstMatch = result.getMatches(true).take();
+        MatchIntermediate bestMatch2 = result.getBestMatch();
+        MatchIntermediate bestMatch3 = result.getBestMatch();
         assertEquals(bestMatch1.getRange(), bestMatch2.getRange());
         assertEquals(bestMatch1.getRange(), bestMatch3.getRange());
         assertEquals(bestMatch1.getRange(), firstMatch.getRange());
@@ -154,7 +154,7 @@ public class RepeatPatternTest {
         assertEquals(9, countMatches(result, true));
         assertEquals(9, countMatches(result, false));
         result = pattern.match(nseq);
-        OutputPort<Match> matches = result.getMatches(true);
+        OutputPort<MatchIntermediate> matches = result.getMatches(true);
         assertEquals(new Range(39, 43), matches.take().getRange());
         assertEquals(new Range(32, 35), matches.take().getMatchedRanges()[0].getRange());
         assertEquals("CCC", matches.take().getValue().getSequence().toString());

@@ -115,8 +115,8 @@ public class PlusPatternTest {
         assertNotNull(plusPattern2.match(nseq).getBestMatch());
         assertEquals(22, countMatches(plusPattern1.match(nseq), true));
         assertEquals(30, countMatches(plusPattern2.match(nseq), true));
-        OutputPort<Match> matchesPattern1 = plusPattern1.match(nseq).getMatches(true);
-        OutputPort<Match> matchesPattern2 = plusPattern2.match(nseq).getMatches(true);
+        OutputPort<MatchIntermediate> matchesPattern1 = plusPattern1.match(nseq).getMatches(true);
+        OutputPort<MatchIntermediate> matchesPattern2 = plusPattern2.match(nseq).getMatches(true);
         for (int i = 0; i < 22; i++) {
             assertNotNull(matchesPattern1.take().getValue());
         }
@@ -192,7 +192,7 @@ public class PlusPatternTest {
         PlusPattern plusPattern = new PlusPattern(getTestPatternAligner(true), pattern2, pattern1);
         NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGCC");
         MatchingResult result = plusPattern.match(nseq);
-        OutputPort<Match> matchOutputPort = result.getMatches(true);
+        OutputPort<MatchIntermediate> matchOutputPort = result.getMatches(true);
         Match match = matchOutputPort.take();
         assertEquals(16, match.getMatchedGroupEdge("2", true).getPosition());
         assertEquals(20, match.getMatchedGroupEdge("4", false).getPosition());
@@ -235,8 +235,8 @@ public class PlusPatternTest {
             long plusPenaltyThreshold;
             boolean misplacedPatterns = false;
             if (isMatchingPattern1) {
-                Match match1 = pattern1.match(targetQ).getBestMatch(true);
-                Match match2 = pattern2.match(targetQ).getBestMatch(true);
+                MatchIntermediate match1 = pattern1.match(targetQ).getBestMatch(true);
+                MatchIntermediate match2 = pattern2.match(targetQ).getBestMatch(true);
                 plusPenaltyThreshold = match1.getScore() + match2.getScore()
                         + errorScorePenalty * getIntersectionLength(match1.getRange(), match2.getRange());
                 misplacedPatterns = (match1.getRange().getLower() >= match2.getRange().getLower())
@@ -251,10 +251,10 @@ public class PlusPatternTest {
             boolean plusMustBeFound = isMatchingPattern1;
             if (misplacedPatterns) {
                 plusPenaltyThreshold = Long.MIN_VALUE;
-                OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(true);
-                OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(true);
-                List<Range> ranges1 = streamPort(port1).map(Match::getRange).collect(Collectors.toList());
-                List<Range> ranges2 = streamPort(port2).map(Match::getRange).collect(Collectors.toList());
+                OutputPort<MatchIntermediate> port1 = pattern1.match(targetQ).getMatches(true);
+                OutputPort<MatchIntermediate> port2 = pattern2.match(targetQ).getMatches(true);
+                List<Range> ranges1 = streamPort(port1).map(MatchIntermediate::getRange).collect(Collectors.toList());
+                List<Range> ranges2 = streamPort(port2).map(MatchIntermediate::getRange).collect(Collectors.toList());
 
                 plusMustBeFound = false;
                 OUTER:
@@ -346,7 +346,7 @@ public class PlusPatternTest {
                 pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("ATAGATTC");
         MatchingResult result = plusPattern.match(nseq);
-        OutputPort<Match> matchOutputPort = result.getMatches(true);
+        OutputPort<MatchIntermediate> matchOutputPort = result.getMatches(true);
         Match match = matchOutputPort.take();
         assertEquals(5, match.getMatchedGroupEdge("A", true).getPosition());
         assertEquals(5, match.getMatchedGroupEdge("A", false).getPosition());
