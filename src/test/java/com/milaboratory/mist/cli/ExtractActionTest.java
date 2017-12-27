@@ -1,5 +1,6 @@
 package com.milaboratory.mist.cli;
 
+import com.milaboratory.mist.pattern.SinglePattern;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -103,5 +104,22 @@ public class ExtractActionTest {
         String query = argsIO + " --pattern \"NN(G1:N{12})N{22}TCAG\\NN(G2:N{12})N{22}TCAG\" --threads 3 "
                 + "--bitap-max-errors 1 --mismatch-score -1 --penalty-threshold -73";
         exec(query);
+    }
+
+    @Test
+    public void mifRandomTest() throws Exception {
+        String fastqFile = EXAMPLES_PATH + "small/100.fastq";
+        String mifFile1 = TEMP_DIR + "output1.mif";
+        String mifFile2 = TEMP_DIR + "output2.mif";
+        for (int i = 0; i < 1000; i++) {
+            SinglePattern randomPattern = getRandomSinglePattern();
+            exec("extract --input " + fastqFile + " --output " + mifFile1 + " --devel-parser-syntax"
+                    + " --pattern \"" + randomPattern.toString() + "\"");
+            exec("extract --input-format mif --input " + mifFile1 + " --output " + mifFile2
+                    + " --pattern \"*\"");
+            assertFileEquals(mifFile1, mifFile2);
+        }
+        for (String fileName : new String[] { fastqFile, mifFile1, mifFile2 })
+            assertTrue(new File(fileName).delete());
     }
 }
