@@ -52,6 +52,8 @@ public final class ReadProcessor {
         this.testIOSpeed = testIOSpeed;
     }
 
+    private interface MifSequenceReader extends OutputPortCloseable<SequenceRead>, CanReportProgress {}
+
     public void processReadsParallel() {
         long startTime = System.currentTimeMillis();
         OutputPortCloseable<? extends SequenceRead> reader;
@@ -118,16 +120,26 @@ public final class ReadProcessor {
                         return new MultiReader(readers);
                 }
             case MIF:
-                OutputPortCloseable<ParsedRead> parsedReadsPort;
+                MifReader parsedReadsPort;
                 if (inputFileNames.size() == 0)
                     parsedReadsPort = new MifReader(System.in);
                 else
                     parsedReadsPort = new MifReader(inputFileNames.get(0));
 
-                return new OutputPortCloseable<SequenceRead>() {
+                return new MifSequenceReader() {
                     @Override
                     public void close() {
                         parsedReadsPort.close();
+                    }
+
+                    @Override
+                    public double getProgress() {
+                        return parsedReadsPort.getProgress();
+                    }
+
+                    @Override
+                    public boolean isFinished() {
+                        return parsedReadsPort.isFinished();
                     }
 
                     @Override
