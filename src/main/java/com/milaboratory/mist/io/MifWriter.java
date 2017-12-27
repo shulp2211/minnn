@@ -1,7 +1,7 @@
 package com.milaboratory.mist.io;
 
 import com.milaboratory.mist.outputconverter.ParsedRead;
-import com.milaboratory.mist.pattern.MatchedGroupEdge;
+import com.milaboratory.mist.pattern.GroupEdge;
 import com.milaboratory.primitivio.PrimitivO;
 
 import java.io.FileOutputStream;
@@ -12,21 +12,21 @@ import java.util.ArrayList;
 final class MifWriter {
     private final PrimitivO output;
 
-    MifWriter(OutputStream outputStream, ArrayList<MatchedGroupEdge> matchedGroupEdges) {
+    MifWriter(OutputStream outputStream, ArrayList<GroupEdge> groupEdges) {
         output = new PrimitivO(outputStream);
-        initKnownReferences(matchedGroupEdges);
+        initKnownReferences(groupEdges);
     }
 
-    MifWriter(String file, ArrayList<MatchedGroupEdge> matchedGroupEdges) throws IOException {
+    MifWriter(String file, ArrayList<GroupEdge> groupEdges) throws IOException {
         output = new PrimitivO(new FileOutputStream(file));
-        initKnownReferences(matchedGroupEdges);
+        initKnownReferences(groupEdges);
     }
 
-    private void initKnownReferences(ArrayList<MatchedGroupEdge> matchedGroupEdges) {
-        output.writeInt(matchedGroupEdges.size());
-        for (MatchedGroupEdge matchedGroupEdge : matchedGroupEdges) {
-            output.writeObject(matchedGroupEdge);
-            output.putKnownReference(matchedGroupEdge);
+    private void initKnownReferences(ArrayList<GroupEdge> groupEdges) {
+        output.writeInt(groupEdges.size());
+        for (GroupEdge groupEdge : groupEdges) {
+            output.writeObject(groupEdge);
+            output.putKnownReference(groupEdge);
         }
     }
 

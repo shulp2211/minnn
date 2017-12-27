@@ -2,7 +2,7 @@ package com.milaboratory.mist.io;
 
 import cc.redberry.pipe.OutputPortCloseable;
 import com.milaboratory.mist.outputconverter.ParsedRead;
-import com.milaboratory.mist.pattern.MatchedGroupEdge;
+import com.milaboratory.mist.pattern.GroupEdge;
 import com.milaboratory.primitivio.PrimitivI;
 
 import java.io.FileInputStream;
@@ -23,9 +23,9 @@ final class MifReader implements OutputPortCloseable<ParsedRead> {
     }
 
     private void initKnownReferences() {
-        int matchedGroupEdgesNum = input.readInt();
-        for (int i = 0; i < matchedGroupEdgesNum; i++)
-            input.putKnownReference(input.readObject(MatchedGroupEdge.class));
+        int groupEdgesNum = input.readInt();
+        for (int i = 0; i < groupEdgesNum; i++)
+            input.putKnownReference(input.readObject(GroupEdge.class));
     }
 
     @Override

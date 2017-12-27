@@ -44,9 +44,7 @@ public final class MatchedGroupEdge extends MatchedItem {
     }
 
     public static MatchedGroupEdge read(PrimitivI input) {
-        String groupName = input.readUTF();
-        boolean isStart = input.readBoolean();
-        GroupEdge groupEdge = new GroupEdge(groupName, isStart);
+        GroupEdge groupEdge = input.readObject(GroupEdge.class);
         int position = input.readInt();
         NSequenceWithQuality target = input.readObject(NSequenceWithQuality.class);
         byte targetId = input.readByte();
@@ -55,8 +53,7 @@ public final class MatchedGroupEdge extends MatchedItem {
     }
 
     public static void write(PrimitivO output, MatchedGroupEdge object) {
-        output.writeUTF(object.getGroupEdge().getGroupName());
-        output.writeBoolean(object.getGroupEdge().isStart());
+        output.writeObject(object.getGroupEdge());
         output.writeInt(object.getPosition());
         output.writeObject(object.getTarget());
         output.writeByte(object.getTargetId());

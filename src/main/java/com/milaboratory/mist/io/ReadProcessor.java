@@ -80,7 +80,7 @@ public final class ReadProcessor {
             totalReads++;
             if (parsedRead.getBestMatch() != null) {
                 if (writer == null)
-                    writer = createWriter(parsedRead.getBestMatch().getMatchedGroupEdges());
+                    writer = createWriter(pattern.getGroupEdges());
                 writer.write(parsedRead);
                 matchedReads++;
             }
@@ -141,12 +141,12 @@ public final class ReadProcessor {
         }
     }
 
-    private MifWriter createWriter(ArrayList<MatchedGroupEdge> matchedGroupEdges) {
+    private MifWriter createWriter(ArrayList<GroupEdge> groupEdges) {
         if (outputFileName == null)
-            return new MifWriter(System.out, matchedGroupEdges);
+            return new MifWriter(System.out, groupEdges);
         else
             try {
-                return new MifWriter(outputFileName, matchedGroupEdges);
+                return new MifWriter(outputFileName, groupEdges);
             } catch (IOException e) {
                 throw exitWithError(e.getMessage());
             }

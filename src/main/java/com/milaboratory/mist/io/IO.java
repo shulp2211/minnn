@@ -1,11 +1,8 @@
 package com.milaboratory.mist.io;
 
 import com.milaboratory.mist.outputconverter.ParsedRead;
-import com.milaboratory.mist.pattern.Match;
-import com.milaboratory.mist.pattern.MatchedGroupEdge;
-import com.milaboratory.primitivio.PrimitivI;
-import com.milaboratory.primitivio.PrimitivO;
-import com.milaboratory.primitivio.Serializer;
+import com.milaboratory.mist.pattern.*;
+import com.milaboratory.primitivio.*;
 
 public final class IO {
     public static class ParsedReadSerializer implements Serializer<ParsedRead> {
@@ -61,6 +58,28 @@ public final class IO {
         @Override
         public MatchedGroupEdge read(PrimitivI input) {
             return MatchedGroupEdge.read(input);
+        }
+
+        @Override
+        public boolean isReference() {
+            return true;
+        }
+
+        @Override
+        public boolean handlesReference() {
+            return false;
+        }
+    }
+
+    public static class GroupEdgeSerializer implements Serializer<GroupEdge> {
+        @Override
+        public void write(PrimitivO output, GroupEdge object) {
+            GroupEdge.write(output, object);
+        }
+
+        @Override
+        public GroupEdge read(PrimitivI input) {
+            return GroupEdge.read(input);
         }
 
         @Override
