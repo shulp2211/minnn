@@ -29,19 +29,13 @@ public final class ReadProcessor {
     private final int threads;
     private final MistDataFormat inputFormat;
     private final boolean testIOSpeed;
+    private boolean readsNumberChecked = false;
 
     public ReadProcessor(List<String> inputFileNames, String outputFileName, Pattern pattern,
             boolean orientedReads, boolean fairSorting, int threads, MistDataFormat inputFormat, boolean testIOSpeed) {
         if ((inputFormat == MIF) && (inputFileNames.size() > 1))
             throw exitWithError("Mif data format uses single file; specified " + inputFileNames.size()
                     + " input files!");
-        if (pattern instanceof SinglePattern && (inputFileNames.size() > 1))
-            throw exitWithError("Trying to use pattern for single read with multiple reads!");
-        if (pattern instanceof MultipleReadsOperator
-                && (inputFileNames.size() != ((MultipleReadsOperator)pattern).getNumberOfPatterns()))
-            throw exitWithError("Mismatched number of patterns ("
-                    + ((MultipleReadsOperator)pattern).getNumberOfPatterns() + ") and reads (" + inputFileNames.size()
-                    + ")!");
         this.inputFileNames = inputFileNames;
         this.outputFileName = outputFileName;
         this.pattern = pattern;
@@ -63,12 +57,7 @@ public final class ReadProcessor {
         CanReportProgress progress = (CanReportProgress)reader;
         SmartProgressReporter.startProgressReport("Parsing", progress);
         OutputPort<IndexedSequenceRead> bufferedReaderPort = CUtils.buffered(reader, 2048);
-
-        OutputPort<ProcessorInput> processorInputs = () -> {
-            IndexedSequenceRead indexedRead = bufferedReaderPort.take();
-            return (indexedRead == null) ? null
-                    : new ProcessorInput(indexedRead.sequenceRead, orientedReads, indexedRead.index);
-        };
+        OutputPort<ProcessorInput> processorInputs = () -> readToProcessorInput(bufferedReaderPort.take());
         OutputPort<ProcessorOutput> parsedReadsPort = new ParallelProcessor<>(processorInputs,
                 testIOSpeed ? new TestIOSpeedProcessor() : new ReadParserProcessor(), threads);
         OrderedOutputPort<ProcessorOutput> orderedReadsPort = new OrderedOutputPort<>(parsedReadsPort,
@@ -140,6 +129,22 @@ public final class ReadProcessor {
             } catch (IOException e) {
                 throw exitWithError(e.getMessage());
             }
+    }
+
+    private ProcessorInput readToProcessorInput(IndexedSequenceRead indexedRead) {
+        if (indexedRead == null)
+            return null;
+        if (!readsNumberChecked) {
+            int readsNumberInPattern = pattern instanceof SinglePattern ? 1
+                    : ((MultipleReadsOperator)pattern).getNumberOfPatterns();
+            int readsNumberInInput = indexedRead.sequenceRead.numberOfReads();
+            if (readsNumberInPattern != readsNumberInInput)
+                throw exitWithError("Mismatched number of patterns (" + readsNumberInPattern
+                        + ") and reads (" + readsNumberInInput + ")!");
+            readsNumberChecked = true;
+        }
+
+        return new ProcessorInput(indexedRead.sequenceRead, orientedReads, indexedRead.index);
     }
 
     private class ProcessorInput {
