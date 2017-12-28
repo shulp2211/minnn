@@ -52,11 +52,9 @@ public final class ReadProcessor {
         this.testIOSpeed = testIOSpeed;
     }
 
-    private interface MifSequenceReader extends OutputPortCloseable<SequenceRead>, CanReportProgress {}
-
     public void processReadsParallel() {
         long startTime = System.currentTimeMillis();
-        OutputPortCloseable<? extends SequenceRead> reader;
+        OutputPortCloseable<IndexedSequenceRead> reader;
         try {
             reader = createReader();
         } catch (IOException e) {
@@ -64,21 +62,23 @@ public final class ReadProcessor {
         }
         CanReportProgress progress = (CanReportProgress)reader;
         SmartProgressReporter.startProgressReport("Parsing", progress);
-        OutputPort<? extends SequenceRead> bufferedReaderPort = CUtils.buffered(reader, 2048);
+        OutputPort<IndexedSequenceRead> bufferedReaderPort = CUtils.buffered(reader, 2048);
 
         OutputPort<ProcessorInput> processorInputs = () -> {
-            SequenceRead read = bufferedReaderPort.take();
-            return (read == null) ? null : new ProcessorInput(read, orientedReads);
+            IndexedSequenceRead indexedRead = bufferedReaderPort.take();
+            return (indexedRead == null) ? null
+                    : new ProcessorInput(indexedRead.sequenceRead, orientedReads, indexedRead.index);
         };
-        OutputPort<ParsedRead> parsedReadsPort = new ParallelProcessor<>(processorInputs,
+        OutputPort<ProcessorOutput> parsedReadsPort = new ParallelProcessor<>(processorInputs,
                 testIOSpeed ? new TestIOSpeedProcessor() : new ReadParserProcessor(), threads);
-        OrderedOutputPort<ParsedRead> orderedReadsPort = new OrderedOutputPort<>(parsedReadsPort,
-                object -> object.getOriginalRead().getId());
+        OrderedOutputPort<ProcessorOutput> orderedReadsPort = new OrderedOutputPort<>(parsedReadsPort,
+                object -> object.index);
 
         MifWriter writer = null;
         long totalReads = 0;
         long matchedReads = 0;
-        for (ParsedRead parsedRead : CUtils.it(orderedReadsPort)) {
+        for (ProcessorOutput processorOutput : CUtils.it(orderedReadsPort)) {
+            ParsedRead parsedRead = processorOutput.parsedRead;
             totalReads++;
             if (parsedRead.getBestMatch() != null) {
                 if (writer == null)
@@ -89,6 +89,7 @@ public final class ReadProcessor {
         }
         if (writer == null)
             writer = createWriter(new ArrayList<>());
+        reader.close();
         writer.close();
 
         long elapsedTime = System.currentTimeMillis() - startTime;
@@ -97,57 +98,34 @@ public final class ReadProcessor {
                 totalReads == 0 ? 0.0 : matchedReads * 100.0 / totalReads));
     }
 
-    private OutputPortCloseable<? extends SequenceRead> createReader() throws IOException {
+    private OutputPortCloseable<IndexedSequenceRead> createReader() throws IOException {
         switch (inputFormat) {
             case FASTQ:
                 switch (inputFileNames.size()) {
                     case 0:
-                        return new SingleFastqReader(System.in);
+                        return new FastqSequenceReader(new SingleFastqReader(System.in));
                     case 1:
                         String[] s = inputFileNames.get(0).split("\\.");
                         if (s[s.length - 1].equals("fasta") || s[s.length - 1].equals("fa"))
-                            return new FastaSequenceReaderWrapper(new FastaReader<>(inputFileNames.get(0),
-                                    NucleotideSequence.ALPHABET), true);
+                            return new FastqSequenceReader(new FastaSequenceReaderWrapper(new FastaReader<>(
+                                    inputFileNames.get(0), NucleotideSequence.ALPHABET), true));
                         else
-                            return new SingleFastqReader(inputFileNames.get(0), true);
+                            return new FastqSequenceReader(new SingleFastqReader(inputFileNames.get(0),
+                                    true));
                     case 2:
-                        return new PairedFastqReader(inputFileNames.get(0), inputFileNames.get(1),
-                                true);
+                        return new FastqSequenceReader(new PairedFastqReader(inputFileNames.get(0),
+                                inputFileNames.get(1), true));
                     default:
                         SingleFastqReader readers[] = new SingleFastqReader[inputFileNames.size()];
                         for (int i = 0; i < inputFileNames.size(); i++)
                             readers[i] = new SingleFastqReader(inputFileNames.get(i), true);
-                        return new MultiReader(readers);
+                        return new FastqSequenceReader(new MultiReader(readers));
                 }
             case MIF:
-                MifReader parsedReadsPort;
                 if (inputFileNames.size() == 0)
-                    parsedReadsPort = new MifReader(System.in);
+                    return new MifSequenceReader(new MifReader(System.in));
                 else
-                    parsedReadsPort = new MifReader(inputFileNames.get(0));
-
-                return new MifSequenceReader() {
-                    @Override
-                    public void close() {
-                        parsedReadsPort.close();
-                    }
-
-                    @Override
-                    public double getProgress() {
-                        return parsedReadsPort.getProgress();
-                    }
-
-                    @Override
-                    public boolean isFinished() {
-                        return parsedReadsPort.isFinished();
-                    }
-
-                    @Override
-                    public SequenceRead take() {
-                        ParsedRead parsedRead = parsedReadsPort.take();
-                        return parsedRead == null ? null : parsedRead.getOriginalRead();
-                    }
-                };
+                    return new MifSequenceReader(new MifReader(inputFileNames.get(0)));
             default:
                 throw new IllegalStateException("Unknown input format: " + inputFormat);
         }
@@ -167,16 +145,97 @@ public final class ReadProcessor {
     private class ProcessorInput {
         final SequenceRead read;
         final boolean orientedReads;
+        final long index;
 
-        ProcessorInput(SequenceRead read, boolean orientedReads) {
+        ProcessorInput(SequenceRead read, boolean orientedReads, long index) {
             this.read = read;
             this.orientedReads = orientedReads;
+            this.index = index;
         }
     }
 
-    private class ReadParserProcessor implements Processor<ProcessorInput, ParsedRead> {
+    private class ProcessorOutput {
+        final ParsedRead parsedRead;
+        final long index;
+
+        ProcessorOutput(ParsedRead parsedRead, long index) {
+            this.parsedRead = parsedRead;
+            this.index = index;
+        }
+    }
+
+    private class IndexedSequenceRead {
+        final SequenceRead sequenceRead;
+        final long index;
+
+        IndexedSequenceRead(SequenceRead sequenceRead, long index) {
+            this.sequenceRead = sequenceRead;
+            this.index = index;
+        }
+    }
+
+    private class FastqSequenceReader implements OutputPortCloseable<IndexedSequenceRead>, CanReportProgress {
+        private final SequenceReaderCloseable fastqReader;
+
+        FastqSequenceReader(SequenceReaderCloseable fastqReader) {
+            this.fastqReader = fastqReader;
+        }
+
         @Override
-        public ParsedRead process(ProcessorInput input) {
+        public void close() {
+            fastqReader.close();
+        }
+
+        @Override
+        public IndexedSequenceRead take() {
+            SequenceRead sequenceRead = (SequenceRead)(fastqReader.take());
+            return sequenceRead == null ? null : new IndexedSequenceRead(sequenceRead, sequenceRead.getId());
+        }
+
+        @Override
+        public double getProgress() {
+            return ((CanReportProgress)fastqReader).getProgress();
+        }
+
+        @Override
+        public boolean isFinished() {
+            return ((CanReportProgress)fastqReader).isFinished();
+        }
+    }
+
+    private class MifSequenceReader implements OutputPortCloseable<IndexedSequenceRead>, CanReportProgress {
+        private final MifReader mifReader;
+        private long index = 0;
+
+        MifSequenceReader(MifReader mifReader) {
+            this.mifReader = mifReader;
+        }
+
+        @Override
+        public void close() {
+            mifReader.close();
+        }
+
+        @Override
+        public IndexedSequenceRead take() {
+            ParsedRead parsedRead = mifReader.take();
+            return parsedRead == null ? null : new IndexedSequenceRead(parsedRead.getOriginalRead(), index++);
+        }
+
+        @Override
+        public double getProgress() {
+            return mifReader.getProgress();
+        }
+
+        @Override
+        public boolean isFinished() {
+            return mifReader.isFinished();
+        }
+    }
+
+    private class ReadParserProcessor implements Processor<ProcessorInput, ProcessorOutput> {
+        @Override
+        public ProcessorOutput process(ProcessorInput input) {
             Match bestMatch = null;
             boolean reverseMatch = false;
             if (input.orientedReads) {
@@ -216,14 +275,14 @@ public final class ReadProcessor {
                 }
             }
 
-            return new ParsedRead(input.read, reverseMatch, bestMatch);
+            return new ProcessorOutput(new ParsedRead(input.read, reverseMatch, bestMatch), input.index);
         }
     }
 
-    private class TestIOSpeedProcessor implements Processor<ProcessorInput, ParsedRead> {
+    private class TestIOSpeedProcessor implements Processor<ProcessorInput, ProcessorOutput> {
         @Override
-        public ParsedRead process(ProcessorInput input) {
-            return new ParsedRead(input.read, false, null);
+        public ProcessorOutput process(ProcessorInput input) {
+            return new ProcessorOutput(new ParsedRead(input.read, false, null), input.index);
         }
     }
 }

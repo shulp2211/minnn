@@ -111,15 +111,19 @@ public class ExtractActionTest {
         String fastqFile = EXAMPLES_PATH + "small/100.fastq";
         String mifFile1 = TEMP_DIR + "output1.mif";
         String mifFile2 = TEMP_DIR + "output2.mif";
-        for (int i = 0; i < 1000; i++) {
+        String mifFile3 = TEMP_DIR + "output3.mif";
+        for (int i = 0; i < 100; i++) {
             SinglePattern randomPattern = getRandomSinglePattern();
             exec("extract --input " + fastqFile + " --output " + mifFile1 + " --devel-parser-syntax"
                     + " --pattern \"" + randomPattern.toString() + "\"");
             exec("extract --input-format mif --input " + mifFile1 + " --output " + mifFile2
-                    + " --pattern \"*\"");
-            assertFileEquals(mifFile1, mifFile2);
+                    + " --pattern \"*\" --threads 1");
+            // mifFile1 and mifFile2 can differ by match score, mifFile2 and mifFile3 must be equal
+            exec("extract --input-format mif --input " + mifFile2 + " --output " + mifFile3
+                    + " --pattern \"*\" --threads 1");
+            assertFileEquals(mifFile2, mifFile3);
         }
-        for (String fileName : new String[] { fastqFile, mifFile1, mifFile2 })
+        for (String fileName : new String[] { mifFile1, mifFile2, mifFile3 })
             assertTrue(new File(fileName).delete());
     }
 }
