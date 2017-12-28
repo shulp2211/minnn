@@ -24,7 +24,7 @@ import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.util.SystemUtils.exitWithError;
 
 public final class ExtractAction implements Action {
-    private final ParseActionParameters params = new ParseActionParameters();
+    private final ExtractActionParameters params = new ExtractActionParameters();
 
     @Override
     public void go(ActionHelper helper) {
@@ -59,7 +59,7 @@ public final class ExtractAction implements Action {
 
     @Parameters(commandDescription =
             "Read target nucleotide sequence and find groups and patterns as specified in query.")
-    private static final class ParseActionParameters extends ActionParameters {
+    private static final class ExtractActionParameters extends ActionParameters {
         @Parameter(description = "--pattern <pattern_query>")
         private String description;
 
