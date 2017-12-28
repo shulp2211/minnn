@@ -5,24 +5,29 @@ import com.milaboratory.mist.outputconverter.ParsedRead;
 import com.milaboratory.mist.pattern.GroupEdge;
 import com.milaboratory.primitivio.PrimitivI;
 import com.milaboratory.util.CanReportProgress;
+import com.milaboratory.util.CountingInputStream;
 
-import java.io.EOFException;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+
+import static java.lang.Double.NaN;
 
 final class MifReader implements OutputPortCloseable<ParsedRead>, CanReportProgress {
     private final PrimitivI input;
+    private final CountingInputStream countingInputStream;
+    private final long size;
     private boolean finished = false;
 
     MifReader(InputStream stream) {
-        input = new PrimitivI(stream);
+        input = new PrimitivI(this.countingInputStream = new CountingInputStream(stream));
         initKnownReferences();
+        size = 0;
     }
 
-    MifReader(String file) throws IOException {
-        input = new PrimitivI(new FileInputStream(file));
+    MifReader(String fileName) throws IOException {
+        File file = new File(fileName);
+        input = new PrimitivI(this.countingInputStream = new CountingInputStream(new FileInputStream(file)));
         initKnownReferences();
+        size = file.length();
     }
 
     private void initKnownReferences() {
@@ -34,11 +39,14 @@ final class MifReader implements OutputPortCloseable<ParsedRead>, CanReportProgr
     @Override
     public void close() {
         input.close();
+        finished = true;
     }
 
     @Override
     public double getProgress() {
-        return finished ? 1 : 0;
+        if (size == 0)
+            return NaN;
+        return (1.0 * countingInputStream.getBytesRead()) / size;
     }
 
     @Override
