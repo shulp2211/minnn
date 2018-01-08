@@ -15,7 +15,7 @@ import static com.milaboratory.mist.parser.ParserUtils.*;
  * Parsers for objects and their parameters for normal syntax.
  */
 final class NormalParsers {
-    private final PatternAligner patternAligner;
+    private final long finalScoreThreshold;
     private final String query;
     private final List<BracketsPair> squareBracketsPairs;
     private final ArrayList<Integer> startStickMarkers;
@@ -24,11 +24,11 @@ final class NormalParsers {
     private final ArrayList<BorderToken> borderTokens;
     private final List<NormalSyntaxGroupName> groupNames;
 
-    NormalParsers(PatternAligner patternAligner, String query, List<BracketsPair> squareBracketsPairs,
+    NormalParsers(long finalScoreThreshold, String query, List<BracketsPair> squareBracketsPairs,
                   ArrayList<Integer> startStickMarkers, ArrayList<Integer> endStickMarkers,
                   ArrayList<ScoreThreshold> scoreThresholds, ArrayList<BorderToken> borderTokens,
                   List<NormalSyntaxGroupName> groupNames) {
-        this.patternAligner = patternAligner;
+        this.finalScoreThreshold = finalScoreThreshold;
         this.query = query;
         this.squareBracketsPairs = squareBracketsPairs;
         this.startStickMarkers = startStickMarkers;
@@ -95,8 +95,9 @@ final class NormalParsers {
                     .map(fe -> fe.groupEdgePosition).collect(Collectors.toCollection(ArrayList::new));
             validateGroupEdgePositions(groupEdgePositions);
 
-            foundTokens.add(new FoundToken(new RepeatPattern(getPatternAligner(bracesPair.start - 1, bracesPair.end + 1),
-                    patternSeq, minRepeats, maxRepeats, fixedLeftBorder, fixedRightBorder, groupEdgePositions),
+            foundTokens.add(new FoundToken(new RepeatPattern(getScoreThreshold(
+                    bracesPair.start - 1, bracesPair.end + 1), patternSeq, minRepeats, maxRepeats,
+                    fixedLeftBorder, fixedRightBorder, groupEdgePositions),
                     bracesPair.start - 1, bracesPair.end + 1));
         }
 
@@ -157,7 +158,7 @@ final class NormalParsers {
                     fixedRightBorder = -2;
                 }
 
-                foundTokens.add(new FoundToken(new FuzzyMatchPattern(getPatternAligner(start, end), patternSeq,
+                foundTokens.add(new FoundToken(new FuzzyMatchPattern(getScoreThreshold(start, end), patternSeq,
                         foundLeftCut, foundRightCut, fixedLeftBorder, fixedRightBorder, groupEdgePositions),
                         start, end));
             }
@@ -191,7 +192,7 @@ final class NormalParsers {
                 validateGroupEdges(groupEdges, true, false);
                 foundGroupEdgePositions.forEach(fe -> foundTokens.add(new FoundToken(null, fe.start, fe.end)));
 
-                foundTokens.add(new FoundToken(new AnyPattern(patternAligner, groupEdges), start, start + 1));
+                foundTokens.add(new FoundToken(new AnyPattern(finalScoreThreshold, groupEdges), start, start + 1));
                 asteriskPosition = (asteriskPosition == currentString.length() - 1) ? -1
                         : currentString.indexOf("*", asteriskPosition + 1);
             }
@@ -316,7 +317,7 @@ final class NormalParsers {
                         int sequenceTokenEnd = (i == tokens.size()) ? tokenizedString.getFullLength()
                                 : tokens.get(i).getStartCoordinate();
                         validateGroupEdges(false, false, true, operands);
-                        foundTokens.add(new FoundToken(new SequencePattern(getPatternAligner(sequenceTokenStart,
+                        foundTokens.add(new FoundToken(new SequencePattern(getScoreThreshold(sequenceTokenStart,
                                 sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd));
                     }
                     sequenceStarted = false;
@@ -457,19 +458,19 @@ final class NormalParsers {
                             FoundToken foundToken;
                             if (operatorRegexp.contains("+")) {
                                 validateGroupEdges(false, false, true, operands);
-                                foundToken = new FoundToken(new PlusPattern(getPatternAligner(sequenceTokenStart,
+                                foundToken = new FoundToken(new PlusPattern(getScoreThreshold(sequenceTokenStart,
                                         sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd);
                             } else if (operatorRegexp.contains("&")) {
                                 validateGroupEdges(true, false, true, operands);
-                                foundToken = new FoundToken(new AndPattern(getPatternAligner(sequenceTokenStart,
+                                foundToken = new FoundToken(new AndPattern(getScoreThreshold(sequenceTokenStart,
                                         sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd);
                             } else if (operatorRegexp.contains("|")) {
                                 validateGroupEdges(true, true, true, operands);
-                                foundToken = new FoundToken(new OrPattern(getPatternAligner(sequenceTokenStart,
+                                foundToken = new FoundToken(new OrPattern(getScoreThreshold(sequenceTokenStart,
                                         sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd);
                             } else if (operatorRegexp.contains("\\\\")) {
                                 validateGroupEdges(true, false, true, operands);
-                                foundToken = new FoundToken(new MultiPattern(getPatternAligner(sequenceTokenStart,
+                                foundToken = new FoundToken(new MultiPattern(getScoreThreshold(sequenceTokenStart,
                                         sequenceTokenEnd), operands), sequenceTokenStart, sequenceTokenEnd);
                             } else
                                 throw new IllegalArgumentException("Invalid operator regexp: " + operatorRegexp);
@@ -509,7 +510,7 @@ final class NormalParsers {
                         + tokenizedString);
             if (onlySinglePatterns)
                 tokens.stream().filter(Token::isPatternAndNotNull).forEach(token -> foundTokens.add(
-                        new FoundToken(new MultiPattern(getPatternAligner(
+                        new FoundToken(new MultiPattern(getScoreThreshold(
                         token.getStartCoordinate(), token.getStartCoordinate() + token.getLength()),
                         (SinglePattern)(token.getPattern())),
                         token.getStartCoordinate(), token.getStartCoordinate() + token.getLength())));
@@ -558,7 +559,7 @@ final class NormalParsers {
                                 int tokenEnd = operandToken.getStartCoordinate() + operandToken.getLength();
                                 MultipleReadsOperator operand = operandToken.getMultipleReadsOperator();
                                 validateGroupEdges(false, true, false, operand);
-                                foundTokens.add(new FoundToken(new NotOperator(getPatternAligner(tokenStart, tokenEnd),
+                                foundTokens.add(new FoundToken(new NotOperator(getScoreThreshold(tokenStart, tokenEnd),
                                         operand), tokenStart, tokenEnd));
                             }
                         } else if (sequenceStart < i - 2) {
@@ -572,11 +573,11 @@ final class NormalParsers {
                             MultipleReadsOperator multipleReadsOperator;
                             if (operatorRegexp.contains("&")) {
                                 validateGroupEdges(true, false, true, operands);
-                                multipleReadsOperator = new AndOperator(getPatternAligner(sequenceTokenStart,
+                                multipleReadsOperator = new AndOperator(getScoreThreshold(sequenceTokenStart,
                                         sequenceTokenEnd), operands);
                             } else if (operatorRegexp.contains("|")) {
                                 validateGroupEdges(true, true, true, operands);
-                                multipleReadsOperator = new OrOperator(getPatternAligner(sequenceTokenStart,
+                                multipleReadsOperator = new OrOperator(getScoreThreshold(sequenceTokenStart,
                                         sequenceTokenEnd), operands);
                             } else
                                 throw new IllegalArgumentException("Invalid operator regexp: " + operatorRegexp);
@@ -849,11 +850,11 @@ final class NormalParsers {
     }
 
     private SinglePattern wrapWithScoreFilter(SinglePattern singlePattern, long scoreThreshold) {
-        return new FilterPattern(patternAligner, new ScoreFilter(scoreThreshold), singlePattern);
+        return new FilterPattern(finalScoreThreshold, new ScoreFilter(scoreThreshold), singlePattern);
     }
 
     private MultipleReadsOperator wrapWithScoreFilter(MultipleReadsOperator multiReadPattern, long scoreThreshold) {
-        return new MultipleReadsFilterPattern(patternAligner, new ScoreFilter(scoreThreshold), multiReadPattern);
+        return new MultipleReadsFilterPattern(finalScoreThreshold, new ScoreFilter(scoreThreshold), multiReadPattern);
     }
 
     private SinglePattern wrapWithStickFilter(SinglePattern singlePattern, boolean left, int position) {
@@ -861,7 +862,7 @@ final class NormalParsers {
         if (singlePattern instanceof FuzzyMatchPattern || singlePattern instanceof RepeatPattern) {
             wrappedPattern = ((CanFixBorders)singlePattern).fixBorder(left, position);
         } else if (singlePattern instanceof CanFixBorders) {
-            wrappedPattern = new FilterPattern(patternAligner, new StickFilter(left, position),
+            wrappedPattern = new FilterPattern(finalScoreThreshold, new StickFilter(left, position),
                     ((CanFixBorders)singlePattern).fixBorder(left, position));
         } else
             wrappedPattern = singlePattern;
@@ -893,14 +894,13 @@ final class NormalParsers {
     }
 
     /**
-     * Find score threshold for specified range and return PatternAligner with this threshold. If there is no score
-     * threshold, return pattern aligner without changing its threshold.
+     * Return score threshold for specified range.
      *
      * @param start start of range, inclusive
      * @param end end of range, exclusive
-     * @return PatternAligner with updated score threshold for the specified range
+     * @return score threshold for the specified range
      */
-    private PatternAligner getPatternAligner(int start, int end) {
+    private long getScoreThreshold(int start, int end) {
         int currentNestedLevel = -1;
         long currentThreshold = 0;
         for (ScoreThreshold scoreThreshold : scoreThresholds)
@@ -909,9 +909,9 @@ final class NormalParsers {
                 currentThreshold = scoreThreshold.threshold;
             }
         if (currentNestedLevel == -1)
-            return patternAligner;
+            return finalScoreThreshold;
         else
-            return patternAligner.overridePenaltyThreshold(currentThreshold);
+            return currentThreshold;
     }
 
     private static class FoundGroupEdgePosition {

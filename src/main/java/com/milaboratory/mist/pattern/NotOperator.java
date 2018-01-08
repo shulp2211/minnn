@@ -6,8 +6,8 @@ import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import java.util.ArrayList;
 
 public final class NotOperator extends MultipleReadsOperator {
-    public NotOperator(PatternAligner patternAligner, MultipleReadsOperator... operandPatterns) {
-        super(patternAligner, operandPatterns);
+    public NotOperator(long scoreThreshold, MultipleReadsOperator... operandPatterns) {
+        super(scoreThreshold, operandPatterns);
         if (operandPatterns.length != 1)
             throw new IllegalArgumentException("Not operator must take exactly 1 operand!");
         if (groupEdges.size() > 0)
@@ -40,7 +40,7 @@ public final class NotOperator extends MultipleReadsOperator {
 
         @Override
         public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
-            return new NotOperatorOutputPort(patternAligner, operandPattern.match(target).getMatches(fairSorting));
+            return new NotOperatorOutputPort(operandPattern.match(target).getMatches(fairSorting));
         }
 
         private class NotOperatorOutputPort implements OutputPort<MatchIntermediate> {
@@ -48,7 +48,7 @@ public final class NotOperator extends MultipleReadsOperator {
             private boolean firstCall = true;
             private boolean operandIsMatching;
 
-            NotOperatorOutputPort(PatternAligner patternAligner, OutputPort<MatchIntermediate> operandPort) {
+            NotOperatorOutputPort(OutputPort<MatchIntermediate> operandPort) {
                 this.operandPort = operandPort;
             }
 
@@ -59,11 +59,9 @@ public final class NotOperator extends MultipleReadsOperator {
                 firstCall = false;
                 if (operandIsMatching)
                     return null;
-                else {
-                    return new MatchIntermediate(1, patternAligner.notResultScore(),
-                            -1, -1,
+                else
+                    return new MatchIntermediate(1, 0, -1, -1,
                             new ArrayList<>(), new NullMatchedRange(0));
-                }
             }
         }
     }

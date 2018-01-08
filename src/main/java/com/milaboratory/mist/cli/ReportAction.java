@@ -26,12 +26,10 @@ public class ReportAction implements Action {
     public void go(ActionHelper helper) {
         PatternAndTargetAlignmentScoring scoring = new PatternAndTargetAlignmentScoring(params.matchScore,
                 params.mismatchScore, params.gapScore, params.goodQuality, params.badQuality, params.maxQualityPenalty);
-        PatternAligner patternAligner = new BasePatternAligner(scoring, params.penaltyThreshold,
-                params.singleOverlapPenalty, params.bitapMaxErrors, params.maxOverlap);
-        Parser patternParser = new Parser(patternAligner);
+        PatternAligner.init(scoring, params.singleOverlapPenalty, params.bitapMaxErrors, params.maxOverlap);
         Pattern pattern;
         try {
-            pattern = patternParser.parseQuery(params.query);
+            pattern = Parser.parseQuery(params.query, params.scoreThreshold);
         } catch (ParserException e) {
             System.err.println("Error while parsing the pattern!");
             throw exitWithError(e.getMessage());
@@ -126,17 +124,17 @@ public class ReportAction implements Action {
         byte goodQuality = DEFAULT_GOOD_QUALITY;
 
         @Parameter(description = "This or worse quality value will be considered bad quality, " +
-                "with maximal score penalty.",
+                "with maximum score penalty.",
                 names = {"--bad-quality-value"})
         byte badQuality = DEFAULT_BAD_QUALITY;
 
-        @Parameter(description = "Maximal score penalty for bad quality nucleotide in target.",
+        @Parameter(description = "Maximum score penalty for bad quality nucleotide in target.",
                 names = {"--max-quality-penalty"})
         int maxQualityPenalty = DEFAULT_MAX_QUALITY_PENALTY;
 
         @Parameter(description = "Score threshold, matches with score lower than this will not go to output.",
-                names = {"--penalty-threshold"})
-        long penaltyThreshold = DEFAULT_PENALTY_THRESHOLD;
+                names = {"--score-threshold"})
+        long scoreThreshold = DEFAULT_SCORE_THRESHOLD;
 
         @Parameter(description = "Score penalty for 1 nucleotide overlap between neighbor patterns. Negative value.",
                 names = {"--single-overlap-penalty"})

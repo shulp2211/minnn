@@ -10,8 +10,8 @@ import static com.milaboratory.mist.pattern.MatchValidationType.LOGICAL_AND;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
 
 public final class MultiPattern extends MultipleReadsOperator {
-    public MultiPattern(PatternAligner patternAligner, SinglePattern... singlePatterns) {
-        super(patternAligner, singlePatterns);
+    public MultiPattern(long scoreThreshold, SinglePattern... singlePatterns) {
+        super(scoreThreshold, singlePatterns);
         for (byte i = 1; i <= singlePatterns.length; i++)
             singlePatterns[i - 1].setTargetId(i);
     }
@@ -44,7 +44,7 @@ public final class MultiPattern extends MultipleReadsOperator {
 
         @Override
         public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
-            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, patternAligner,
+            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, scoreThreshold,
                     true, true, fairSorting, LOGICAL_AND,
                     unfairSorterPortLimits.get(MultiPattern.class), singlePatterns);
             return new ApproximateSorter(conf).getOutputPort();

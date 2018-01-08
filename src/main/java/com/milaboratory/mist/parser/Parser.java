@@ -1,17 +1,13 @@
 package com.milaboratory.mist.parser;
 
 import com.milaboratory.mist.pattern.Pattern;
-import com.milaboratory.mist.pattern.PatternAligner;
 
 public final class Parser {
-    private final PatternAligner patternAligner;
-
-    public Parser(PatternAligner patternAligner) {
-        this.patternAligner = patternAligner;
+    private Parser() {
     }
 
-    public Pattern parseQuery(String query) throws ParserException {
-        return parseQuery(query, ParserFormat.NORMAL);
+    public static Pattern parseQuery(String query, long scoreThreshold) throws ParserException {
+        return parseQuery(query, scoreThreshold, ParserFormat.NORMAL);
     }
 
     /**
@@ -19,14 +15,15 @@ public final class Parser {
      * is wrong in the query.
      *
      * @param query query string
+     * @param scoreThreshold score threshold
      * @param format parser format: NORMAL for end users or SIMPLIFIED as toString() output in inner classes
      * @return Pattern object for specified query string
      */
-    public Pattern parseQuery(String query, ParserFormat format) throws ParserException {
+    public static Pattern parseQuery(String query, long scoreThreshold, ParserFormat format) throws ParserException {
         if (query.equals("")) throw new ParserException("Query is empty!");
         TokenizedString tokenizedString = new TokenizedString(query);
-        Tokenizer tokenizer = (format == ParserFormat.NORMAL) ? new NormalTokenizer(patternAligner)
-                : new SimplifiedTokenizer(patternAligner);
+        Tokenizer tokenizer = (format == ParserFormat.NORMAL) ? new NormalTokenizer(scoreThreshold)
+                : new SimplifiedTokenizer(scoreThreshold);
         tokenizer.tokenize(tokenizedString);
         return tokenizedString.getFinalPattern();
     }

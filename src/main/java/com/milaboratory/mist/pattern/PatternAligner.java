@@ -1,104 +1,68 @@
 package com.milaboratory.mist.pattern;
 
-import com.milaboratory.core.alignment.Alignment;
+import com.milaboratory.core.Range;
+import com.milaboratory.core.alignment.*;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 
-public interface PatternAligner {
-    /**
-     * Returned alignment will have maximal score equals zero.
-     *
-     * @param pattern case sensitive nucleotide sequence from pattern
-     * @param target target nucleotide sequence with quality
-     * @param rightMatchPosition right position of found bitap match, inclusive
-     * @return alignment with score less or equals than zero
-     */
-    Alignment<NucleotideSequenceCaseSensitive> align(NucleotideSequenceCaseSensitive pattern,
-            NSequenceWithQuality target, int rightMatchPosition);
-    /**
-     * Penalty threshold, negative value.
-     *
-     * @return penalty threshold
-     */
-    long penaltyThreshold();
+public class PatternAligner {
+    private static PatternAndTargetAlignmentScoring scoring;
+    private static long singleOverlapPenalty;
+    private static int bitapMaxErrors;
+    private static int maxOverlap;
+    private static boolean initialized = false;
 
-    /**
-     * Calculate penalty value for given overlap in the target.
-     *
-     * @param target        target
-     * @param overlapOffset offset inclusive
-     * @param overlapLength length
-     * @return negative penalty value
-     */
-    long overlapPenalty(NSequenceWithQuality target, int overlapOffset, int overlapLength);
-
-    /**
-     * Calculate penalty value for given insertion in the target.
-     *
-     * @param target          target
-     * @param insertionOffset offset inclusive
-     * @param insertionLength length
-     * @return negative penalty value
-     */
-    long insertionPenalty(NSequenceWithQuality target, int insertionOffset, int insertionLength);
-
-    /**
-     * Get penalty value for given number of motif repeats for RepeatPattern match.
-     *
-     * @param motif motif of this RepeatPattern
-     * @param repeats number of motif repeats for this RepeatPattern match
-     * @param maxRepeats maximum number of motif repeats for this RepeatPattern
-     * @return negative penalty value
-     */
-    default long repeatsPenalty(NucleotideSequenceCaseSensitive motif, int repeats, int maxRepeats) {
-        return 0;
+    private PatternAligner() {
     }
 
     /**
-     * Max errors to use in bitap matcher.
+     * Initialize configuration for scoring and alignment for patterns.
      *
-     * @return max errors for bitap
+     * @param scoringArg scoring for pattern and target alignment
+     * @param singleOverlapPenaltyArg 0 or negative; this is penalty for 1 nucleotide overlap between 2 patterns
+     * @param bitapMaxErrorsArg 0 or positive; maximum allowed number of errors for bitap
+     * @param maxOverlapArg 0 or positive; maximum allowed number of overlapped nucleotides between 2 patterns
      */
-    int bitapMaxErrors();
-
-    /**
-     * Score for result of Not operator.
-     *
-     * @return not result score
-     */
-    default long notResultScore() {
-        return 0;
+    public static void init(PatternAndTargetAlignmentScoring scoringArg, long singleOverlapPenaltyArg,
+                            int bitapMaxErrorsArg, int maxOverlapArg) {
+        if (initialized)
+            throw new IllegalStateException("Repeated initialization of PatternAligner!");
+        scoring = scoringArg;
+        singleOverlapPenalty = singleOverlapPenaltyArg;
+        bitapMaxErrors = bitapMaxErrorsArg;
+        maxOverlap = maxOverlapArg;
+        initialized = true;
     }
 
-    /**
-     * Maximal allowed overlap for two intersecting sub-patterns
-     *
-     * @return max overlap; or -1 if no limit on overlap size
-     */
-    default int maxOverlap() {
-        return -1;
+    public static Alignment<NucleotideSequenceCaseSensitive> align(NucleotideSequenceCaseSensitive pattern,
+            NSequenceWithQuality target, int rightMatchPosition, int leftBorder) {
+        if (leftBorder == -1) {
+            return PatternAndTargetAligner.alignLeftAdded(scoring, pattern, target, rightMatchPosition, bitapMaxErrors);
+        } else {
+            Range targetRange = new Range(leftBorder, rightMatchPosition + 1);
+            NSequenceWithQuality targetPart = new NSequenceWithQuality(target.getSequence().getRange(targetRange),
+                    target.getQuality().getRange(targetRange));
+            Alignment<NucleotideSequenceCaseSensitive> partAlignment = PatternAndTargetAligner.alignGlobal(scoring,
+                    pattern, targetPart);
+            return new Alignment<>(pattern, partAlignment.getAbsoluteMutations(),
+                    partAlignment.getSequence1Range(), partAlignment.getSequence2Range().move(leftBorder),
+                    partAlignment.getScore());
+        }
     }
 
-    /**
-     * Fixed left border position for alignment if it is specified; -1 if not specified.
-     * If left border is specified, global aligner is used.
-     *
-     * @return left border position for alignment if it is specified; -1 if not specified
-     */
-    default int leftBorder() { return -1; }
+    public static long overlapPenalty(int overlapLength) {
+        return singleOverlapPenalty * overlapLength;
+    }
 
-    /**
-     * Return new pattern with more strict penalty threshold.
-     *
-     * @return copy of this PatternAligner with more strict penalty threshold
-     */
-    PatternAligner overridePenaltyThreshold(long newThresholdValue);
+    public static long insertionPenalty(int insertionLength) {
+        return singleOverlapPenalty * insertionLength;
+    }
 
-    /**
-     * Set left border for alignment. When it is set, global aligner is used.
-     *
-     * @param leftBorder left border for alignment
-     * @return copy of this PatternAligner with fixed left border
-     */
-    PatternAligner setLeftBorder(int leftBorder);
+    public static int bitapMaxErrors() {
+        return bitapMaxErrors;
+    }
+
+    public static int maxOverlap() {
+        return maxOverlap;
+    }
 }

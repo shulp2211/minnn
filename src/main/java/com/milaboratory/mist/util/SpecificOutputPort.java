@@ -63,8 +63,4 @@ final class SpecificOutputPort implements OutputPort<MatchIntermediate> {
     boolean paramsEqualTo(int operandIndex, int from, int to) {
         return (operandIndex == this.operandIndex) && (from == this.from) && (to == this.to);
     }
-
-    boolean isFinished() {
-        return finished;
-    }
 }

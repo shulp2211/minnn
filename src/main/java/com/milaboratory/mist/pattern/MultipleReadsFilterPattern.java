@@ -9,12 +9,12 @@ public final class MultipleReadsFilterPattern extends MultipleReadsOperator {
     private final FilterPattern filterPattern;
     private final Filter filter;
 
-    public MultipleReadsFilterPattern(PatternAligner patternAligner, Filter filter,
+    public MultipleReadsFilterPattern(long scoreThreshold, Filter filter,
                                       MultipleReadsOperator... operandPatterns) {
-        super(patternAligner, operandPatterns);
+        super(scoreThreshold, operandPatterns);
         if (operandPatterns.length != 1)
             throw new IllegalArgumentException("Filter pattern must take exactly 1 operand pattern!");
-        this.filterPattern = new FilterPattern(patternAligner, filter, operandPatterns[0]);
+        this.filterPattern = new FilterPattern(scoreThreshold, filter, operandPatterns[0]);
         this.filter = filter;
     }
 

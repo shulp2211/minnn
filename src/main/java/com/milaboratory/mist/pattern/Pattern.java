@@ -5,10 +5,10 @@ import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import java.util.ArrayList;
 
 public abstract class Pattern {
-    protected final PatternAligner patternAligner;
+    protected final long scoreThreshold;
 
-    Pattern(PatternAligner patternAligner) {
-        this.patternAligner = patternAligner;
+    Pattern(long scoreThreshold) {
+        this.scoreThreshold = scoreThreshold;
     }
 
     /**
@@ -34,8 +34,8 @@ public abstract class Pattern {
      */
     public abstract ArrayList<GroupEdge> getGroupEdges(int patternIndex);
 
-    public PatternAligner getPatternAligner() {
-        return patternAligner;
+    public long getScoreThreshold() {
+        return scoreThreshold;
     }
 
     /**

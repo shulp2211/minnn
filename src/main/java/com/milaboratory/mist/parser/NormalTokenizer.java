@@ -11,8 +11,8 @@ import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.parser.ParserUtils.*;
 
 final class NormalTokenizer extends Tokenizer {
-    NormalTokenizer(PatternAligner patternAligner) {
-        super(patternAligner);
+    NormalTokenizer(long finalScoreThreshold) {
+        super(finalScoreThreshold);
     }
 
     @Override
@@ -30,7 +30,7 @@ final class NormalTokenizer extends Tokenizer {
         List<NormalSyntaxGroupName> groupNames = getGroupNames(fullString, parenthesesPairs);
         groupNames.sort(Comparator.comparingInt(gn -> gn.start));
 
-        NormalParsers normalParsers = new NormalParsers(patternAligner, fullString, squareBracketsPairs,
+        NormalParsers normalParsers = new NormalParsers(finalScoreThreshold, fullString, squareBracketsPairs,
                 startStickMarkers, endStickMarkers, scoreThresholds, borderTokens, groupNames);
 
         normalParsers.parseRepeatPatterns(getRepeatPatternBraces(bracesPairs, borderBracesPairs))
@@ -91,7 +91,7 @@ final class NormalTokenizer extends Tokenizer {
      * @param spaceStringsOnly true if search only for space strings, false if also search for null patterns
      */
     private static void clearGarbageTokens(NormalParsers normalParsers, TokenizedString tokenizedString,
-            boolean spaceStringsOnly) throws ParserException {
+            boolean spaceStringsOnly) {
         int sizeBeforeCleanup;
         int sizeAfterCleanup;
         do {

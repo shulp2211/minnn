@@ -10,8 +10,8 @@ import static com.milaboratory.mist.pattern.MatchValidationType.INTERSECTION;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
 
 public final class AndPattern extends MultiplePatternsOperator {
-    public AndPattern(PatternAligner patternAligner, SinglePattern... operandPatterns) {
-        super(patternAligner, operandPatterns);
+    public AndPattern(long scoreThreshold, SinglePattern... operandPatterns) {
+        super(scoreThreshold, operandPatterns);
     }
 
     @Override
@@ -42,7 +42,7 @@ public final class AndPattern extends MultiplePatternsOperator {
 
         @Override
         public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
-            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, patternAligner,
+            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, scoreThreshold,
                     true, fairSorting, INTERSECTION, unfairSorterPortLimits.get(AndPattern.class),
                     operandPatterns);
             return new ApproximateSorter(conf).getOutputPort();

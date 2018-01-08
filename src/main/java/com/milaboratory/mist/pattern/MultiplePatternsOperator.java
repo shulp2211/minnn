@@ -8,19 +8,19 @@ abstract class MultiplePatternsOperator extends SinglePattern {
     protected final SinglePattern[] operandPatterns;
     protected final ArrayList<GroupEdge> groupEdges;
 
-    MultiplePatternsOperator(PatternAligner patternAligner, SinglePattern... operandPatterns) {
-        this(patternAligner, true, operandPatterns);
+    MultiplePatternsOperator(long scoreThreshold, SinglePattern... operandPatterns) {
+        this(scoreThreshold, true, operandPatterns);
     }
 
     /**
      * Common constructor for multiple patterns operator.
      *
-     * @param patternAligner pattern aligner; it also provides information about scoring and pattern overlap limits
+     * @param scoreThreshold all matches with score lower than this threshold will be ignored
      * @param checkGroupEdges true if check that operands contain equal group edges must be performed
      * @param operandPatterns patterns that come as operands for the operator
      */
-    MultiplePatternsOperator(PatternAligner patternAligner, boolean checkGroupEdges, SinglePattern... operandPatterns) {
-        super(patternAligner);
+    MultiplePatternsOperator(long scoreThreshold, boolean checkGroupEdges, SinglePattern... operandPatterns) {
+        super(scoreThreshold);
         this.operandPatterns = operandPatterns;
         this.groupEdges = new ArrayList<>();
         for (SinglePattern pattern : operandPatterns)

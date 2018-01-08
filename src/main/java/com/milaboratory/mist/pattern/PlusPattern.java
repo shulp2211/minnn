@@ -11,8 +11,8 @@ import static com.milaboratory.mist.pattern.MatchValidationType.ORDER;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
 
 public final class PlusPattern extends MultiplePatternsOperator implements CanFixBorders {
-    public PlusPattern(PatternAligner patternAligner, SinglePattern... operandPatterns) {
-        super(patternAligner, operandPatterns);
+    public PlusPattern(long scoreThreshold, SinglePattern... operandPatterns) {
+        super(scoreThreshold, operandPatterns);
     }
 
     @Override
@@ -35,7 +35,7 @@ public final class PlusPattern extends MultiplePatternsOperator implements CanFi
         int targetOperandIndex = left ? 0 : operandPatterns.length - 1;
         if (operandPatterns[targetOperandIndex] instanceof CanFixBorders) {
             SinglePattern newOperand = ((CanFixBorders)(operandPatterns[targetOperandIndex])).fixBorder(left, position);
-            return new PlusPattern(patternAligner, IntStream.range(0, operandPatterns.length)
+            return new PlusPattern(scoreThreshold, IntStream.range(0, operandPatterns.length)
                     .mapToObj((int i) -> (i == targetOperandIndex ? newOperand : operandPatterns[i]))
                     .toArray(SinglePattern[]::new));
         } else
@@ -55,7 +55,7 @@ public final class PlusPattern extends MultiplePatternsOperator implements CanFi
 
         @Override
         public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
-            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, patternAligner,
+            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, scoreThreshold,
                     true, fairSorting, ORDER, unfairSorterPortLimits.get(PlusPattern.class),
                     operandPatterns);
             return new ApproximateSorter(conf).getOutputPort();

@@ -14,8 +14,8 @@ import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterP
  * if all arguments didn't match.
  */
 public final class OrPattern extends MultiplePatternsOperator implements CanFixBorders {
-    public OrPattern(PatternAligner patternAligner, SinglePattern... operandPatterns) {
-        super(patternAligner, false, operandPatterns);
+    public OrPattern(long scoreThreshold, SinglePattern... operandPatterns) {
+        super(scoreThreshold, false, operandPatterns);
     }
 
     @Override
@@ -49,7 +49,7 @@ public final class OrPattern extends MultiplePatternsOperator implements CanFixB
 
     @Override
     public SinglePattern fixBorder(boolean left, int position) {
-        return new OrPattern(patternAligner, Arrays.stream(operandPatterns)
+        return new OrPattern(scoreThreshold, Arrays.stream(operandPatterns)
                 .map(p -> (p instanceof CanFixBorders ? ((CanFixBorders)p).fixBorder(left, position) : p))
                 .toArray(SinglePattern[]::new));
     }
@@ -67,7 +67,7 @@ public final class OrPattern extends MultiplePatternsOperator implements CanFixB
 
         @Override
         public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
-            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, patternAligner,
+            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, scoreThreshold,
                     false, fairSorting, FIRST, unfairSorterPortLimits.get(OrPattern.class),
                     operandPatterns);
             return new ApproximateSorter(conf).getOutputPort();

@@ -13,7 +13,7 @@ public final class ApproximateSorterConfiguration {
     final MultiNSequenceWithQuality target;
     private final int from;
     private final int to;
-    final PatternAligner patternAligner;
+    final long scoreThreshold;
     final boolean multipleReads;
     final boolean separateTargets;
     final boolean combineScoresBySum;
@@ -26,7 +26,7 @@ public final class ApproximateSorterConfiguration {
      * Configuration for MultipleReadsOperator patterns.
      *
      * @param target target nucleotide sequence (or multiple sequences)
-     * @param patternAligner pattern aligner that provides information about scoring and pattern overlap limits
+     * @param scoreThreshold all matches with score lower than this threshold will be ignored
      * @param separateTargets true only for MultiPattern when each operand pattern gets its own part of multi-target
      * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
      *                           score must be the highest of match scores
@@ -35,14 +35,14 @@ public final class ApproximateSorterConfiguration {
      * @param unfairSorterLimit maximum number of output values for this port for unfair sorter
      * @param operandPatterns operand patterns
      */
-    public ApproximateSorterConfiguration(MultiNSequenceWithQuality target, PatternAligner patternAligner,
+    public ApproximateSorterConfiguration(MultiNSequenceWithQuality target, long scoreThreshold,
             boolean separateTargets, boolean combineScoresBySum, boolean fairSorting,
             MatchValidationType matchValidationType, int unfairSorterLimit, Pattern... operandPatterns) {
         this.operandPatterns = operandPatterns;
         this.target = target;
         this.from = -1;
         this.to = -1;
-        this.patternAligner = patternAligner;
+        this.scoreThreshold = scoreThreshold;
         this.multipleReads = true;
         this.separateTargets = separateTargets;
         this.combineScoresBySum = combineScoresBySum;
@@ -75,7 +75,7 @@ public final class ApproximateSorterConfiguration {
      * @param target target nucleotide sequence (or multiple sequences)
      * @param from left border in target for range where to search matches, inclusive
      * @param to right border in target for range where to search matches, exclusive
-     * @param patternAligner pattern aligner that provides information about scoring and pattern overlap limits
+     * @param scoreThreshold all matches with score lower than this threshold will be ignored
      * @param combineScoresBySum true if combined score must be equal to sum of match scores; false if combined
      *                           score must be the highest of match scores
      * @param fairSorting true if we need slow but fair sorting
@@ -84,13 +84,13 @@ public final class ApproximateSorterConfiguration {
      * @param operandPatterns operand patterns
      */
     public ApproximateSorterConfiguration(MultiNSequenceWithQuality target, int from, int to,
-            PatternAligner patternAligner, boolean combineScoresBySum, boolean fairSorting,
+            long scoreThreshold, boolean combineScoresBySum, boolean fairSorting,
             MatchValidationType matchValidationType, int unfairSorterLimit, SinglePattern... operandPatterns) {
         this.operandPatterns = operandPatterns;
         this.target = target;
         this.from = from;
         this.to = to;
-        this.patternAligner = patternAligner;
+        this.scoreThreshold = scoreThreshold;
         this.multipleReads = false;
         this.separateTargets = false;
         this.combineScoresBySum = combineScoresBySum;

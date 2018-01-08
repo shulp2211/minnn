@@ -61,14 +61,13 @@ public final class PatternUtils {
      * @param lastUppercase position of the last uppercase letter in the pattern; or -1 if all letters are lowercase
      * @param groupEdgePositions group edge positions in the pattern; must be already corrected
      *                           with fixGroupEdgePositions()
-     * @param extraScorePenalty extra score penalty specified by pattern; 0 or negative
      * @return generated match
      */
     static MatchIntermediate generateMatch(Alignment<NucleotideSequenceCaseSensitive> alignment,
             NSequenceWithQuality target, byte targetId, int firstUppercase, int lastUppercase,
-            List<GroupEdgePosition> groupEdgePositions, long extraScorePenalty) {
+            List<GroupEdgePosition> groupEdgePositions) {
         Range foundRange = alignment.getSequence2Range();
-        long matchScore = (long)alignment.getScore() + extraScorePenalty;
+        long matchScore = (long)alignment.getScore();
         MatchedRange matchedRange = new MatchedRange(target, targetId, 0, foundRange);
         ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
 

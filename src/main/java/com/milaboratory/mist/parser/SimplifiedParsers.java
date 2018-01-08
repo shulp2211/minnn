@@ -17,12 +17,12 @@ final class SimplifiedParsers {
     /**
      * Parse FuzzyMatchPattern parameters; group edge positions must be already parsed in this stage.
      *
-     * @param patternAligner pattern aligner
+     * @param scoreThreshold score threshold
      * @param str string containing FuzzyMatchPattern arguments which were inside parentheses
      * @param groupEdgePositions parsed group edge positions
      * @return FuzzyMatchPattern
      */
-    static FuzzyMatchPattern parseFuzzyMatchPattern(PatternAligner patternAligner, String str,
+    static FuzzyMatchPattern parseFuzzyMatchPattern(long scoreThreshold, String str,
                                                     ArrayList<GroupEdgePosition> groupEdgePositions) throws ParserException {
         List<QuotesPair> quotesPairs = getAllQuotes(str);
         int commaPositions[] = new int[5];
@@ -53,19 +53,19 @@ final class SimplifiedParsers {
                 throw new ParserException("Error while parsing " + str + ": expected ', [', found '"
                         + str.substring(commaPositions[4]) + "'");
 
-        return new FuzzyMatchPattern(patternAligner, seq, leftCut, rightCut, fixedLeftBorder, fixedRightBorder,
+        return new FuzzyMatchPattern(scoreThreshold, seq, leftCut, rightCut, fixedLeftBorder, fixedRightBorder,
                 groupEdgePositions);
     }
 
     /**
      * Parse RepeatPattern parameters; group edge positions must be already parsed in this stage.
      *
-     * @param patternAligner pattern aligner
+     * @param scoreThreshold score threshold
      * @param str string containing RepeatPattern arguments which were inside parentheses
      * @param groupEdgePositions parsed group edge positions
      * @return RepeatPattern
      */
-    static RepeatPattern parseRepeatPattern(PatternAligner patternAligner, String str,
+    static RepeatPattern parseRepeatPattern(long scoreThreshold, String str,
                                             ArrayList<GroupEdgePosition> groupEdgePositions) throws ParserException {
         List<QuotesPair> quotesPairs = getAllQuotes(str);
         int commaPositions[] = new int[5];
@@ -96,92 +96,92 @@ final class SimplifiedParsers {
                 throw new ParserException("Error while parsing " + str + ": expected ', [', found '"
                         + str.substring(commaPositions[4]) + "'");
 
-        return new RepeatPattern(patternAligner, seq, minRepeats, maxRepeats, fixedLeftBorder, fixedRightBorder,
+        return new RepeatPattern(scoreThreshold, seq, minRepeats, maxRepeats, fixedLeftBorder, fixedRightBorder,
                 groupEdgePositions);
     }
 
-    static AnyPattern parseAnyPattern(PatternAligner patternAligner, String str,
+    static AnyPattern parseAnyPattern(long scoreThreshold, String str,
                                       ArrayList<GroupEdge> groupEdges) throws ParserException {
         if (!(str.equals("") || ((str.charAt(0) == '[') && (str.charAt(str.length() - 1) == ']'))))
             throw new ParserException("Found unexpected tokens in AnyPattern: " + str);
-        return new AnyPattern(patternAligner, groupEdges);
+        return new AnyPattern(scoreThreshold, groupEdges);
     }
 
     /**
      * Parse AndPattern from tokenized substring returned by getTokens() function and already parsed operand patterns.
      *
-     * @param patternAligner pattern aligner
+     * @param scoreThreshold score threshold
      * @param tokenizedSubstring tokenized substring for this AndPattern that returned by getTokens() function
      * @param singlePatterns parsed operand patterns
      * @return AndPattern
      */
-    static AndPattern parseAndPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
+    static AndPattern parseAndPattern(long scoreThreshold, ArrayList<Token> tokenizedSubstring,
                                       ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         SinglePattern[] operands = singlePatterns.toArray(new SinglePattern[singlePatterns.size()]);
         validateGroupEdges(true, false, true, operands);
-        return new AndPattern(patternAligner, operands);
+        return new AndPattern(scoreThreshold, operands);
     }
 
-    static PlusPattern parsePlusPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
+    static PlusPattern parsePlusPattern(long scoreThreshold, ArrayList<Token> tokenizedSubstring,
                                         ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         SinglePattern[] operands = singlePatterns.toArray(new SinglePattern[singlePatterns.size()]);
         validateGroupEdges(false, false, true, operands);
-        return new PlusPattern(patternAligner, operands);
+        return new PlusPattern(scoreThreshold, operands);
     }
 
-    static SequencePattern parseSequencePattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
+    static SequencePattern parseSequencePattern(long scoreThreshold, ArrayList<Token> tokenizedSubstring,
                                                 ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         SinglePattern[] operands = singlePatterns.toArray(new SinglePattern[singlePatterns.size()]);
         validateGroupEdges(false, false, true, operands);
-        return new SequencePattern(patternAligner, operands);
+        return new SequencePattern(scoreThreshold, operands);
     }
 
-    static OrPattern parseOrPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
+    static OrPattern parseOrPattern(long scoreThreshold, ArrayList<Token> tokenizedSubstring,
                                     ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         SinglePattern[] operands = singlePatterns.toArray(new SinglePattern[singlePatterns.size()]);
         validateGroupEdges(true, true, true, operands);
-        return new OrPattern(patternAligner, operands);
+        return new OrPattern(scoreThreshold, operands);
     }
 
-    static MultiPattern parseMultiPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
+    static MultiPattern parseMultiPattern(long scoreThreshold, ArrayList<Token> tokenizedSubstring,
                                           ArrayList<SinglePattern> singlePatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         SinglePattern[] operands = singlePatterns.toArray(new SinglePattern[singlePatterns.size()]);
         validateGroupEdges(true, false, true, operands);
-        return new MultiPattern(patternAligner, operands);
+        return new MultiPattern(scoreThreshold, operands);
     }
 
-    static AndOperator parseAndOperator(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
+    static AndOperator parseAndOperator(long scoreThreshold, ArrayList<Token> tokenizedSubstring,
                                         ArrayList<MultipleReadsOperator> multiReadPatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         MultipleReadsOperator[] operands = multiReadPatterns.toArray(new MultipleReadsOperator[multiReadPatterns.size()]);
         validateGroupEdges(true, false, true, operands);
-        return new AndOperator(patternAligner, operands);
+        return new AndOperator(scoreThreshold, operands);
     }
 
-    static OrOperator parseOrOperator(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
+    static OrOperator parseOrOperator(long scoreThreshold, ArrayList<Token> tokenizedSubstring,
                                       ArrayList<MultipleReadsOperator> multiReadPatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
         MultipleReadsOperator[] operands = multiReadPatterns.toArray(new MultipleReadsOperator[multiReadPatterns.size()]);
         validateGroupEdges(true, true, true, operands);
-        return new OrOperator(patternAligner, operands);
+        return new OrOperator(scoreThreshold, operands);
     }
 
-    static NotOperator parseNotOperator(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring)
+    static NotOperator parseNotOperator(long scoreThreshold, ArrayList<Token> tokenizedSubstring)
             throws ParserException {
         if (tokenizedSubstring.size() != 1)
             throw new ParserException("Syntax not parsed correctly for Not operator; possibly missing operand: "
                     + tokenizedSubstring);
         MultipleReadsOperator operand = tokenizedSubstring.get(0).getMultipleReadsOperator();
         validateGroupEdges(false, true, false, operand);
-        return new NotOperator(patternAligner, operand);
+        return new NotOperator(scoreThreshold, operand);
     }
 
-    static Pattern parseFilterPattern(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
+    static Pattern parseFilterPattern(long scoreThreshold, ArrayList<Token> tokenizedSubstring,
                                       boolean multipleReads) throws ParserException {
         if (tokenizedSubstring.size() != 2)
             throw new ParserException("Syntax not parsed correctly for Filter pattern; possibly missing operand: "
@@ -215,10 +215,10 @@ final class SimplifiedParsers {
         }
 
         if (multipleReads)
-            return new MultipleReadsFilterPattern(patternAligner, filter,
+            return new MultipleReadsFilterPattern(scoreThreshold, filter,
                     tokenizedSubstring.get(1).getMultipleReadsOperator());
         else
-            return new FilterPattern(patternAligner, filter, tokenizedSubstring.get(1).getSinglePattern());
+            return new FilterPattern(scoreThreshold, filter, tokenizedSubstring.get(1).getSinglePattern());
     }
 
     private static ScoreFilter parseScoreFilter(String str, String startingPart) throws ParserException {

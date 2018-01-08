@@ -4,7 +4,7 @@ import static com.milaboratory.core.sequence.SequenceQuality.BAD_QUALITY_VALUE;
 import static com.milaboratory.core.sequence.SequenceQuality.GOOD_QUALITY_VALUE;
 
 public final class Defaults {
-    public final static long DEFAULT_PENALTY_THRESHOLD = -30;
+    public final static long DEFAULT_SCORE_THRESHOLD = -30;
     public final static int DEFAULT_BITAP_MAX_ERRORS = 2;
     public final static int DEFAULT_MAX_OVERLAP = 2;
     public final static int DEFAULT_MATCH_SCORE = 0;

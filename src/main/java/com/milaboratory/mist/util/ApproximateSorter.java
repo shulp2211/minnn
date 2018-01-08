@@ -125,14 +125,13 @@ public final class ApproximateSorter {
                     Range rangeJ = sortedMatches[j].getRange();
                     Range intersection = rangeI.intersection(rangeJ);
                     if (intersection != null) {
-                        rangesCombinationPenalty += conf.patternAligner.overlapPenalty(target, intersection.getLower(),
-                                intersection.length());
+                        rangesCombinationPenalty += PatternAligner.overlapPenalty(intersection.length());
                         maxIntersection = Math.max(maxIntersection, intersection.length());
                     }
                     if ((conf.matchValidationType == FOLLOWING) && (j == i - 1)
                             && (rangeI.getLower() > rangeJ.getUpper()))
-                        rangesCombinationPenalty += conf.patternAligner.insertionPenalty(target, rangeJ.getUpper(),
-                                rangeI.getLower() - rangeJ.getUpper());
+                        rangesCombinationPenalty += PatternAligner.insertionPenalty(rangeI.getLower()
+                                - rangeJ.getUpper());
                 }
                 if (maxIntersection > 0) {
                     for (MatchedGroupEdge matchedGroupEdge : matchedGroupEdgesFromOperands.get(i)) {
@@ -196,7 +195,6 @@ public final class ApproximateSorter {
      */
     private ArrayList<MatchIntermediate> takeFilteredMatches() {
         ArrayList<MatchIntermediate> allMatchesFiltered = new ArrayList<>();
-        long penaltyThreshold = conf.patternAligner.penaltyThreshold();
         int numberOfOperands = conf.operandPatterns.length;
         int[] matchIndexes = new int[numberOfOperands];
         MatchIntermediate[] currentMatches = new MatchIntermediate[numberOfOperands];
@@ -240,7 +238,7 @@ public final class ApproximateSorter {
                         allIncompatibleIndexes.add(incompatibleIndexes);
                     else {
                         MatchIntermediate combinedMatch = combineMatches(currentMatches);
-                        if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
+                        if ((combinedMatch != null) && (combinedMatch.getScore() >= conf.scoreThreshold))
                             allMatchesFiltered.add(combinedMatch);
                     }
                 }
@@ -267,7 +265,7 @@ public final class ApproximateSorter {
                     IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, matchIndexes);
                     if (incompatibleIndexes == null) {
                         MatchIntermediate combinedMatch = combineMatches(currentMatches);
-                        if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
+                        if ((combinedMatch != null) && (combinedMatch.getScore() >= conf.scoreThreshold))
                             allMatchesFiltered.add(combinedMatch);
                     }
                 } else
@@ -308,7 +306,6 @@ public final class ApproximateSorter {
             throw new IllegalArgumentException("matches length is " + matches.length + ", indexes length is "
                 + indexes.length + "; they must be equal!");
 
-        NSequenceWithQuality target;
         IncompatibleIndexes result = null;
         switch (conf.matchValidationType) {
             case LOGICAL_OR:
@@ -316,15 +313,13 @@ public final class ApproximateSorter {
             case FIRST:
                 break;
             case INTERSECTION:
-                target = matches[0].getMatchedRange().getTarget();
                 Range ranges[] = new Range[matches.length];
 
                 OUTER:
                 for (int i = 0; i < matches.length; i++) {
                     ranges[i] = matches[i].getRange();
                     for (int j = 0; j < i; j++)     // Compare with all previously added matches
-                        if (checkFullIntersection(ranges[i], ranges[j])
-                                || checkOverlap(target, matches[i], matches[j])) {
+                        if (checkFullIntersection(ranges[i], ranges[j]) || checkOverlap(matches[i], matches[j])) {
                             result = new IncompatibleIndexes(j, indexes[j], i, indexes[i]);
                             break OUTER;
                         }
@@ -332,7 +327,6 @@ public final class ApproximateSorter {
                 break;
             case ORDER:
             case FOLLOWING:
-                target = matches[0].getMatchedRange().getTarget();
                 MatchIntermediate currentMatch;
                 MatchIntermediate previousMatch;
                 Range currentRange;
@@ -345,9 +339,9 @@ public final class ApproximateSorter {
                     previousRange = previousMatch.getRange();
                     if ((previousRange.getLower() >= currentRange.getLower())
                             || checkFullIntersection(previousRange, currentRange)
-                            || checkOverlap(target, previousMatch, currentMatch)
+                            || checkOverlap(previousMatch, currentMatch)
                             || ((conf.matchValidationType == FOLLOWING)
-                                && checkInsertion(target, previousMatch, currentMatch))) {
+                                && checkInsertion(previousMatch, currentMatch))) {
                         result = new IncompatibleIndexes(i - 1, indexes[i - 1], i, indexes[i]);
                         break;
                     }
@@ -388,14 +382,13 @@ public final class ApproximateSorter {
      *
      * @return true if overlap is too big and this combination of matches is invalid
      */
-    private boolean checkOverlap(NSequenceWithQuality target, MatchIntermediate match0, MatchIntermediate match1) {
+    private boolean checkOverlap(MatchIntermediate match0, MatchIntermediate match1) {
         Range intersection = match0.getRange().intersection(match1.getRange());
         if (intersection == null)
             return false;
         else {
-            PatternAligner patternAligner = conf.patternAligner;
             int overlap = intersection.length();
-            int maxOverlap = (patternAligner.maxOverlap() == -1) ? Integer.MAX_VALUE : patternAligner.maxOverlap();
+            int maxOverlap = (PatternAligner.maxOverlap() == -1) ? Integer.MAX_VALUE : PatternAligner.maxOverlap();
             int maxOverlapLeft, maxOverlapRight;
             if (match0.getRange().getLower() < match1.getRange().getLower()) {
                 maxOverlapLeft = (match0.getRightUppercaseDistance() == -1) ? Integer.MAX_VALUE
@@ -409,8 +402,7 @@ public final class ApproximateSorter {
                         : match0.getLeftUppercaseDistance() - 1;
             }
             maxOverlap = Math.min(maxOverlap, Math.min(maxOverlapLeft, maxOverlapRight));
-            return (maxOverlap < overlap) || (patternAligner.overlapPenalty(target, intersection.getLower(), overlap)
-                    < patternAligner.penaltyThreshold());
+            return (maxOverlap < overlap) || (PatternAligner.overlapPenalty(overlap) < conf.scoreThreshold);
         }
     }
 
@@ -420,17 +412,10 @@ public final class ApproximateSorter {
      *
      * @return true if insertion penalty is too big and this combination of matches is invalid
      */
-    private boolean checkInsertion(NSequenceWithQuality target,
-                                   MatchIntermediate leftMatch, MatchIntermediate rightMatch) {
+    private boolean checkInsertion(MatchIntermediate leftMatch, MatchIntermediate rightMatch) {
         int insertionLength = rightMatch.getRange().getLower() - leftMatch.getRange().getUpper();
-        if (insertionLength <= 0)
-            return false;
-        else {
-            PatternAligner patternAligner = conf.patternAligner;
-            return (patternAligner.insertionPenalty(target, leftMatch.getRange().getUpper(), insertionLength)
-                        < patternAligner.penaltyThreshold())
-                    || (leftMatch.getRightUppercaseDistance() == 0) || (rightMatch.getLeftUppercaseDistance() == 0);
-        }
+        return (insertionLength > 0) && ((PatternAligner.insertionPenalty(insertionLength) < conf.scoreThreshold)
+                || (leftMatch.getRightUppercaseDistance() == 0) || (rightMatch.getLeftUppercaseDistance() == 0));
     }
 
     /**
@@ -443,7 +428,7 @@ public final class ApproximateSorter {
      */
     private int estimateMaxOverlap(int operandIndex, MatchIntermediate previousMatch,
                                    boolean overlappingPatternIsLeft) {
-        return minValid(conf.patternAligner.maxOverlap(), previousMatch.getRange().length() - 1,
+        return minValid(PatternAligner.maxOverlap(), previousMatch.getRange().length() - 1,
                 overlappingPatternIsLeft ? previousMatch.getRightUppercaseDistance()
                         : previousMatch.getLeftUppercaseDistance(),
                 ((SinglePattern)conf.operandPatterns[operandIndex]).estimateMaxOverlap());
@@ -599,7 +584,6 @@ public final class ApproximateSorter {
 
     private class MatchesOutputPort implements OutputPort<MatchIntermediate> {
         private ArrayList<MatchIntermediate> allMatchesFiltered;
-        private long penaltyThreshold = conf.patternAligner.penaltyThreshold();
         private int numberOfPatterns = conf.operandPatterns.length;
         private int filteredMatchesCount = 0;
         private int currentMatchIndex = 0;
@@ -865,7 +849,7 @@ public final class ApproximateSorter {
                                 allIncompatibleIndexes.add(incompatibleIndexes);
                         } else {
                             MatchIntermediate combinedMatch = combineMatches(currentMatches);
-                            if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
+                            if ((combinedMatch != null) && (combinedMatch.getScore() >= conf.scoreThreshold))
                                 return combinedMatch;
                         }
                     }

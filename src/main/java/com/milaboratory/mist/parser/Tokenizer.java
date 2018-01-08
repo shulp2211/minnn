@@ -1,12 +1,10 @@
 package com.milaboratory.mist.parser;
 
-import com.milaboratory.mist.pattern.PatternAligner;
-
 abstract class Tokenizer {
-    protected final PatternAligner patternAligner;
+    protected final long finalScoreThreshold;
 
-    Tokenizer(PatternAligner patternAligner) {
-        this.patternAligner = patternAligner;
+    Tokenizer(long finalScoreThreshold) {
+        this.finalScoreThreshold = finalScoreThreshold;
     }
 
     abstract void tokenize(TokenizedString tokenizedString) throws ParserException;

@@ -10,8 +10,8 @@ import static com.milaboratory.mist.pattern.MatchValidationType.LOGICAL_AND;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
 
 public final class AndOperator extends MultipleReadsOperator {
-    public AndOperator(PatternAligner patternAligner, MultipleReadsOperator... operandPatterns) {
-        super(patternAligner, operandPatterns);
+    public AndOperator(long scoreThreshold, MultipleReadsOperator... operandPatterns) {
+        super(scoreThreshold, operandPatterns);
     }
 
     @Override
@@ -38,7 +38,7 @@ public final class AndOperator extends MultipleReadsOperator {
 
         @Override
         public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
-            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, patternAligner,
+            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, scoreThreshold,
                     false, true, fairSorting, LOGICAL_AND,
                     unfairSorterPortLimits.get(AndOperator.class), operandPatterns);
             return new ApproximateSorter(conf).getOutputPort();

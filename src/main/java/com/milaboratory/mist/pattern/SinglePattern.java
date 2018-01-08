@@ -10,8 +10,8 @@ public abstract class SinglePattern extends Pattern {
     // number of read where sequence is matched; numbers start from 1
     protected byte targetId = 1;
 
-    SinglePattern(PatternAligner patternAligner) {
-        super(patternAligner);
+    SinglePattern(long scoreThreshold) {
+        super(scoreThreshold);
     }
 
     @Override
