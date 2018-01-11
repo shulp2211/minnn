@@ -2,8 +2,7 @@ package com.milaboratory.mist.parser;
 
 import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 import com.milaboratory.mist.pattern.*;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.util.*;
@@ -14,9 +13,6 @@ import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static com.milaboratory.mist.util.CommonTestUtils.RandomStringType.*;
 
 public class SimplifiedSyntaxGroupsTest {
-    private final PatternAligner patternAligner = getTestPatternAligner();
-    private final Parser parser = new Parser(patternAligner);
-
     // pattern names that are valid as outer objects for group edges; this list doesn't include NOT_OPERATOR_NAME
     private final List<String> validGroupEdgeOuterObjectNames = Arrays.asList(FUZZY_MATCH_PATTERN_NAME,
             REPEAT_PATTERN_NAME, ANY_PATTERN_NAME, AND_PATTERN_NAME, PLUS_PATTERN_NAME, SEQUENCE_PATTERN_NAME,
@@ -29,13 +25,18 @@ public class SimplifiedSyntaxGroupsTest {
     // object names that are valid as closed common ancestor of 2 groups with the same name
     private final List<String> validDuplicateGroupsCommonAncestors = Arrays.asList(OR_PATTERN_NAME, OR_OPERATOR_NAME);
 
+    @BeforeClass
+    public static void init() throws Exception {
+        configureRandomPatternAligner();
+    }
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
     public void correctGroupsTest() throws Exception {
         for (int i = 0; i < 50; i++) {
-            PatternAligner patternAligner = getRandomPatternAligner();
+            configureRandomPatternAligner();
             ArrayList<FuzzyMatchPattern> fuzzyMatchPatterns = new ArrayList<>();
             ArrayList<RepeatPattern> repeatPatterns = new ArrayList<>();
             ArrayList<OrPattern> orPatterns = new ArrayList<>();
@@ -43,19 +44,23 @@ public class SimplifiedSyntaxGroupsTest {
             ArrayList<OrOperator> orOperators = new ArrayList<>();
             ArrayList<String> groupCheckerQueries = new ArrayList<>();
             for (int j = 0; j < 3; j++) {
-                fuzzyMatchPatterns.add(getRandomFuzzyPattern(patternAligner, true));
-                repeatPatterns.add(getRandomRepeatPattern(patternAligner, true));
+                fuzzyMatchPatterns.add(getRandomFuzzyPattern(rg.nextInt(200) - 100, true));
+                repeatPatterns.add(getRandomRepeatPattern(rg.nextInt(200) - 100, true));
             }
             for (int j = 0; j < 5; j++) {
-                orPatterns.add(new OrPattern(patternAligner, fuzzyMatchPatterns.get(rg.nextInt(3)),
-                        getRandomSinglePattern(patternAligner, fuzzyMatchPatterns.get(rg.nextInt(3))),
-                        repeatPatterns.get(rg.nextInt(3)),
-                        getRandomSinglePattern(patternAligner, repeatPatterns.get(rg.nextInt(3)))));
-                multiPatterns.add(new MultiPattern(patternAligner, getRandomSinglePattern(patternAligner,
-                        rg.nextBoolean() ? fuzzyMatchPatterns.get(rg.nextInt(3)) : repeatPatterns.get(rg.nextInt(3))),
-                        getRandomBasicPattern(patternAligner)));
-                orOperators.add(new OrOperator(patternAligner, multiPatterns.get(j),
-                        new AndOperator(patternAligner, multiPatterns.get(j)),
+                orPatterns.add(new OrPattern(rg.nextInt(200) - 100,
+                                fuzzyMatchPatterns.get(rg.nextInt(3)),
+                        getRandomSinglePattern(rg.nextInt(200) - 100,
+                                fuzzyMatchPatterns.get(rg.nextInt(3))), repeatPatterns.get(rg.nextInt(3)),
+                        getRandomSinglePattern(rg.nextInt(200) - 100,
+                                repeatPatterns.get(rg.nextInt(3)))));
+                multiPatterns.add(new MultiPattern(rg.nextInt(200) - 100,
+                        getRandomSinglePattern(rg.nextInt(200) - 100,
+                        rg.nextBoolean() ? fuzzyMatchPatterns.get(rg.nextInt(3))
+                                : repeatPatterns.get(rg.nextInt(3))),
+                        getRandomBasicPattern()));
+                orOperators.add(new OrOperator(rg.nextInt(200) - 100, multiPatterns.get(j),
+                        new AndOperator(rg.nextInt(200) - 100, multiPatterns.get(j)),
                         multiPatterns.get(rg.nextInt(multiPatterns.size()))));
 
                 String randomGroupName = getRandomString(rg.nextInt(10) + 1, "", LETTERS_AND_NUMBERS);
@@ -63,69 +68,78 @@ public class SimplifiedSyntaxGroupsTest {
                 ArrayList<GroupEdgePosition> groupEdgePositions2 = new ArrayList<>();
                 groupEdgePositions1.add(new GroupEdgePosition(new GroupEdge(randomGroupName, true), 0));
                 groupEdgePositions2.add(new GroupEdgePosition(new GroupEdge(randomGroupName, false), 1));
-                FuzzyMatchPattern fuzzyMatchPattern = new FuzzyMatchPattern(patternAligner,
+                FuzzyMatchPattern fuzzyMatchPattern = new FuzzyMatchPattern(rg.nextInt(200) - 100,
                         new NucleotideSequenceCaseSensitive("a"), groupEdgePositions1);
-                RepeatPattern repeatPattern = new RepeatPattern(patternAligner,
+                RepeatPattern repeatPattern = new RepeatPattern(rg.nextInt(200) - 100,
                         new NucleotideSequenceCaseSensitive("a"), 1, 2, groupEdgePositions2);
-                PlusPattern plusPattern1 = new PlusPattern(patternAligner, getRandomBasicPattern(patternAligner),
-                        new FilterPattern(patternAligner, new ScoreFilter(0), fuzzyMatchPattern),
-                        getRandomBasicPattern(patternAligner));
-                PlusPattern plusPattern2 = new PlusPattern(patternAligner, getRandomBasicPattern(patternAligner),
-                        new FilterPattern(patternAligner, new ScoreFilter(-1), repeatPattern),
-                        getRandomBasicPattern(patternAligner));
+                PlusPattern plusPattern1 = new PlusPattern(rg.nextInt(200) - 100,
+                        getRandomBasicPattern(),
+                        new FilterPattern(rg.nextInt(200) - 100,
+                                new ScoreFilter(0), fuzzyMatchPattern),
+                        getRandomBasicPattern(rg.nextInt(200) - 100));
+                PlusPattern plusPattern2 = new PlusPattern(rg.nextInt(200) - 100,
+                        getRandomBasicPattern(rg.nextInt(200) - 100),
+                        new FilterPattern(rg.nextInt(200) - 100,
+                                new ScoreFilter(-1), repeatPattern),
+                        getRandomBasicPattern());
 
-                groupCheckerQueries.add(new SequencePattern(patternAligner, plusPattern1, plusPattern2).toString());
+                groupCheckerQueries.add(new SequencePattern(rg.nextInt(200) - 100,
+                        plusPattern1, plusPattern2).toString());
                 groupCheckerQueries.add(orPatterns.get(j).toString());
                 groupCheckerQueries.add(orOperators.get(j).toString());
             }
             for (String query : groupCheckerQueries)
-                parser.parseQuery(query, SIMPLIFIED);
+                Parser.parseQuery(query, rg.nextInt(200) - 100, SIMPLIFIED);
         }
     }
 
     @Test
     public void groupEdgeWithoutPairTest() throws Exception {
         exception.expect(ParserException.class);
-        parser.parseQuery("FuzzyMatchPattern(A, -1, -1, [GroupEdgePosition(GroupEdge('1', true), 0)])", SIMPLIFIED);
+        Parser.parseQuery("FuzzyMatchPattern(A, -1, -1, [GroupEdgePosition(GroupEdge('1', true), 0)])",
+                0, SIMPLIFIED);
     }
 
     @Test
     public void groupEdgesWrongOrderTest() throws Exception {
         exception.expect(ParserException.class);
-        parser.parseQuery("PlusPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
+        Parser.parseQuery("PlusPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
                 "GroupEdge('UMI', false), 2)]), FuzzyMatchPattern(ATTAGACA, -1, -1, [GroupEdgePosition(" +
-                "GroupEdge('UMI', true), 0)])])", SIMPLIFIED);
+                "GroupEdge('UMI', true), 0)])])", 0, SIMPLIFIED);
     }
 
     @Test
     public void groupEdgePositionsWrongOrderTest() throws Exception {
         exception.expect(ParserException.class);
-        parser.parseQuery("FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
-                "GroupEdge('UMI', true), 2), GroupEdgePosition(GroupEdge('UMI', false), 0)])", SIMPLIFIED);
+        Parser.parseQuery("FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
+                "GroupEdge('UMI', true), 2), GroupEdgePosition(GroupEdge('UMI', false), 0)])",
+                0, SIMPLIFIED);
     }
 
     @Test
     public void groupInvalidOuterObjectTest() throws Exception {
         exception.expect(ParserException.class);
-        parser.parseQuery("NotOperator(MultiPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
-                "GroupEdge('UMI', true), 2), GroupEdgePosition(GroupEdge('UMI', false), 4)])]))", SIMPLIFIED);
+        Parser.parseQuery("NotOperator(MultiPattern([FuzzyMatchPattern(GAAGCA, -1, -1, [GroupEdgePosition(" +
+                "GroupEdge('UMI', true), 2), GroupEdgePosition(GroupEdge('UMI', false), 4)])]))",
+                0, SIMPLIFIED);
     }
 
     @Test
     public void groupPartInvalidNonCommonObjectTest() throws Exception {
+        configureRandomPatternAligner();
         String randomGroupName = getRandomString(rg.nextInt(10) + 1, "", LETTERS_AND_NUMBERS);
         ArrayList<GroupEdgePosition> groupEdgePositions1 = new ArrayList<>();
         ArrayList<GroupEdgePosition> groupEdgePositions2 = new ArrayList<>();
         groupEdgePositions1.add(new GroupEdgePosition(new GroupEdge(randomGroupName, true), 0));
         groupEdgePositions2.add(new GroupEdgePosition(new GroupEdge(randomGroupName, false), 1));
-        FuzzyMatchPattern fuzzyMatchPattern1 = new FuzzyMatchPattern(getRandomPatternAligner(),
+        FuzzyMatchPattern fuzzyMatchPattern1 = new FuzzyMatchPattern(rg.nextInt(200) - 100,
                 new NucleotideSequenceCaseSensitive("a"), groupEdgePositions1);
-        FuzzyMatchPattern fuzzyMatchPattern2 = new FuzzyMatchPattern(getRandomPatternAligner(),
+        FuzzyMatchPattern fuzzyMatchPattern2 = new FuzzyMatchPattern(rg.nextInt(200) - 100,
                 new NucleotideSequenceCaseSensitive("a"), groupEdgePositions2);
         Pattern invalidPattern = getRandomPatternNotInList(validGroupPartNotCommonObjectNames,
                 fuzzyMatchPattern1, fuzzyMatchPattern2);
         exception.expect(ParserException.class);
-        parser.parseQuery(invalidPattern.toString(), SIMPLIFIED);
+        Parser.parseQuery(invalidPattern.toString(), rg.nextInt(200) - 100, SIMPLIFIED);
     }
 
     @Test
@@ -139,7 +153,7 @@ public class SimplifiedSyntaxGroupsTest {
             String invalidPatternString = invalidPattern.toString().split("\\(")[0] + "([" + basicPattern.toString()
                     + ", " + basicPattern.toString() + "])";
             // this ParseQuery must always throw ParserException
-            parser.parseQuery(invalidPatternString, SIMPLIFIED);
+            Parser.parseQuery(invalidPatternString, rg.nextInt(200) - 100, SIMPLIFIED);
             return null;
         });
     }

@@ -1,8 +1,8 @@
 package com.milaboratory.mist.cli;
 
+import com.milaboratory.mist.pattern.PatternAligner;
 import com.milaboratory.mist.pattern.SinglePattern;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.File;
 
@@ -20,6 +20,7 @@ public class ExtractActionTest {
         File outputFilesDirectory = new File(TEMP_DIR);
         if (!outputFilesDirectory.exists())
             throw exitWithError("Directory for temporary output files " + TEMP_DIR + " does not exist!");
+        PatternAligner.allowValuesOverride();
     }
 
     @Test
@@ -37,19 +38,19 @@ public class ExtractActionTest {
                             "GroupEdge('UMI', true), 2), GroupEdgePosition(GroupEdge('UMI', false), 4)]), " +
                             "FuzzyMatchPattern(AA, 0, 0, -1, -1)])"),
                     "--input", testInputR1, testInputR2, "--output", testOutput1Double,
-                    "--devel-parser-syntax", "--penalty-threshold", "0"};
+                    "--devel-parser-syntax", "--score-threshold", "0"};
             main(args1);
 
-            String[] args2 = {"extract", "--penalty-threshold", "0", "--devel-parser-syntax", "--match-score", "0",
+            String[] args2 = {"extract", "--score-threshold", "0", "--devel-parser-syntax", "--match-score", "0",
                     "--oriented", "--pattern", inQuotes("FuzzyMatchPattern(ATTAGACA, 0, 0, -1, -1)"),
                     "--input", testInputR1, "--output", testOutput1Single};
             main(args2);
 
             String[] args3 = {"extract", "--pattern", "<GA(UMI:AG)CA \\ AA",
-                    "--input", testInputR1, testInputR2, "--output", testOutput2Double, "--penalty-threshold", "0"};
+                    "--input", testInputR1, testInputR2, "--output", testOutput2Double, "--score-threshold", "0"};
             main(args3);
 
-            String[] args4 = {"extract", "--penalty-threshold", "0", "--match-score", "0", "--oriented",
+            String[] args4 = {"extract", "--score-threshold", "0", "--match-score", "0", "--oriented",
                     "--pattern", "ATTAGACA", "--input", testInputR1, "--output", testOutput2Single};
             main(args4);
 
@@ -82,13 +83,13 @@ public class ExtractActionTest {
                 + "--single-overlap-penalty -10 --bitap-max-errors 3 --threads 4";
 
         String patternPos = "^(UMI:N{14})n{22}(SB:N{4}) \\ *";
-        String penaltyPos = " --penalty-threshold -200";
+        String penaltyPos = " --score-threshold -200";
 
         String patternOne = "(SB:N{5})[aagc || c]agtggtatcaacgcagagt(UMI:N{14}) \\ *";
-        String penaltyOne = " --penalty-threshold -100";
+        String penaltyOne = " --score-threshold -100";
 
         String patternTwo = "(SB1:N{5})[aagc || c]agtggtatcaacgcagagt(UMI:N{14}) \\ (SB2:N{5})gtcacatttctcagatcct";
-        String penaltyTwo = " --penalty-threshold -130";
+        String penaltyTwo = " --score-threshold -130";
 
         exec(positionalArgs + configuration + penaltyPos + " --pattern " + inQuotes(patternPos));
         exec(onesidedArgs + configuration + penaltyOne + " --pattern " + inQuotes(patternOne));
@@ -102,7 +103,7 @@ public class ExtractActionTest {
         String out = TEMP_DIR + "outputSCT1.mif";
         String argsIO = "extract --input " + R1 + " " + R2 + " --output " + out;
         String query = argsIO + " --pattern \"NN(G1:N{12})N{22}TCAG\\NN(G2:N{12})N{22}TCAG\" --threads 3 "
-                + "--bitap-max-errors 1 --mismatch-score -1 --penalty-threshold -73";
+                + "--bitap-max-errors 1 --mismatch-score -1 --score-threshold -73";
         exec(query);
     }
 

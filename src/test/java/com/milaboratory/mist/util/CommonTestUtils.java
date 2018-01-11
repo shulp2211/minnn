@@ -2,7 +2,6 @@ package com.milaboratory.mist.util;
 
 import cc.redberry.pipe.CUtils;
 import cc.redberry.pipe.OutputPort;
-import com.milaboratory.core.Range;
 import com.milaboratory.core.alignment.*;
 import com.milaboratory.core.sequence.*;
 import com.milaboratory.mist.pattern.*;
@@ -143,97 +142,6 @@ public class CommonTestUtils {
                 maxQualityPenalty);
     }
 
-    public static PatternAligner getTestPatternAligner() {
-        return getTestPatternAligner(0);
-    }
-
-    public static PatternAligner getTestPatternAligner(boolean zeroThreshold) {
-        if (zeroThreshold) return getTestPatternAligner(0, 0, 0,
-                -1);
-        else return getTestPatternAligner();
-    }
-
-    public static PatternAligner getTestPatternAligner(int bitapMaxErrors) {
-        return getTestPatternAligner(Long.MIN_VALUE, bitapMaxErrors, 0, -1);
-    }
-
-    public static PatternAligner getTestPatternAligner(long penaltyThreshold, int bitapMaxErrors, long notResultScore,
-                                                       long singleOverlapPenalty) {
-        return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty, -1);
-    }
-
-    public static PatternAligner getTestPatternAligner(long penaltyThreshold, int bitapMaxErrors, long notResultScore,
-                                                       long singleOverlapPenalty, int maxOverlap) {
-        return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty,
-                maxOverlap, -1, getTestScoring());
-    }
-
-    public static PatternAligner getTestPatternAligner(long penaltyThreshold, int bitapMaxErrors, long notResultScore,
-                                                       long singleOverlapPenalty, int maxOverlap, int fixedLeftBorder,
-                                                       PatternAndTargetAlignmentScoring scoring) {
-        return new PatternAligner() {
-            @Override
-            public Alignment<NucleotideSequenceCaseSensitive> align(NucleotideSequenceCaseSensitive pattern,
-                    NSequenceWithQuality target, int rightMatchPosition) {
-                if (fixedLeftBorder == -1) {
-                    return PatternAndTargetAligner.alignLeftAdded(scoring, pattern, target, rightMatchPosition,
-                            bitapMaxErrors);
-                } else {
-                    Range targetRange = new Range(fixedLeftBorder, rightMatchPosition + 1);
-                    NSequenceWithQuality targetPart = new NSequenceWithQuality(
-                            target.getSequence().getRange(targetRange), target.getQuality().getRange(targetRange));
-                    Alignment<NucleotideSequenceCaseSensitive> partAlignment = PatternAndTargetAligner.alignGlobal(
-                            scoring, pattern, targetPart);
-                    return new Alignment<>(pattern, partAlignment.getAbsoluteMutations(),
-                            partAlignment.getSequence1Range(), partAlignment.getSequence2Range().move(fixedLeftBorder),
-                            partAlignment.getScore());
-                }
-            }
-
-            @Override
-            public long penaltyThreshold() {
-                return penaltyThreshold;
-            }
-
-            @Override
-            public long overlapPenalty(NSequenceWithQuality target, int overlapOffset, int overlapLength) {
-                return singleOverlapPenalty * overlapLength;
-            }
-
-            @Override
-            public long insertionPenalty(NSequenceWithQuality target, int insertionOffset, int insertionLength) {
-                return singleOverlapPenalty * insertionLength;
-            }
-
-            @Override
-            public int bitapMaxErrors() {
-                return bitapMaxErrors;
-            }
-
-            @Override
-            public long notResultScore() {
-                return notResultScore;
-            }
-
-            @Override
-            public int maxOverlap() {
-                return maxOverlap;
-            }
-
-            @Override
-            public PatternAligner overridePenaltyThreshold(long newThresholdValue) {
-                return getTestPatternAligner(newThresholdValue, bitapMaxErrors, notResultScore, singleOverlapPenalty,
-                        maxOverlap, fixedLeftBorder, scoring);
-            }
-
-            @Override
-            public PatternAligner setLeftBorder(int leftBorder) {
-                return getTestPatternAligner(penaltyThreshold, bitapMaxErrors, notResultScore, singleOverlapPenalty,
-                        maxOverlap, leftBorder, scoring);
-            }
-        };
-    }
-
     public static String inQuotes(String str) {
         return '"' + str + '"';
     }
@@ -306,34 +214,34 @@ public class CommonTestUtils {
         return groupEdgePositions;
     }
 
-    public static PatternAligner getRandomPatternAligner() {
-        return getTestPatternAligner(-rg.nextInt(100), rg.nextInt(4), -rg.nextInt(4), -rg.nextInt(3),
-                -1, -1, getRandomScoring());
+    public static void configureRandomPatternAligner() {
+        PatternAligner.allowValuesOverride();
+        PatternAligner.init(getRandomScoring(), -rg.nextInt(3), rg.nextInt(4), rg.nextInt(5) - 1);
     }
 
-    public static FuzzyMatchPattern getRandomFuzzyPattern(PatternAligner patternAligner, boolean withGroups) {
+    public static FuzzyMatchPattern getRandomFuzzyPattern(long scoreThreshold, boolean withGroups) {
         int length = rg.nextInt(150) + 1;
         RandomBorders randomBorders = new RandomBorders(length);
         RandomCuts randomCuts = new RandomCuts(length);
         NucleotideSequenceCaseSensitive seq = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
                 length, length);
-        return new FuzzyMatchPattern(patternAligner, seq, randomCuts.left, randomCuts.right,
+        return new FuzzyMatchPattern(scoreThreshold, seq, randomCuts.left, randomCuts.right,
                 randomBorders.left, randomBorders.right,
                 withGroups ? getRandomGroupsForFuzzyMatch(length) : new ArrayList<>());
     }
 
-    public static RepeatPattern getRandomRepeatPattern(PatternAligner patternAligner, boolean withGroups) {
+    public static RepeatPattern getRandomRepeatPattern(long scoreThreshold, boolean withGroups) {
         int minRepeats = rg.nextInt(10) + 1;
         int maxRepeats = rg.nextInt(100) + minRepeats;
         RandomBorders randomBorders = new RandomBorders(maxRepeats);
         NucleotideSequenceCaseSensitive seq = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
                 1, 1);
-        return new RepeatPattern(patternAligner, seq, minRepeats, maxRepeats, randomBorders.left, randomBorders.right,
+        return new RepeatPattern(scoreThreshold, seq, minRepeats, maxRepeats, randomBorders.left, randomBorders.right,
                 withGroups ? getRandomGroupsForFuzzyMatch(maxRepeats) : new ArrayList<>());
     }
 
-    public static AnyPattern getRandomAnyPattern(PatternAligner patternAligner, boolean withGroups) {
-        return new AnyPattern(patternAligner, withGroups ? getRandomGroupsForFuzzyMatch(1).stream()
+    public static AnyPattern getRandomAnyPattern(long scoreThreshold, boolean withGroups) {
+        return new AnyPattern(scoreThreshold, withGroups ? getRandomGroupsForFuzzyMatch(1).stream()
                 .map(GroupEdgePosition::getGroupEdge).collect(Collectors.toCollection(ArrayList::new))
                 : new ArrayList<>());
     }
@@ -342,36 +250,36 @@ public class CommonTestUtils {
         return getRandomBasicPattern(false);
     }
 
-    public static SinglePattern getRandomBasicPattern(PatternAligner patternAligner) {
-        return getRandomBasicPattern(patternAligner, false);
+    public static SinglePattern getRandomBasicPattern(long scoreThreshold) {
+        return getRandomBasicPattern(scoreThreshold, false);
     }
 
     public static SinglePattern getRandomBasicPattern(boolean withGroups) {
-        return getRandomBasicPattern(getRandomPatternAligner(), withGroups);
+        return getRandomBasicPattern(rg.nextInt(150) - 100, withGroups);
     }
 
-    public static SinglePattern getRandomBasicPattern(PatternAligner patternAligner, boolean withGroups) {
+    public static SinglePattern getRandomBasicPattern(long scoreThreshold, boolean withGroups) {
         switch (rg.nextInt(3)) {
             case 0:
-                return getRandomFuzzyPattern(patternAligner, withGroups);
+                return getRandomFuzzyPattern(scoreThreshold, withGroups);
             case 1:
-                return getRandomRepeatPattern(patternAligner, withGroups);
+                return getRandomRepeatPattern(scoreThreshold, withGroups);
             default:
-                return getRandomAnyPattern(patternAligner, withGroups);
+                return getRandomAnyPattern(scoreThreshold, withGroups);
         }
     }
 
     public static SinglePattern getRandomSinglePattern(SinglePattern... patterns) {
-        return getRandomSinglePattern(getRandomPatternAligner(), patterns);
+        return getRandomSinglePattern(rg.nextInt(150) - 100, patterns);
     }
 
-    public static SinglePattern getRandomSinglePattern(PatternAligner patternAligner, SinglePattern... singlePatterns) {
+    public static SinglePattern getRandomSinglePattern(long scoreThreshold, SinglePattern... singlePatterns) {
         SinglePattern[] patterns;
         if (singlePatterns.length == 0) {
             int numPatterns = rg.nextInt(5) + 1;
             patterns = new SinglePattern[numPatterns];
             for (int i = 0; i < numPatterns; i++)
-                patterns[i] = getRandomBasicPattern(patternAligner);
+                patterns[i] = getRandomBasicPattern(scoreThreshold);
         } else
             patterns = singlePatterns;
         boolean foundAnyPattern = Arrays.stream(patterns).anyMatch(p -> p instanceof AnyPattern);
@@ -379,62 +287,62 @@ public class CommonTestUtils {
             case 0:
                 return patterns[0];
             case 1:
-                return new FilterPattern(patternAligner, new ScoreFilter(-rg.nextInt(75)), patterns[0]);
+                return new FilterPattern(scoreThreshold, new ScoreFilter(-rg.nextInt(75)), patterns[0]);
             case 2:
-                return new FilterPattern(patternAligner, new StickFilter(rg.nextBoolean(), rg.nextInt(30)),
+                return new FilterPattern(scoreThreshold, new StickFilter(rg.nextBoolean(), rg.nextInt(30)),
                         patterns[0]);
             case 3:
-                return new AndPattern(patternAligner, patterns);
+                return new AndPattern(scoreThreshold, patterns);
             case 4:
-                return new PlusPattern(patternAligner, patterns);
+                return new PlusPattern(scoreThreshold, patterns);
             case 5:
-                return new SequencePattern(patternAligner, patterns);
+                return new SequencePattern(scoreThreshold, patterns);
             case 6:
             default:
-                return new OrPattern(patternAligner, patterns);
+                return new OrPattern(scoreThreshold, patterns);
         }
     }
 
     public static MultipleReadsOperator getRandomMultiReadPattern(MultipleReadsOperator... patterns) {
-        return getRandomMultiReadPattern(getRandomPatternAligner(), -1, patterns);
+        return getRandomMultiReadPattern(rg.nextInt(150) - 100, -1, patterns);
     }
 
     public static MultipleReadsOperator getRandomMultiReadPattern(int numPatterns) {
-        return getRandomMultiReadPattern(getRandomPatternAligner(), numPatterns);
+        return getRandomMultiReadPattern(rg.nextInt(150) - 100, numPatterns);
     }
 
-    public static MultipleReadsOperator getRandomMultiReadPattern(PatternAligner patternAligner, int numPatterns,
+    public static MultipleReadsOperator getRandomMultiReadPattern(long scoreThreshold, int numPatterns,
                                                                   MultipleReadsOperator... patterns) {
         if (patterns.length == 0) {
             if (numPatterns == -1)
                 numPatterns = rg.nextInt(5) + 1;
             SinglePattern[] basicPatterns = new SinglePattern[numPatterns];
             for (int i = 0; i < numPatterns; i++)
-                basicPatterns[i] = getRandomBasicPattern(patternAligner);
-            return new MultiPattern(patternAligner, basicPatterns);
+                basicPatterns[i] = getRandomBasicPattern(scoreThreshold);
+            return new MultiPattern(scoreThreshold, basicPatterns);
         } else {
             switch (rg.nextInt(4)) {
                 case 0:
-                    return new AndOperator(patternAligner, patterns);
+                    return new AndOperator(scoreThreshold, patterns);
                 case 1:
-                    return new OrOperator(patternAligner, patterns);
+                    return new OrOperator(scoreThreshold, patterns);
                 case 2:
-                    return new NotOperator(patternAligner, patterns[0]);
+                    return new NotOperator(scoreThreshold, patterns[0]);
                 case 3:
                 default:
-                    return new MultipleReadsFilterPattern(patternAligner,
+                    return new MultipleReadsFilterPattern(scoreThreshold,
                             new ScoreFilter(-rg.nextInt(75)), patterns[0]);
             }
         }
     }
 
     public static MultipleReadsOperator[] singleToMultiPatterns(SinglePattern... singlePatterns) {
-        return singleToMultiPatterns(getTestPatternAligner(), singlePatterns);
+        return singleToMultiPatterns(singlePatterns[0].getScoreThreshold(), singlePatterns);
     }
 
-    public static MultipleReadsOperator[] singleToMultiPatterns(PatternAligner patternAligner,
+    public static MultipleReadsOperator[] singleToMultiPatterns(long scoreThreshold,
                                                                 SinglePattern... singlePatterns) {
-        return Arrays.stream(singlePatterns).map(sp -> new MultiPattern(patternAligner, sp))
+        return Arrays.stream(singlePatterns).map(sp -> new MultiPattern(scoreThreshold, sp))
                 .toArray(MultipleReadsOperator[]::new);
     }
 

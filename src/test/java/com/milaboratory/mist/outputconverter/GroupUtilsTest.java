@@ -3,9 +3,7 @@ package com.milaboratory.mist.outputconverter;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.*;
 import com.milaboratory.mist.pattern.*;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
@@ -185,29 +183,30 @@ public class GroupUtilsTest {
         groupEdgePositions2.add(new GroupEdgePosition(new GroupEdge("2-2", true), 0));
         groupEdgePositions2.add(new GroupEdgePosition(new GroupEdge("2-2", false), 3));
 
-        PatternAligner patternAligner = getTestPatternAligner(0);
+        PatternAligner.allowValuesOverride();
+        PatternAligner.init(getTestScoring(), -1, 0, 1);
         NucleotideSequenceCaseSensitive seq1 = new NucleotideSequenceCaseSensitive("ATTAGACA");
         NucleotideSequenceCaseSensitive seq2 = new NucleotideSequenceCaseSensitive("CTCTCT");
         NSequenceWithQuality target1 = new NSequenceWithQuality("TATTAGACA");
         NSequenceWithQuality target2 = new NSequenceWithQuality("CTCTCTC");
         MultiNSequenceWithQualityImpl mTarget = new MultiNSequenceWithQualityImpl(target1, target2);
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(patternAligner, seq1, groupEdgePositions1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(patternAligner, seq2, groupEdgePositions2);
-        FuzzyMatchPattern pattern1NoGroups = new FuzzyMatchPattern(patternAligner, seq1);
-        FuzzyMatchPattern pattern2NoGroups = new FuzzyMatchPattern(patternAligner, seq2);
-        AndPattern andPattern0 = new AndPattern(patternAligner, pattern1, pattern2);
-        AndPattern andPattern1 = new AndPattern(patternAligner, pattern1, pattern1NoGroups);
-        AndPattern andPattern2 = new AndPattern(patternAligner, pattern2, pattern2NoGroups);
-        OrPattern orPattern0 = new OrPattern(patternAligner, pattern1, pattern2);
-        OrPattern orPattern1 = new OrPattern(patternAligner, pattern1, andPattern0);
-        OrPattern orPattern2 = new OrPattern(patternAligner, andPattern0, pattern2);
-        OrPattern orPattern3 = new OrPattern(patternAligner, pattern1NoGroups, andPattern1);
-        OrPattern orPattern4 = new OrPattern(patternAligner, andPattern2, pattern2NoGroups);
-        MultiPattern multiPattern1 = new MultiPattern(patternAligner, pattern1, orPattern4);
-        MultiPattern multiPattern2 = new MultiPattern(patternAligner, orPattern3, pattern2);
-        AndOperator andOperator = new AndOperator(patternAligner, multiPattern1,
-                new MultiPattern(patternAligner, pattern1NoGroups, pattern2NoGroups));
-        OrOperator orOperator = new OrOperator(patternAligner, multiPattern1, multiPattern2);
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(Long.MIN_VALUE, seq1, groupEdgePositions1);
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(Long.MIN_VALUE, seq2, groupEdgePositions2);
+        FuzzyMatchPattern pattern1NoGroups = new FuzzyMatchPattern(Long.MIN_VALUE, seq1);
+        FuzzyMatchPattern pattern2NoGroups = new FuzzyMatchPattern(Long.MIN_VALUE, seq2);
+        AndPattern andPattern0 = new AndPattern(Long.MIN_VALUE, pattern1, pattern2);
+        AndPattern andPattern1 = new AndPattern(Long.MIN_VALUE, pattern1, pattern1NoGroups);
+        AndPattern andPattern2 = new AndPattern(Long.MIN_VALUE, pattern2, pattern2NoGroups);
+        OrPattern orPattern0 = new OrPattern(Long.MIN_VALUE, pattern1, pattern2);
+        OrPattern orPattern1 = new OrPattern(Long.MIN_VALUE, pattern1, andPattern0);
+        OrPattern orPattern2 = new OrPattern(Long.MIN_VALUE, andPattern0, pattern2);
+        OrPattern orPattern3 = new OrPattern(Long.MIN_VALUE, pattern1NoGroups, andPattern1);
+        OrPattern orPattern4 = new OrPattern(Long.MIN_VALUE, andPattern2, pattern2NoGroups);
+        MultiPattern multiPattern1 = new MultiPattern(Long.MIN_VALUE, pattern1, orPattern4);
+        MultiPattern multiPattern2 = new MultiPattern(Long.MIN_VALUE, orPattern3, pattern2);
+        AndOperator andOperator = new AndOperator(Long.MIN_VALUE, multiPattern1,
+                new MultiPattern(Long.MIN_VALUE, pattern1NoGroups, pattern2NoGroups));
+        OrOperator orOperator = new OrOperator(Long.MIN_VALUE, multiPattern1, multiPattern2);
 
         assertEquals("", getNotMatchedGroupsDescription(pattern1, target1, 0));
         assertEquals("", getNotMatchedGroupsDescription(pattern2, target2, 0));

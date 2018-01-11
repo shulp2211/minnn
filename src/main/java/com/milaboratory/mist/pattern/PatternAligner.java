@@ -5,12 +5,13 @@ import com.milaboratory.core.alignment.*;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 
-public class PatternAligner {
+public final class PatternAligner {
     private static PatternAndTargetAlignmentScoring scoring;
     private static long singleOverlapPenalty;
     private static int bitapMaxErrors;
     private static int maxOverlap;
     private static boolean initialized = false;
+    private static boolean allowValuesOverride = false;
 
     private PatternAligner() {
     }
@@ -25,13 +26,20 @@ public class PatternAligner {
      */
     public static void init(PatternAndTargetAlignmentScoring scoringArg, long singleOverlapPenaltyArg,
                             int bitapMaxErrorsArg, int maxOverlapArg) {
-        if (initialized)
+        if (initialized && !allowValuesOverride)
             throw new IllegalStateException("Repeated initialization of PatternAligner!");
         scoring = scoringArg;
         singleOverlapPenalty = singleOverlapPenaltyArg;
         bitapMaxErrors = bitapMaxErrorsArg;
         maxOverlap = maxOverlapArg;
         initialized = true;
+    }
+
+    /**
+     * Use in tests only.
+     */
+    public static void allowValuesOverride() {
+        allowValuesOverride = true;
     }
 
     public static Alignment<NucleotideSequenceCaseSensitive> align(NucleotideSequenceCaseSensitive pattern,

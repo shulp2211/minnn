@@ -2,23 +2,28 @@ package com.milaboratory.mist.parser;
 
 import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 import com.milaboratory.mist.pattern.*;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
-import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
+import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class TokenizedStringTest {
+    @BeforeClass
+    public static void init() throws Exception {
+        PatternAligner.allowValuesOverride();
+        PatternAligner.init(getTestScoring(), -1, 0, -1);
+    }
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
     public void simpleTest1() throws Exception {
         TokenizedString ts1 = new TokenizedString("AATTAA");
-        FuzzyMatchPattern testPattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
+        FuzzyMatchPattern testPattern1 = new FuzzyMatchPattern(Long.MIN_VALUE,
                 new NucleotideSequenceCaseSensitive("aa"));
-        FuzzyMatchPattern testPattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+        FuzzyMatchPattern testPattern2 = new FuzzyMatchPattern(Long.MIN_VALUE,
                 new NucleotideSequenceCaseSensitive("tt"));
         assertEquals("AATTAA", ts1.getOneString());
         ts1.tokenizeSubstring(testPattern1, 0, 2);
@@ -38,12 +43,12 @@ public class TokenizedStringTest {
 
     @Test
     public void simpleTest2() throws Exception {
-        FuzzyMatchPattern fuzzyMatchPattern = new FuzzyMatchPattern(getTestPatternAligner(),
+        FuzzyMatchPattern fuzzyMatchPattern = new FuzzyMatchPattern(Long.MIN_VALUE,
                 new NucleotideSequenceCaseSensitive("atttgtg"));
-        AndPattern andPattern = new AndPattern(getTestPatternAligner(), fuzzyMatchPattern, fuzzyMatchPattern);
+        AndPattern andPattern = new AndPattern(Long.MIN_VALUE, fuzzyMatchPattern, fuzzyMatchPattern);
         ScoreFilter scoreFilter = new ScoreFilter(-1);
-        FilterPattern filterPattern = new FilterPattern(getTestPatternAligner(), scoreFilter, fuzzyMatchPattern);
-        MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), andPattern, filterPattern);
+        FilterPattern filterPattern = new FilterPattern(Long.MIN_VALUE, scoreFilter, fuzzyMatchPattern);
+        MultiPattern multiPattern = new MultiPattern(Long.MIN_VALUE, andPattern, filterPattern);
         TokenizedString ts = new TokenizedString(multiPattern.toString());
         ts.tokenizeSubstring(fuzzyMatchPattern, 5, 10);
         assertEquals(3, ts.getTokens(1, 20).size());

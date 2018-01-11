@@ -1,15 +1,20 @@
 package com.milaboratory.mist.pattern;
 
 import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 
-import static com.milaboratory.mist.util.CommonTestUtils.getTestPatternAligner;
+import static com.milaboratory.mist.util.CommonTestUtils.getTestScoring;
 
 public class MultiplePatternsOperatorTest {
+    @BeforeClass
+    public static void init() throws Exception {
+        PatternAligner.allowValuesOverride();
+        PatternAligner.init(getTestScoring(), -1, 0, -1);
+    }
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -30,12 +35,12 @@ public class MultiplePatternsOperatorTest {
             add(new GroupEdgePosition(new GroupEdge("XYZ", false), 3));
         }};
 
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(Long.MIN_VALUE,
                 new NucleotideSequenceCaseSensitive("gtggttgtgttgt"), groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(Long.MIN_VALUE,
                 new NucleotideSequenceCaseSensitive("gtggttgtgttgt"), groups2);
         exception.expect(IllegalStateException.class);
-        new AndPattern(getTestPatternAligner(), pattern1, pattern2);
+        new AndPattern(Long.MIN_VALUE, pattern1, pattern2);
     }
 
     @Test
@@ -54,13 +59,13 @@ public class MultiplePatternsOperatorTest {
             add(new GroupEdgePosition(new GroupEdge("XYZ", true), 1));
             add(new GroupEdgePosition(new GroupEdge("XYZ", false), 3));
         }};
-        
-        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(getTestPatternAligner(),
+
+        FuzzyMatchPattern pattern1 = new FuzzyMatchPattern(Long.MIN_VALUE,
                 new NucleotideSequenceCaseSensitive("gtggttgtgttgt"), groups1);
-        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(getTestPatternAligner(),
+        FuzzyMatchPattern pattern2 = new FuzzyMatchPattern(Long.MIN_VALUE,
                 new NucleotideSequenceCaseSensitive("gtggttgtgttgt"), groups2);
         exception.expect(IllegalStateException.class);
-        new PlusPattern(getTestPatternAligner(), pattern1, pattern2);
+        new PlusPattern(Long.MIN_VALUE, pattern1, pattern2);
     }
 
     @Test
@@ -73,10 +78,10 @@ public class MultiplePatternsOperatorTest {
             add(new GroupEdgePosition(new GroupEdge("GH", true), 9));
             add(new GroupEdgePosition(new GroupEdge("GH", false), 10));
         }};
-        
-        FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(),
+
+        FuzzyMatchPattern pattern = new FuzzyMatchPattern(Long.MIN_VALUE,
                 new NucleotideSequenceCaseSensitive("gtggttgtgttgt"), groups);
         exception.expect(IllegalStateException.class);
-        new AndPattern(getTestPatternAligner(), pattern, pattern);
+        new AndPattern(Long.MIN_VALUE, pattern, pattern);
     }
 }

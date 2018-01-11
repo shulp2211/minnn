@@ -4,7 +4,7 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.*;
 import com.milaboratory.mist.outputconverter.MatchedGroup;
 import com.milaboratory.mist.pattern.*;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,7 +15,14 @@ import static com.milaboratory.mist.util.CommonTestUtils.RandomStringType.*;
 import static org.junit.Assert.*;
 
 public class ParserTest {
-    private static final Parser strictParser = new Parser(getTestPatternAligner(true));
+    @BeforeClass
+    public static void init() throws Exception {
+        PatternAligner.allowValuesOverride();
+    }
+
+    private Pattern parse(String query) throws Exception {
+        return Parser.parseQuery(query, -100);
+    }
 
     @Test
     public void sampleNormalSyntaxQueriesTest1() throws Exception {
@@ -32,9 +39,8 @@ public class ParserTest {
             "TATTAGA",                                                  // 2
             "GACAGGGG"                                                  // 3
         };
-        Parser parser = new Parser(getTestPatternAligner(-100, 2, 0,
-                -1));
-        List<Pattern> patterns = Arrays.stream(queries).map(rethrow(parser::parseQuery)).collect(Collectors.toList());
+        PatternAligner.init(getTestScoring(), -1, 2, -1);
+        List<Pattern> patterns = Arrays.stream(queries).map(rethrow(this::parse)).collect(Collectors.toList());
         List<List<MatchIntermediate>> bestMatches = patterns.stream().map(p -> Arrays.stream(targets)
                 .map(t -> p.match(new NSequenceWithQuality(t)).getBestMatch(true))
                 .collect(Collectors.toList())).collect(Collectors.toList());
@@ -51,6 +57,7 @@ public class ParserTest {
 
     @Test
     public void sampleNormalSyntaxQueriesTest2() throws Exception {
+        PatternAligner.init(getTestScoring(), -1, 0, -1);
         testSample("^<{3}ATTAGACA>>$", "AGA", new Range(0, 3));
         testSample("^<{3}ATTAGACA>$", "AGA", null);
         testSample("^<{3}ATTAGACA>$", "AGAC", new Range(0, 4));
@@ -176,6 +183,7 @@ public class ParserTest {
 
     @Test
     public void sampleNormalSyntaxQueriesTest3() throws Exception {
+        PatternAligner.init(getTestScoring(), -1, 0, -1);
         testMultiSample("ATTA \\ GACA", "ATTA GACA", true);
         testMultiSample("AAA || TTT \\ GGG || CCC", "TTT GGG", true);
         testMultiSample("[AAA \\ TTT] || [GGG \\ CCC]", "GGG CCC", true);
@@ -213,6 +221,7 @@ public class ParserTest {
 
     @Test
     public void testMatchedGroups() throws Exception {
+        PatternAligner.init(getTestScoring(), -1, 0, -1);
         ArrayList<MatchedGroup> testGroups1 = getGroupsFromSample(
                 "(0:[0:AT(1:T{3}A)])+(2:[<<(3:GAT+C)+T]) || (4:AAA)", "GGAAAATTTTAGATCTATG");
         assertGroupRange(testGroups1, "0", new Range(5, 11));
@@ -242,6 +251,7 @@ public class ParserTest {
 
     @Test
     public void fuzzingTest() throws Exception {
+        PatternAligner.init(getTestScoring(), -1, 0, -1);
         for (int i = 0; i < 100000; i++) {
             int stringLength = rg.nextInt(30) + 1;
             String randomString = rg.nextBoolean()
@@ -249,7 +259,7 @@ public class ParserTest {
                     ? getRandomString(stringLength, "", UNICODE)
                     : getRandomString(stringLength, "", LIMITED);
             try {
-                strictParser.parseQuery(randomString);
+                Parser.parseQuery(randomString, rg.nextInt(200) - 100);
             } catch (Exception e) {
                 if (!e.getClass().equals(ParserException.class)) {
                     System.out.println(randomString + "\n" + e);
@@ -261,34 +271,35 @@ public class ParserTest {
 
     @Test
     public void bestMatchTest() throws Exception {
+        PatternAligner.init(getTestScoring(), -1, 0, -1);
         String query = "AGTT >>>+ [-1:<{1} GCA{2:2}TGC & T{2 :}A] +[0: <{1}AGC] &AGC& [[[[[T ] ] ] ] ] ";
         String target = "TATATTAATCAATGCCCAGCAGC";
-        Pattern pattern = strictParser.parseQuery(query);
+        Pattern pattern = Parser.parseQuery(query, 0);
         assertEquals(target, bestToString(pattern.match(new NSequenceWithQuality(target))));
     }
 
     private static void testSample(String query, String target, Range expectedRange) throws Exception {
-        Pattern pattern = strictParser.parseQuery(query);
+        Pattern pattern = Parser.parseQuery(query, 0);
         MatchIntermediate bestMatch = pattern.match(new NSequenceWithQuality(target)).getBestMatch(true);
         Range matchedRange = (bestMatch == null) ? null : bestMatch.getRange();
         assertEquals(expectedRange, matchedRange);
     }
 
     private static void testMultiSample(String query, String multiTarget, boolean mustMatch) throws Exception {
-        Pattern pattern = strictParser.parseQuery(query);
+        Pattern pattern = Parser.parseQuery(query, 0);
         MatchingResult results = pattern.match(parseMultiTargetString(multiTarget));
         assertEquals(mustMatch, results.getBestMatch(true) != null);
     }
 
     private static void testBadSample(String query) throws Exception {
         assertException(ParserException.class, () -> {
-            strictParser.parseQuery(query);
+            Parser.parseQuery(query, 0);
             return null;
         });
     }
 
     private static ArrayList<MatchedGroup> getGroupsFromSample(String query, String target) throws Exception {
-        Pattern pattern = strictParser.parseQuery(query);
+        Pattern pattern = Parser.parseQuery(query, 0);
         Match bestMatch = pattern.match(new NSequenceWithQuality(target)).getBestMatch(true);
         return bestMatch.getGroups();
     }

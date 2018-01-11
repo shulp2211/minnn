@@ -1,33 +1,35 @@
 package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
-import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
-import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
+import com.milaboratory.core.sequence.*;
 import com.milaboratory.test.TestUtil;
-import org.junit.Test;
+import org.junit.*;
 
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class ScoreFilterTest {
+    @BeforeClass
+    public static void init() throws Exception {
+        PatternAligner.allowValuesOverride();
+    }
+
     @Test
     public void randomTest() throws Exception {
         for (int i = 0; i < 1000; i++) {
             int scoreThreshold = -rg.nextInt(100);
+            PatternAligner.init(getTestScoring(), -1, rg.nextInt(5), -1);
             String seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 300).toString();
             NSequenceWithQuality target = new NSequenceWithQuality(seq);
             MultiNSequenceWithQuality multiTarget = createMultiNSeq(seq, 2);
             NucleotideSequenceCaseSensitive motif = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
                     1, 20);
-            FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(rg.nextInt(5)), motif);
-            FilterPattern filterPattern = new FilterPattern(getTestPatternAligner(),
-                    new ScoreFilter(scoreThreshold), pattern);
-            MultiPattern multiPattern = new MultiPattern(getTestPatternAligner(), pattern, filterPattern);
-            MultipleReadsFilterPattern mFilterPattern = new MultipleReadsFilterPattern(getTestPatternAligner(),
+            FuzzyMatchPattern pattern = new FuzzyMatchPattern(Long.MIN_VALUE, motif);
+            FilterPattern filterPattern = new FilterPattern(Long.MIN_VALUE, new ScoreFilter(scoreThreshold), pattern);
+            MultiPattern multiPattern = new MultiPattern(Long.MIN_VALUE, pattern, filterPattern);
+            MultipleReadsFilterPattern mFilterPattern = new MultipleReadsFilterPattern(Long.MIN_VALUE,
                     new ScoreFilter(scoreThreshold * 2), multiPattern);
-            AndOperator andOperator = new AndOperator(getTestPatternAligner(), multiPattern, mFilterPattern);
+            AndOperator andOperator = new AndOperator(Long.MIN_VALUE, multiPattern, mFilterPattern);
             Match patternBestMatch = pattern.match(target).getBestMatch(true);
             boolean isMatching = (patternBestMatch != null) && (patternBestMatch.getScore() >= scoreThreshold);
 

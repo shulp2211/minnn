@@ -65,7 +65,8 @@ public class RangeToolsTest {
     @Test
     public void combineRangesRandomTest() throws Exception {
         for (int i = 0; i < 1000; i++) {
-            SinglePattern pattern = getRandomSinglePattern(getRandomPatternAligner());
+            configureRandomPatternAligner();
+            SinglePattern pattern = getRandomSinglePattern();
             NSequenceWithQuality target = new NSequenceWithQuality(TestUtil.randomSequence(NucleotideSequence.ALPHABET,
                     10, 100).toString());
             MatchIntermediate[] matches = streamPort(pattern.match(target).getMatches())

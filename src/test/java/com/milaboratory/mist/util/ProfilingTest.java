@@ -7,13 +7,13 @@ import com.milaboratory.test.TestUtil;
 import org.junit.*;
 
 import static com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive.fromNucleotideSequence;
-import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static com.milaboratory.mist.util.DebugUtils.*;
 import static org.junit.Assert.*;
 
 public class ProfilingTest {
     @Before
     public void setUp() throws Exception {
+        PatternAligner.allowValuesOverride();
         resetTimeCounter();
     }
 
@@ -62,7 +62,6 @@ public class ProfilingTest {
                 NucleotideSequence.ALPHABET, 0, -9, -10);
         final PatternAndTargetAlignmentScoring scoringNew = new PatternAndTargetAlignmentScoring(
                 0, -9, -10, (byte)34, (byte)0, 0);
-        final PatternAligner patternAligner = getTestPatternAligner();
         for (int i = 0; i < 100000; i++) {
             final NucleotideSequence seq1 = TestUtil.randomSequence(NucleotideSequence.ALPHABET,
                     20, 40);

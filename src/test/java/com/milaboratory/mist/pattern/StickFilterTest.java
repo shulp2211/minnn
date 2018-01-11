@@ -1,28 +1,31 @@
 package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
-import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
+import com.milaboratory.core.sequence.*;
 import com.milaboratory.test.TestUtil;
-import org.junit.Test;
+import org.junit.*;
 
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class StickFilterTest {
+    @BeforeClass
+    public static void init() throws Exception {
+        PatternAligner.allowValuesOverride();
+    }
+
     @Test
     public void randomTest() throws Exception {
         for (int i = 0; i < 1000; i++) {
             boolean left = rg.nextBoolean();
             int position = rg.nextInt(30);
+            PatternAligner.init(getTestScoring(), -1, rg.nextInt(5), -1);
             String seq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, 1, 300).toString();
             NSequenceWithQuality target = new NSequenceWithQuality(seq);
             NucleotideSequenceCaseSensitive motif = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET,
                     1, 20);
-            FuzzyMatchPattern pattern = new FuzzyMatchPattern(getTestPatternAligner(rg.nextInt(5)), motif);
-            FilterPattern filterPattern = new FilterPattern(getTestPatternAligner(),
-                    new StickFilter(left, position), pattern);
+            FuzzyMatchPattern pattern = new FuzzyMatchPattern(Long.MIN_VALUE, motif);
+            FilterPattern filterPattern = new FilterPattern(Long.MIN_VALUE, new StickFilter(left, position), pattern);
             MatchIntermediate patternBestMatch = pattern.match(target).getBestMatch(true);
             boolean mustMatch = (patternBestMatch != null)
                     && ((left && (patternBestMatch.getRange().getFrom() == position))

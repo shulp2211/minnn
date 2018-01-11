@@ -1,10 +1,9 @@
 package com.milaboratory.mist.pattern;
 
 import cc.redberry.pipe.OutputPort;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.*;
 import com.milaboratory.test.TestUtil;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.ArrayList;
 
@@ -12,16 +11,21 @@ import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class AnyPatternTest {
+    @BeforeClass
+    public static void init() throws Exception {
+        PatternAligner.allowValuesOverride();
+    }
+
     @Test
     public void randomGroupsTest() throws Exception {
         for (int i = 0; i < 30000; i++) {
-            PatternAligner patternAligner = getTestPatternAligner(rg.nextInt(10));
+            PatternAligner.init(getTestScoring(), -1, rg.nextInt(10), -1);
             ArrayList<GroupEdge> groupEdges = new ArrayList<>();
             int numGroupEdges = rg.nextInt(40);
             int targetSize = rg.nextInt(1000) + 1;
             for (int j = 0; j < numGroupEdges; j++)
                 groupEdges.add(new GroupEdge("1", rg.nextBoolean()));
-            AnyPattern pattern = new AnyPattern(patternAligner, groupEdges);
+            AnyPattern pattern = new AnyPattern(Long.MIN_VALUE, groupEdges);
             NucleotideSequence targetSeq = TestUtil.randomSequence(NucleotideSequence.ALPHABET, targetSize, targetSize);
             NSequenceWithQuality target = new NSequenceWithQuality(targetSeq.toString());
             OutputPort<MatchIntermediate> port = pattern.match(target).getMatches(rg.nextBoolean());
