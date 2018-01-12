@@ -116,8 +116,8 @@ public class AndPatternTest {
         assertNotNull(andPattern2.match(nseq).getBestMatch());
         assertEquals(44, countMatches(andPattern1.match(nseq), true));
         assertEquals(248, countMatches(andPattern2.match(nseq), true));
-        OutputPort<Match> matchesPattern1 = andPattern1.match(nseq).getMatches(true);
-        OutputPort<Match> matchesPattern2 = andPattern2.match(nseq).getMatches(true);
+        OutputPort<MatchIntermediate> matchesPattern1 = andPattern1.match(nseq).getMatches(true);
+        OutputPort<MatchIntermediate> matchesPattern2 = andPattern2.match(nseq).getMatches(true);
         for (int i = 0; i < 44; i++) {
             assertNotNull(matchesPattern1.take().getValue());
         }
@@ -193,7 +193,7 @@ public class AndPatternTest {
         AndPattern andPattern = new AndPattern(getTestPatternAligner(true), pattern1, pattern2);
         NSequenceWithQuality nseq = new NSequenceWithQuality("AAACAGATGCAGACATAGCC");
         MatchingResult result = andPattern.match(nseq);
-        OutputPort<Match> matchOutputPort = result.getMatches(true);
+        OutputPort<MatchIntermediate> matchOutputPort = result.getMatches(true);
         Match match = matchOutputPort.take();
         assertEquals(16, match.getMatchedGroupEdge("2", true).getPosition());
         assertEquals(9, match.getMatchedGroupEdge("5", false).getPosition());
@@ -236,8 +236,8 @@ public class AndPatternTest {
             long andPenaltyThreshold;
             boolean tooBigOverlap = false;
             if (isMatchingPattern1) {
-                Match match1 = pattern1.match(targetQ).getBestMatch(true);
-                Match match2 = pattern2.match(targetQ).getBestMatch(true);
+                MatchIntermediate match1 = pattern1.match(targetQ).getBestMatch(true);
+                MatchIntermediate match2 = pattern2.match(targetQ).getBestMatch(true);
                 andPenaltyThreshold = match1.getScore() + match2.getScore()
                         + errorScorePenalty * getIntersectionLength(match1.getRange(), match2.getRange());
                 tooBigOverlap = checkFullIntersection(match1.getRange(), match2.getRange()) || ((maxOverlap != -1)
@@ -251,10 +251,10 @@ public class AndPatternTest {
             boolean andMustBeFound = isMatchingPattern1;
             if (tooBigOverlap) {
                 andPenaltyThreshold = Long.MIN_VALUE;
-                OutputPort<Match> port1 = pattern1.match(targetQ).getMatches(true);
-                OutputPort<Match> port2 = pattern2.match(targetQ).getMatches(true);
-                List<Range> ranges1 = streamPort(port1).map(Match::getRange).collect(Collectors.toList());
-                List<Range> ranges2 = streamPort(port2).map(Match::getRange).collect(Collectors.toList());
+                OutputPort<MatchIntermediate> port1 = pattern1.match(targetQ).getMatches(true);
+                OutputPort<MatchIntermediate> port2 = pattern2.match(targetQ).getMatches(true);
+                List<Range> ranges1 = streamPort(port1).map(MatchIntermediate::getRange).collect(Collectors.toList());
+                List<Range> ranges2 = streamPort(port2).map(MatchIntermediate::getRange).collect(Collectors.toList());
 
                 andMustBeFound = false;
                 OUTER:

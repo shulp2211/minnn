@@ -36,10 +36,10 @@ public class MatchTest {
             add(new MatchedGroupEdge(seq1, (byte)1, 1, new GroupEdge("3", false), 8));
         }};
 
-        Match testMatch1 = new Match(1, -10, 1, 2,
-                testMatchedGroupEdges1, testMatchedRange1);
-        Match testMatch2 = new Match(2, -5, -1, -1,
-                testMatchedGroupEdges2, testMatchedRanges2);
+        MatchIntermediate testMatch1 = new MatchIntermediate(1, -10,
+                1, 2, testMatchedGroupEdges1, testMatchedRange1);
+        MatchIntermediate testMatch2 = new MatchIntermediate(2, -5,
+                -1, -1, testMatchedGroupEdges2, testMatchedRanges2);
 
         assertEquals(1, testMatch1.getNumberOfPatterns());
         assertEquals(2, testMatch2.getNumberOfPatterns());

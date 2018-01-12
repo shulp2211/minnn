@@ -107,7 +107,7 @@ public final class FilterPattern extends SinglePattern implements CanBeSingleSeq
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean fairSorting) {
+        public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
             if (targetMulti != null) {
                 if (!(pattern instanceof MultipleReadsOperator)) throw new IllegalArgumentException(
                         "Trying to use filter with single-target pattern and multi-target match arguments.");
@@ -120,16 +120,16 @@ public final class FilterPattern extends SinglePattern implements CanBeSingleSeq
             } else throw new IllegalStateException("Both targetMulti and targetSingle are null.");
         }
 
-        private class FilterOutputPort implements OutputPort<Match> {
-            private final OutputPort<Match> operandPort;
+        private class FilterOutputPort implements OutputPort<MatchIntermediate> {
+            private final OutputPort<MatchIntermediate> operandPort;
 
-            FilterOutputPort(OutputPort<Match> operandPort) {
+            FilterOutputPort(OutputPort<MatchIntermediate> operandPort) {
                 this.operandPort = operandPort;
             }
 
             @Override
-            public Match take() {
-                Match currentMatch, currentFilteredMatch;
+            public MatchIntermediate take() {
+                MatchIntermediate currentMatch, currentFilteredMatch;
                 do {
                     currentMatch = operandPort.take();
                     if (currentMatch == null)

@@ -37,7 +37,7 @@ public final class AndOperator extends MultipleReadsOperator {
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean fairSorting) {
+        public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
             ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, patternAligner,
                     false, true, fairSorting, LOGICAL_AND,
                     unfairSorterPortLimits.get(AndOperator.class), operandPatterns);

@@ -41,7 +41,7 @@ public final class AndPattern extends MultiplePatternsOperator {
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean fairSorting) {
+        public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
             ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, patternAligner,
                     true, fairSorting, INTERSECTION, unfairSorterPortLimits.get(AndPattern.class),
                     operandPatterns);

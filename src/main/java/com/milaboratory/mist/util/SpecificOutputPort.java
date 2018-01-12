@@ -1,20 +1,20 @@
 package com.milaboratory.mist.util;
 
 import cc.redberry.pipe.OutputPort;
-import com.milaboratory.mist.pattern.Match;
+import com.milaboratory.mist.pattern.MatchIntermediate;
 
 import java.util.ArrayList;
 
-final class SpecificOutputPort implements OutputPort<Match> {
-    private final OutputPort<Match> port;
-    private final ArrayList<Match> cachedMatches = new ArrayList<>();
+final class SpecificOutputPort implements OutputPort<MatchIntermediate> {
+    private final OutputPort<MatchIntermediate> port;
+    private final ArrayList<MatchIntermediate> cachedMatches = new ArrayList<>();
     private final int operandIndex;
     private final int from;
     private final int to;
     private final int portLimit;
     private boolean finished = false;
 
-    SpecificOutputPort(OutputPort<Match> port, int operandIndex, int from, int to, int portLimit) {
+    SpecificOutputPort(OutputPort<MatchIntermediate> port, int operandIndex, int from, int to, int portLimit) {
         this.port = port;
         this.operandIndex = operandIndex;
         this.from = from;
@@ -23,10 +23,10 @@ final class SpecificOutputPort implements OutputPort<Match> {
     }
 
     @Override
-    public Match take() {
+    public MatchIntermediate take() {
         if (finished)
             return null;
-        Match match = port.take();
+        MatchIntermediate match = port.take();
         if (match == null)
             finished = true;
         else {
@@ -37,9 +37,9 @@ final class SpecificOutputPort implements OutputPort<Match> {
         return match;
     }
 
-    ArrayList<Match> takeAll(boolean nullMatchesAllowed) {
-        ArrayList<Match> allMatches = new ArrayList<>();
-        Match currentMatch;
+    ArrayList<MatchIntermediate> takeAll(boolean nullMatchesAllowed) {
+        ArrayList<MatchIntermediate> allMatches = new ArrayList<>();
+        MatchIntermediate currentMatch;
         int index = 0;
         do {
             currentMatch = get(index);
@@ -51,7 +51,7 @@ final class SpecificOutputPort implements OutputPort<Match> {
         return allMatches;
     }
 
-    Match get(int index) {
+    MatchIntermediate get(int index) {
         if (index < cachedMatches.size())
             return cachedMatches.get(index);
         else if (index == cachedMatches.size())

@@ -1,4 +1,4 @@
-package com.milaboratory.mist.output_converter;
+package com.milaboratory.mist.outputconverter;
 
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;

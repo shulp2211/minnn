@@ -55,15 +55,15 @@ public final class AnyPattern extends SinglePattern {
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean fairSorting) {
+        public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
             return new AnyPatternOutputPort();
         }
 
-        private class AnyPatternOutputPort implements OutputPort<Match> {
+        private class AnyPatternOutputPort implements OutputPort<MatchIntermediate> {
             private boolean firstTake = true;
 
             @Override
-            public Match take() {
+            public MatchIntermediate take() {
                 if (!firstTake) return null;
                 firstTake = false;
 
@@ -72,7 +72,7 @@ public final class AnyPattern extends SinglePattern {
                         .map(ge -> new MatchedGroupEdge(target, targetId, 0, ge,
                                 ge.isStart() ? 0 : target.size()))
                         .collect(Collectors.toCollection(ArrayList::new));
-                return new Match(1, 0, -1, -1,
+                return new MatchIntermediate(1, 0, -1, -1,
                         matchedGroupEdges, matchedRange);
             }
         }

@@ -14,7 +14,7 @@ import static com.milaboratory.mist.util.UnfairSorterConfiguration.*;
 
 public final class ApproximateSorter {
     private final ApproximateSorterConfiguration conf;
-    private final OutputPort<Match> matchesOutputPort;
+    private final OutputPort<MatchIntermediate> matchesOutputPort;
     private final ArrayList<SpecificOutputPort> unfairOutputPorts = new ArrayList<>();
     private final HashSet<IncompatibleIndexes> allIncompatibleIndexes = new HashSet<>();
     private final HashSet<Integer> unfairReturnedCombinationsHashes = new HashSet<>();
@@ -36,7 +36,7 @@ public final class ApproximateSorter {
      *
      * @return output port
      */
-    public OutputPort<Match> getOutputPort() {
+    public OutputPort<MatchIntermediate> getOutputPort() {
         return matchesOutputPort;
     }
 
@@ -47,14 +47,14 @@ public final class ApproximateSorter {
      * @param matches input matches
      * @return combined match
      */
-    private Match combineMatches(Match... matches) {
+    private MatchIntermediate combineMatches(MatchIntermediate... matches) {
         ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
 
         if (conf.multipleReads) {
             ArrayList<MatchedRange> matchedRanges = new ArrayList<>();
             int patternIndex = 0;
             boolean allMatchesAreNull = true;
-            for (Match match : matches) {
+            for (MatchIntermediate match : matches) {
                 if (match == null) {
                     if (conf.matchValidationType == LOGICAL_OR) {
                         matchedRanges.add(new NullMatchedRange(patternIndex++));
@@ -84,8 +84,9 @@ public final class ApproximateSorter {
             if (allMatchesAreNull)
                 return null;
             else
-                return new Match(patternIndex, combineMatchScores(matches), -1, -1,
-                        matchedGroupEdges, matchedRanges.toArray(new MatchedRange[matchedRanges.size()]));
+                return new MatchIntermediate(patternIndex, combineMatchScores(matches),
+                        -1, -1, matchedGroupEdges,
+                        matchedRanges.toArray(new MatchedRange[matchedRanges.size()]));
         } else if (conf.matchValidationType == FIRST) {
             boolean matchExist = false;
             int bestMatchPort = 0;
@@ -113,7 +114,7 @@ public final class ApproximateSorter {
                 matchedGroupEdgesFromOperands.get(i).addAll(matches[i].getMatchedGroupEdges());
             }
 
-            Match[] sortedMatches = matches.clone();
+            MatchIntermediate[] sortedMatches = matches.clone();
             Arrays.sort(sortedMatches, Comparator.comparingInt(m -> m.getRange().getLower()));
 
             long rangesCombinationPenalty = 0;
@@ -147,7 +148,7 @@ public final class ApproximateSorter {
 
             MatchedRange matchedRange = new MatchedRange(target, targetId, 0, combineRanges(sortedMatches));
 
-            return new Match(1, combineMatchScores(matches) + rangesCombinationPenalty,
+            return new MatchIntermediate(1, combineMatchScores(matches) + rangesCombinationPenalty,
                     sortedMatches[0].getLeftUppercaseDistance(),
                     sortedMatches[sortedMatches.length - 1].getRightUppercaseDistance(),
                     matchedGroupEdges, matchedRange);
@@ -161,16 +162,16 @@ public final class ApproximateSorter {
      * @param matches matches from which we will get the scores
      * @return combined score
      */
-    private long combineMatchScores(Match... matches) {
+    private long combineMatchScores(MatchIntermediate... matches) {
         long resultScore;
         if (conf.combineScoresBySum) {
             resultScore = 0;
-            for (Match match : matches)
+            for (MatchIntermediate match : matches)
                 if (match != null)
                     resultScore += match.getScore();
         } else {
             resultScore = Long.MIN_VALUE;
-            for (Match match : matches)
+            for (MatchIntermediate match : matches)
                 if (match != null)
                     if (match.getScore() > resultScore)
                         resultScore = match.getScore();
@@ -193,18 +194,18 @@ public final class ApproximateSorter {
      *
      * @return list of all matches with filtering
      */
-    private ArrayList<Match> takeFilteredMatches() {
-        ArrayList<Match> allMatchesFiltered = new ArrayList<>();
+    private ArrayList<MatchIntermediate> takeFilteredMatches() {
+        ArrayList<MatchIntermediate> allMatchesFiltered = new ArrayList<>();
         long penaltyThreshold = conf.patternAligner.penaltyThreshold();
         int numberOfOperands = conf.operandPatterns.length;
         int[] matchIndexes = new int[numberOfOperands];
-        Match[] currentMatches = new Match[numberOfOperands];
+        MatchIntermediate[] currentMatches = new MatchIntermediate[numberOfOperands];
 
         if (conf.fairSorting || !conf.specificOutputPorts) {
-            ArrayList<ArrayList<Match>> allMatches = new ArrayList<>();
-            OutputPort<Match> currentPort;
-            ArrayList<Match> currentPortMatchesList;
-            Match currentMatch;
+            ArrayList<ArrayList<MatchIntermediate>> allMatches = new ArrayList<>();
+            OutputPort<MatchIntermediate> currentPort;
+            ArrayList<MatchIntermediate> currentPortMatchesList;
+            MatchIntermediate currentMatch;
             int totalNumberOfCombinations = 1;
 
             // take all matches from all operands
@@ -238,7 +239,7 @@ public final class ApproximateSorter {
                     if (incompatibleIndexes != null)
                         allIncompatibleIndexes.add(incompatibleIndexes);
                     else {
-                        Match combinedMatch = combineMatches(currentMatches);
+                        MatchIntermediate combinedMatch = combineMatches(currentMatches);
                         if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
                             allMatchesFiltered.add(combinedMatch);
                     }
@@ -265,7 +266,7 @@ public final class ApproximateSorter {
                 if (!alreadyReturned(matchIndexes) && Arrays.stream(currentMatches).noneMatch(Objects::isNull)) {
                     IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, matchIndexes);
                     if (incompatibleIndexes == null) {
-                        Match combinedMatch = combineMatches(currentMatches);
+                        MatchIntermediate combinedMatch = combineMatches(currentMatches);
                         if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
                             allMatchesFiltered.add(combinedMatch);
                     }
@@ -302,7 +303,7 @@ public final class ApproximateSorter {
      * @param indexes indexes of all provided matches for writing to IncompatibleIndexes structure
      * @return IncompatibleIndexes structure
      */
-    private IncompatibleIndexes findIncompatibleIndexes(Match[] matches, int[] indexes) {
+    private IncompatibleIndexes findIncompatibleIndexes(MatchIntermediate[] matches, int[] indexes) {
         if (matches.length != indexes.length)
             throw new IllegalArgumentException("matches length is " + matches.length + ", indexes length is "
                 + indexes.length + "; they must be equal!");
@@ -332,8 +333,8 @@ public final class ApproximateSorter {
             case ORDER:
             case FOLLOWING:
                 target = matches[0].getMatchedRange().getTarget();
-                Match currentMatch;
-                Match previousMatch;
+                MatchIntermediate currentMatch;
+                MatchIntermediate previousMatch;
                 Range currentRange;
                 Range previousRange;
 
@@ -387,7 +388,7 @@ public final class ApproximateSorter {
      *
      * @return true if overlap is too big and this combination of matches is invalid
      */
-    private boolean checkOverlap(NSequenceWithQuality target, Match match0, Match match1) {
+    private boolean checkOverlap(NSequenceWithQuality target, MatchIntermediate match0, MatchIntermediate match1) {
         Range intersection = match0.getRange().intersection(match1.getRange());
         if (intersection == null)
             return false;
@@ -419,7 +420,8 @@ public final class ApproximateSorter {
      *
      * @return true if insertion penalty is too big and this combination of matches is invalid
      */
-    private boolean checkInsertion(NSequenceWithQuality target, Match leftMatch, Match rightMatch) {
+    private boolean checkInsertion(NSequenceWithQuality target,
+                                   MatchIntermediate leftMatch, MatchIntermediate rightMatch) {
         int insertionLength = rightMatch.getRange().getLower() - leftMatch.getRange().getUpper();
         if (insertionLength <= 0)
             return false;
@@ -439,7 +441,8 @@ public final class ApproximateSorter {
      * @param overlappingPatternIsLeft true if the other overlapping pattern is on the left from current
      * @return estimated max overlap; 0 or positive
      */
-    private int estimateMaxOverlap(int operandIndex, Match previousMatch, boolean overlappingPatternIsLeft) {
+    private int estimateMaxOverlap(int operandIndex, MatchIntermediate previousMatch,
+                                   boolean overlappingPatternIsLeft) {
         return minValid(conf.patternAligner.maxOverlap(), previousMatch.getRange().length() - 1,
                 overlappingPatternIsLeft ? previousMatch.getRightUppercaseDistance()
                         : previousMatch.getLeftUppercaseDistance(),
@@ -517,22 +520,22 @@ public final class ApproximateSorter {
      * @param portValueIndexes array of indexes in output ports of pattern operands
      * @return array of matches
      */
-    private Match[] getMatchesByIndexes(int[] portValueIndexes) {
+    private MatchIntermediate[] getMatchesByIndexes(int[] portValueIndexes) {
         int numberOfOperands = conf.operandPatterns.length;
         if (portValueIndexes.length != numberOfOperands)
             throw new IllegalArgumentException("portValueIndexes length is " + portValueIndexes.length
                     + ", number of operands: " + numberOfOperands);
-        Match[] matches = new Match[numberOfOperands];
+        MatchIntermediate[] matches = new MatchIntermediate[numberOfOperands];
         if (conf.specificOutputPorts) {
-            int maxOverlap = conf.patternAligner.maxOverlap();
             int[] operandOrder = conf.operandOrder();
             int firstOperandIndex = operandOrder[0];
             matches[firstOperandIndex] = getPortWithParams(firstOperandIndex).get(portValueIndexes[firstOperandIndex]);
             for (int i = 1; i < numberOfOperands; i++) {
                 int currentOperandIndex = operandOrder[i];
                 boolean previousMatchIsLeft = currentOperandIndex > firstOperandIndex;
-                Match previousMatch = matches[previousMatchIsLeft ? currentOperandIndex - 1 : currentOperandIndex + 1];
-                Match currentMatch = null;
+                MatchIntermediate previousMatch = matches[previousMatchIsLeft ? currentOperandIndex - 1
+                        : currentOperandIndex + 1];
+                MatchIntermediate currentMatch = null;
                 if (previousMatch != null) {
                     Range previousMatchRange = previousMatch.getRange();
                     int previousMatchStart = previousMatchRange.getFrom();
@@ -594,8 +597,8 @@ public final class ApproximateSorter {
         }
     }
 
-    private class MatchesOutputPort implements OutputPort<Match> {
-        private ArrayList<Match> allMatchesFiltered;
+    private class MatchesOutputPort implements OutputPort<MatchIntermediate> {
+        private ArrayList<MatchIntermediate> allMatchesFiltered;
         private long penaltyThreshold = conf.patternAligner.penaltyThreshold();
         private int numberOfPatterns = conf.operandPatterns.length;
         private int filteredMatchesCount = 0;
@@ -608,13 +611,13 @@ public final class ApproximateSorter {
         private boolean stage1Init = false;
         private int[] currentIndexes;
         private boolean[] endedPorts;
-        private Match[] zeroIndexMatches;
+        private MatchIntermediate[] zeroIndexMatches;
         private boolean stage2Init = false;
         private long[] previousMatchScores;
         private long[] currentMatchScores;
 
         @Override
-        public Match take() {
+        public MatchIntermediate take() {
             if (alwaysReturnNull) return null;
             if (conf.fairSorting) return takeSorted();
             if (++unfairSorterTakenValues > conf.unfairSorterLimit) {
@@ -622,7 +625,7 @@ public final class ApproximateSorter {
                 return null;
             }
 
-            Match takenMatch;
+            MatchIntermediate takenMatch;
             switch (unfairSorterStage) {
                 case 1:
                     takenMatch = takeUnfairStage1();
@@ -647,11 +650,11 @@ public final class ApproximateSorter {
             }
         }
 
-        private Match takeSorted() {
+        private MatchIntermediate takeSorted() {
             if (!sortingPerformed) {
                 allMatchesFiltered = takeFilteredMatches();
                 filteredMatchesCount = allMatchesFiltered.size();
-                allMatchesFiltered.sort(Comparator.comparingLong(Match::getScore).reversed());
+                allMatchesFiltered.sort(Comparator.comparingLong(MatchIntermediate::getScore).reversed());
                 sortingPerformed = true;
             }
 
@@ -668,8 +671,8 @@ public final class ApproximateSorter {
          *
          * @return match, or null if there are no more matches on stage 1
          */
-        private Match takeUnfairStage1() {
-            Match currentMatch = null;
+        private MatchIntermediate takeUnfairStage1() {
+            MatchIntermediate currentMatch = null;
 
             if (!stage1Init) {
                 currentIndexes = new int[numberOfPatterns];
@@ -767,7 +770,7 @@ public final class ApproximateSorter {
          *
          * @return match, or null if there are no more matches on stage 2
          */
-        private Match takeUnfairStage2() {
+        private MatchIntermediate takeUnfairStage2() {
             if (!stage2Init) {
                 currentIndexes = new int[numberOfPatterns];
                 previousMatchScores = new long[numberOfPatterns];
@@ -785,7 +788,7 @@ public final class ApproximateSorter {
                 stage2Init = true;
             }
 
-            Match currentMatch = null;
+            MatchIntermediate currentMatch = null;
             while (currentMatch == null) {
                 int bestPort = 0;
                 if (conf.combineScoresBySum) {
@@ -811,7 +814,7 @@ public final class ApproximateSorter {
                     }
                 }
 
-                Match bestOperandMatch = getPortWithParams(bestPort).get(currentIndexes[bestPort] + 1);
+                MatchIntermediate bestOperandMatch = getPortWithParams(bestPort).get(currentIndexes[bestPort] + 1);
                 if (bestOperandMatch != null) {
                     if (conf.combineScoresBySum) {
                         if (currentIndexes[bestPort] > 0) {
@@ -841,8 +844,8 @@ public final class ApproximateSorter {
             return currentMatch;
         }
 
-        private Match takeMatchOrNull(int[] indexes) {
-            Match[] currentMatches;
+        private MatchIntermediate takeMatchOrNull(int[] indexes) {
+            MatchIntermediate[] currentMatches;
             if (areCompatible(indexes)) {
                 if (!alreadyReturned(indexes)) {
                     rememberReturnedCombination(indexes);
@@ -861,7 +864,7 @@ public final class ApproximateSorter {
                             if (!conf.specificOutputPorts)
                                 allIncompatibleIndexes.add(incompatibleIndexes);
                         } else {
-                            Match combinedMatch = combineMatches(currentMatches);
+                            MatchIntermediate combinedMatch = combineMatches(currentMatches);
                             if ((combinedMatch != null) && (combinedMatch.getScore() >= penaltyThreshold))
                                 return combinedMatch;
                         }

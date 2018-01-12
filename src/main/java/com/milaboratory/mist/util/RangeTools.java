@@ -1,7 +1,7 @@
 package com.milaboratory.mist.util;
 
 import com.milaboratory.core.Range;
-import com.milaboratory.mist.pattern.Match;
+import com.milaboratory.mist.pattern.MatchIntermediate;
 
 public final class RangeTools {
     /**
@@ -79,7 +79,7 @@ public final class RangeTools {
         return new Range(lower, upper, false);
     }
 
-    public static Range combineRanges(Match... matches) {
+    public static Range combineRanges(MatchIntermediate... matches) {
         if (matches.length == 0)
             throw new IllegalArgumentException("Cannot combine ranges from 0 matches.");
 
@@ -87,7 +87,7 @@ public final class RangeTools {
         int upper = Integer.MIN_VALUE;
 
         Range range;
-        for (Match match : matches) {
+        for (MatchIntermediate match : matches) {
             range = match.getRange();
             lower = Math.min(lower, range.getLower());
             upper = Math.max(upper, range.getUpper());

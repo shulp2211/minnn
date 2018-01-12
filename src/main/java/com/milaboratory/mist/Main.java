@@ -2,7 +2,7 @@ package com.milaboratory.mist;
 
 import com.milaboratory.cli.JCommanderBasedMain;
 import com.milaboratory.mist.cli.FilterAction;
-import com.milaboratory.mist.cli.ParseAction;
+import com.milaboratory.mist.cli.ExtractAction;
 import com.milaboratory.mist.cli.ReportAction;
 import com.milaboratory.util.VersionInfo;
 import sun.misc.Signal;
@@ -14,7 +14,7 @@ public final class Main {
         Signal.handle(new Signal("PIPE"), signal -> exitWithError("Broken pipe!"));
 
         JCommanderBasedMain jCommanderBasedMain = new JCommanderBasedMain("mist",
-                new ParseAction(),
+                new ExtractAction(),
                 new FilterAction(),
                 new ReportAction());
 

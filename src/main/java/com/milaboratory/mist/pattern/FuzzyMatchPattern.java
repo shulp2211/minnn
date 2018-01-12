@@ -215,11 +215,11 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
         }
 
         @Override
-        public OutputPort<Match> getMatches(boolean fairSorting) {
+        public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
             return new FuzzyMatchOutputPort(fairSorting);
         }
 
-        private class FuzzyMatchOutputPort implements OutputPort<Match> {
+        private class FuzzyMatchOutputPort implements OutputPort<MatchIntermediate> {
             private final boolean fixedBorder;
             private final int maxErrors;
             private final boolean fairSorting;
@@ -233,7 +233,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
             private int currentIndex = 0;
 
             // Data structures used for fair sorting and for matching in fixed position.
-            private Match[] allMatches;
+            private MatchIntermediate[] allMatches;
             private boolean sortingPerformed = false;
             private int takenValues = 0;
 
@@ -282,8 +282,8 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
             }
 
             @Override
-            public Match take() {
-                Match match;
+            public MatchIntermediate take() {
+                MatchIntermediate match;
                 if (fixedBorder)
                     match = takeFromFixedPosition();
                 else
@@ -295,7 +295,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                 return match;
             }
 
-            private Match takeUnfair() {
+            private MatchIntermediate takeUnfair() {
                 while (currentNumBitapErrors <= maxErrors) {
                     while (currentIndex < sequences.size()) {
                         int position = correctBitapPosition(bitapMatcherFilters.get(currentIndex).findNext());
@@ -326,17 +326,17 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                 return null;
             }
 
-            private Match takeFair() {
+            private MatchIntermediate takeFair() {
                 if (!sortingPerformed) {
                     fillAllMatchesForFairSorting();
-                    Arrays.sort(allMatches, Comparator.comparingLong(Match::getScore).reversed());
+                    Arrays.sort(allMatches, Comparator.comparingLong(MatchIntermediate::getScore).reversed());
                     sortingPerformed = true;
                 }
                 if (takenValues == allMatches.length) return null;
                 return allMatches[takenValues++];
             }
 
-            private Match takeFromFixedPosition() {
+            private MatchIntermediate takeFromFixedPosition() {
                 // important: to is exclusive and fixedRightBorder is inclusive
                 if (((fixedLeftBorder != -1) && (from > fixedLeftBorder))
                         || ((fixedRightBorder != -1) && (to <= fixedRightBorder)))
@@ -348,7 +348,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                         fillAllMatchesForFixedLeftBorder();
                     else throw new IllegalArgumentException("Wrong call of takeFromFixedPosition: fixedLeftBorder="
                                 + fixedLeftBorder + ", fixedRightBorder=" + fixedRightBorder);
-                    Arrays.sort(allMatches, Comparator.comparingLong(Match::getScore).reversed());
+                    Arrays.sort(allMatches, Comparator.comparingLong(MatchIntermediate::getScore).reversed());
                     sortingPerformed = true;
                 }
                 if (takenValues == allMatches.length) return null;
@@ -359,7 +359,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
              * Fill allMatches array with all existing matches for fair sorting.
              */
             private void fillAllMatchesForFairSorting() {
-                ArrayList<Match> allMatchesList = new ArrayList<>();
+                ArrayList<MatchIntermediate> allMatchesList = new ArrayList<>();
                 Alignment<NucleotideSequenceCaseSensitive> alignment;
                 int matchLastPosition;
 
@@ -383,7 +383,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                     } while (matchLastPosition != -1);
                 }
 
-                allMatches = new Match[allMatchesList.size()];
+                allMatches = new MatchIntermediate[allMatchesList.size()];
                 allMatchesList.toArray(allMatches);
             }
 
@@ -391,7 +391,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
              * Fill allMatches array with all possible alignments for fixed left border.
              */
             private void fillAllMatchesForFixedLeftBorder() {
-                ArrayList<Match> allMatchesList = new ArrayList<>();
+                ArrayList<MatchIntermediate> allMatchesList = new ArrayList<>();
                 PatternAligner fixedPatternAligner = patternAligner.setLeftBorder(fixedLeftBorder);
                 Alignment<NucleotideSequenceCaseSensitive> alignment;
 
@@ -418,7 +418,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                         }
                 }
 
-                allMatches = new Match[allMatchesList.size()];
+                allMatches = new MatchIntermediate[allMatchesList.size()];
                 allMatchesList.toArray(allMatches);
             }
 
@@ -426,7 +426,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
              * Fill allMatches array with all possible alignments for fixed right border.
              */
             private void fillAllMatchesForFixedRightBorder() {
-                ArrayList<Match> allMatchesList = new ArrayList<>();
+                ArrayList<MatchIntermediate> allMatchesList = new ArrayList<>();
                 PatternAligner fixedPatternAligner = (fixedLeftBorder == -1) ? patternAligner
                         : patternAligner.setLeftBorder(fixedLeftBorder);
                 Alignment<NucleotideSequenceCaseSensitive> alignment;
@@ -443,7 +443,7 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                                 currentSeq.size()), 0));
                 }
 
-                allMatches = new Match[allMatchesList.size()];
+                allMatches = new MatchIntermediate[allMatchesList.size()];
                 allMatchesList.toArray(allMatches);
             }
 

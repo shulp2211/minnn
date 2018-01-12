@@ -3,7 +3,7 @@ package com.milaboratory.mist.util;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
-import com.milaboratory.mist.pattern.Match;
+import com.milaboratory.mist.pattern.MatchIntermediate;
 import com.milaboratory.mist.pattern.SinglePattern;
 import com.milaboratory.test.TestUtil;
 import org.junit.Test;
@@ -57,7 +57,7 @@ public class RangeToolsTest {
             return null;
         });
         assertException(IllegalArgumentException.class, () -> {
-            combineRanges(new Match[0]);
+            combineRanges(new MatchIntermediate[0]);
             return null;
         });
     }
@@ -68,8 +68,9 @@ public class RangeToolsTest {
             SinglePattern pattern = getRandomSinglePattern(getRandomPatternAligner());
             NSequenceWithQuality target = new NSequenceWithQuality(TestUtil.randomSequence(NucleotideSequence.ALPHABET,
                     10, 100).toString());
-            Match[] matches = streamPort(pattern.match(target).getMatches()).toArray(Match[]::new);
-            Range[] ranges = Arrays.stream(matches).map(Match::getRange).toArray(Range[]::new);
+            MatchIntermediate[] matches = streamPort(pattern.match(target).getMatches())
+                    .toArray(MatchIntermediate[]::new);
+            Range[] ranges = Arrays.stream(matches).map(MatchIntermediate::getRange).toArray(Range[]::new);
 
             if (matches.length > 0)
                 assertEquals(combineRanges(matches), combineRanges(ranges));

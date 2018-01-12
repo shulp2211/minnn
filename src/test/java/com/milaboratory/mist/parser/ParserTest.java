@@ -2,14 +2,13 @@ package com.milaboratory.mist.parser;
 
 import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.*;
-import com.milaboratory.mist.output_converter.MatchedGroup;
+import com.milaboratory.mist.outputconverter.MatchedGroup;
 import com.milaboratory.mist.pattern.*;
 import org.junit.Test;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.milaboratory.mist.output_converter.GroupUtils.getGroupsFromMatch;
 import static com.milaboratory.mist.parser.ParserUtils.parseMultiTargetString;
 import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static com.milaboratory.mist.util.CommonTestUtils.RandomStringType.*;
@@ -36,11 +35,11 @@ public class ParserTest {
         Parser parser = new Parser(getTestPatternAligner(-100, 2, 0,
                 -1));
         List<Pattern> patterns = Arrays.stream(queries).map(rethrow(parser::parseQuery)).collect(Collectors.toList());
-        List<List<Match>> bestMatches = patterns.stream().map(p -> Arrays.stream(targets)
+        List<List<MatchIntermediate>> bestMatches = patterns.stream().map(p -> Arrays.stream(targets)
                 .map(t -> p.match(new NSequenceWithQuality(t)).getBestMatch(true))
                 .collect(Collectors.toList())).collect(Collectors.toList());
-        List<List<Range>> matchedRanges = bestMatches.stream().map((List<Match> p) -> p.stream()
-                .map(orNull(Match::getRange)).collect(Collectors.toList())).collect(Collectors.toList());
+        List<List<Range>> matchedRanges = bestMatches.stream().map((List<MatchIntermediate> p) -> p.stream()
+                .map(orNull(MatchIntermediate::getRange)).collect(Collectors.toList())).collect(Collectors.toList());
 
         // first get() is query number, second is target number
         assertEquals(new Range(4, 23), matchedRanges.get(0).get(0));
@@ -270,7 +269,7 @@ public class ParserTest {
 
     private static void testSample(String query, String target, Range expectedRange) throws Exception {
         Pattern pattern = strictParser.parseQuery(query);
-        Match bestMatch = pattern.match(new NSequenceWithQuality(target)).getBestMatch(true);
+        MatchIntermediate bestMatch = pattern.match(new NSequenceWithQuality(target)).getBestMatch(true);
         Range matchedRange = (bestMatch == null) ? null : bestMatch.getRange();
         assertEquals(expectedRange, matchedRange);
     }
@@ -291,7 +290,7 @@ public class ParserTest {
     private static ArrayList<MatchedGroup> getGroupsFromSample(String query, String target) throws Exception {
         Pattern pattern = strictParser.parseQuery(query);
         Match bestMatch = pattern.match(new NSequenceWithQuality(target)).getBestMatch(true);
-        return getGroupsFromMatch(bestMatch);
+        return bestMatch.getGroups();
     }
 
     private static void assertGroupRange(List<MatchedGroup> groups, String groupName, Range expectedRange) {

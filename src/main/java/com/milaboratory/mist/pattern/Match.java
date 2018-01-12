@@ -1,70 +1,33 @@
 package com.milaboratory.mist.pattern;
 
 import com.milaboratory.core.Range;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.mist.io.IO;
+import com.milaboratory.mist.outputconverter.MatchedGroup;
+import com.milaboratory.primitivio.PrimitivI;
+import com.milaboratory.primitivio.PrimitivO;
+import com.milaboratory.primitivio.annotations.Serializable;
 
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
-public final class Match {
-    private final int numberOfPatterns;
+@Serializable(by = IO.MatchSerializer.class)
+public class Match {
+    protected final int numberOfPatterns;
     private final long score;
-    private final int leftUppercaseDistance;
-    private final int rightUppercaseDistance;
-    private final MatchedRange[] matchedRanges;
     private final ArrayList<MatchedGroupEdge> matchedGroupEdges;
+    private ArrayList<MatchedGroup> groups = null;
 
     /**
-     * Single match for single- or multi-pattern.
+     * Serializable final match for single- or multi-pattern.
      *
-     * @param numberOfPatterns number of patterns in multi-pattern, or 1 if it is single pattern
-     * @param score match score
-     * @param leftUppercaseDistance first uppercase letter position; used for calculating max overlap and insertion
-     *                              with other match; -1 means no restrictions for overlaps and insertions
-     * @param rightUppercaseDistance first uppercase letter position if count from right to left of this match;
-     *                               or -1 for no overlap and insertion restrictions
+     * @param numberOfPatterns      number of patterns in multi-pattern, or 1 if it is single pattern
+     * @param score                 match score
      * @param matchedGroupEdges     list of matched group edges
-     * @param matchedRanges         array of matched ranges for every pattern; size must be equal to numberOfPatterns
      */
-    public Match(int numberOfPatterns, long score, int leftUppercaseDistance, int rightUppercaseDistance,
-                 ArrayList<MatchedGroupEdge> matchedGroupEdges, MatchedRange... matchedRanges) {
-        if (matchedRanges.length == 0) throw new IllegalArgumentException("Missing matched ranges!");
+    public Match(int numberOfPatterns, long score, ArrayList<MatchedGroupEdge> matchedGroupEdges) {
         this.numberOfPatterns = numberOfPatterns;
         this.score = score;
-        this.leftUppercaseDistance = leftUppercaseDistance;
-        this.rightUppercaseDistance = rightUppercaseDistance;
-        this.matchedRanges = matchedRanges;
         this.matchedGroupEdges = matchedGroupEdges;
-    }
-
-    /**
-     * Return MatchedRange by pattern index.
-     *
-     * @param patternIndex pattern index for multi-pattern matchers (number of patterns may be bigger than number of
-     *                     targets in case of high level logic patterns); 0 - for single target matchers
-     * @return MatchedRange for specified pattern
-     */
-    public MatchedRange getMatchedRange(int patternIndex) {
-        return matchedRanges[patternIndex];
-    }
-
-    /**
-     * Return MatchedRange. Applicable only to single target matchers.
-     *
-     * @return MatchedRange with patternIndex 0
-     */
-    public MatchedRange getMatchedRange() {
-        if (numberOfPatterns != 1)
-            throw new IllegalStateException("Multiple pattern. Use getMatchedRange(int) instead.");
-        return matchedRanges[0];
-    }
-
-    public Range getRange() {
-        return getMatchedRange().getRange();
-    }
-
-    public NSequenceWithQuality getValue() {
-        return getMatchedRange().getValue();
     }
 
     /**
@@ -94,15 +57,6 @@ public final class Match {
     }
 
     /**
-     * Get all matched ranges.
-     *
-     * @return array of all matched ranges.
-     */
-    public MatchedRange[] getMatchedRanges() {
-        return matchedRanges;
-    }
-
-    /**
      * Get all matched group edges.
      *
      * @return ArrayList with all matched group edges.
@@ -119,11 +73,47 @@ public final class Match {
         return score;
     }
 
-    public int getLeftUppercaseDistance() {
-        return leftUppercaseDistance;
+    public ArrayList<MatchedGroup> getGroups() {
+        if (groups == null) {
+            groups = new ArrayList<>();
+            ArrayList<MatchedGroupEdge> matchedGroupEdges = getMatchedGroupEdges();
+            MatchedGroupEdge endOfCurrentGroup;
+            Range currentRange;
+
+            for (MatchedGroupEdge matchedGroupEdge : matchedGroupEdges)
+                if (matchedGroupEdge.isStart()) {
+                    endOfCurrentGroup = getMatchedGroupEdge(matchedGroupEdge.getGroupName(), false);
+                    if (matchedGroupEdge.getPosition() >= endOfCurrentGroup.getPosition())
+                        throw new IllegalStateException("Group start must be lower than the end. Start: "
+                                + matchedGroupEdge.getPosition() + ", end: " + endOfCurrentGroup.getPosition());
+                    if (matchedGroupEdge.getPatternIndex() != endOfCurrentGroup.getPatternIndex())
+                        throw new IllegalStateException("Start and end of the group " + matchedGroupEdge.getGroupName()
+                                + " have different pattern indexes (start: " + matchedGroupEdge.getPatternIndex()
+                                + ", end: " + endOfCurrentGroup.getPatternIndex() + ")!");
+                    currentRange = new Range(matchedGroupEdge.getPosition(), endOfCurrentGroup.getPosition());
+                    groups.add(new MatchedGroup(matchedGroupEdge.getGroupName(), matchedGroupEdge.getTarget(),
+                            matchedGroupEdge.getTargetId(), matchedGroupEdge.getPatternIndex(), currentRange));
+                }
+        }
+
+        return groups;
     }
 
-    public int getRightUppercaseDistance() {
-        return rightUppercaseDistance;
+    public static Match read(PrimitivI input) {
+        int numberOfPatterns = input.readInt();
+        long score = input.readLong();
+        ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
+        int matchedGroupEdgesNum = input.readInt();
+        for (int i = 0; i < matchedGroupEdgesNum; i++)
+            matchedGroupEdges.add(input.readObject(MatchedGroupEdge.class));
+        return new Match(numberOfPatterns, score, matchedGroupEdges);
+    }
+
+    public static void write(PrimitivO output, Match object) {
+        output.writeInt(object.getNumberOfPatterns());
+        output.writeLong(object.getScore());
+        output.writeInt(object.getMatchedGroupEdges().size());
+        for (MatchedGroupEdge matchedGroupEdge : object.getMatchedGroupEdges())
+            output.writeObject(matchedGroupEdge);
     }
 }

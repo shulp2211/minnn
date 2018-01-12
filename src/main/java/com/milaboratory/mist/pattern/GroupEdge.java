@@ -1,5 +1,11 @@
 package com.milaboratory.mist.pattern;
 
+import com.milaboratory.mist.io.IO;
+import com.milaboratory.primitivio.PrimitivI;
+import com.milaboratory.primitivio.PrimitivO;
+import com.milaboratory.primitivio.annotations.Serializable;
+
+@Serializable(by = IO.GroupEdgeSerializer.class)
 public final class GroupEdge {
     private final String groupName;
     /**
@@ -43,5 +49,16 @@ public final class GroupEdge {
         hashCode = hashCode * 37 + (this.isStart ? 1 : 0);
 
         return hashCode;
+    }
+
+    public static GroupEdge read(PrimitivI input) {
+        String groupName = input.readUTF();
+        boolean isStart = input.readBoolean();
+        return new GroupEdge(groupName, isStart);
+    }
+
+    public static void write(PrimitivO output, GroupEdge object) {
+        output.writeUTF(object.getGroupName());
+        output.writeBoolean(object.isStart());
     }
 }
