@@ -4,23 +4,16 @@ import com.milaboratory.core.Range;
 import com.milaboratory.core.sequence.MultiNSequenceWithQuality;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 
-import java.util.ArrayList;
-
 public abstract class SinglePattern extends Pattern {
-    // number of read where sequence is matched; numbers start from 1
+    /**
+     * Number of read where sequence is matched; numbers start from 1.
+     * IDs from here go to MatchedRange/MatchedGroupEdge objects used in MatchIntermediate objects.
+     * 0 value used only in NullMatchedRange that is used in matches for NotOperator and OrOperator.
+     */
     protected byte targetId = 1;
 
     SinglePattern(PatternAligner patternAligner) {
         super(patternAligner);
-    }
-
-    @Override
-    public ArrayList<GroupEdge> getGroupEdges(int patternIndex) {
-        if (patternIndex != 0)
-            throw new IllegalArgumentException("getGroupEdges() called for SinglePattern with patternIndex="
-                    + patternIndex);
-        else
-            return getGroupEdges();
     }
 
     @Override
