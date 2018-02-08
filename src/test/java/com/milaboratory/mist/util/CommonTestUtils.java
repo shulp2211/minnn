@@ -34,12 +34,6 @@ public class CommonTestUtils {
         return streamPort(port).count();
     }
 
-    public static void printPortValues(OutputPort<MatchIntermediate> port) {
-        long i = 0;
-        for (MatchIntermediate match : CUtils.it(port))
-            System.out.println(i++ + ": " + match.getRange() + " " + match.getScore() + " " + match.getValue());
-    }
-
     public static long countMatches(MatchingResult matchingResult, boolean fair) {
         return countPortValues(matchingResult.getMatches(fair));
     }
@@ -434,15 +428,18 @@ public class CommonTestUtils {
 
     public static MultipleReadsOperator[] singleToMultiPatterns(PatternAligner patternAligner,
                                                                 SinglePattern... singlePatterns) {
-        return Arrays.stream(singlePatterns)
-                .map(sp -> new MultiPattern(patternAligner,
-                        new FullReadPattern(patternAligner, true, sp)))
+        return Arrays.stream(singlePatterns).map(sp -> createMultiPattern(patternAligner, sp))
                 .toArray(MultipleReadsOperator[]::new);
     }
 
     public static MultiPattern createMultiPattern(PatternAligner patternAligner, SinglePattern... singlePatterns) {
+        return createMultiPattern(patternAligner, true, singlePatterns);
+    }
+
+    public static MultiPattern createMultiPattern(PatternAligner patternAligner, boolean defaultGroupsOverride,
+                                                  SinglePattern... singlePatterns) {
         return new MultiPattern(patternAligner, Arrays.stream(singlePatterns)
-                .map(sp -> new FullReadPattern(patternAligner, true, sp))
+                .map(sp -> new FullReadPattern(patternAligner, defaultGroupsOverride, sp))
                 .toArray(SinglePattern[]::new));
     }
 
@@ -462,6 +459,24 @@ public class CommonTestUtils {
         NSequenceWithQuality singleSeq = new NSequenceWithQuality(seq);
         return new MultiNSequenceWithQualityImpl(Collections.nCopies(repeats, singleSeq)
                 .toArray(new NSequenceWithQuality[repeats]));
+    }
+
+    public static <T> void assertUnorderedArrayEquals(T[] array1, T[] array2) {
+        assertEquals(array1.length, array2.length);
+        Comparator<T> comparator = Comparator.comparing(Object::hashCode);
+        List<T> list1Sorted = Arrays.stream(array1).sorted(comparator).collect(Collectors.toList());
+        List<T> list2Sorted = Arrays.stream(array2).sorted(comparator).collect(Collectors.toList());
+        for (int i = 0; i < array1.length; i++)
+            assertEquals(list1Sorted.get(i), list2Sorted.get(i));
+    }
+
+    public static <T> void assertUnorderedListEquals(List<T> list1, List<T> list2) {
+        assertEquals(list1.size(), list2.size());
+        Comparator<T> comparator = Comparator.comparing(Object::hashCode);
+        List<T> list1Sorted = list1.stream().sorted(comparator).collect(Collectors.toList());
+        List<T> list2Sorted = list2.stream().sorted(comparator).collect(Collectors.toList());
+        for (int i = 0; i < list1.size(); i++)
+            assertEquals(list1Sorted.get(i), list2Sorted.get(i));
     }
 
     public static void assertFileEquals(String fileName1, String fileName2) throws Exception {

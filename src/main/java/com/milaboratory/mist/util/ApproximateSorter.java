@@ -15,7 +15,7 @@ import static com.milaboratory.mist.util.UnfairSorterConfiguration.*;
 public final class ApproximateSorter {
     private final ApproximateSorterConfiguration conf;
     private final OutputPort<MatchIntermediate> matchesOutputPort;
-    private final ArrayList<SpecificOutputPort> unfairOutputPorts = new ArrayList<>();
+    private final HashMap<SpecificOutputPortIndex, SpecificOutputPort> unfairOutputPorts = new HashMap<>();
     private final HashSet<IncompatibleIndexes> allIncompatibleIndexes = new HashSet<>();
     private final HashSet<Integer> unfairReturnedCombinationsHashes = new HashSet<>();
 
@@ -48,9 +48,8 @@ public final class ApproximateSorter {
      * @return combined match
      */
     private MatchIntermediate combineMatches(MatchIntermediate... matches) {
-        ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
-
         if (conf.multipleReads) {
+            HashMap<GroupEdge, MatchedGroupEdge> matchedGroupEdges = new HashMap<>();
             ArrayList<MatchedRange> matchedRanges = new ArrayList<>();
             int patternIndex = 0;
             boolean allMatchesAreNull = true;
@@ -72,10 +71,14 @@ public final class ApproximateSorter {
                     } else {
                         matchedRanges.add(new MatchedRange(currentMatchedRange.getTarget(),
                                 currentMatchedRange.getTargetId(), patternIndex, currentMatchedRange.getRange()));
-                        for (MatchedGroupEdge matchedGroupEdge : match.getMatchedGroupEdgesByPattern(i))
-                            matchedGroupEdges.add(new MatchedGroupEdge(matchedGroupEdge.getTarget(),
-                                    matchedGroupEdge.getTargetId(), patternIndex, matchedGroupEdge.getGroupEdge(),
-                                    matchedGroupEdge.getPosition()));
+                        for (MatchedGroupEdge matchedGroupEdge : match.getMatchedGroupEdgesByPattern(i)) {
+                            // put only unique R1, R2... group edges to avoid duplicates
+                            GroupEdge groupEdge = matchedGroupEdge.getGroupEdge();
+                            if (!matchedGroupEdges.containsKey(groupEdge))
+                                matchedGroupEdges.put(groupEdge, new MatchedGroupEdge(matchedGroupEdge.getTarget(),
+                                        matchedGroupEdge.getTargetId(), patternIndex, groupEdge,
+                                        matchedGroupEdge.getPosition()));
+                        }
                         patternIndex++;
                     }
                 }
@@ -85,7 +88,7 @@ public final class ApproximateSorter {
                 return null;
             else
                 return new MatchIntermediate(patternIndex, combineMatchScores(matches),
-                        -1, -1, matchedGroupEdges,
+                        -1, -1, new ArrayList<>(matchedGroupEdges.values()),
                         matchedRanges.toArray(new MatchedRange[matchedRanges.size()]));
         } else if (conf.matchValidationType == FIRST) {
             boolean matchExist = false;
@@ -108,6 +111,7 @@ public final class ApproximateSorter {
             NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
             byte targetId = matches[0].getMatchedRange().getTargetId();
             ArrayList<ArrayList<MatchedGroupEdge>> matchedGroupEdgesFromOperands = new ArrayList<>();
+            ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
 
             for (int i = 0; i < matches.length; i++) {
                 matchedGroupEdgesFromOperands.add(new ArrayList<>());
@@ -463,8 +467,8 @@ public final class ApproximateSorter {
      * @return new SpecificOutputPort with specified parameters
      */
     private SpecificOutputPort getPortWithParams(int operandIndex, int from, int to, int estimatedMaxOverlap) {
-        SpecificOutputPort currentPort = unfairOutputPorts.stream().filter(p -> p.paramsEqualTo(operandIndex,
-                from, to)).findFirst().orElse(null);
+        SpecificOutputPortIndex currentPortIndex = new SpecificOutputPortIndex(operandIndex, from, to);
+        SpecificOutputPort currentPort = unfairOutputPorts.get(currentPortIndex);
         if (currentPort == null) {
             Pattern currentPattern = conf.operandPatterns[operandIndex];
             int matchFrom = -1;
@@ -509,7 +513,7 @@ public final class ApproximateSorter {
                     : ((SinglePattern)currentPattern)
                         .match(conf.target.get(0), matchFrom, matchTo).getMatches(false),
                     operandIndex, from, to, portLimit);
-            unfairOutputPorts.add(currentPort);
+            unfairOutputPorts.put(currentPortIndex, currentPort);
         }
         return currentPort;
     }
@@ -594,6 +598,36 @@ public final class ApproximateSorter {
             hashCode = hashCode * 37 + this.index2;
 
             return hashCode;
+        }
+    }
+
+    private static class SpecificOutputPortIndex {
+        private final int operandIndex;
+        private final int from;
+        private final int to;
+
+        SpecificOutputPortIndex(int operandIndex, int from, int to) {
+            this.operandIndex = operandIndex;
+            this.from = from;
+            this.to = to;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            SpecificOutputPortIndex that = (SpecificOutputPortIndex)o;
+
+            return operandIndex == that.operandIndex && from == that.from && to == that.to;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = operandIndex;
+            result = 31 * result + from;
+            result = 31 * result + to;
+            return result;
         }
     }
 

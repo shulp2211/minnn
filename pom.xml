@@ -45,7 +45,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <milib.version>[1.8.2-SNAPSHOT], [1.8.2,)</milib.version>
+        <milib.version>[1.8.3-SNAPSHOT], [1.8.3,)</milib.version>
     </properties>
 
     <dependencies>
@@ -85,7 +85,13 @@
         <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-maven-plugin</artifactId>
-            <version>4.7</version>
+            <version>4.7.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.codehaus.plexus</groupId>
+                    <artifactId>plexus-container-default</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -172,7 +178,7 @@
                                     <addHeader>false</addHeader>
                                 </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.milaboratory.mist.Main</mainClass>
+                                    <mainClass>com.milaboratory.mist.cli.Main</mainClass>
                                 </transformer>
                             </transformers>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
