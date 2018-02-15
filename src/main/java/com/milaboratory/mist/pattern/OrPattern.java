@@ -4,7 +4,7 @@ import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.mist.util.*;
 
-import java.util.Arrays;
+import java.util.*;
 
 import static com.milaboratory.mist.pattern.MatchValidationType.FIRST;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.unfairSorterPortLimits;
@@ -21,6 +21,11 @@ public final class OrPattern extends MultiplePatternsOperator implements CanFixB
     @Override
     public String toString() {
         return "OrPattern(" + Arrays.toString(operandPatterns) + ")";
+    }
+
+    @Override
+    public ArrayList<GroupEdge> getGroupEdges() {
+        return new ArrayList<>(new LinkedHashSet<>(groupEdges));
     }
 
     @Override

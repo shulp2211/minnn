@@ -209,6 +209,8 @@ public class ParserTest {
         testBadSample("[[A\\T]&&[G\\C]$]");
         testBadSample("^[[A\\T]&&[G\\C]]");
         testBadSample("[[A\\T]&&[G\\C]]$");
+        testMultiSample("(G1:A) & (G2:T) \\ [(G3:gg) || (G3:cc)] + (G4:ga)",
+                "TA CCGA", true);
     }
 
     @Test

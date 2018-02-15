@@ -6,7 +6,7 @@ public abstract class MultipleReadsOperator extends Pattern {
     protected final MultipleReadsOperator[] operandPatterns;
     protected final SinglePattern[] singlePatterns;
     private final boolean singlePatternOperands;
-    private HashSet<GroupEdge> groupEdges = null;
+    private LinkedHashSet<GroupEdge> groupEdges = null;
 
     MultipleReadsOperator(PatternAligner patternAligner, MultipleReadsOperator... operandPatterns) {
         super(patternAligner);
@@ -25,7 +25,7 @@ public abstract class MultipleReadsOperator extends Pattern {
     @Override
     public ArrayList<GroupEdge> getGroupEdges() {
         if (groupEdges == null) {
-            groupEdges = new HashSet<>();
+            groupEdges = new LinkedHashSet<>();
             for (Pattern pattern : singlePatternOperands ? singlePatterns : operandPatterns)
                 groupEdges.addAll(pattern.getGroupEdges());
         }
