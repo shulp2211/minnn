@@ -49,7 +49,7 @@ public final class ApproximateSorter {
      */
     private MatchIntermediate combineMatches(MatchIntermediate... matches) {
         if (conf.multipleReads) {
-            HashMap<GroupEdge, MatchedGroupEdge> matchedGroupEdges = new HashMap<>();
+            LinkedHashMap<GroupEdge, MatchedGroupEdge> matchedGroupEdges = new LinkedHashMap<>();
             ArrayList<MatchedRange> matchedRanges = new ArrayList<>();
             int patternIndex = 0;
             boolean allMatchesAreNull = true;
@@ -110,16 +110,16 @@ public final class ApproximateSorter {
                matches must already be checked for compatibility with findIncompatibleIndexes() */
             NSequenceWithQuality target = matches[0].getMatchedRange().getTarget();
             byte targetId = matches[0].getMatchedRange().getTargetId();
-            ArrayList<ArrayList<MatchedGroupEdge>> matchedGroupEdgesFromOperands = new ArrayList<>();
-            ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
-
-            for (int i = 0; i < matches.length; i++) {
-                matchedGroupEdgesFromOperands.add(new ArrayList<>());
-                matchedGroupEdgesFromOperands.get(i).addAll(matches[i].getMatchedGroupEdges());
-            }
 
             MatchIntermediate[] sortedMatches = matches.clone();
             Arrays.sort(sortedMatches, Comparator.comparingInt(m -> m.getRange().getLower()));
+
+            ArrayList<ArrayList<MatchedGroupEdge>> matchedGroupEdgesFromOperands = new ArrayList<>();
+            ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
+            for (int i = 0; i < sortedMatches.length; i++) {
+                matchedGroupEdgesFromOperands.add(new ArrayList<>());
+                matchedGroupEdgesFromOperands.get(i).addAll(sortedMatches[i].getMatchedGroupEdges());
+            }
 
             long rangesCombinationPenalty = 0;
             for (int i = 0; i < sortedMatches.length; i++) {

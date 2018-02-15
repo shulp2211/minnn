@@ -107,6 +107,16 @@ public class ExtractActionTest {
     }
 
     @Test
+    public void specialCaseTest2() throws Exception {
+        String inputFile = EXAMPLES_PATH + "mif/extractSpecialCase2.mif.gz";
+        String outputFile = TEMP_DIR + "outputSCT2.mif";
+        String argsIO = "extract --input-format mif --input " + inputFile + " --output " + outputFile;
+        String query = argsIO + " --pattern \"(G1:accnt) & (G2:nctn) & (G3:atta)\" --bitap-max-errors 2 " +
+                "--penalty-threshold -80";
+        exec(query);
+    }
+
+    @Test
     public void mifRandomTest() throws Exception {
         String mifFile1 = TEMP_DIR + "output1.mif";
         String mifFile2 = TEMP_DIR + "output2.mif";
