@@ -3,7 +3,7 @@ package com.milaboratory.mist.outputconverter;
 import com.milaboratory.core.io.sequence.*;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.mist.pattern.*;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.*;
 
@@ -11,6 +11,11 @@ import static com.milaboratory.mist.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
 
 public class ParsedReadTest {
+    @Before
+    public void setUp() {
+        ParsedRead.clearStaticCache();
+    }
+
     private NSequenceWithQuality[] testReadValues = new NSequenceWithQuality[] {
             new NSequenceWithQuality("ATT"), new NSequenceWithQuality("TA"), new NSequenceWithQuality("GACA")
     };
@@ -22,18 +27,18 @@ public class ParsedReadTest {
     };
     private MultiRead testMultiRead = new MultiRead(testReads);
     private ArrayList<MatchedGroupEdge> testMatchedGroupEdges = new ArrayList<MatchedGroupEdge>() {{
-        add(new MatchedGroupEdge(testReadValues[0], (byte)0, new GroupEdge("R1", true), 0));
-        add(new MatchedGroupEdge(testReadValues[0], (byte)0, new GroupEdge("R1", false), 3));
-        add(new MatchedGroupEdge(testReadValues[1], (byte)1, new GroupEdge("R2", true), 0));
-        add(new MatchedGroupEdge(testReadValues[1], (byte)1, new GroupEdge("R2", false), 2));
-        add(new MatchedGroupEdge(testReadValues[2], (byte)2, new GroupEdge("R3", true), 0));
-        add(new MatchedGroupEdge(testReadValues[2], (byte)2, new GroupEdge("R3", false), 4));
-        add(new MatchedGroupEdge(testReadValues[0], (byte)0, new GroupEdge("G1-1", true), 1));
-        add(new MatchedGroupEdge(testReadValues[0], (byte)0, new GroupEdge("G1-1", false), 2));
-        add(new MatchedGroupEdge(testReadValues[0], (byte)0, new GroupEdge("G1-2", true), 0));
-        add(new MatchedGroupEdge(testReadValues[0], (byte)0, new GroupEdge("G1-2", false), 2));
-        add(new MatchedGroupEdge(testReadValues[2], (byte)2, new GroupEdge("G3-1", true), 1));
-        add(new MatchedGroupEdge(testReadValues[2], (byte)2, new GroupEdge("G3-1", false), 4));
+        add(new MatchedGroupEdge(testReadValues[0], (byte)1, new GroupEdge("R1", true), 0));
+        add(new MatchedGroupEdge(testReadValues[0], (byte)1, new GroupEdge("R1", false), 3));
+        add(new MatchedGroupEdge(testReadValues[1], (byte)2, new GroupEdge("R2", true), 0));
+        add(new MatchedGroupEdge(testReadValues[1], (byte)2, new GroupEdge("R2", false), 2));
+        add(new MatchedGroupEdge(testReadValues[2], (byte)3, new GroupEdge("R3", true), 0));
+        add(new MatchedGroupEdge(testReadValues[2], (byte)3, new GroupEdge("R3", false), 4));
+        add(new MatchedGroupEdge(testReadValues[0], (byte)1, new GroupEdge("G1-1", true), 1));
+        add(new MatchedGroupEdge(testReadValues[0], (byte)1, new GroupEdge("G1-1", false), 2));
+        add(new MatchedGroupEdge(testReadValues[0], (byte)1, new GroupEdge("G1-2", true), 0));
+        add(new MatchedGroupEdge(testReadValues[0], (byte)1, new GroupEdge("G1-2", false), 2));
+        add(new MatchedGroupEdge(testReadValues[2], (byte)3, new GroupEdge("G3-1", true), 1));
+        add(new MatchedGroupEdge(testReadValues[2], (byte)3, new GroupEdge("G3-1", false), 4));
     }};
     private long testScore = -5;
     private Match testMatch = new Match(3, testScore, testMatchedGroupEdges);
@@ -47,7 +52,7 @@ public class ParsedReadTest {
 
     @Test
     public void retargetTest() {
-        ParsedRead newParsedRead = testParsedRead.retarget(false, "G3-1", "G1-2", "G1-1");
+        ParsedRead newParsedRead = testParsedRead.retarget("R1", "R2", "R3", "G3-1", "G1-2", "G1-1");
         assertEquals(testMultiRead, newParsedRead.getOriginalRead());
         assertFalse(newParsedRead.isReverseMatch());
         Match targetMatch = newParsedRead.getBestMatch();
@@ -71,7 +76,7 @@ public class ParsedReadTest {
             assertEquals(i % 2 == 0, targetGroupEdges.get(i).getGroupEdge().isStart());
         }
 
-        targetMatch = testParsedRead.retarget(false, "G3-1", "R3").getBestMatch();
+        targetMatch = testParsedRead.retarget("G3-1", "R3").getBestMatch();
         assertEquals(2, targetMatch.getNumberOfPatterns());
         assertEquals(0, targetMatch.getMatchedGroupEdge("G3-1", true).getPosition());
         targetGroupEdges = targetMatch.getMatchedGroupEdges();
@@ -86,7 +91,7 @@ public class ParsedReadTest {
             assertEquals(i % 2 == 0, targetGroupEdges.get(i).getGroupEdge().isStart());
         }
 
-        final Match finalTargetMatch = testParsedRead.retarget(true, "G1-1").getBestMatch();
+        final Match finalTargetMatch = testParsedRead.retarget("G1-1").getBestMatch();
         assertEquals(1, finalTargetMatch.getNumberOfPatterns());
         assertException(IllegalStateException.class, () -> {
             finalTargetMatch.getMatchedGroupEdge("G3-1", true);
@@ -104,22 +109,22 @@ public class ParsedReadTest {
 
     @Test
     public void toSequenceReadTest() {
-        SequenceRead sequenceRead = testParsedRead.toSequenceRead(true, false,
-                testGroupEdges, "G3-1", "G1-2", "G1-1");
+        SequenceRead sequenceRead = testParsedRead.toSequenceRead(true, testGroupEdges,
+                "R1", "R2", "R3", "G3-1", "G1-2", "G1-1");
         assertEquals(6, sequenceRead.numberOfReads());
         assertEquals(testReadId, sequenceRead.getId());
         String[] expectedValues = new String[] { "ATT", "TA", "GACA", "ACA", "AT", "T" };
         for (int i = 0; i < expectedValues.length; i++)
             assertEquals(expectedValues[i], sequenceRead.getRead(i).getData().getSequence().toString());
 
-        sequenceRead = testParsedRead.toSequenceRead(false, false, testGroupEdges,
+        sequenceRead = testParsedRead.toSequenceRead(false, testGroupEdges,
                 "G3-1", "R3");
         assertEquals(2, sequenceRead.numberOfReads());
         expectedValues = new String[] { "ACA", "GACA" };
         for (int i = 0; i < expectedValues.length; i++)
             assertEquals(expectedValues[i], sequenceRead.getRead(i).getData().getSequence().toString());
 
-        sequenceRead = testParsedRead.toSequenceRead(false, true, testGroupEdges,
+        sequenceRead = testParsedRead.toSequenceRead(false, testGroupEdges,
                 "G1-1");
         assertEquals(1, sequenceRead.numberOfReads());
         assertEquals("T", sequenceRead.getRead(0).getData().getSequence().toString());
