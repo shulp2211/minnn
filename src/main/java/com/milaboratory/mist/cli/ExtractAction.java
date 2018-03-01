@@ -147,8 +147,6 @@ public final class ExtractAction implements Action {
 
         @Override
         public void validate() {
-            if (query == null)
-                throw new ParameterException("Pattern not specified!");
             if (parameterNames.get(inputFormat) == null)
                 throw new ParameterException("Unknown input format: " + inputFormat);
             validateQuality(goodQuality);

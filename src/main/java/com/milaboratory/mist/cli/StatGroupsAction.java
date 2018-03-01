@@ -79,7 +79,7 @@ public final class StatGroupsAction implements Action {
 
         @Override
         public void validate() {
-            if (groupList == null)
+            if (groupList.size() == 0)
                 throw new ParameterException("List of output groups is not specified!");
             validateQuality(readQualityFilter);
             validateQuality(minQualityFilter);

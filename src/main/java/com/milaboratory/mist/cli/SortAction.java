@@ -54,7 +54,7 @@ public final class SortAction implements Action {
 
         @Override
         public void validate() {
-            if (sortGroupNames == null)
+            if (sortGroupNames.size() == 0)
                 throw new ParameterException("Sorting groups are not specified!");
         }
     }

@@ -154,10 +154,6 @@ public final class ReportAction implements Action {
 
         @Override
         public void validate() {
-            if (query == null)
-                throw new ParameterException("Pattern not specified!");
-            if (target == null)
-                throw new ParameterException("Target not specified!");
             validateQuality(goodQuality);
             validateQuality(badQuality);
         }
