@@ -58,9 +58,11 @@ public final class SorterIO {
         return (inputFileName == null) ? new MifReader(System.in) : new MifReader(inputFileName);
     }
 
-    private MifWriter createWriter(MifHeader mifHeader) throws IOException {
-        return (outputFileName == null) ? new MifWriter(new SystemOutStream(), mifHeader)
-                : new MifWriter(outputFileName, mifHeader);
+    private MifWriter createWriter(MifHeader inputHeader) throws IOException {
+        MifHeader outputHeader = new MifHeader(inputHeader.getNumberOfReads(), inputHeader.isCorrected(), true,
+                inputHeader.getGroupEdges());
+        return (outputFileName == null) ? new MifWriter(new SystemOutStream(), outputHeader)
+                : new MifWriter(outputFileName, outputHeader);
     }
 
     private int estimateChunkSize() {

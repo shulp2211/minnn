@@ -61,6 +61,8 @@ public final class CorrectBarcodesIO {
              MifReader pass2Reader = new MifReader(inputFileName);
              MifWriter writer = createWriter(pass1Reader.getHeader())) {
             SmartProgressReporter.startProgressReport("Counting sequences", pass1Reader, System.err);
+            if (pass1Reader.isSorted())
+                System.err.println("WARNING: correcting sorted MIF file; output file will be unsorted!");
             if (pass1Reader.isCorrected())
                 System.err.println("WARNING: correcting already corrected MIF file!");
             defaultGroups = IntStream.rangeClosed(1, pass1Reader.getNumberOfReads())
@@ -105,7 +107,7 @@ public final class CorrectBarcodesIO {
     }
 
     private MifWriter createWriter(MifHeader inputHeader) throws IOException {
-        MifHeader outputHeader = new MifHeader(inputHeader.getNumberOfReads(), true,
+        MifHeader outputHeader = new MifHeader(inputHeader.getNumberOfReads(), true, false,
                 inputHeader.getGroupEdges());
         return (outputFileName == null) ? new MifWriter(new SystemOutStream(), outputHeader)
                 : new MifWriter(outputFileName, outputHeader);

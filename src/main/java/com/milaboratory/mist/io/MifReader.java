@@ -23,6 +23,7 @@ public final class MifReader implements OutputPortCloseable<ParsedRead>, CanRepo
     private boolean finished = false;
     private int numberOfReads;
     private boolean correctedMif;
+    private boolean sortedMif;
     private ArrayList<GroupEdge> groupEdges = new ArrayList<>();
 
     public MifReader(InputStream stream) {
@@ -48,6 +49,7 @@ public final class MifReader implements OutputPortCloseable<ParsedRead>, CanRepo
     private void readHeader() {
         numberOfReads = input.readInt();
         correctedMif = input.readBoolean();
+        sortedMif = input.readBoolean();
         int groupEdgesNum = input.readInt();
         for (int i = 0; i < groupEdgesNum; i++) {
             GroupEdge groupEdge = input.readObject(GroupEdge.class);
@@ -107,12 +109,16 @@ public final class MifReader implements OutputPortCloseable<ParsedRead>, CanRepo
         return correctedMif;
     }
 
+    public boolean isSorted() {
+        return sortedMif;
+    }
+
     public ArrayList<GroupEdge> getGroupEdges() {
         return new ArrayList<>(groupEdges);
     }
 
     public MifHeader getHeader() {
-        return new MifHeader(numberOfReads, correctedMif, groupEdges);
+        return new MifHeader(numberOfReads, correctedMif, sortedMif, groupEdges);
     }
 
     /**

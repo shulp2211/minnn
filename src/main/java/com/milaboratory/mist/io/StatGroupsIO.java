@@ -45,8 +45,12 @@ public final class StatGroupsIO {
     public void go() {
         long startTime = System.currentTimeMillis();
         long totalReads = 0;
+        boolean corrected;
+        boolean sorted;
 
         try (MifReader reader = createReader()) {
+            corrected = reader.isCorrected();
+            sorted = reader.isSorted();
             if (numberOfReads > 0)
                 reader.setParsedReadsLimit(numberOfReads);
             SmartProgressReporter.startProgressReport("Processing", reader, System.err);
@@ -94,6 +98,8 @@ public final class StatGroupsIO {
 
         long elapsedTime = System.currentTimeMillis() - startTime;
         System.err.println("\nProcessing time: " + nanoTimeToString(elapsedTime * 1000000));
+        System.err.println("Input MIF file is " + (corrected ? "" : "not ") + "corrected and " + (sorted ? "" : "not ")
+                + "sorted");
         System.err.println("Checked " + totalReads + " reads");
         if (totalReads > 0) {
             int countedReadsPercent = (int)((float)table.stream()
