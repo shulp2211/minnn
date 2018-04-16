@@ -8,6 +8,7 @@ import com.milaboratory.core.sequence.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.milaboratory.mist.pattern.PatternUtils.*;
 import static com.milaboratory.mist.util.UnfairSorterConfiguration.*;
@@ -273,8 +274,8 @@ public final class FuzzyMatchPattern extends SinglePattern implements CanBeSingl
                     this.bitapMatcherFilters = bitapPatterns.stream().map(bp -> new BitapMatcherFilter(
                             bp.substitutionAndIndelMatcherLast(0, target.getSequence(), from, to)))
                             .collect(Collectors.toList());
-                    this.alreadyReturnedPositions = new ArrayList<>(Collections.nCopies(sequences.size(),
-                            new HashSet<>()));
+                    this.alreadyReturnedPositions = IntStream.range(0, sequences.size())
+                            .mapToObj(i -> new HashSet<Integer>()).collect(Collectors.toCollection(ArrayList::new));
                 } else
                     this.bitapMatcherFilters = bitapPatterns.stream().map(bp -> new BitapMatcherFilter(
                             bp.substitutionAndIndelMatcherLast(maxErrors, target.getSequence(), from, to)))
