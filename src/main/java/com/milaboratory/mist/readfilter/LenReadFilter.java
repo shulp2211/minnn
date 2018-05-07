@@ -2,7 +2,7 @@ package com.milaboratory.mist.readfilter;
 
 import com.milaboratory.mist.outputconverter.ParsedRead;
 
-public class LenReadFilter implements ReadFilter {
+public final class LenReadFilter implements ReadFilter {
     private final String groupName;
     private final int valueLength;
 
@@ -17,6 +17,7 @@ public class LenReadFilter implements ReadFilter {
                 .anyMatch(group -> group.getGroupName().equals(groupName) && group.getValue().size() == valueLength))
             return parsedRead;
         else
-            return new ParsedRead(parsedRead.getOriginalRead(), parsedRead.isReverseMatch(), null);
+            return new ParsedRead(parsedRead.getOriginalRead(), parsedRead.isReverseMatch(), null,
+                    parsedRead.getConsensusReads());
     }
 }
