@@ -38,10 +38,10 @@ public final class FilterIO {
             SmartProgressReporter.startProgressReport("Filtering reads", reader, System.err);
             Merger<Chunk<ParsedRead>> bufferedReaderPort = CUtils.buffered(CUtils.chunked(
                     new NumberedParsedReadsPort(reader), 4 * 64), 4 * 16);
-            OutputPort<Chunk<ParsedRead>> correctedReadsPort = new ParallelProcessor<>(bufferedReaderPort,
+            OutputPort<Chunk<ParsedRead>> filteredReadsPort = new ParallelProcessor<>(bufferedReaderPort,
                     CUtils.chunked(new FilterProcessor()), threads);
             OrderedOutputPort<ParsedRead> orderedReadsPort = new OrderedOutputPort<>(
-                    CUtils.unchunked(correctedReadsPort), read -> read.getOriginalRead().getId());
+                    CUtils.unchunked(filteredReadsPort), read -> read.getOriginalRead().getId());
             for (ParsedRead parsedRead : CUtils.it(orderedReadsPort)) {
                 totalReads++;
                 if (parsedRead.getBestMatch() != null) {
