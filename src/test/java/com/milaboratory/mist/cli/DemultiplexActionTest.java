@@ -69,7 +69,7 @@ public class DemultiplexActionTest {
 
         exec("demultiplex " + inputFile + " --by-barcode G1 --by-sample " + sampleFile1 + " --by-barcode G4");
         File[] outputFiles = getOutputFiles();
-        assertEquals(4649, outputFiles.length);
+        assertEquals(4707, outputFiles.length);
         Arrays.stream(outputFiles).map(File::delete).forEach(Assert::assertTrue);
 
         exec("demultiplex " + inputFile + " --by-sample " + sampleFile2 + " --by-sample " + sampleFile3);
