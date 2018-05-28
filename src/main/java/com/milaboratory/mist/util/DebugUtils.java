@@ -63,4 +63,8 @@ public final class DebugUtils {
     public static void resetCallCounter() {
         callCounter = new HashMap<>();
     }
+
+    public static void resetEventCounter() {
+        eventCounter = new HashMap<>();
+    }
 }
