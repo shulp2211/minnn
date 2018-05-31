@@ -8,9 +8,9 @@ public final class Defaults {
     public final static int DEFAULT_BITAP_MAX_ERRORS = 2;
     public final static int DEFAULT_MAX_OVERLAP = 2;
     public final static int DEFAULT_MATCH_SCORE = 0;
-    public final static int DEFAULT_MISMATCH_SCORE = -9;
+    public final static int DEFAULT_MISMATCH_SCORE = -5;
     public final static int DEFAULT_UPPERCASE_MISMATCH_SCORE = -1000000;
-    public final static int DEFAULT_GAP_SCORE = -10;
+    public final static int DEFAULT_GAP_SCORE = -11;
     public final static byte DEFAULT_GOOD_QUALITY = GOOD_QUALITY_VALUE;
     public final static byte DEFAULT_BAD_QUALITY = BAD_QUALITY_VALUE;
     public final static int DEFAULT_MAX_QUALITY_PENALTY = -4;
@@ -19,8 +19,7 @@ public final class Defaults {
     public final static String DEFAULT_INPUT_FORMAT = "fastq";
     public final static int DEFAULT_SORT_CHUNK_SIZE = 1000000;
     public final static int DEFAULT_CORRECT_MAX_MISMATCHES = 2;
-    public final static int DEFAULT_CORRECT_MAX_DELETIONS = 2;
-    public final static int DEFAULT_CORRECT_MAX_INSERTIONS = 2;
+    public final static int DEFAULT_CORRECT_MAX_INDELS = 2;
     public final static int DEFAULT_CORRECT_MAX_TOTAL_ERRORS = 3;
     public final static float DEFAULT_CORRECT_CLUSTER_THRESHOLD = 0.03f;
     public final static int DEFAULT_CONSENSUS_ALIGNER_WIDTH = 20;

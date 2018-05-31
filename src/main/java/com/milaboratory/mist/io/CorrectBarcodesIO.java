@@ -33,8 +33,7 @@ public final class CorrectBarcodesIO {
     private final String inputFileName;
     private final String outputFileName;
     private final int mismatches;
-    private final int deletions;
-    private final int insertions;
+    private final int indels;
     private final int totalErrors;
     private final float threshold;
     private final List<String> groupNames;
@@ -45,13 +44,12 @@ public final class CorrectBarcodesIO {
     private int numberOfReads;
     private AtomicLong corrected = new AtomicLong(0);
 
-    public CorrectBarcodesIO(String inputFileName, String outputFileName, int mismatches, int deletions, int insertions,
+    public CorrectBarcodesIO(String inputFileName, String outputFileName, int mismatches, int indels,
                              int totalErrors, float threshold, List<String> groupNames, int threads) {
         this.inputFileName = inputFileName;
         this.outputFileName = outputFileName;
         this.mismatches = mismatches;
-        this.deletions = deletions;
-        this.insertions = insertions;
+        this.indels = indels;
         this.totalErrors = totalErrors;
         this.threshold = threshold;
         this.groupNames = groupNames;
@@ -164,7 +162,7 @@ public final class CorrectBarcodesIO {
                 NucleotideSequence oldValue = matchedGroup.getValue().getSequence();
                 SequenceTreeMap<NucleotideSequence, SequenceCounter> sequenceTreeMap = sequenceTreeMaps.get(groupName);
                 NeighborhoodIterator<NucleotideSequence, SequenceCounter> neighborhoodIterator = sequenceTreeMap
-                        .getNeighborhoodIterator(oldValue, mismatches, deletions, insertions, totalErrors);
+                        .getNeighborhoodIterator(oldValue, mismatches, indels, indels, totalErrors);
                 SequenceCounter correctedSequenceCounter = StreamSupport.stream(neighborhoodIterator.it()
                         .spliterator(), false).max(SequenceCounter::compareTo).orElse(null);
                 NucleotideSequence correctValue = oldValue;

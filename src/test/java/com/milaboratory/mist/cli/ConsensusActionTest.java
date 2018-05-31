@@ -39,9 +39,8 @@ public class ConsensusActionTest {
             exec("extract --input-format mif --input " + startFile + " --output " + inputFile
                     + " --pattern \"(G1:annnt)(G2:NN)\" --bitap-max-errors 0");
             exec("correct --threads " + (rg.nextInt(10) + 1) + " --max-mismatches " + rg.nextInt(4)
-                    + " --max-deletions " + rg.nextInt(4) + " --max-total-errors " + rg.nextInt(5)
-                    + " --max-insertions " + rg.nextInt(4) + " --input " + inputFile
-                    + " --output " + correctedFile);
+                    + " --max-indels " + rg.nextInt(4) + " --max-total-errors " + rg.nextInt(5)
+                    + " --input " + inputFile + " --output " + correctedFile);
             exec("sort --input " + correctedFile + " --output " + sortedFile + " --groups " + consensusGroups);
             exec("consensus --input " + sortedFile + " --output " + outputFile1 + " --groups " + consensusGroups
                     + " --threads " + (rg.nextInt(10) + 1) + " --score-threshold " + (rg.nextInt(2000) - 1000)

@@ -64,7 +64,8 @@ public class DemultiplexActionTest {
         String sampleFileBad = EXAMPLES_PATH + "demultiplex_samples/bad_sample.txt";
 
         exec("extract --input-format mif --input " + startFile + " --output " + inputFile
-                + " --pattern \"(G1:NNN)&(G2:AANA)\\(G3:ntt)&(G4:nnnn)\" --threads 5");
+                + " --pattern \"(G1:NNN)&(G2:AANA)\\(G3:ntt)&(G4:nnnn)\""
+                + " --threads 5 --mismatch-score -9 --gap-score -10 --single-overlap-penalty -10");
         Arrays.stream(getOutputFiles()).map(File::delete).forEach(Assert::assertTrue);
 
         exec("demultiplex " + inputFile + " --by-barcode G1 --by-sample " + sampleFile1 + " --by-barcode G4");

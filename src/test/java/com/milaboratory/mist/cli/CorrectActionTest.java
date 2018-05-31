@@ -29,8 +29,8 @@ public class CorrectActionTest {
             exec("extract --input-format mif --input " + startFile + " --output " + inputFile
                     + " --pattern \"(G1:annnt)(G2:NN)\" --bitap-max-errors 0");
             exec("correct --threads " + (rg.nextInt(10) + 1) + " --max-mismatches " + rg.nextInt(4)
-                    + " --max-deletions " + rg.nextInt(4) + " --max-total-errors " + rg.nextInt(5)
-                    + " --max-insertions " + rg.nextInt(4) + " --cluster-threshold " + (rg.nextFloat() * 0.98 + 0.01)
+                    + " --max-indels " + rg.nextInt(4) + " --max-total-errors " + rg.nextInt(5)
+                    + " --cluster-threshold " + (rg.nextFloat() * 0.98 + 0.01)
                     + " --input " + inputFile + " --output " + outputFile);
             assertFileNotEquals(inputFile, outputFile);
         }
@@ -54,7 +54,7 @@ public class CorrectActionTest {
         exec("correct --input " + inputFile + " --output " + TEMP_DIR + "correct4.mif --max-total-errors 0");
         assertFileNotEquals(inputFile, TEMP_DIR + "correct4.mif");
         exec("correct --input " + inputFile + " --output " + TEMP_DIR + "correct5.mif --max-mismatches 0" +
-                " --max-insertions 0 --max-deletions 0");
+                " --max-indels 0");
         assertFileEquals(TEMP_DIR + "correct4.mif", TEMP_DIR + "correct5.mif");
         assertTrue(new File(inputFile).delete());
         for (int i = 1; i <= 5; i++)

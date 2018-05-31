@@ -39,11 +39,11 @@ public final class SorterIO {
         try (MifReader reader = createReader();
              MifWriter writer = createWriter(reader.getHeader())) {
             SmartProgressReporter.startProgressReport("Reading", reader, System.err);
-            SmartProgressReporter.startProgressReport("Writing", writer, System.err);
             if (!reader.isCorrected())
                 System.err.println("WARNING: sorting not corrected MIF file!");
             OutputPortCloseable<ParsedRead> sorted = Sorter.sort(reader, new ParsedReadComparator(), chunkSize,
                     new ParsedReadObjectSerializer(reader.getGroupEdges()), tmpFile);
+            SmartProgressReporter.startProgressReport("Writing", writer, System.err);
             for (ParsedRead parsedRead : CUtils.it(sorted)) {
                 totalReads++;
                 if (totalReads == 1)
