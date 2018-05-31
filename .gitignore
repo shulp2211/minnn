@@ -1,7 +1,9 @@
 target
 *.iml
 .idea
-doc/_build
+docs/source/_static
+docs/source/_templates
+docs/build
 .floo
 .flooignore
 out
