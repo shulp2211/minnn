@@ -19,6 +19,7 @@ import com.milaboratory.mist.pattern.GroupEdge;
 import com.milaboratory.mist.pattern.Match;
 import com.milaboratory.mist.pattern.MatchedGroupEdge;
 import com.milaboratory.util.SmartProgressReporter;
+import gnu.trove.map.hash.TByteObjectHashMap;
 
 import java.io.IOException;
 import java.util.*;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.milaboratory.core.alignment.BandedLinearAligner.alignLocalGlobal;
+import static com.milaboratory.core.sequence.SequenceQuality.MAX_QUALITY_VALUE;
 import static com.milaboratory.core.sequence.quality.QualityTrimmer.trim;
 import static com.milaboratory.mist.cli.Defaults.*;
 import static com.milaboratory.mist.pattern.PatternUtils.invertCoordinate;
@@ -34,6 +36,19 @@ import static com.milaboratory.mist.util.SystemUtils.*;
 import static com.milaboratory.util.TimeUtils.nanoTimeToString;
 
 public final class ConsensusIO {
+    private static final HashMap<NucleotideSequence, NucleotideSequence> sequenceCache = new HashMap<>();
+    private static final TByteObjectHashMap<SequenceQuality> qualityCache = new TByteObjectHashMap<>();
+    static {
+        String[] nucleotides = new String[] { "A", "T", "G", "C" };
+        Arrays.stream(nucleotides).map(NucleotideSequence::new).forEach(seq -> sequenceCache.put(seq, seq));
+        Arrays.stream(nucleotides).forEach(firstNucleotide -> Arrays.stream(nucleotides).forEach(secondNucleotide -> {
+            NucleotideSequence currentSequence = new NucleotideSequence(firstNucleotide + secondNucleotide);
+            sequenceCache.put(currentSequence, currentSequence);
+        }));
+        for (byte quality = 0; quality <= MAX_QUALITY_VALUE; quality++)
+            qualityCache.put(quality, new SequenceQuality(new byte[] { quality }));
+    }
+
     private final String inputFileName;
     private final String outputFileName;
     private final int alignerWidth;
@@ -84,8 +99,16 @@ public final class ConsensusIO {
         try (MifReader reader = createReader();
              MifWriter writer = createWriter(reader.getHeader())) {
             SmartProgressReporter.startProgressReport("Calculating consensuses", reader, System.err);
-            if (!reader.isCorrected())
-                System.err.println("WARNING: calculating consensus for not corrected MIF file!");
+            if (groupSet == null) {
+                if (reader.getCorrectedGroups().size() == 0)
+                    System.err.println("WARNING: calculating consensus for not corrected MIF file!");
+            } else {
+                List<String> notCorrectedGroups = groupSet.stream().filter(gn -> reader.getCorrectedGroups().stream()
+                        .noneMatch(gn::equals)).collect(Collectors.toList());
+                if (notCorrectedGroups.size() != 0)
+                    System.err.println("WARNING: group(s) " + notCorrectedGroups + " not corrected, but used in " +
+                            "consensus calculation!");
+            }
             if (!reader.isSorted())
                 System.err.println("WARNING: calculating consensus for not sorted MIF file; result will be wrong!");
             numberOfTargets = reader.getNumberOfReads();
@@ -390,18 +413,22 @@ public final class ConsensusIO {
             return minQuality;
         }
 
+        private NSequenceWithQuality getCachedValues(SequenceWithQuality<NucleotideSequence> input) {
+            NucleotideSequence sequence = sequenceCache.get(input.getSequence());
+            return new NSequenceWithQuality((sequence == null) ? input.getSequence() : sequence,
+                    (input.size() == 1) ? qualityCache.get(input.getQuality().value(0)) : input.getQuality());
+        }
+
         private NSequenceWithQuality letterAt(NSequenceWithQuality seq, int position) {
             if ((seq == null) || (position < 0) || (position >= seq.size()))
                 return null;
-            SequenceWithQuality<NucleotideSequence> subsequence = seq.getSubSequence(position, position + 1);
-            return new NSequenceWithQuality(subsequence.getSequence(), subsequence.getQuality());
+            return getCachedValues(seq.getSubSequence(position, position + 1));
         }
 
         private NSequenceWithQuality getSubSequence(NSequenceWithQuality seq, int from, int to) {
             if ((from < 0) || (to > seq.size()) || (to - from < 1))
                 throw new IndexOutOfBoundsException("seq.size(): " + seq.size() + ", from: " + from + ", to: " + to);
-            SequenceWithQuality<NucleotideSequence> subsequence = seq.getSubSequence(from, to);
-            return new NSequenceWithQuality(subsequence.getSequence(), subsequence.getQuality());
+            return getCachedValues(seq.getSubSequence(from, to));
         }
 
         /**
@@ -632,7 +659,7 @@ public final class ConsensusIO {
                     for (String groupName : currentLeftBarcodeEdges)
                         barcodePositions.add(new BarcodePosition(groupName, true,
                                 currentCoordinateForBarcodes));
-                    currentCoordinateForBarcodes += lettersMatrix.getRowLength();
+                    currentCoordinateForBarcodes += Math.max(1, lettersMatrix.getRowLength());
                     for (String groupName : currentRightBarcodeEdges) {
                         /* currentCoordinateForBarcodes - 1 because currentRightBarcodeEdges are inclusive
                            and currentCoordinateForBarcodes is exclusive after adding row length */
@@ -692,7 +719,7 @@ public final class ConsensusIO {
                         long phredQuality = (bestSum == totalSum) ? bestSum
                                 : Math.min((long)(-10 * Math.log10(p)), bestSum);
                         consensusLetters.add(new NSequenceWithQuality(consensusLetter,
-                                (byte)Math.min(SequenceQuality.MAX_QUALITY_VALUE, phredQuality)));
+                                qualityCache.get((byte)Math.min(MAX_QUALITY_VALUE, phredQuality))));
                     } else {
                         // deletion in consensus: move left all barcode positions on the right
                         for (BarcodePosition barcodePosition : barcodePositions)
