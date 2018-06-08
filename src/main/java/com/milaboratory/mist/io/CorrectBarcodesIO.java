@@ -7,10 +7,15 @@ import cc.redberry.pipe.blocks.Merger;
 import cc.redberry.pipe.blocks.ParallelProcessor;
 import cc.redberry.pipe.util.Chunk;
 import cc.redberry.pipe.util.OrderedOutputPort;
+import com.milaboratory.core.clustering.Cluster;
+import com.milaboratory.core.clustering.Clustering;
+import com.milaboratory.core.clustering.ClusteringStrategy;
+import com.milaboratory.core.clustering.SequenceExtractor;
+import com.milaboratory.core.mutations.Mutations;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.core.tree.NeighborhoodIterator;
-import com.milaboratory.core.tree.SequenceTreeMap;
+import com.milaboratory.core.tree.TreeSearchParameters;
 import com.milaboratory.mist.outputconverter.MatchedGroup;
 import com.milaboratory.mist.outputconverter.ParsedRead;
 import com.milaboratory.mist.pattern.Match;
@@ -23,7 +28,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.StreamSupport;
 
 import static com.milaboratory.mist.util.SystemUtils.*;
 import static com.milaboratory.util.TimeUtils.nanoTimeToString;
@@ -36,15 +40,18 @@ public final class CorrectBarcodesIO {
     private final int totalErrors;
     private final float threshold;
     private final List<String> groupNames;
+    private final int maxClusterDepth;
+    private final float singleMutationProbability;
     private final int threads;
     private Set<String> defaultGroups;
-    private Set<String> keyGroups;
-    private Map<String, SequenceTreeMap<NucleotideSequence, SequenceCounter>> sequenceTreeMaps;
+    private LinkedHashSet<String> keyGroups;
+    private Map<String, HashMap<NucleotideSequence, NucleotideSequence>> sequenceCorrectionMaps;
     private int numberOfReads;
     private AtomicLong corrected = new AtomicLong(0);
 
     public CorrectBarcodesIO(String inputFileName, String outputFileName, int mismatches, int indels,
-                             int totalErrors, float threshold, List<String> groupNames, int threads) {
+                             int totalErrors, float threshold, List<String> groupNames, int maxClusterDepth,
+                             float singleMutationProbability, int threads) {
         this.inputFileName = inputFileName;
         this.outputFileName = outputFileName;
         this.mismatches = mismatches;
@@ -52,6 +59,8 @@ public final class CorrectBarcodesIO {
         this.totalErrors = totalErrors;
         this.threshold = threshold;
         this.groupNames = groupNames;
+        this.maxClusterDepth = maxClusterDepth;
+        this.singleMutationProbability = singleMutationProbability;
         this.threads = threads;
     }
 
@@ -74,20 +83,41 @@ public final class CorrectBarcodesIO {
             if (correctedAgainGroups.size() != 0)
                 System.err.println("WARNING: group(s) " + correctedAgainGroups + " already corrected and will be " +
                         "corrected again!");
-            sequenceTreeMaps = keyGroups.stream().collect(Collectors.toMap(groupName -> groupName,
-                    groupName -> new SequenceTreeMap<>(NucleotideSequence.ALPHABET)));
+            Map<String, HashMap<NucleotideSequence, SequenceCounter>> sequenceMaps = keyGroups.stream()
+                    .collect(Collectors.toMap(groupName -> groupName, groupName -> new HashMap<>()));
             numberOfReads = pass1Reader.getNumberOfReads();
             for (ParsedRead parsedRead : CUtils.it(pass1Reader))
-                for (Map.Entry<String, SequenceTreeMap<NucleotideSequence, SequenceCounter>> entry
-                        : sequenceTreeMaps.entrySet()) {
+                for (Map.Entry<String, HashMap<NucleotideSequence, SequenceCounter>> entry : sequenceMaps.entrySet()) {
                     NucleotideSequence groupValue = parsedRead.getGroupValue(entry.getKey()).getSequence();
                     SequenceCounter counter = entry.getValue().get(groupValue);
                     if (counter == null)
                         entry.getValue().put(groupValue, new SequenceCounter(groupValue));
                     else
-                        counter.increaseCount();
+                        counter.count++;
                 }
 
+            // sorting nucleotide sequences by count in each group and performing clustering
+            SequenceCounterExtractor sequenceCounterExtractor = new SequenceCounterExtractor();
+            BarcodeClusteringStrategy barcodeClusteringStrategy = new BarcodeClusteringStrategy();
+            sequenceCorrectionMaps = new HashMap<>();
+            for (Map.Entry<String, HashMap<NucleotideSequence, SequenceCounter>> entry : sequenceMaps.entrySet()) {
+                TreeSet<SequenceCounter> sortedSequences = new TreeSet<>(entry.getValue().values());
+                Clustering<SequenceCounter, NucleotideSequence> clustering = new Clustering<>(sortedSequences,
+                        sequenceCounterExtractor, barcodeClusteringStrategy);
+                SmartProgressReporter.startProgressReport("Clustering barcodes in group " + entry.getKey(),
+                        clustering, System.err);
+                HashMap<NucleotideSequence, NucleotideSequence> currentCorrectionMap = new HashMap<>();
+                clustering.performClustering().forEach(cluster -> {
+                    NucleotideSequence headSequence = cluster.getHead().sequence;
+                    cluster.processAllChildren((child) -> {
+                        currentCorrectionMap.put(child.getHead().sequence, headSequence);
+                        return true;
+                    });
+                });
+                sequenceCorrectionMaps.put(entry.getKey(), currentCorrectionMap);
+            }
+
+            // second pass: replacing barcodes
             SmartProgressReporter.startProgressReport("Correcting barcodes", pass2Reader, System.err);
             Merger<Chunk<ParsedRead>> bufferedReaderPort = CUtils.buffered(CUtils.chunked(
                     new NumberedParsedReadsPort(pass2Reader), 4 * 64), 4 * 16);
@@ -119,29 +149,68 @@ public final class CorrectBarcodesIO {
     }
 
     private static class SequenceCounter implements Comparable<SequenceCounter> {
-        private final NucleotideSequence sequence;
-        private long count;
+        final NucleotideSequence sequence;
+        long count;
 
         SequenceCounter(NucleotideSequence sequence) {
             this.sequence = sequence;
             count = 1;
         }
 
-        NucleotideSequence getSequence() {
-            return sequence;
-        }
-
-        long getCount() {
-            return count;
-        }
-
-        void increaseCount() {
-            count++;
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            SequenceCounter that = (SequenceCounter)o;
+            return sequence.equals(that.sequence);
         }
 
         @Override
+        public int hashCode() {
+            return sequence.hashCode();
+        }
+
+        // compareTo is reversed to start from bigger counts
+        @Override
         public int compareTo(SequenceCounter other) {
-            return Long.compare(count, other.getCount());
+            return -Long.compare(count, other.count);
+        }
+    }
+
+    private static class SequenceCounterExtractor implements SequenceExtractor<SequenceCounter, NucleotideSequence> {
+        @Override
+        public NucleotideSequence getSequence(SequenceCounter sequenceCounter) {
+            return sequenceCounter.sequence;
+        }
+    }
+
+    private class BarcodeClusteringStrategy implements ClusteringStrategy<SequenceCounter, NucleotideSequence> {
+        private final TreeSearchParameters treeSearchParameters = new TreeSearchParameters(mismatches, indels, indels,
+                totalErrors);
+
+        @Override
+        public boolean canAddToCluster(Cluster<SequenceCounter> cluster, SequenceCounter minorSequenceCounter,
+                                       NeighborhoodIterator<NucleotideSequence, SequenceCounter[]> iterator) {
+            Mutations<NucleotideSequence> currentMutations = iterator.getCurrentMutations();
+            long majorClusterCount = cluster.getHead().count;
+            long minorClusterCount = minorSequenceCounter.count;
+            double expected = majorClusterCount * Math.pow(singleMutationProbability, currentMutations.size());
+            return (minorClusterCount <= expected) && ((float)minorClusterCount / majorClusterCount < threshold);
+        }
+
+        @Override
+        public TreeSearchParameters getSearchParameters() {
+            return treeSearchParameters;
+        }
+
+        @Override
+        public int getMaxClusterDepth() {
+            return maxClusterDepth;
+        }
+
+        @Override
+        public int compare(SequenceCounter c1, SequenceCounter c2) {
+            return Long.compare(c1.count, c2.count);
         }
     }
 
@@ -158,15 +227,9 @@ public final class CorrectBarcodesIO {
                 MatchedGroup matchedGroup = entry.getValue();
                 byte targetId = matchedGroup.getTargetId();
                 NucleotideSequence oldValue = matchedGroup.getValue().getSequence();
-                SequenceTreeMap<NucleotideSequence, SequenceCounter> sequenceTreeMap = sequenceTreeMaps.get(groupName);
-                NeighborhoodIterator<NucleotideSequence, SequenceCounter> neighborhoodIterator = sequenceTreeMap
-                        .getNeighborhoodIterator(oldValue, mismatches, indels, indels, totalErrors);
-                SequenceCounter correctedSequenceCounter = StreamSupport.stream(neighborhoodIterator.it()
-                        .spliterator(), false).max(SequenceCounter::compareTo).orElse(null);
-                NucleotideSequence correctValue = oldValue;
-                if ((correctedSequenceCounter != null) && ((float)sequenceTreeMap.get(oldValue).getCount()
-                        / correctedSequenceCounter.getCount() < threshold))
-                    correctValue = correctedSequenceCounter.getSequence();
+                NucleotideSequence correctValue = sequenceCorrectionMaps.get(groupName).get(oldValue);
+                if (correctValue == null)
+                    correctValue = oldValue;
                 isCorrection |= !correctValue.equals(oldValue);
                 correctedGroups.computeIfAbsent(targetId, id -> new ArrayList<>());
                 correctedGroups.get(targetId).add(new CorrectedGroup(groupName, correctValue));
