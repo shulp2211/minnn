@@ -64,7 +64,10 @@ public class ConsensusActionTest {
                     + width + " --max-consensuses-per-cluster 100 --skipped-fraction-to-repeat 0.001"
                     + " --reads-avg-quality-threshold 0 --avg-quality-threshold 0 --aligner-match-score 0"
                     + " --aligner-mismatch-score " + mismatchScore + " --aligner-gap-score " + gapScore);
-            assertFileEquals(outputFile2, outputFile3);
+            String parameterValuesMessage = "consensusGroups: " + consensusGroups + ", width: " + width
+                    + ", mismatchScore: " + mismatchScore + ", gapScore: " + gapScore;
+            assertFileEquals("Files are different with parameter values: " + parameterValuesMessage,
+                    outputFile2, outputFile3);
         }
         for (String fileName : new String[] { startFile, inputFile, correctedFile, sortedFile,
                 outputFile1, outputFile2, outputFile3 })

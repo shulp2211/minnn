@@ -487,6 +487,10 @@ public class CommonTestUtils {
         assertArrayEquals(Files.readAllBytes(Paths.get(fileName1)), Files.readAllBytes(Paths.get(fileName2)));
     }
 
+    public static void assertFileEquals(String message, String fileName1, String fileName2) throws Exception {
+        assertArrayEquals(message, Files.readAllBytes(Paths.get(fileName1)), Files.readAllBytes(Paths.get(fileName2)));
+    }
+
     public static void assertFileNotEquals(String fileName1, String fileName2) throws Exception {
         byte[] file1Bytes = Files.readAllBytes(Paths.get(fileName1));
         byte[] file2Bytes = Files.readAllBytes(Paths.get(fileName2));
