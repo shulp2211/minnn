@@ -166,14 +166,14 @@ public final class ParsedRead {
         if (innerGroupEdgesCache == null)
             fillInnerGroupsCache(true, false);
 
-        for (byte i = 0; i < groupNames.length; i++) {
-            String outputGroupName = groupNames[i];
+        for (byte targetId = 1; targetId <= groupNames.length; targetId++) {
+            String outputGroupName = groupNames[targetId - 1];
             if (!matchedGroups.containsKey(outputGroupName))
                 throw new IllegalArgumentException("Group " + outputGroupName
                         + " not found in this ParsedRead; available groups: " + matchedGroups.keySet());
             NSequenceWithQuality target = getGroupValue(outputGroupName);
             for (GroupEdgePosition groupEdgePosition : innerGroupEdgesCache.get(outputGroupName))
-                matchedGroupEdges.add(new MatchedGroupEdge(target, i, groupEdgePosition.getGroupEdge(),
+                matchedGroupEdges.add(new MatchedGroupEdge(target, targetId, groupEdgePosition.getGroupEdge(),
                         groupEdgePosition.getPosition()));
             List<String> otherGroupNames = matchedGroups.keySet().stream()
                     .filter(name -> !innerGroupEdgesCache.get(outputGroupName).stream()
@@ -181,9 +181,9 @@ public final class ParsedRead {
                             .collect(Collectors.toSet()).contains(name))
                     .collect(Collectors.toList());
             for (String groupName : otherGroupNames) {
-                matchedGroupEdges.add(new MatchedGroupEdge(target, i, new GroupEdge(groupName, true),
+                matchedGroupEdges.add(new MatchedGroupEdge(target, targetId, new GroupEdge(groupName, true),
                         getGroupValue(groupName)));
-                matchedGroupEdges.add(new MatchedGroupEdge(null, i, new GroupEdge(groupName, false),
+                matchedGroupEdges.add(new MatchedGroupEdge(null, targetId, new GroupEdge(groupName, false),
                         null));
             }
         }
