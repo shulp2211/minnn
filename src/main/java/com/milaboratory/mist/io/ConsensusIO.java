@@ -8,17 +8,13 @@ import cc.redberry.pipe.util.OrderedOutputPort;
 import com.milaboratory.core.alignment.Alignment;
 import com.milaboratory.core.alignment.LinearGapAlignmentScoring;
 import com.milaboratory.core.io.sequence.*;
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
-import com.milaboratory.core.sequence.SequenceQuality;
-import com.milaboratory.core.sequence.SequenceWithQuality;
+import com.milaboratory.core.sequence.*;
 import com.milaboratory.mist.outputconverter.MatchedGroup;
 import com.milaboratory.mist.outputconverter.ParsedRead;
 import com.milaboratory.mist.pattern.GroupEdge;
 import com.milaboratory.mist.pattern.Match;
 import com.milaboratory.mist.pattern.MatchedGroupEdge;
 import com.milaboratory.util.SmartProgressReporter;
-import gnu.trove.map.hash.TByteObjectHashMap;
 
 import java.io.IOException;
 import java.util.*;
@@ -32,23 +28,11 @@ import static com.milaboratory.core.sequence.quality.QualityTrimmer.trim;
 import static com.milaboratory.mist.cli.CliUtils.floatFormat;
 import static com.milaboratory.mist.cli.Defaults.*;
 import static com.milaboratory.mist.pattern.PatternUtils.invertCoordinate;
+import static com.milaboratory.mist.util.SequencesCache.*;
 import static com.milaboratory.mist.util.SystemUtils.*;
 import static com.milaboratory.util.TimeUtils.nanoTimeToString;
 
 public final class ConsensusIO {
-    private static final HashMap<NucleotideSequence, NucleotideSequence> sequenceCache = new HashMap<>();
-    private static final TByteObjectHashMap<SequenceQuality> qualityCache = new TByteObjectHashMap<>();
-    static {
-        String[] nucleotides = new String[] { "A", "T", "G", "C" };
-        Arrays.stream(nucleotides).map(NucleotideSequence::new).forEach(seq -> sequenceCache.put(seq, seq));
-        Arrays.stream(nucleotides).forEach(firstNucleotide -> Arrays.stream(nucleotides).forEach(secondNucleotide -> {
-            NucleotideSequence currentSequence = new NucleotideSequence(firstNucleotide + secondNucleotide);
-            sequenceCache.put(currentSequence, currentSequence);
-        }));
-        for (byte quality = 0; quality <= MAX_QUALITY_VALUE; quality++)
-            qualityCache.put(quality, new SequenceQuality(new byte[] { quality }));
-    }
-
     private final String inputFileName;
     private final String outputFileName;
     private final int alignerWidth;
@@ -65,9 +49,11 @@ public final class ConsensusIO {
     private final float avgQualityThreshold;
     private final int trimWindowSize;
     private final long inputReadsLimit;
+    private final int maxWarnings;
     private final int threads;
     private final AtomicLong totalReads = new AtomicLong(0);
     private final AtomicLong consensusReads = new AtomicLong(0);
+    private int warningsDisplayed = 0;
     private Set<String> groupSet;
     private int numberOfTargets;
 
@@ -75,7 +61,8 @@ public final class ConsensusIO {
                        int matchScore, int mismatchScore, int gapScore, long scoreThreshold,
                        float skippedFractionToRepeat, int maxConsensusesPerCluster, int readsMinGoodSeqLength,
                        float readsAvgQualityThreshold, int readsTrimWindowSize, int minGoodSeqLength,
-                       float avgQualityThreshold, int trimWindowSize, long inputReadsLimit, int threads) {
+                       float avgQualityThreshold, int trimWindowSize, long inputReadsLimit, int maxWarnings,
+                       int threads) {
         this.groupSet = (groupList == null) ? null : new LinkedHashSet<>(groupList);
         this.inputFileName = inputFileName;
         this.outputFileName = outputFileName;
@@ -93,6 +80,7 @@ public final class ConsensusIO {
         this.avgQualityThreshold = avgQualityThreshold;
         this.trimWindowSize = trimWindowSize;
         this.inputReadsLimit = inputReadsLimit;
+        this.maxWarnings = maxWarnings;
         this.threads = threads;
     }
 
@@ -105,16 +93,16 @@ public final class ConsensusIO {
             SmartProgressReporter.startProgressReport("Calculating consensuses", reader, System.err);
             if (groupSet == null) {
                 if (reader.getCorrectedGroups().size() == 0)
-                    System.err.println("WARNING: calculating consensus for not corrected MIF file!");
+                    displayWarning("WARNING: calculating consensus for not corrected MIF file!");
             } else {
                 List<String> notCorrectedGroups = groupSet.stream().filter(gn -> reader.getCorrectedGroups().stream()
                         .noneMatch(gn::equals)).collect(Collectors.toList());
                 if (notCorrectedGroups.size() != 0)
-                    System.err.println("WARNING: group(s) " + notCorrectedGroups + " not corrected, but used in " +
+                    displayWarning("WARNING: group(s) " + notCorrectedGroups + " not corrected, but used in " +
                             "consensus calculation!");
             }
             if (!reader.isSorted())
-                System.err.println("WARNING: calculating consensus for not sorted MIF file; result will be wrong!");
+                displayWarning("WARNING: calculating consensus for not sorted MIF file; result will be wrong!");
             numberOfTargets = reader.getNumberOfReads();
             Set<String> defaultGroups = IntStream.rangeClosed(1, numberOfTargets)
                     .mapToObj(i -> "R" + i).collect(Collectors.toSet());
@@ -194,6 +182,17 @@ public final class ConsensusIO {
     private MifWriter createWriter(MifHeader mifHeader) throws IOException {
         return (outputFileName == null) ? new MifWriter(new SystemOutStream(), mifHeader)
                 : new MifWriter(outputFileName, mifHeader);
+    }
+
+    private synchronized void displayWarning(String text) {
+        if (maxWarnings == -1)
+            System.err.println(text);
+        else if ((maxWarnings > 0) && (warningsDisplayed < maxWarnings)) {
+            System.err.println(text);
+            warningsDisplayed++;
+            if (warningsDisplayed == maxWarnings)
+                System.err.println("Warnings limit reached!");
+        }
     }
 
     private class Barcode {
@@ -340,7 +339,7 @@ public final class ConsensusIO {
                 Consensus stage1Consensus = generateConsensus(subsequencesList, bestData.sequences, bestData.barcodes);
 
                 if (stage1Consensus == null)
-                    System.err.println("WARNING: consensus assembled from " + (data.size() - filteredOutReads.size())
+                    displayWarning("WARNING: consensus assembled from " + (data.size() - filteredOutReads.size())
                             + " reads discarded on stage 1 after quality trimming!");
                 else {
                     // stage 2: align to consensus from stage 1
@@ -350,7 +349,7 @@ public final class ConsensusIO {
                         Consensus stage2Consensus = generateConsensus(subsequencesList, stage1Consensus.sequences,
                                 stage1Consensus.barcodes);
                         if (stage2Consensus == null)
-                            System.err.println("WARNING: consensus assembled from " + (data.size()
+                            displayWarning("WARNING: consensus assembled from " + (data.size()
                                     - filteredOutReads.size()) + " reads discarded on stage 2 after quality trimming!");
                         else
                             calculatedConsensuses.consensuses.add(stage2Consensus);
@@ -366,7 +365,7 @@ public final class ConsensusIO {
                                 remainingData.add(data.get(i));
                         data = remainingData;
                     } else {
-                        System.err.println("WARNING: max consensuses per cluster exceeded; not processed "
+                        displayWarning("WARNING: max consensuses per cluster exceeded; not processed "
                                 + filteredOutReads.size() + " reads from cluster of " + cluster.data.size()
                                 + " reads!");
                         data = new ArrayList<>();
@@ -398,7 +397,7 @@ public final class ConsensusIO {
         }
 
         private NSequenceWithQuality getCachedValues(SequenceWithQuality<NucleotideSequence> input) {
-            NucleotideSequence sequence = sequenceCache.get(input.getSequence());
+            NucleotideSequence sequence = sequencesCache.get(input.getSequence());
             return new NSequenceWithQuality((sequence == null) ? input.getSequence() : sequence,
                     (input.size() == 1) ? qualityCache.get(input.getQuality().value(0)) : input.getQuality());
         }
@@ -482,8 +481,7 @@ public final class ConsensusIO {
                         for (int targetIndex = 0; targetIndex < numberOfTargets; targetIndex++) {
                             NSequenceWithQuality currentSequence = data.get(i).sequences[targetIndex];
                             Alignment<NucleotideSequence> alignment = alignLocalGlobal(scoring,
-                                    bestSequences[targetIndex].getSequence(), currentSequence.getSequence(),
-                                    alignerWidth);
+                                    bestSequences[targetIndex], currentSequence, alignerWidth);
                             alignments.add(alignment);
                             sumScore += alignment.getScore();
                         }
@@ -589,8 +587,8 @@ public final class ConsensusIO {
                                 NSequenceWithQuality currentSeq = currentPositionSequences.get(i);
                                 if (currentSeq != null)
                                     lettersMatrix.add(currentSeq, alignLocalGlobal(scoring,
-                                            currentPositionSequences.get(bestQualityIndex).getSequence(),
-                                            currentPositionSequences.get(i).getSequence(), alignerWidth));
+                                            currentPositionSequences.get(bestQualityIndex),
+                                            currentPositionSequences.get(i), alignerWidth));
                                 else
                                     lettersMatrix.addNull();
                             }
@@ -624,10 +622,23 @@ public final class ConsensusIO {
                                             + currentLettersWithPositions.getDeletionQuality(targetIndex, position));
                         } else if (currentLetter != null) {
                             NucleotideSequence letterWithoutQuality = currentLetter.getSequence();
-                            currentPositionQualitySums.putIfAbsent(letterWithoutQuality, 0L);
-                            currentPositionQualitySums.put(letterWithoutQuality,
-                                    currentPositionQualitySums.get(letterWithoutQuality)
-                                            + currentLetter.getQuality().value(0));
+                            if (letterWithoutQuality.containsWildcards()) {
+                                Wildcard wildcard = wildcards.get(letterWithoutQuality);
+                                for (int i = 0; i < wildcard.basicSize(); i++) {
+                                    NucleotideSequence currentBasicLetter = wildcardCodeToSequence
+                                            .get(wildcard.getMatchingCode(i));
+                                    currentPositionQualitySums.putIfAbsent(currentBasicLetter, 0L);
+                                    currentPositionQualitySums.put(currentBasicLetter,
+                                            currentPositionQualitySums.get(currentBasicLetter)
+                                                    + currentLetter.getQuality().value(0)
+                                                    / wildcard.basicSize());
+                                }
+                            } else {
+                                currentPositionQualitySums.putIfAbsent(letterWithoutQuality, 0L);
+                                currentPositionQualitySums.put(letterWithoutQuality,
+                                        currentPositionQualitySums.get(letterWithoutQuality)
+                                                + currentLetter.getQuality().value(0));
+                            }
                         }
                     }
 
