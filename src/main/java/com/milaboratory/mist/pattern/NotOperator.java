@@ -19,7 +19,7 @@ public final class NotOperator extends MultipleReadsOperator {
 
     @Override
     public ArrayList<GroupEdge> getGroupEdges() {
-        return new ArrayList<>();
+        return operandPatterns[0].getGroupEdges();
     }
 
     @Override
@@ -43,7 +43,7 @@ public final class NotOperator extends MultipleReadsOperator {
 
         @Override
         public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
-            return new NotOperatorOutputPort(patternAligner, operandPattern.match(target).getMatches(fairSorting));
+            return new NotOperatorOutputPort(operandPattern.match(target).getMatches(fairSorting));
         }
 
         private class NotOperatorOutputPort implements OutputPort<MatchIntermediate> {
@@ -51,7 +51,7 @@ public final class NotOperator extends MultipleReadsOperator {
             private boolean firstCall = true;
             private boolean operandIsMatching;
 
-            NotOperatorOutputPort(PatternAligner patternAligner, OutputPort<MatchIntermediate> operandPort) {
+            NotOperatorOutputPort(OutputPort<MatchIntermediate> operandPort) {
                 this.operandPort = operandPort;
             }
 

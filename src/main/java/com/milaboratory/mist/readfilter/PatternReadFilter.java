@@ -11,7 +11,7 @@ import static com.milaboratory.mist.util.SystemUtils.*;
 
 public final class PatternReadFilter implements ReadFilter {
     private final String groupName;
-    private final SinglePattern pattern;
+    private final Pattern pattern;
     private final boolean fairSorting;
 
     public PatternReadFilter(String groupName, String patternQuery, boolean fairSorting) {
@@ -29,10 +29,10 @@ public final class PatternReadFilter implements ReadFilter {
             System.err.println("Error while parsing pattern " + patternQuery);
             throw exitWithError(e.getMessage());
         }
-        if (!(pattern instanceof SinglePattern))
-            throw exitWithError("Only single-read patterns are allowed in filters, found wrong pattern "
-                    + patternQuery);
-        this.pattern = (SinglePattern)pattern;
+        if (pattern.getGroupEdges().stream().map(GroupEdge::getGroupName).anyMatch(g -> !g.equals("R1")))
+            throw exitWithError("Filter patterns must be for single read and must not contain capture groups! "
+                    + "Found wrong pattern: " + patternQuery);
+        this.pattern = pattern;
         this.fairSorting = fairSorting;
     }
 
