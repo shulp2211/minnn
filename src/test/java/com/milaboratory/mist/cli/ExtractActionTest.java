@@ -145,4 +145,19 @@ public class ExtractActionTest {
         for (String fileName : new String[] { mifFile1, mifFile2, mifFile3 })
             assertTrue(new File(fileName).delete());
     }
+
+    @Test
+    public void descriptionGroupsTest() throws Exception {
+        String inputFile = getExampleMif("twosided");
+        String fastqR1 = TEMP_DIR + "desc_group_test_R1.fastq";
+        String fastqR2 = TEMP_DIR + "desc_group_test_R2.fastq";
+        String outputFile = TEMP_DIR + "desc_group_test_out.mif";
+        exec("mif2fastq --copy-original-headers --input " + inputFile + " --group-R1 " + fastqR1
+                + " --group-R2 " + fastqR2);
+        exec("extract --input " + fastqR1 + " " + fastqR2 + " --output " + outputFile
+                + " --description-group-DG1='(?<=G1~)[a-zA-Z]*(?=~)' --pattern \"(G1:cccnn)\\*\""
+                + " --description-group-DG4='G4~(?<seq>[a-zA-Z]*)~(?<qual>.*?)\\{' --score-threshold 0");
+        for (String fileName : new String[] { inputFile, fastqR1, fastqR2, outputFile })
+            assertTrue(new File(fileName).delete());
+    }
 }

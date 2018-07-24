@@ -44,7 +44,7 @@ public final class DescriptionGroups {
                             + " didn't match nucleotide sequence in any of read descriptions "
                             + seqDescriptionsToString(originalRead));
                 Matcher matcher = entry.getValue().pattern.matcher(originalRead.getRead(readId).getDescription());
-                if (matcher.matches()) {
+                if (matcher.find()) {
                     if (entry.getValue().withQuality) {
                         String seqString = matcher.group("seq");
                         String qualString = matcher.group("qual");
@@ -54,7 +54,7 @@ public final class DescriptionGroups {
                             } catch (IllegalArgumentException ignored) {}
                         }
                     } else {
-                        String seqString = matcher.group(0);
+                        String seqString = matcher.group();
                         try {
                             seq = new NSequenceWithQuality(seqString);
                         } catch (IllegalArgumentException ignored) {}
@@ -88,6 +88,9 @@ public final class DescriptionGroups {
         final boolean withQuality;
 
         public GroupPattern(String patternStr) {
+            if ((patternStr.charAt(0) != '\'') || (patternStr.charAt(patternStr.length() - 1) != '\''))
+                throw exitWithError("Missing single quotes around regular expression: " + patternStr);
+            patternStr = patternStr.substring(1, patternStr.length() - 1);
             pattern = Pattern.compile(patternStr);
             withQuality = patternStr.contains("?<seq>") && patternStr.contains("?<qual>");
         }
