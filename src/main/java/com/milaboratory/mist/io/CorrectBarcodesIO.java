@@ -1,12 +1,6 @@
 package com.milaboratory.mist.io;
 
 import cc.redberry.pipe.CUtils;
-import cc.redberry.pipe.OutputPort;
-import cc.redberry.pipe.Processor;
-import cc.redberry.pipe.blocks.Merger;
-import cc.redberry.pipe.blocks.ParallelProcessor;
-import cc.redberry.pipe.util.Chunk;
-import cc.redberry.pipe.util.OrderedOutputPort;
 import com.milaboratory.core.clustering.Cluster;
 import com.milaboratory.core.clustering.Clustering;
 import com.milaboratory.core.clustering.ClusteringStrategy;
@@ -47,7 +41,6 @@ public final class CorrectBarcodesIO {
     private final MutationProbability mutationProbability;
     private final long inputReadsLimit;
     private final boolean suppressWarnings;
-    private final int threads;
     private Set<String> defaultGroups;
     private LinkedHashSet<String> keyGroups;
     private Map<String, HashMap<NucleotideSequence, NucleotideSequence>> sequenceCorrectionMaps;
@@ -57,7 +50,7 @@ public final class CorrectBarcodesIO {
     public CorrectBarcodesIO(String inputFileName, String outputFileName, int mismatches, int indels,
                              int totalErrors, float threshold, List<String> groupNames, int maxClusterDepth,
                              float singleSubstitutionProbability, float singleIndelProbability, long inputReadsLimit,
-                             boolean suppressWarnings, int threads) {
+                             boolean suppressWarnings) {
         this.inputFileName = inputFileName;
         this.outputFileName = outputFileName;
         this.mismatches = mismatches;
@@ -69,7 +62,6 @@ public final class CorrectBarcodesIO {
         this.mutationProbability = new SimpleMutationProbability(singleSubstitutionProbability, singleIndelProbability);
         this.inputReadsLimit = inputReadsLimit;
         this.suppressWarnings = suppressWarnings;
-        this.threads = threads;
     }
 
     public void go() {
@@ -133,16 +125,10 @@ public final class CorrectBarcodesIO {
                 sequenceCorrectionMaps.put(entry.getKey(), currentCorrectionMap);
             }
 
-            // second pass: replacing barcodes
+            // second pass: correcting barcodes
             SmartProgressReporter.startProgressReport("Correcting barcodes", pass2Reader, System.err);
-            Merger<Chunk<ParsedRead>> bufferedReaderPort = CUtils.buffered(CUtils.chunked(
-                    new NumberedParsedReadsPort(pass2Reader), 4 * 64), 4 * 16);
-            OutputPort<Chunk<ParsedRead>> correctedReadsPort = new ParallelProcessor<>(bufferedReaderPort,
-                    CUtils.chunked(new CorrectBarcodesProcessor()), threads);
-            OrderedOutputPort<ParsedRead> orderedReadsPort = new OrderedOutputPort<>(
-                    CUtils.unchunked(correctedReadsPort), read -> read.getOriginalRead().getId());
-            for (ParsedRead parsedRead : CUtils.it(orderedReadsPort)) {
-                writer.write(parsedRead);
+            for (ParsedRead parsedRead : CUtils.it(pass2Reader)) {
+                writer.write(correctBarcodes(parsedRead));
                 if (++totalReads == inputReadsLimit)
                     break;
             }
@@ -164,6 +150,75 @@ public final class CorrectBarcodesIO {
                 false, inputHeader.getGroupEdges());
         return (outputFileName == null) ? new MifWriter(new SystemOutStream(), outputHeader)
                 : new MifWriter(outputFileName, outputHeader);
+    }
+
+    private ParsedRead correctBarcodes(ParsedRead parsedRead) {
+        Map<String, MatchedGroup> matchedGroups = parsedRead.getGroups().stream()
+                .filter(group -> keyGroups.contains(group.getGroupName()))
+                .collect(Collectors.toMap(MatchedGroup::getGroupName, group -> group));
+        HashMap<Byte, ArrayList<CorrectedGroup>> correctedGroups = new HashMap<>();
+        boolean isCorrection = false;
+        for (Map.Entry<String, MatchedGroup> entry : matchedGroups.entrySet()) {
+            String groupName = entry.getKey();
+            MatchedGroup matchedGroup = entry.getValue();
+            byte targetId = matchedGroup.getTargetId();
+            NucleotideSequence oldValue = matchedGroup.getValue().getSequence();
+            NucleotideSequence correctValue = sequenceCorrectionMaps.get(groupName).get(oldValue);
+            if (correctValue == null)
+                correctValue = oldValue;
+            isCorrection |= !correctValue.equals(oldValue);
+            correctedGroups.computeIfAbsent(targetId, id -> new ArrayList<>());
+            correctedGroups.get(targetId).add(new CorrectedGroup(groupName, correctValue));
+        }
+
+        ArrayList<MatchedGroupEdge> newGroupEdges;
+        if (!isCorrection)
+            newGroupEdges = parsedRead.getMatchedGroupEdges();
+        else {
+            newGroupEdges = new ArrayList<>();
+            for (byte targetId : parsedRead.getGroups().stream().map(MatchedItem::getTargetId)
+                    .collect(Collectors.toCollection(LinkedHashSet::new))) {
+                ArrayList<CorrectedGroup> currentCorrectedGroups = correctedGroups.get(targetId);
+                if (currentCorrectedGroups == null)
+                    parsedRead.getMatchedGroupEdges().stream()
+                            .filter(mge -> mge.getTargetId() == targetId).forEach(newGroupEdges::add);
+                else {
+                    Map<String, CorrectedGroup> currentCorrectedGroupsMap = currentCorrectedGroups.stream()
+                            .collect(Collectors.toMap(cg -> cg.groupName, cg -> cg));
+                    for (MatchedGroupEdge matchedGroupEdge : parsedRead.getMatchedGroupEdges().stream()
+                            .filter(mge -> mge.getTargetId() == targetId).collect(Collectors.toList())) {
+                        String currentGroupName = matchedGroupEdge.getGroupEdge().getGroupName();
+                        if (!keyGroups.contains(currentGroupName))
+                            newGroupEdges.add(matchedGroupEdge);
+                        else {
+                            CorrectedGroup currentCorrectedGroup = currentCorrectedGroupsMap.get(currentGroupName);
+                            newGroupEdges.add(new MatchedGroupEdge(matchedGroupEdge.getTarget(),
+                                    matchedGroupEdge.getTargetId(), matchedGroupEdge.getGroupEdge(),
+                                    new NSequenceWithQuality(currentCorrectedGroup.correctedValue)));
+                        }
+                    }
+                }
+            }
+            corrected.getAndIncrement();
+        }
+
+        Match newMatch = new Match(numberOfReads, parsedRead.getBestMatchScore(), newGroupEdges);
+        if (newMatch.getGroups().stream().map(MatchedGroup::getGroupName)
+                .filter(defaultGroups::contains).count() != numberOfReads)
+            throw new IllegalStateException("Missing default groups in new Match: expected " + defaultGroups
+                    + ", got " + newMatch.getGroups().stream().map(MatchedGroup::getGroupName)
+                    .filter(defaultGroups::contains).collect(Collectors.toList()));
+        return new ParsedRead(parsedRead.getOriginalRead(), parsedRead.isReverseMatch(), newMatch, 0);
+    }
+
+    private static class CorrectedGroup {
+        final String groupName;
+        final NucleotideSequence correctedValue;
+
+        CorrectedGroup(String groupName, NucleotideSequence correctedValue) {
+            this.groupName = groupName;
+            this.correctedValue = correctedValue;
+        }
     }
 
     private static class SequenceCounter implements Comparable<SequenceCounter> {
@@ -231,78 +286,6 @@ public final class CorrectBarcodesIO {
         @Override
         public int compare(SequenceCounter c1, SequenceCounter c2) {
             return Long.compare(c1.count, c2.count);
-        }
-    }
-
-    private class CorrectBarcodesProcessor implements Processor<ParsedRead, ParsedRead> {
-        @Override
-        public ParsedRead process(ParsedRead parsedRead) {
-            Map<String, MatchedGroup> matchedGroups = parsedRead.getGroups().stream()
-                    .filter(group -> keyGroups.contains(group.getGroupName()))
-                    .collect(Collectors.toMap(MatchedGroup::getGroupName, group -> group));
-            HashMap<Byte, ArrayList<CorrectedGroup>> correctedGroups = new HashMap<>();
-            boolean isCorrection = false;
-            for (Map.Entry<String, MatchedGroup> entry : matchedGroups.entrySet()) {
-                String groupName = entry.getKey();
-                MatchedGroup matchedGroup = entry.getValue();
-                byte targetId = matchedGroup.getTargetId();
-                NucleotideSequence oldValue = matchedGroup.getValue().getSequence();
-                NucleotideSequence correctValue = sequenceCorrectionMaps.get(groupName).get(oldValue);
-                if (correctValue == null)
-                    correctValue = oldValue;
-                isCorrection |= !correctValue.equals(oldValue);
-                correctedGroups.computeIfAbsent(targetId, id -> new ArrayList<>());
-                correctedGroups.get(targetId).add(new CorrectedGroup(groupName, correctValue));
-            }
-
-            ArrayList<MatchedGroupEdge> newGroupEdges;
-            if (!isCorrection)
-                newGroupEdges = parsedRead.getMatchedGroupEdges();
-            else {
-                newGroupEdges = new ArrayList<>();
-                for (byte targetId : parsedRead.getGroups().stream().map(MatchedItem::getTargetId)
-                        .collect(Collectors.toCollection(LinkedHashSet::new))) {
-                    ArrayList<CorrectedGroup> currentCorrectedGroups = correctedGroups.get(targetId);
-                    if (currentCorrectedGroups == null)
-                        parsedRead.getMatchedGroupEdges().stream()
-                                .filter(mge -> mge.getTargetId() == targetId).forEach(newGroupEdges::add);
-                    else {
-                        Map<String, CorrectedGroup> currentCorrectedGroupsMap = currentCorrectedGroups.stream()
-                                .collect(Collectors.toMap(cg -> cg.groupName, cg -> cg));
-                        for (MatchedGroupEdge matchedGroupEdge : parsedRead.getMatchedGroupEdges().stream()
-                                .filter(mge -> mge.getTargetId() == targetId).collect(Collectors.toList())) {
-                            String currentGroupName = matchedGroupEdge.getGroupEdge().getGroupName();
-                            if (!keyGroups.contains(currentGroupName))
-                                newGroupEdges.add(matchedGroupEdge);
-                            else {
-                                CorrectedGroup currentCorrectedGroup = currentCorrectedGroupsMap.get(currentGroupName);
-                                newGroupEdges.add(new MatchedGroupEdge(matchedGroupEdge.getTarget(),
-                                        matchedGroupEdge.getTargetId(), matchedGroupEdge.getGroupEdge(),
-                                        new NSequenceWithQuality(currentCorrectedGroup.correctedValue)));
-                            }
-                        }
-                    }
-                }
-                corrected.getAndIncrement();
-            }
-
-            Match newMatch = new Match(numberOfReads, parsedRead.getBestMatchScore(), newGroupEdges);
-            if (newMatch.getGroups().stream().map(MatchedGroup::getGroupName)
-                    .filter(defaultGroups::contains).count() != numberOfReads)
-                throw new IllegalStateException("Missing default groups in new Match: expected " + defaultGroups
-                        + ", got " + newMatch.getGroups().stream().map(MatchedGroup::getGroupName)
-                        .filter(defaultGroups::contains).collect(Collectors.toList()));
-            return new ParsedRead(parsedRead.getOriginalRead(), parsedRead.isReverseMatch(), newMatch, 0);
-        }
-
-        private class CorrectedGroup {
-            final String groupName;
-            final NucleotideSequence correctedValue;
-
-            CorrectedGroup(String groupName, NucleotideSequence correctedValue) {
-                this.groupName = groupName;
-                this.correctedValue = correctedValue;
-            }
         }
     }
 }

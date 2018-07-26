@@ -28,8 +28,8 @@ public class CorrectActionTest {
             createRandomMifFile(startFile);
             exec("extract --input-format mif --input " + startFile + " --output " + inputFile
                     + " --pattern \"(G1:annnt)(G2:NN)\" --bitap-max-errors 0");
-            exec("correct --threads " + (rg.nextInt(10) + 1) + " --max-mismatches " + rg.nextInt(4)
-                    + " --max-indels " + rg.nextInt(4) + " --max-total-errors " + rg.nextInt(5)
+            exec("correct  --max-mismatches " + rg.nextInt(4) + " --max-indels " + rg.nextInt(4)
+                    + " --max-total-errors " + rg.nextInt(5)
                     + " --cluster-threshold " + (rg.nextFloat() * 0.98 + 0.01)
                     + " --input " + inputFile + " --output " + outputFile + " --groups G1 G2");
             assertFileNotEquals(inputFile, outputFile);
@@ -49,7 +49,7 @@ public class CorrectActionTest {
             String currentInput = (i == 0) ? inputFile : TEMP_DIR + "correct" + i + ".mif";
             String currentOutput = TEMP_DIR + "correct" + (i + 1) + ".mif";
             exec("correct --groups G1 G2 G3 G4 --input " + currentInput + " --output " + currentOutput
-                    + " --threads 1 --cluster-threshold 0.4 --single-substitution-probability 0.002"
+                    + " --cluster-threshold 0.4 --single-substitution-probability 0.002"
                     + " --single-indel-probability 0.001");
             if (i < 3)
                 assertFileNotEquals(currentInput, currentOutput);

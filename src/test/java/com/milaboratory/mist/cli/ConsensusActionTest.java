@@ -40,9 +40,9 @@ public class ConsensusActionTest {
             int gapScore = -rg.nextInt(10) - 1;
             exec("extract --input-format mif --input " + startFile + " --output " + inputFile
                     + " --pattern \"(G1:annnt)(G2:NN)\" --bitap-max-errors 0");
-            exec("correct --threads " + (rg.nextInt(10) + 1) + " --max-mismatches " + rg.nextInt(4)
-                    + " --max-indels " + rg.nextInt(4) + " --max-total-errors " + rg.nextInt(5)
-                    + " --input " + inputFile + " --output " + correctedFile + " --groups " + consensusGroups);
+            exec("correct --max-mismatches " + rg.nextInt(4) + " --max-indels " + rg.nextInt(4)
+                    + " --max-total-errors " + rg.nextInt(5) + " --input " + inputFile
+                    + " --output " + correctedFile + " --groups " + consensusGroups);
             exec("sort --input " + correctedFile + " --output " + sortedFile + " --groups " + consensusGroups);
             exec("consensus --input " + sortedFile + " --output " + outputFile1 + " --groups " + consensusGroups
                     + " --threads " + (rg.nextInt(10) + 1) + " --score-threshold " + (rg.nextInt(2000) - 1000)

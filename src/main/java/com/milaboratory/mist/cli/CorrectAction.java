@@ -18,7 +18,7 @@ public final class CorrectAction implements Action {
         CorrectBarcodesIO correctBarcodesIO = new CorrectBarcodesIO(params.inputFileName, params.outputFileName,
                 params.mismatches, params.indels, params.totalErrors, params.threshold, params.groupNames,
                 params.maxClusterDepth, params.singleSubstitutionProbability, params.singleIndelProbability,
-                params.inputReadsLimit, params.suppressWarnings, params.threads);
+                params.inputReadsLimit, params.suppressWarnings);
         correctBarcodesIO.go();
     }
 
@@ -86,9 +86,5 @@ public final class CorrectAction implements Action {
         @Parameter(description = "Don't display any warnings.",
                 names = {"--suppress-warnings"}, order = 12)
         boolean suppressWarnings = false;
-
-        @Parameter(description = "Number of threads for correcting barcodes.",
-                names = {"--threads"}, order = 13)
-        int threads = DEFAULT_THREADS;
     }
 }
