@@ -191,7 +191,7 @@ public final class StatPositionsIO {
             line.append(readId).append(' ');
             line.append(position).append(' ');
             line.append(count).append(' ');
-            float percent = (totalReads == 0) ? 0 : (float)count / totalReads / groupList.size() * 100;
+            float percent = (totalReads == 0) ? 0 : (float)count / totalReads * 100;
             line.append(floatFormat.format(percent)).append('%');
             if (outputWithSeq)
                 line.append(' ').append(seq);
