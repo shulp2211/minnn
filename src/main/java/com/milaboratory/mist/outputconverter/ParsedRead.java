@@ -20,7 +20,8 @@ public final class ParsedRead {
     private final SequenceRead originalRead;
     private final boolean reverseMatch;
     private final Match bestMatch;
-    // number of reads used to calculate this consensus; used only for consensuses, and must be 0 for normal reads
+    /* number of reads used to calculate this consensus: used for consensuses and for reads that contain consensuses
+       as groups (--consensuses-to-separate-groups argument in consensus); in other cases it must be 0 */
     private final int consensusReads;
     private Map<String, MatchedGroup> matchedGroups = null;
     private HashMap<String, ArrayList<GroupEdgePosition>> innerGroupEdgesCache = null;

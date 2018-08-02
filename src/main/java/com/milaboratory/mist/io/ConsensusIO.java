@@ -397,7 +397,8 @@ public final class ConsensusIO {
                         originalRead = new MultiRead(reads);
 
                     Match bestMatch = new Match(numberOfTargets, 0, matchedGroupEdges);
-                    generatedReads.add(new ParsedRead(originalRead, false, bestMatch, 0));
+                    generatedReads.add(new ParsedRead(originalRead, false, bestMatch,
+                            consensusReadsNum));
                 }
                 return generatedReads;
             }
