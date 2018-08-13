@@ -53,16 +53,16 @@ final class GroupUtils {
     }
 
     // TODO: implementation
-    static String extractMistComments(String comments) {
+    static String extractMinnnComments(String comments) {
         return comments;
     }
 
-    static boolean parseReverseMatchFlag(String mistComments) {
-        return mistComments.contains("||~");
+    static boolean parseReverseMatchFlag(String minnnComments) {
+        return minnnComments.contains("||~");
     }
 
     // TODO: implementation
-    static ArrayList<MatchedGroupEdge> parseGroupEdgesFromComments(List<String> mistComments) {
+    static ArrayList<MatchedGroupEdge> parseGroupEdgesFromComments(List<String> minnnComments) {
         ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
         return matchedGroupEdges;
     }

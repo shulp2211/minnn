@@ -53,12 +53,12 @@ public final class Main {
 
         jCommanderBasedMain.setVersionInfoCallback(() -> {
             VersionInfo milibVersionInfo = VersionInfo.getVersionInfoForArtifact("milib");
-            VersionInfo mistVersionInfo = VersionInfo.getVersionInfoForArtifact("minnn");
+            VersionInfo minnnVersionInfo = VersionInfo.getVersionInfoForArtifact("minnn");
 
             System.out.println(
-                    "MiNNN v" + mistVersionInfo.getVersion() +
-                    " (built " + mistVersionInfo.getTimestamp() +
-                    "; rev=" + mistVersionInfo.getRevision() +
+                    "MiNNN v" + minnnVersionInfo.getVersion() +
+                    " (built " + minnnVersionInfo.getTimestamp() +
+                    "; rev=" + minnnVersionInfo.getRevision() +
                     "; branch=" + milibVersionInfo.getBranch() +
                     "; host=" + milibVersionInfo.getHost() +
                     ")\n" +

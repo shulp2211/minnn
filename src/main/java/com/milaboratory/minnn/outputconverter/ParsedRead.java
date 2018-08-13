@@ -257,11 +257,12 @@ public final class ParsedRead {
     }
 
     public static ParsedRead fromSequenceRead(SequenceRead sequenceRead) {
-        ArrayList<String> mistComments = new ArrayList<>();
+        ArrayList<String> minnnComments = new ArrayList<>();
         sequenceRead.iterator()
-                .forEachRemaining(singleRead -> mistComments.add(extractMistComments(singleRead.getDescription())));
-        Match targetMatch = new Match(sequenceRead.numberOfReads(), 0, parseGroupEdgesFromComments(mistComments));
-        return new ParsedRead(sequenceRead, parseReverseMatchFlag(mistComments.get(0)), targetMatch, 0);
+                .forEachRemaining(singleRead -> minnnComments.add(extractMinnnComments(singleRead.getDescription())));
+        Match targetMatch = new Match(sequenceRead.numberOfReads(), 0,
+                parseGroupEdgesFromComments(minnnComments));
+        return new ParsedRead(sequenceRead, parseReverseMatchFlag(minnnComments.get(0)), targetMatch, 0);
     }
 
     private String generateReadDescription(boolean copyOriginalHeaders, String outputGroupName) {

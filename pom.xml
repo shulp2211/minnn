@@ -101,7 +101,7 @@
     </dependencies>
 
     <scm>
-        <connection>scm:git:https://github.com/milaboratory/mist.git</connection>
+        <connection>scm:git:https://github.com/milaboratory/minnn.git</connection>
     </scm>
 
     <build>
