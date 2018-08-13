@@ -17,7 +17,8 @@ define build_minnn
 	cd $(BUILDDIR)/../../milib && \
 	mvn clean install -DskipTests=true && \
 	cd .. && \
-	mvn clean package shade:shade -Dmaven.test.skip=true
+	mvn clean package shade:shade -Dmaven.test.skip=true && \
+	true
 endef
 
 define generate_command_docs
