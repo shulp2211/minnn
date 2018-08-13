@@ -50,7 +50,7 @@ import java.util.stream.StreamSupport;
 
 import static com.milaboratory.core.io.sequence.SequenceReadUtil.setReadId;
 import static com.milaboratory.minnn.cli.CliUtils.floatFormat;
-import static com.milaboratory.minnn.io.MistDataFormat.*;
+import static com.milaboratory.minnn.io.MinnnDataFormat.*;
 import static com.milaboratory.minnn.util.SystemUtils.exitWithError;
 import static com.milaboratory.util.TimeUtils.nanoTimeToString;
 
@@ -62,13 +62,13 @@ public final class ReadProcessor {
     private final boolean fairSorting;
     private final long inputReadsLimit;
     private final int threads;
-    private final MistDataFormat inputFormat;
+    private final MinnnDataFormat inputFormat;
     private final DescriptionGroups descriptionGroups;
     private int numberOfReads;
 
     public ReadProcessor(List<String> inputFileNames, String outputFileName, Pattern pattern,
                          boolean orientedReads, boolean fairSorting, long inputReadsLimit, int threads,
-                         MistDataFormat inputFormat, DescriptionGroups descriptionGroups) {
+                         MinnnDataFormat inputFormat, DescriptionGroups descriptionGroups) {
         if ((inputFormat == MIF) && (inputFileNames.size() > 1))
             throw exitWithError("Mif data format uses single file; specified " + inputFileNames.size()
                     + " input files!");

@@ -33,7 +33,7 @@ import com.milaboratory.cli.Action;
 import com.milaboratory.cli.ActionHelper;
 import com.milaboratory.cli.ActionParameters;
 import com.milaboratory.core.alignment.PatternAndTargetAlignmentScoring;
-import com.milaboratory.minnn.io.MistDataFormat;
+import com.milaboratory.minnn.io.MinnnDataFormat;
 import com.milaboratory.minnn.io.ReadProcessor;
 import com.milaboratory.minnn.parser.Parser;
 import com.milaboratory.minnn.parser.ParserException;
@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 
 import static com.milaboratory.minnn.cli.CliUtils.*;
 import static com.milaboratory.minnn.cli.Defaults.*;
-import static com.milaboratory.minnn.io.MistDataFormatNames.parameterNames;
+import static com.milaboratory.minnn.io.MinnnDataFormatNames.parameterNames;
 import static com.milaboratory.minnn.parser.ParserFormat.*;
 import static com.milaboratory.minnn.util.SystemUtils.exitWithError;
 
@@ -77,7 +77,7 @@ public final class ExtractAction implements Action {
         patternGroups.retainAll(descriptionGroups.getGroupNames());
         if (patternGroups.size() > 0)
             throw exitWithError("Error: groups " + patternGroups + " are both in pattern and in description groups!");
-        MistDataFormat inputFormat = parameterNames.get(params.inputFormat);
+        MinnnDataFormat inputFormat = parameterNames.get(params.inputFormat);
         ReadProcessor readProcessor = new ReadProcessor(params.inputFileNames, params.outputFileName, pattern,
                 params.oriented, params.fairSorting, params.inputReadsLimit, params.threads, inputFormat,
                 descriptionGroups);

@@ -28,14 +28,7 @@
  */
 package com.milaboratory.minnn.io;
 
-import java.util.HashMap;
-
-import static com.milaboratory.minnn.io.MistDataFormat.*;
-
-public final class MistDataFormatNames {
-    public static final HashMap<String, MistDataFormat> parameterNames = new HashMap<>();
-    static {
-        parameterNames.put("fastq", FASTQ);
-        parameterNames.put("mif", MIF);
-    }
+public enum MinnnDataFormat {
+    FASTQ,
+    MIF
 }
