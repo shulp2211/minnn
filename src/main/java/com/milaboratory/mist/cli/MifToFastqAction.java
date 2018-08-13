@@ -37,6 +37,7 @@ import com.milaboratory.mist.io.MifToFastqIO;
 import java.util.*;
 
 public final class MifToFastqAction implements Action {
+    public static final String commandName = "mif2fastq";
     private final MifToFastqActionParameters params = new MifToFastqActionParameters();
 
     @Override
@@ -48,7 +49,7 @@ public final class MifToFastqAction implements Action {
 
     @Override
     public String command() {
-        return "mif2fastq";
+        return commandName;
     }
 
     @Override

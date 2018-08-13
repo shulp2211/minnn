@@ -52,6 +52,7 @@ import static com.milaboratory.mist.parser.ParserFormat.*;
 import static com.milaboratory.mist.util.SystemUtils.exitWithError;
 
 public final class ExtractAction implements Action {
+    public static final String commandName = "extract";
     private final ExtractActionParameters params = new ExtractActionParameters();
 
     @Override
@@ -85,7 +86,7 @@ public final class ExtractAction implements Action {
 
     @Override
     public String command() {
-        return "extract";
+        return commandName;
     }
 
     @Override
@@ -99,7 +100,7 @@ public final class ExtractAction implements Action {
         @Parameter(description = "--pattern <pattern_query>", order = 0)
         private String description;
 
-        @Parameter(description = "Query, pattern specified in MiST format.",
+        @Parameter(description = "Query, pattern specified in MiNNN format.",
                 names = {"--pattern"}, order = 1, required = true)
         String query = null;
 

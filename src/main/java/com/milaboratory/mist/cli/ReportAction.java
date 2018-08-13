@@ -47,7 +47,8 @@ import static com.milaboratory.mist.parser.ParserUtils.parseMultiTargetString;
 import static com.milaboratory.mist.util.SystemUtils.exitWithError;
 
 public final class ReportAction implements Action {
-    private final ParseActionParameters params = new ParseActionParameters();
+    public static final String commandName = "report";
+    private final ReportActionParameters params = new ReportActionParameters();
 
     @Override
     public void go(ActionHelper helper) {
@@ -110,7 +111,7 @@ public final class ReportAction implements Action {
 
     @Override
     public String command() {
-        return "report";
+        return commandName;
     }
 
     @Override
@@ -120,7 +121,7 @@ public final class ReportAction implements Action {
 
     @Parameters(commandDescription =
             "Find match and groups in query and display report on the screen.")
-    private static final class ParseActionParameters extends ActionParameters {
+    private static final class ReportActionParameters extends ActionParameters {
         @Parameter(description = "--pattern <pattern_query> --target <sequence>", order = 0)
         private String description;
 

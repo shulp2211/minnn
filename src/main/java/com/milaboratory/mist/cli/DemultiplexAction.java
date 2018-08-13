@@ -44,6 +44,7 @@ import static com.milaboratory.mist.cli.Defaults.*;
 import static com.milaboratory.mist.util.SystemUtils.*;
 
 public final class DemultiplexAction implements Action {
+    public static final String commandName = "demultiplex";
     private final DemultiplexActionParameters params = new DemultiplexActionParameters();
 
     @Override
@@ -59,7 +60,7 @@ public final class DemultiplexAction implements Action {
 
     @Override
     public String command() {
-        return "demultiplex";
+        return commandName;
     }
 
     @Override
@@ -69,9 +70,9 @@ public final class DemultiplexAction implements Action {
 
     @Parameters(commandDescription = "Multi-filtering (one to many) for nucleotide sequences.")
     private static final class DemultiplexActionParameters extends ActionParameters {
-        @Parameter(description = "filter_options\n        Filter options:      Barcodes and sample configuration " +
+        @Parameter(description = "filter_options\n        Filter Options:      Barcodes and sample configuration " +
                 "files that specify sequences for demultiplexing. At least 1 barcode or 1 sample file must be " +
-                "specified. Syntax example: mist demultiplex --by-barcode UID --by-sample samples.txt input.mif",
+                "specified. Syntax example: minnn demultiplex --by-barcode UID --by-sample samples.txt input.mif",
                 order = 0, required = true)
         List<String> argumentsQuery = new ArrayList<>();
 

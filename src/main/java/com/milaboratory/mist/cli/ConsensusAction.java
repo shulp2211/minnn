@@ -39,6 +39,7 @@ import java.util.*;
 import static com.milaboratory.mist.cli.Defaults.*;
 
 public final class ConsensusAction implements Action {
+    public static final String commandName = "consensus";
     private final ConsensusActionParameters params = new ConsensusActionParameters();
 
     @Override
@@ -54,7 +55,7 @@ public final class ConsensusAction implements Action {
 
     @Override
     public String command() {
-        return "consensus";
+        return commandName;
     }
 
     @Override
