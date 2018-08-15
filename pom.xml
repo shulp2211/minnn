@@ -32,19 +32,13 @@
 
     <groupId>com.milaboratory</groupId>
     <artifactId>minnn</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>minnn</name>
 
-    <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>7</version>
-    </parent>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <milib.version>[1.8.4,)</milib.version>
+        <milib.version>1.9-SNAPSHOT</milib.version>
     </properties>
 
     <dependencies>
