@@ -1,4 +1,4 @@
 [submodule "milib"]
 	path = milib
-	url = git@github.com:milaboratory/milib.git
+	url = https://github.com/milaboratory/milib.git
 	branch = minnn
