@@ -50,6 +50,7 @@ public class ProfilingTest {
         resetTimeCounter();
     }
 
+    @Ignore
     @Test
     public void nucleotideSequenceProfilingTest() throws Exception {
         NucleotideAlphabet alphabetOld = NucleotideSequence.ALPHABET;
@@ -84,6 +85,7 @@ public class ProfilingTest {
         assertTrue(timeCounter.get("ToStringOld") * 10 > timeCounter.get("NewToOld"));
     }
 
+    @Ignore
     @Test
     public void alignerProfilingTest() throws Exception {
         final LinearGapAlignmentScoring<NucleotideSequence> scoringOld = new LinearGapAlignmentScoring<>(
