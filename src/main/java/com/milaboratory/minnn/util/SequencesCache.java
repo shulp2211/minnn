@@ -37,7 +37,7 @@ import gnu.trove.map.hash.TCharObjectHashMap;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.milaboratory.core.sequence.SequenceQuality.MAX_QUALITY_VALUE;
+import static com.milaboratory.minnn.cli.Defaults.DEFAULT_MAX_QUALITY;
 
 public final class SequencesCache {
     public static final HashMap<NucleotideSequence, NucleotideSequence> sequencesCache = new HashMap<>();
@@ -61,7 +61,7 @@ public final class SequencesCache {
             wildcardCodeToSequence.put(wildcard.getCode(), sequence);
             charToWildcard.put(wildcard.getSymbol(), wildcard);
         });
-        for (byte quality = 0; quality <= MAX_QUALITY_VALUE; quality++)
+        for (byte quality = 0; quality <= DEFAULT_MAX_QUALITY; quality++)
             qualityCache.put(quality, new SequenceQuality(new byte[] { quality }));
     }
 }

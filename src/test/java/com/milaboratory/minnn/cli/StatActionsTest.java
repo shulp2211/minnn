@@ -33,8 +33,8 @@ import org.junit.*;
 import java.io.*;
 import java.util.*;
 
-import static com.milaboratory.core.sequence.SequenceQuality.*;
 import static com.milaboratory.minnn.cli.CommandLineTestUtils.*;
+import static com.milaboratory.minnn.cli.Defaults.*;
 import static com.milaboratory.minnn.cli.TestResources.*;
 import static com.milaboratory.minnn.util.CommonTestUtils.*;
 import static com.milaboratory.minnn.util.SystemUtils.*;
@@ -62,8 +62,8 @@ public class StatActionsTest {
             exec("extract --input-format mif --input " + startFile + " --output " + inputFile
                     + " --pattern \"(G1:accnt) & (G2:nctn) & (G3:atta)\" --bitap-max-errors 2 --score-threshold -80");
 
-            int qualityFilter1 = rg.nextInt(MAX_QUALITY_VALUE);
-            int qualityFilter2 = rg.nextInt(MAX_QUALITY_VALUE);
+            int qualityFilter1 = rg.nextInt(DEFAULT_MAX_QUALITY);
+            int qualityFilter2 = rg.nextInt(DEFAULT_MAX_QUALITY);
             for (String filter : new String[] {
                     " --min-quality-filter ", " --avg-quality-filter ", " --read-quality-filter " }) {
                 exec("stat-groups --groups G1 G2 G3 --input " + inputFile + " --output " + outputG1

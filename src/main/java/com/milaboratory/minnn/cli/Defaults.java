@@ -28,8 +28,7 @@
  */
 package com.milaboratory.minnn.cli;
 
-import static com.milaboratory.core.sequence.SequenceQuality.BAD_QUALITY_VALUE;
-import static com.milaboratory.core.sequence.SequenceQuality.GOOD_QUALITY_VALUE;
+import static com.milaboratory.core.sequence.SequenceQuality.*;
 
 public final class Defaults {
     public final static long DEFAULT_SCORE_THRESHOLD = -30;
@@ -39,6 +38,7 @@ public final class Defaults {
     public final static int DEFAULT_MISMATCH_SCORE = -5;
     public final static int DEFAULT_UPPERCASE_MISMATCH_SCORE = -1000000;
     public final static int DEFAULT_GAP_SCORE = -11;
+    public final static byte DEFAULT_MAX_QUALITY = MAX_QUALITY_VALUE;
     public final static byte DEFAULT_GOOD_QUALITY = GOOD_QUALITY_VALUE;
     public final static byte DEFAULT_BAD_QUALITY = BAD_QUALITY_VALUE;
     public final static int DEFAULT_MAX_QUALITY_PENALTY = -4;

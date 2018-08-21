@@ -51,7 +51,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.milaboratory.core.alignment.BandedLinearAligner.alignLocalGlobal;
-import static com.milaboratory.core.sequence.SequenceQuality.*;
 import static com.milaboratory.core.sequence.quality.QualityTrimmer.trim;
 import static com.milaboratory.minnn.cli.CliUtils.floatFormat;
 import static com.milaboratory.minnn.cli.Defaults.*;
@@ -608,7 +607,7 @@ public final class ConsensusIO {
         private byte calculateMinQuality(NSequenceWithQuality seq) {
             if ((seq == null) || (seq == NSequenceWithQuality.EMPTY))
                 return 0;
-            byte minQuality = DEFAULT_GOOD_QUALITY;
+            byte minQuality = DEFAULT_MAX_QUALITY;
             for (byte quality : seq.getQuality().asArray())
                 if (quality < minQuality)
                     minQuality = quality;
@@ -944,8 +943,8 @@ public final class ConsensusIO {
                 }
             }
 
-            return new NSequenceWithQuality(bestMajorBase, qualityCache.get((byte)Math.min(GOOD_QUALITY_VALUE,
-                    bestQuality)));
+            return new NSequenceWithQuality(Objects.requireNonNull(bestMajorBase),
+                    qualityCache.get((byte)Math.min(DEFAULT_MAX_QUALITY, bestQuality)));
         }
 
         /**
