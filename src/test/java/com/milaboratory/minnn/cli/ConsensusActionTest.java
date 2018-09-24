@@ -148,4 +148,23 @@ public class ConsensusActionTest {
         for (String fileName : new String[] { inputFile, correctedFile, sortedFile, consensusFile })
             assertTrue(new File(fileName).delete());
     }
+
+    @Test
+    public void toSeparateGroupsTest() throws Exception {
+        String inputFile = getExampleMif("twosided");
+        String correctedFile = TEMP_DIR + "corrected.mif";
+        String sortedFile = TEMP_DIR + "sorted.mif";
+        String consensusFile = TEMP_DIR + "consensus.mif";
+        String outFastqR1 = TEMP_DIR + "consensus_R1.fastq";
+        String outFastqR2 = TEMP_DIR + "consensus_R2.fastq";
+        exec("correct --input " + inputFile + " --output " + correctedFile + " --groups G3 G4 G1 G2");
+        exec("sort --input " + correctedFile + " --output " + sortedFile + " --groups G3 G4 G1 G2 R1 R2");
+        exec("consensus --input " + sortedFile + " --output " + consensusFile + " --groups G3 G4 G1"
+                + " --consensuses-to-separate-groups");
+        exec("mif2fastq --input " + consensusFile + " --group-R1 " + outFastqR1 + " --group-R2 " + outFastqR2);
+        assertFileNotEquals(outFastqR1, outFastqR2);
+        for (String fileName : new String[] {
+                inputFile, correctedFile, sortedFile, consensusFile, outFastqR1, outFastqR2 })
+            assertTrue(new File(fileName).delete());
+    }
 }

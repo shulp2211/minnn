@@ -318,7 +318,7 @@ public final class ConsensusIO {
                     int targetIndex = getTargetIndex(group.getTargetId(), parsedRead.isReverseMatch());
                     ArrayList<Barcode> currentTargetList = barcodes[targetIndex].targetBarcodes;
                     currentTargetList.add(new Barcode(group.getGroupName(), group.getValue()));
-                } else if (toSeparateGroups)
+                } else if (toSeparateGroups && !defaultGroups.contains(group.getGroupName()))
                     otherGroups.put(group.getGroupName(), group.getValue());
             });
         }
