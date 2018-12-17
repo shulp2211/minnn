@@ -28,29 +28,26 @@
  */
 package com.milaboratory.minnn.cli;
 
-import com.milaboratory.util.VersionInfo;
-import org.junit.*;
+import java.nio.charset.StandardCharsets;
 
-import static com.milaboratory.minnn.cli.CommandLineTestUtils.*;
-import static com.milaboratory.minnn.util.CommonTestUtils.*;
-import static com.milaboratory.minnn.util.SystemUtils.*;
-import static org.junit.Assert.*;
+public final class Magic {
+    private Magic() {}
 
-public class CommonArgumentsTest {
-    @BeforeClass
-    public static void init() {
-        exitOnError = false;
+    public static final int BEGIN_MAGIC_LENGTH = 13;
+    public static final int BEGIN_MAGIC_LENGTH_SHORT = 9;
+    public static final String BEGIN_MAGIC_MIF = "MiNNN.MIF";
+    private static final String MAGIC_V01 = BEGIN_MAGIC_MIF + ".V01";
+    public static final String BEGIN_MAGIC = MAGIC_V01;
+    public static final String END_MAGIC = "#MiNNN.File.End#";
+    private static final byte[] BEGIN_MAGIC_BYTES = BEGIN_MAGIC.getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] END_MAGIC_BYTES = END_MAGIC.getBytes(StandardCharsets.US_ASCII);
+    public static final int END_MAGIC_LENGTH = END_MAGIC_BYTES.length;
+
+    public static byte[] getBeginMagicBytes() {
+        return BEGIN_MAGIC_BYTES.clone();
     }
 
-    @Test
-    public void simpleTest() throws Exception {
-        assertNotNull(VersionInfo.getVersionInfoForArtifact("milib"));
-        assertNotNull(VersionInfo.getVersionInfoForArtifact("minnn"));
-        exec(" ");
-        exec("help");
-        assertOutputContains(true, "-h / --help is not supported", () -> callableExec("-h"));
-        assertOutputContains(true, "-h / --help is not supported", () -> callableExec("--help"));
-        assertOutputContains(false, "MiNNN", () -> callableExec("-v"));
-        assertOutputContains(false, "MiNNN", () -> callableExec("--version"));
+    public static byte[] getEndMagicBytes() {
+        return END_MAGIC_BYTES.clone();
     }
 }
