@@ -119,7 +119,8 @@ public final class SorterIO {
             File inputFile = new File(inputFileName);
             CompressionType ct = CompressionType.detectCompressionType(inputFile);
             int averageBytesPerParsedRead = (ct == CompressionType.None) ? 50 : 15;
-            return (int)Math.min(Math.max(16384, inputFile.length() / averageBytesPerParsedRead / 8), 65536);
+            return (int)Math.min(Math.max(16384, inputFile.length() / averageBytesPerParsedRead / 8),
+                    DEFAULT_SORT_CHUNK_SIZE);
         }
     }
 
