@@ -154,7 +154,7 @@ public final class ReadProcessor {
                         break;
                     default:
                         numberOfTargets = inputFileNames.size();
-                        SingleFastqReader readers[] = new SingleFastqReader[inputFileNames.size()];
+                        SingleFastqReader[] readers = new SingleFastqReader[inputFileNames.size()];
                         for (int i = 0; i < inputFileNames.size(); i++)
                             readers[i] = new SingleFastqReader(inputFileNames.get(i));
                         reader = new IndexedSequenceReader<>(new MultiReader(readers), t -> t);
