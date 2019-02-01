@@ -200,6 +200,8 @@ public class ParserTest {
         testBadSample("A(1:TT)A & G(1:AC)A");
         testBadSample("[4:N]0");
         testSample("[-7:A]T", "AT", new Range(0, 2));
+        testSample("A ( 1: TTA  )", "GATTA", new Range(1, 5));
+        testSample("^(FULL:(BC:NN)(UMI:NN))NN(X1:(TS:N{*}))$", "ATTAGACA", new Range(0, 8));
     }
 
     @Test
@@ -239,6 +241,7 @@ public class ParserTest {
         testBadSample("[[A\\T]&&[G\\C]]$");
         testMultiSample("(G1:A) & (G2:T) \\ [(G3:gg) || (G3:cc)] + (G4:ga)",
                 "TA CCGA", true);
+        testMultiSample("^(FULL:(BC:NN)(UMI:NN))NN(X1:(TS:N{*}))$\\(X2:*)", "ATTA A", false);
     }
 
     @Test
