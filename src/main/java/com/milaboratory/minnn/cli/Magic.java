@@ -40,7 +40,7 @@ public final class Magic {
     private static final int MAGIC_VERSION = 2;
     private static final String[] MAGIC_VERSIONS = IntStream.rangeClosed(1, MAGIC_VERSION)
             .mapToObj(i -> BEGIN_MAGIC_MIF + ".V" + String.format("%02d", i)).toArray(String[]::new);
-    public static final String BEGIN_MAGIC = MAGIC_VERSIONS[MAGIC_VERSION];
+    public static final String BEGIN_MAGIC = MAGIC_VERSIONS[MAGIC_VERSION - 1];
     public static final String END_MAGIC = "#MiNNN.File.End#";
     private static final byte[] BEGIN_MAGIC_BYTES = BEGIN_MAGIC.getBytes(StandardCharsets.US_ASCII);
     private static final byte[] END_MAGIC_BYTES = END_MAGIC.getBytes(StandardCharsets.US_ASCII);
