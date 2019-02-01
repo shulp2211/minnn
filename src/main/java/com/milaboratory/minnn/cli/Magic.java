@@ -29,6 +29,7 @@
 package com.milaboratory.minnn.cli;
 
 import java.nio.charset.StandardCharsets;
+import java.util.stream.IntStream;
 
 public final class Magic {
     private Magic() {}
@@ -36,8 +37,10 @@ public final class Magic {
     public static final int BEGIN_MAGIC_LENGTH = 13;
     public static final int BEGIN_MAGIC_LENGTH_SHORT = 9;
     public static final String BEGIN_MAGIC_MIF = "MiNNN.MIF";
-    private static final String MAGIC_V01 = BEGIN_MAGIC_MIF + ".V01";
-    public static final String BEGIN_MAGIC = MAGIC_V01;
+    private static final int MAGIC_VERSION = 2;
+    private static final String[] MAGIC_VERSIONS = IntStream.rangeClosed(1, MAGIC_VERSION)
+            .mapToObj(i -> BEGIN_MAGIC_MIF + ".V" + String.format("%02d", i)).toArray(String[]::new);
+    public static final String BEGIN_MAGIC = MAGIC_VERSIONS[MAGIC_VERSION];
     public static final String END_MAGIC = "#MiNNN.File.End#";
     private static final byte[] BEGIN_MAGIC_BYTES = BEGIN_MAGIC.getBytes(StandardCharsets.US_ASCII);
     private static final byte[] END_MAGIC_BYTES = END_MAGIC.getBytes(StandardCharsets.US_ASCII);
