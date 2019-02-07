@@ -66,7 +66,7 @@ public class DemultiplexActionTest {
         for (int i = 0; i < 50; i++) {
             String filterOptions = randomFilterOptions[rg.nextInt(randomFilterOptions.length)];
             createRandomMifFile(startFile);
-            exec("extract -f --input-format mif --input " + startFile + " --output " + inputFile
+            exec("extract -f --input-format MIF --input " + startFile + " --output " + inputFile
                     + " --pattern \"(G1:tnncn)(G2:ncnc)\" --bitap-max-errors 0");
             exec("demultiplex -f " + filterOptions + " --output-buffer-size " + (rg.nextInt(1 << 17) + 100)
                     + " " + inputFile + " --demultiplex-log " + LOG_FILE);
@@ -92,7 +92,7 @@ public class DemultiplexActionTest {
         String sampleFile3 = EXAMPLES_PATH + "demultiplex_samples/sample3.txt";
         String sampleFileBad = EXAMPLES_PATH + "demultiplex_samples/bad_sample.txt";
 
-        exec("extract -f --input-format mif --input " + startFile + " --output " + inputFile
+        exec("extract -f --input-format MIF --input " + startFile + " --output " + inputFile
                 + " --pattern \"(G1:NNN)&(G2:AANA)\\(G3:ntt)&(G4:nnnn)\""
                 + " --threads 5 --mismatch-score -9 --gap-score -10 --single-overlap-penalty -10");
         Arrays.stream(getOutputFiles()).map(File::delete).forEach(Assert::assertTrue);
@@ -100,13 +100,13 @@ public class DemultiplexActionTest {
         exec("demultiplex -f " + inputFile + " --by-barcode G1 --by-sample " + sampleFile1
                 + " --by-barcode G4 --demultiplex-log " + LOG_FILE);
         File[] outputFiles = getOutputFiles();
-        assertEquals(4663, outputFiles.length);
+        assertEquals(4650, outputFiles.length);
         Arrays.stream(outputFiles).map(File::delete).forEach(Assert::assertTrue);
 
         exec("demultiplex -f " + inputFile + " --by-sample " + sampleFile2 + " --by-sample " + sampleFile3
                 + " --demultiplex-log " + LOG_FILE);
         outputFiles = getOutputFiles();
-        assertEquals(16, outputFiles.length);
+        assertEquals(17, outputFiles.length);
         Arrays.stream(outputFiles).map(File::delete).forEach(Assert::assertTrue);
 
         assertOutputContains(true, "Invalid sample", () -> callableExec("demultiplex -f " + inputFile

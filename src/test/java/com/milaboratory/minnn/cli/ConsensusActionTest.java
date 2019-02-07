@@ -28,10 +28,13 @@
  */
 package com.milaboratory.minnn.cli;
 
+import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.core.sequence.NucleotideSequence;
 import org.junit.*;
 
 import java.io.File;
-import java.util.Arrays;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.milaboratory.minnn.cli.CommandLineTestUtils.*;
@@ -68,7 +71,7 @@ public class ConsensusActionTest {
             int width = rg.nextInt(50) + 1;
             int mismatchScore = -rg.nextInt(10) - 1;
             int gapScore = -rg.nextInt(10) - 1;
-            exec("extract -f --input-format mif --input " + startFile + " --output " + inputFile
+            exec("extract -f --input-format MIF --input " + startFile + " --output " + inputFile
                     + " --pattern \"(G1:annnt)(G2:NN)\" --bitap-max-errors 0");
             exec("correct -f --max-mismatches " + rg.nextInt(4) + " --max-indels " + rg.nextInt(4)
                     + " --max-total-errors " + rg.nextInt(5) + " --input " + inputFile
@@ -76,6 +79,7 @@ public class ConsensusActionTest {
             exec("sort -f --input " + correctedFile + " --output " + sortedFile + " --groups "
                     + consensusGroups);
             exec("consensus -f --input " + sortedFile + " --output " + outputFile1
+                    + " --consensus-algorithm DOUBLE_MULTI_ALIGN"
                     + " --groups " + consensusGroups + " --threads " + (rg.nextInt(10) + 1)
                     + " --score-threshold " + (rg.nextInt(2000) - 1000) + " --width " + width
                     + " --max-consensuses-per-cluster " + (rg.nextInt(30) + 1)
@@ -122,13 +126,15 @@ public class ConsensusActionTest {
         exec("consensus -f --input " + sortedFile + " --output " + consensusFile + " --groups G3 G4 G1"
                 + " --threads 5 --score-threshold -1200 --width 30 --max-consensuses-per-cluster 5"
                 + " --skipped-fraction-to-repeat 0.75 --avg-quality-threshold 3 --good-quality-mismatch-penalty 0"
-                + " --not-used-reads-output " + notUsedReadsFile);
+                + " --not-used-reads-output " + notUsedReadsFile + " --consensus-algorithm DOUBLE_MULTI_ALIGN");
         exec("consensus -f --input " + consensusFile + " --output " + consensusFile2
                 + " --groups G3 G4 G1 --threads 3 --score-threshold -1200 --width 30 --reads-avg-quality-threshold 0"
-                + " --skipped-fraction-to-repeat 0.75 --avg-quality-threshold 0 --good-quality-mismatch-penalty 0");
+                + " --skipped-fraction-to-repeat 0.75 --avg-quality-threshold 0 --good-quality-mismatch-penalty 0"
+                + " --consensus-algorithm DOUBLE_MULTI_ALIGN");
         exec("consensus -f --input " + consensusFile2 + " --output " + consensusFile3
                 + " --groups G3 G4 G1 --threads 3 --score-threshold -1200 --width 30 --reads-avg-quality-threshold 0"
-                + " --skipped-fraction-to-repeat 0.75 --avg-quality-threshold 0 --good-quality-mismatch-penalty 0");
+                + " --skipped-fraction-to-repeat 0.75 --avg-quality-threshold 0 --good-quality-mismatch-penalty 0"
+                + " --consensus-algorithm DOUBLE_MULTI_ALIGN");
         assertMifEqualsAsFastq(consensusFile2, consensusFile3, true);
         for (String fileName : new String[] { inputFile, correctedFile, sortedFile, consensusFile, notUsedReadsFile,
                 consensusFile2, consensusFile3 })
@@ -139,7 +145,8 @@ public class ConsensusActionTest {
     public void qualityOverflowTest() throws Exception {
         String inputFile = getExampleMif("good-quality");
         String consensusFile = TEMP_DIR + "consensus-qual-test.mif";
-        exec("consensus -f --input " + inputFile + " --output " + consensusFile + " --groups G1");
+        exec("consensus -f --input " + inputFile + " --output " + consensusFile + " --groups G1"
+                + " --consensus-algorithm DOUBLE_MULTI_ALIGN");
         for (String fileName : new String[] { inputFile, consensusFile })
             assertTrue(new File(fileName).delete());
     }
@@ -152,7 +159,8 @@ public class ConsensusActionTest {
         String consensusFile = TEMP_DIR + "consensus.mif";
         exec("correct -f --input " + inputFile + " --output " + correctedFile + " --groups G1 G2 -n 10000");
         exec("sort -f --input " + correctedFile + " --output " + sortedFile + " --groups G1 G2");
-        exec("consensus -f --input " + sortedFile + " --output " + consensusFile + " --groups G1 G2 -n 1000");
+        exec("consensus -f --input " + sortedFile + " --output " + consensusFile + " --groups G1 G2 -n 1000"
+                + " --consensus-algorithm DOUBLE_MULTI_ALIGN");
         for (String fileName : new String[] { inputFile, correctedFile, sortedFile, consensusFile })
             assertTrue(new File(fileName).delete());
     }
@@ -168,12 +176,68 @@ public class ConsensusActionTest {
         exec("correct -f --input " + inputFile + " --output " + correctedFile + " --groups G3 G4 G1 G2");
         exec("sort -f --input " + correctedFile + " --output " + sortedFile + " --groups G3 G4 G1 G2 R1 R2");
         exec("consensus -f --input " + sortedFile + " --output " + consensusFile + " --groups G3 G4 G1"
-                + " --consensuses-to-separate-groups");
+                + " --consensuses-to-separate-groups --consensus-algorithm DOUBLE_MULTI_ALIGN");
         exec("mif2fastq -f --input " + consensusFile + " --group R1=" + outFastqR1
                 + " --group R2=" + outFastqR2);
         assertFileNotEquals(outFastqR1, outFastqR2);
         for (String fileName : new String[] {
                 inputFile, correctedFile, sortedFile, consensusFile, outFastqR1, outFastqR2 })
+            assertTrue(new File(fileName).delete());
+    }
+
+    @Test
+    public void singleCellPreparedMifTest() throws Exception {
+        String inputFile = getExampleMif("twosided");
+        String correctedFile = TEMP_DIR + "corrected.mif";
+        String sortedFile = TEMP_DIR + "sorted.mif";
+        String consensusFile = TEMP_DIR + "consensus.mif";
+        String notUsedReadsFile = TEMP_DIR + "not_used_reads.mif";
+        String consensusFile2 = TEMP_DIR + "consensus2.mif";
+        String consensusFile3 = TEMP_DIR + "consensus3.mif";
+        exec("correct -f --input " + inputFile + " --output " + correctedFile + " --groups G3 G4 G1 G2");
+        exec("sort -f --input " + correctedFile + " --output " + sortedFile + " --groups G3 G4 G1 G2 R1 R2");
+        exec("consensus -f --input " + sortedFile + " --output " + consensusFile + " --groups G3 G4 G1"
+                + " --consensus-algorithm SINGLE_CELL --threads 5 --skipped-fraction-to-repeat 0.75"
+                + " --avg-quality-threshold 3 --not-used-reads-output " + notUsedReadsFile);
+        exec("consensus -f --input " + consensusFile + " --output " + consensusFile2 + " --groups G3 G4 G1"
+                + " --consensus-algorithm SINGLE_CELL --threads 2 --skipped-fraction-to-repeat 1"
+                + " --avg-quality-threshold 0 --reads-avg-quality-threshold 0 --kmer-max-errors 0"
+                + " --not-used-reads-output " + notUsedReadsFile);
+        exec("consensus -f --input " + consensusFile2 + " --output " + consensusFile3 + " --groups G3 G4 G1"
+                + " --consensus-algorithm SINGLE_CELL --threads 3 --skipped-fraction-to-repeat 1"
+                + " --avg-quality-threshold 0 --reads-avg-quality-threshold 0 --kmer-max-errors 0"
+                + " --not-used-reads-output " + notUsedReadsFile);
+        assertMifEqualsAsFastq(consensusFile2, consensusFile3, true);
+        for (String fileName : new String[] { inputFile, correctedFile, sortedFile, consensusFile, notUsedReadsFile,
+                consensusFile2, consensusFile3 })
+            assertTrue(new File(fileName).delete());
+    }
+
+    @Test
+    public void sequencesTest() throws Exception {
+        String inputFastqFile = TEMP_DIR + "input.fastq";
+        String inputMifFile = TEMP_DIR + "input.mif";
+        String sortedFile = TEMP_DIR + "sorted.mif";
+        String consensusMifFile = TEMP_DIR + "consensus.mif";
+        String consensusFastqFile = TEMP_DIR + "consensus.fastq";
+        String barcode = "TTT";
+        LinkedHashMap<List<String>, String> testData = new LinkedHashMap<>();
+        testData.put(Arrays.asList("ATTTGACA", "ACTAGATA", "CTGAGACC"), "ATTAGACA");
+        for (HashMap.Entry<List<String>, String> entry : testData.entrySet()) {
+            List<NSequenceWithQuality> dataWithBarcodes = entry.getKey().stream()
+                    .map(str -> barcode + str).map(NSequenceWithQuality::new).collect(Collectors.toList());
+            seqToFastq(dataWithBarcodes, inputFastqFile);
+            exec("extract -f --input " + inputFastqFile + " --output " + inputMifFile
+                    + " --pattern \"(G1:" + barcode + ")N{*}\"");
+            exec("sort -f --input " + inputMifFile + " --output " + sortedFile + " --groups G1");
+            exec("consensus -f --input " + sortedFile + " --output " + consensusMifFile
+                    + " --consensus-algorithm SINGLE_CELL --kmer-length 4 --groups G1");
+            exec("mif2fastq -f --input " + consensusMifFile + " --group R1=" + consensusFastqFile);
+            assertEquals(barcode + entry.getValue(),
+                    fastqToSeq(consensusFastqFile).get(0).getSequence().toString());
+        }
+        for (String fileName : new String[] { inputFastqFile, inputMifFile, sortedFile, consensusMifFile,
+                consensusFastqFile })
             assertTrue(new File(fileName).delete());
     }
 }

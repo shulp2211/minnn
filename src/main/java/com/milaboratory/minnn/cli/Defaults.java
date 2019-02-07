@@ -28,7 +28,12 @@
  */
 package com.milaboratory.minnn.cli;
 
+import com.milaboratory.minnn.consensus.ConsensusAlgorithms;
+import com.milaboratory.minnn.io.MinnnDataFormat;
+
 import static com.milaboratory.core.sequence.SequenceQuality.*;
+import static com.milaboratory.minnn.consensus.ConsensusAlgorithms.*;
+import static com.milaboratory.minnn.io.MinnnDataFormat.*;
 
 public final class Defaults {
     private Defaults() {}
@@ -43,11 +48,11 @@ public final class Defaults {
     public final static int DEFAULT_GAP_SCORE = -11;
     public final static byte DEFAULT_MAX_QUALITY = MAX_QUALITY_VALUE;
     public final static byte DEFAULT_GOOD_QUALITY = GOOD_QUALITY_VALUE;
-    public final static byte DEFAULT_BAD_QUALITY = BAD_QUALITY_VALUE;
+    public final static byte DEFAULT_BAD_QUALITY = (byte)10;
     public final static int DEFAULT_MAX_QUALITY_PENALTY = -4;
     public final static long DEFAULT_SINGLE_OVERLAP_PENALTY = DEFAULT_GAP_SCORE;
     public final static int DEFAULT_THREADS = 4;
-    public final static String DEFAULT_INPUT_FORMAT = "fastq";
+    public final static MinnnDataFormat DEFAULT_INPUT_FORMAT = FASTQ;
     public final static int DEFAULT_SORT_CHUNK_SIZE = 1000000;
     public final static int DEFAULT_CORRECT_MAX_MISMATCHES = 2;
     public final static int DEFAULT_CORRECT_MAX_INDELS = 2;
@@ -56,6 +61,7 @@ public final class Defaults {
     public final static int DEFAULT_CORRECT_MAX_CLUSTER_DEPTH = 2;
     public final static float DEFAULT_CORRECT_SINGLE_SUBSTITUTION_PROBABILITY = 0.3f;
     public final static float DEFAULT_CORRECT_SINGLE_INDEL_PROBABILITY = 0.1f;
+    public final static ConsensusAlgorithms DEFAULT_CONSENSUS_ALGORITHM = SINGLE_CELL;
     public final static int DEFAULT_CONSENSUS_ALIGNER_WIDTH = 20;
     public final static int DEFAULT_CONSENSUS_SCORE_THRESHOLD = -100;
     public final static float DEFAULT_CONSENSUS_SKIPPED_FRACTION_TO_REPEAT = 0.05f;
@@ -68,5 +74,8 @@ public final class Defaults {
     public final static int DEFAULT_CONSENSUS_TRIM_WINDOW_SIZE = 20;
     public final static long DEFAULT_CONSENSUS_GOOD_QUALITY_MISMATCH_PENALTY = -17;
     public final static byte DEFAULT_CONSENSUS_GOOD_QUALITY_MISMATCH_THRESHOLD = GOOD_QUALITY_VALUE;
+    public final static int DEFAULT_CONSENSUS_KMER_LENGTH = 21;
+    public final static int DEFAULT_CONSENSUS_KMER_OFFSET = 15;
+    public final static int DEFAULT_CONSENSUS_KMER_MAX_ERRORS = 3;
     public final static int DEFAULT_DEMULTIPLEX_OUTPUT_BUFFER_SIZE = 1 << 16;
 }

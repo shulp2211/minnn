@@ -26,16 +26,19 @@
  * PARTICULAR PURPOSE, OR THAT THE USE OF THE SOFTWARE WILL NOT INFRINGE ANY
  * PATENT, TRADEMARK OR OTHER RIGHTS.
  */
-package com.milaboratory.minnn.io;
+package com.milaboratory.minnn.consensus;
 
-import java.util.HashMap;
+final class Barcode {
+    final String groupName;
+    final SequenceWithAttributes value;
 
-import static com.milaboratory.minnn.io.MinnnDataFormat.*;
+    Barcode(String groupName, SequenceWithAttributes value) {
+        this.groupName = groupName;
+        this.value = value;
+    }
 
-public final class MinnnDataFormatNames {
-    public static final HashMap<String, MinnnDataFormat> parameterNames = new HashMap<>();
-    static {
-        parameterNames.put("fastq", FASTQ);
-        parameterNames.put("mif", MIF);
+    @Override
+    public String toString() {
+        return "Barcode{" + "groupName='" + groupName + '\'' + ", value=" + value + '}';
     }
 }

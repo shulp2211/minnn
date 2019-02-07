@@ -17,8 +17,8 @@ extract
  --pattern: Query, pattern specified in MiNNN format.
  --input: Input files. Single file means that there is 1 read or multi-read file; multiple files mean that there is 1 file for each read. If not specified, stdin will be used.
  --output: Output file in "mif" format. If not specified, stdout will be used.
- --not-matched-output: Output file for not matched reads in "mif" format. If not specified, not matched reads will not be written anywhere.
- --input-format: Input data format. "fastq" (default) or "mif".
+ --not-matched-output: Output file for not matched reads in MIF format. If not specified, not matched reads will not be written anywhere.
+ --input-format: Input data format. Available options: FASTQ, MIF.
  --oriented: By default, if there are 2 or more reads, 2 last reads are checked in direct and reverse order. With this flag, only in direct order.
  --match-score: Score for perfectly matched nucleotide.
  --mismatch-score: Score for mismatched nucleotide.
@@ -34,7 +34,7 @@ extract
  --fair-sorting: Use fair sorting and fair best match by score for all patterns.
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
  --threads: Number of threads for parsing reads.
- --description-group: Description group names and regular expressions to parse expected nucleotide sequences for that groups from read description. Example: --description-group CELLID1='ATTA.{2-5}GACA' --description-group CELLID2='.{11}$'
+ --description-group: Description group names and regular expressions to parse expected nucleotide sequences for that groups from read description. Example: --description-group CID1='ATTA.{2-5}GACA' --description-group CID2='.{11}$'
 
 .. _filter:
 
@@ -94,6 +94,8 @@ correct
  --max-cluster-depth: Maximum cluster depth for algorithm of similar barcodes clustering.
  --single-substitution-probability: Single substitution probability for clustering algorithm.
  --single-indel-probability: Single insertion/deletion probability for clustering algorithm.
+ --min-count: Barcodes with count less than specified will not be included in the output.
+ --excluded-barcodes-output: Output file for reads with barcodes excluded by count. If not specified, reads with excluded barcodes will not be written anywhere
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
 
 .. _sort:
@@ -120,13 +122,14 @@ consensus
  --input: Input file in "mif" format. If not specified, stdin will be used.
  --output: Output file in "mif" format. If not specified, stdout will be used.
  --groups: List of groups that represent barcodes. If not specified, all groups will be used.
- --width: Window width (maximum allowed number of indels) for banded aligner.
- --aligner-match-score: Score for perfectly matched nucleotide, used in sequences alignment.
- --aligner-mismatch-score: Score for mismatched nucleotide, used in sequences alignment.
- --aligner-gap-score: Score for gap or insertion, used in sequences alignment.
- --good-quality-mismatch-penalty: Extra score penalty for mismatch when both sequences have good quality.
- --good-quality-mismatch-threshold: Quality that will be considered good for applying extra mismatch penalty.
- --score-threshold: Score threshold that used to filter reads for calculating consensus.
+ --consensus-algorithm: Consensus algorithm. Available algorithms: SINGLE_CELL, DOUBLE_MULTI_ALIGN.
+ --width: Window width (maximum allowed number of indels) for banded aligner. Used only in double-multi-align consensus algorithm.
+ --aligner-match-score: Score for perfectly matched nucleotide, used in sequences alignment. Used only in double-multi-align consensus algorithm.
+ --aligner-mismatch-score: Score for mismatched nucleotide, used in sequences alignment. Used only in double-multi-align consensus algorithm.
+ --aligner-gap-score: Score for gap or insertion, used in sequences alignment. Used only in double-multi-align consensus algorithm.
+ --good-quality-mismatch-penalty: Extra score penalty for mismatch when both sequences have good quality. Used only in double-multi-align consensus algorithm.
+ --good-quality-mismatch-threshold: Quality that will be considered good for applying extra mismatch penalty. Used only in double-multi-align consensus algorithm.
+ --score-threshold: Score threshold that used to filter reads for calculating consensus. Used only in double-multi-align consensus algorithm.
  --skipped-fraction-to-repeat: Fraction of reads skipped by score threshold that must start the search for another consensus in skipped reads. Value 1 means always get only 1 consensus from one set of reads with identical barcodes.
  --max-consensuses-per-cluster: Maximal number of consensuses generated from 1 cluster. Every time this threshold is applied to stop searching for new consensuses, warning will be displayed. Too many consensuses per cluster indicate that score threshold, aligner width or skipped fraction to repeat is too low.
  --reads-min-good-sequence-length: Minimal length of good sequence that will be still considered good after trimming bad quality tails. This parameter is for trimming input reads.
@@ -137,10 +140,13 @@ consensus
  --trim-window-size: Window size for bad quality tails trimmer. This parameter is for trimming output consensuses.
  --original-read-stats: Save extra statistics for each original read into separate file. Output file in space separated text format.
  --not-used-reads-output: Write reads not used in consensus assembly into separate file. Output file in "mif" format.
- --consensuses-to-separate-groups: If this parameter is specified, consensuses will not be written as reads R1, R2 etc to output file. Instead, original sequences will be written as R1, R2 etc and consensuses will be written as CR1, CR2 etc, so it will be possible to cluster original reads by consensuses using filter / demultiplex actions, or export original reads and corresponding consensuses into separate reads using mif2fastq action.
+ --consensuses-to-separate-groups: If this parameter is specified, consensuses will not be written as reads R1, R2 etc to output file. Instead, original sequences will be written as R1, R2 etc and consensuses will be written as CR1, CR2 etc, so it will be possible to cluster original reads by consensuses using filter / demultiplex actions, or export original reads and corresponding consensuses into separate reads using mif2fastq action. Used only in double-multi-align consensus algorithm.
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
  --max-warnings: Maximum allowed number of warnings; -1 means no limit.
  --threads: Number of threads for calculating consensus sequences.
+ --kmer-length: K-mer length. Also affects --min-good-sequence-length because good sequence length must not be lower than k-mer length, so the biggest of --kmer-length and --min-good-sequence-length will be used as --min-good-sequence-length value. Used only in single-cell consensus algorithm.
+ --kmer-offset: Max offset from the middle of the read when searching k-mers. Used only in single-cell consensus algorithm.
+ --kmer-max-errors: Maximal allowed number of mismatches when searching k-mers in sequences. Used only in single-cell consensus algorithm.
 
 .. _stat-groups:
 
