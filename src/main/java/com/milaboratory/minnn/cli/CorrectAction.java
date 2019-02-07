@@ -58,8 +58,9 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
     @Override
     public void run1() {
         CorrectBarcodesIO correctBarcodesIO = new CorrectBarcodesIO(getFullPipelineConfiguration(), inputFileName,
-                outputFileName, mismatches, indels, totalErrors, threshold, groupNames, maxClusterDepth,
-                singleSubstitutionProbability, singleIndelProbability, inputReadsLimit, quiet);
+                outputFileName, mismatches, indels, totalErrors, threshold, groupNames, primaryGroupNames,
+                maxClusterDepth, singleSubstitutionProbability, singleIndelProbability, maxUniqueBarcodes,
+                excludedBarcodesOutputFileName, inputReadsLimit, quiet);
         correctBarcodesIO.go();
     }
 
@@ -83,14 +84,25 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
         List<String> outputFileNames = new ArrayList<>();
         if (outputFileName != null)
             outputFileNames.add(outputFileName);
+        if (excludedBarcodesOutputFileName != null)
+            outputFileNames.add(excludedBarcodesOutputFileName);
         return outputFileNames;
+    }
+
+    @Override
+    public void handleExistenceOfOutputFile(String outFileName) {
+        // disable smart overwrite if output file for reads with excluded barcodes is specified
+        if (excludedBarcodesOutputFileName != null)
+            MiNNNCommand.super.handleExistenceOfOutputFile(outFileName, forceOverwrite);
+        else
+            super.handleExistenceOfOutputFile(outFileName);
     }
 
     @Override
     public ActionConfiguration getConfiguration() {
         return new CorrectActionConfiguration(new CorrectActionConfiguration.CorrectActionParameters(groupNames,
-                mismatches, indels, totalErrors, threshold, maxClusterDepth, singleSubstitutionProbability,
-                singleIndelProbability, inputReadsLimit));
+                primaryGroupNames, mismatches, indels, totalErrors, threshold, maxClusterDepth,
+                singleSubstitutionProbability, singleIndelProbability, maxUniqueBarcodes, inputReadsLimit));
     }
 
     @Override
@@ -105,6 +117,17 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
             required = true,
             arity = "1..*")
     private List<String> groupNames = null;
+
+    @Option(description = "Primary group names. If specified, all groups from --groups argument will be treated as " +
+            "secondary. Barcode correction will be performed not in scale of the entire input file, but separately " +
+            "in clusters with the same primary group values. If input file is already sorted by primary groups, " +
+            "correction will be faster and less memory consuming. Usage example: correct cell barcodes (CB) first, " +
+            "then sort by CB, then correct UMI for each CB separately. So, for first correction pass use " +
+            "\"--groups CB\", and for second pass use \"--groups UMI --primary-groups CB\". If multiple primary " +
+            "groups are specified, clusters will be determined by unique combinations of primary groups values.",
+            names = {"--primary-groups"},
+            arity = "1..*")
+    private List<String> primaryGroupNames = null;
 
     @Option(description = IN_FILE_NO_STDIN,
             names = {"--input"},
@@ -144,6 +167,17 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
     @Option(description = "Single insertion/deletion probability for clustering algorithm.",
             names = {"--single-indel-probability"})
     private float singleIndelProbability = DEFAULT_CORRECT_SINGLE_INDEL_PROBABILITY;
+
+    @Option(description = "Maximal number of unique barcodes that will be included into output. Reads containing " +
+            "barcodes with biggest counts will be included, reads with barcodes with smaller counts will be " +
+            "excluded. Value 0 turns off this feature: if this argument is 0, all barcodes will be included.",
+            names = {"--max-unique-barcodes"})
+    private int maxUniqueBarcodes = DEFAULT_CORRECT_MAX_UNIQUE_BARCODES;
+
+    @Option(description = "Output file for reads with barcodes excluded by count. If not specified, reads with " +
+            "excluded barcodes will not be written anywhere.",
+            names = {"--excluded-barcodes-output"})
+    private String excludedBarcodesOutputFileName = null;
 
     @Option(description = NUMBER_OF_READS,
             names = {"-n", "--number-of-reads"})

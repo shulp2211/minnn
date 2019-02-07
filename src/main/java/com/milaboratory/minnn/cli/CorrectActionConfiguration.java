@@ -76,6 +76,7 @@ public final class CorrectActionConfiguration implements ActionConfiguration {
     @Serializable(asJson = true)
     public static final class CorrectActionParameters implements java.io.Serializable {
         private List<String> groupNames;
+        private List<String> primaryGroupNames;
         private int mismatches;
         private int indels;
         private int totalErrors;
@@ -83,11 +84,13 @@ public final class CorrectActionConfiguration implements ActionConfiguration {
         private int maxClusterDepth;
         private float singleSubstitutionProbability;
         private float singleIndelProbability;
+        private int maxUniqueBarcodes;
         private long inputReadsLimit;
 
         @JsonCreator
         public CorrectActionParameters(
                 @JsonProperty("groupNames") List<String> groupNames,
+                @JsonProperty("primaryGroupNames") List<String> primaryGroupNames,
                 @JsonProperty("mismatches") int mismatches,
                 @JsonProperty("indels") int indels,
                 @JsonProperty("totalErrors") int totalErrors,
@@ -95,8 +98,10 @@ public final class CorrectActionConfiguration implements ActionConfiguration {
                 @JsonProperty("maxClusterDepth") int maxClusterDepth,
                 @JsonProperty("singleSubstitutionProbability") float singleSubstitutionProbability,
                 @JsonProperty("singleIndelProbability") float singleIndelProbability,
+                @JsonProperty("maxUniqueBarcodes") int maxUniqueBarcodes,
                 @JsonProperty("inputReadsLimit") long inputReadsLimit) {
             this.groupNames = groupNames;
+            this.primaryGroupNames = primaryGroupNames;
             this.mismatches = mismatches;
             this.indels = indels;
             this.totalErrors = totalErrors;
@@ -104,6 +109,7 @@ public final class CorrectActionConfiguration implements ActionConfiguration {
             this.maxClusterDepth = maxClusterDepth;
             this.singleSubstitutionProbability = singleSubstitutionProbability;
             this.singleIndelProbability = singleIndelProbability;
+            this.maxUniqueBarcodes = maxUniqueBarcodes;
             this.inputReadsLimit = inputReadsLimit;
         }
 
@@ -113,6 +119,14 @@ public final class CorrectActionConfiguration implements ActionConfiguration {
 
         public void setGroupNames(List<String> groupNames) {
             this.groupNames = groupNames;
+        }
+
+        public List<String> getPrimaryGroupNames() {
+            return primaryGroupNames;
+        }
+
+        public void setPrimaryGroupNames(List<String> primaryGroupNames) {
+            this.primaryGroupNames = primaryGroupNames;
         }
 
         public int getMismatches() {
@@ -171,6 +185,14 @@ public final class CorrectActionConfiguration implements ActionConfiguration {
             this.singleIndelProbability = singleIndelProbability;
         }
 
+        public int getMaxUniqueBarcodes() {
+            return maxUniqueBarcodes;
+        }
+
+        public void setMaxUniqueBarcodes(int maxUniqueBarcodes) {
+            this.maxUniqueBarcodes = maxUniqueBarcodes;
+        }
+
         public long getInputReadsLimit() {
             return inputReadsLimit;
         }
@@ -191,13 +213,16 @@ public final class CorrectActionConfiguration implements ActionConfiguration {
             if (maxClusterDepth != that.maxClusterDepth) return false;
             if (Float.compare(that.singleSubstitutionProbability, singleSubstitutionProbability) != 0) return false;
             if (Float.compare(that.singleIndelProbability, singleIndelProbability) != 0) return false;
+            if (maxUniqueBarcodes != that.maxUniqueBarcodes) return false;
             if (inputReadsLimit != that.inputReadsLimit) return false;
-            return Objects.equals(groupNames, that.groupNames);
+            if (!Objects.equals(groupNames, that.groupNames)) return false;
+            return Objects.equals(primaryGroupNames, that.primaryGroupNames);
         }
 
         @Override
         public int hashCode() {
             int result = groupNames != null ? groupNames.hashCode() : 0;
+            result = 31 * result + (primaryGroupNames != null ? primaryGroupNames.hashCode() : 0);
             result = 31 * result + mismatches;
             result = 31 * result + indels;
             result = 31 * result + totalErrors;
@@ -207,6 +232,7 @@ public final class CorrectActionConfiguration implements ActionConfiguration {
                     ? Float.floatToIntBits(singleSubstitutionProbability) : 0);
             result = 31 * result + (singleIndelProbability != +0.0f
                     ? Float.floatToIntBits(singleIndelProbability) : 0);
+            result = 31 * result + maxUniqueBarcodes;
             result = 31 * result + (int)(inputReadsLimit ^ (inputReadsLimit >>> 32));
             return result;
         }
