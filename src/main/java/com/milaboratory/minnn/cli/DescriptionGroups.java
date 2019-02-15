@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -45,8 +45,8 @@ public final class DescriptionGroups {
     private final LinkedHashMap<String, GroupPattern> regexPatterns = new LinkedHashMap<>();
 
     DescriptionGroups(LinkedHashMap<String, String> cliArgs) {
-        this.cliArgs = cliArgs;
-        for (HashMap.Entry<String, String> entry : cliArgs.entrySet())
+        this.cliArgs = (cliArgs == null) ? new LinkedHashMap<>() : cliArgs;
+        for (HashMap.Entry<String, String> entry : this.cliArgs.entrySet())
             regexPatterns.put(entry.getKey(), new GroupPattern(entry.getValue()));
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -37,6 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class PatternUtils {
+    private PatternUtils() {}
+
     public static int invertCoordinate(int x) {
         return -2 - x;
     }

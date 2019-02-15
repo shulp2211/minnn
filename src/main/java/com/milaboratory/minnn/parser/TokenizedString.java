@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -190,8 +190,7 @@ final class TokenizedString {
                 deleteIndexLast--;
             }
 
-            for (int i = deleteIndexLast; i >= deleteIndexFirst; --i)
-                tokenizedString.remove(i);
+            tokenizedString.subList(deleteIndexFirst, deleteIndexLast + 1).clear();
         }
 
         assertChainNotBroken();

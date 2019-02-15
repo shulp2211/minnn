@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -35,6 +35,7 @@ import cc.redberry.pipe.blocks.Merger;
 import cc.redberry.pipe.blocks.ParallelProcessor;
 import cc.redberry.pipe.util.Chunk;
 import cc.redberry.pipe.util.OrderedOutputPort;
+import com.milaboratory.cli.PipelineConfiguration;
 import com.milaboratory.minnn.outputconverter.ParsedRead;
 import com.milaboratory.minnn.readfilter.ReadFilter;
 import com.milaboratory.util.SmartProgressReporter;
@@ -46,14 +47,16 @@ import static com.milaboratory.minnn.util.SystemUtils.exitWithError;
 import static com.milaboratory.util.TimeUtils.nanoTimeToString;
 
 public final class FilterIO {
+    private final PipelineConfiguration pipelineConfiguration;
     private final ReadFilter readFilter;
     private final String inputFileName;
     private final String outputFileName;
     private final long inputReadsLimit;
     private final int threads;
 
-    public FilterIO(ReadFilter readFilter, String inputFileName, String outputFileName, long inputReadsLimit,
-                    int threads) {
+    public FilterIO(PipelineConfiguration pipelineConfiguration, ReadFilter readFilter, String inputFileName,
+                    String outputFileName, long inputReadsLimit, int threads) {
+        this.pipelineConfiguration = pipelineConfiguration;
         this.readFilter = readFilter;
         this.inputFileName = inputFileName;
         this.outputFileName = outputFileName;
@@ -66,7 +69,8 @@ public final class FilterIO {
         long totalReads = 0;
         long matchedReads = 0;
         try (MifReader reader = createReader();
-             MifWriter writer = createWriter(reader.getHeader())) {
+             MifWriter writer = createWriter(new MifHeader(pipelineConfiguration, reader.getNumberOfTargets(),
+                     reader.getCorrectedGroups(), reader.getSortedGroups(), reader.getGroupEdges()))) {
             if (inputReadsLimit > 0)
                 reader.setParsedReadsLimit(inputReadsLimit);
             SmartProgressReporter.startProgressReport("Filtering reads", reader, System.err);
@@ -75,7 +79,7 @@ public final class FilterIO {
             OutputPort<Chunk<ParsedRead>> filteredReadsPort = new ParallelProcessor<>(bufferedReaderPort,
                     CUtils.chunked(new FilterProcessor()), threads);
             OrderedOutputPort<ParsedRead> orderedReadsPort = new OrderedOutputPort<>(
-                    CUtils.unchunked(filteredReadsPort), read -> read.getOriginalRead().getId());
+                    CUtils.unchunked(filteredReadsPort), ParsedRead::getOutputPortId);
             for (ParsedRead parsedRead : CUtils.it(orderedReadsPort)) {
                 if (parsedRead.getBestMatch() != null) {
                     writer.write(parsedRead);
@@ -84,6 +88,8 @@ public final class FilterIO {
                 if (++totalReads == inputReadsLimit)
                     break;
             }
+            reader.close();
+            writer.setOriginalNumberOfReads(reader.getOriginalNumberOfReads());
         } catch (IOException e) {
             throw exitWithError(e.getMessage());
         }

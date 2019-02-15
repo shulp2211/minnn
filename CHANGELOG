@@ -1,4 +1,15 @@
 
+minnn 2.0.0 (15 фев 2019)
+========================
+
+-- -- Support for wildcards in barcodes in Correct action
+-- -- Writing not matched reads to separate file in Extract action
+-- -- Writing not used reads to separate file in Consensus action
+-- -- Added good quality mismatch penalty to consensus alignment score calculation
+-- -- Many bugfixes and improvements in Consensus action
+-- -- Bugfixes in docs
+
+
 minnn 1.0.0 (15 авг 2018)
 ========================
 

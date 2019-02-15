@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -33,6 +33,7 @@ import cc.redberry.pipe.blocks.Merger;
 import cc.redberry.pipe.blocks.ParallelProcessor;
 import cc.redberry.pipe.util.Chunk;
 import cc.redberry.pipe.util.OrderedOutputPort;
+import com.milaboratory.cli.PipelineConfiguration;
 import com.milaboratory.core.io.sequence.*;
 import com.milaboratory.core.io.sequence.fasta.*;
 import com.milaboratory.core.io.sequence.fastq.*;
@@ -46,17 +47,19 @@ import com.milaboratory.util.SmartProgressReporter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.StreamSupport;
 
-import static com.milaboratory.core.io.sequence.SequenceReadUtil.setReadId;
 import static com.milaboratory.minnn.cli.CliUtils.floatFormat;
 import static com.milaboratory.minnn.io.MinnnDataFormat.*;
 import static com.milaboratory.minnn.util.SystemUtils.exitWithError;
 import static com.milaboratory.util.TimeUtils.nanoTimeToString;
 
 public final class ReadProcessor {
+    private final PipelineConfiguration pipelineConfiguration;
     private final List<String> inputFileNames;
     private final String outputFileName;
+    private final String notMatchedOutputFileName;
     private final Pattern pattern;
     private final boolean orientedReads;
     private final boolean fairSorting;
@@ -64,16 +67,19 @@ public final class ReadProcessor {
     private final int threads;
     private final MinnnDataFormat inputFormat;
     private final DescriptionGroups descriptionGroups;
-    private int numberOfReads;
+    private int numberOfTargets;
 
-    public ReadProcessor(List<String> inputFileNames, String outputFileName, Pattern pattern,
+    public ReadProcessor(PipelineConfiguration pipelineConfiguration, List<String> inputFileNames,
+                         String outputFileName, String notMatchedOutputFileName, Pattern pattern,
                          boolean orientedReads, boolean fairSorting, long inputReadsLimit, int threads,
                          MinnnDataFormat inputFormat, DescriptionGroups descriptionGroups) {
         if ((inputFormat == MIF) && (inputFileNames.size() > 1))
             throw exitWithError("Mif data format uses single file; specified " + inputFileNames.size()
                     + " input files!");
+        this.pipelineConfiguration = pipelineConfiguration;
         this.inputFileNames = inputFileNames;
         this.outputFileName = outputFileName;
+        this.notMatchedOutputFileName = notMatchedOutputFileName;
         this.pattern = pattern;
         this.orientedReads = orientedReads;
         this.fairSorting = fairSorting;
@@ -87,24 +93,30 @@ public final class ReadProcessor {
         long startTime = System.currentTimeMillis();
         long totalReads = 0;
         long matchedReads = 0;
-        try (OutputPortCloseable<SequenceRead> reader = (OutputPortCloseable<SequenceRead>)createReader();
-             MifWriter writer = createWriter()) {
-            CanReportProgress progress = (CanReportProgress)reader;
-            SmartProgressReporter.startProgressReport("Parsing", progress, System.err);
-            Merger<Chunk<SequenceRead>> bufferedReaderPort = CUtils.buffered(CUtils.chunked(reader,
+        try (IndexedSequenceReader<?> reader = createReader();
+             MifWriter writer = Objects.requireNonNull(createWriter(false));
+             MifWriter mismatchedReadsWriter = createWriter(true)) {
+            SmartProgressReporter.startProgressReport("Parsing", reader, System.err);
+            Merger<Chunk<IndexedSequenceRead>> bufferedReaderPort = CUtils.buffered(CUtils.chunked(reader,
                     4 * 64), 4 * 16);
             OutputPort<Chunk<ParsedRead>> parsedReadsPort = new ParallelProcessor<>(bufferedReaderPort,
                     CUtils.chunked(new ReadParserProcessor(orientedReads)), threads);
             OrderedOutputPort<ParsedRead> orderedReadsPort = new OrderedOutputPort<>(CUtils.unchunked(parsedReadsPort),
-                    read -> read.getOriginalRead().getId());
+                    ParsedRead::getOutputPortId);
             for (ParsedRead parsedRead : CUtils.it(orderedReadsPort)) {
                 if (parsedRead.getBestMatch() != null) {
                     writer.write(parsedRead);
                     matchedReads++;
-                }
+                } else if (mismatchedReadsWriter != null)
+                    mismatchedReadsWriter.write(parsedRead);
                 if (++totalReads == inputReadsLimit)
                     break;
             }
+            reader.close();
+            long originalNumberOfReads = (inputFormat == MIF) ? reader.getOriginalNumberOfReads() : totalReads;
+            writer.setOriginalNumberOfReads(originalNumberOfReads);
+            if (mismatchedReadsWriter != null)
+                mismatchedReadsWriter.setOriginalNumberOfReads(originalNumberOfReads);
         } catch (IOException e) {
             throw exitWithError(e.getMessage());
         }
@@ -115,36 +127,37 @@ public final class ReadProcessor {
         System.err.println("Matched reads: " + floatFormat.format(percent) + "%\n");
     }
 
-    private OutputPortCloseable<? extends SequenceRead> createReader() throws IOException {
-        OutputPortCloseable<? extends SequenceRead> reader;
+    private IndexedSequenceReader createReader() throws IOException {
+        IndexedSequenceReader reader;
         switch (inputFormat) {
             case FASTQ:
                 switch (inputFileNames.size()) {
                     case 0:
-                        numberOfReads = 1;
-                        reader = new SingleFastqReader(System.in);
+                        numberOfTargets = 1;
+                        reader = new IndexedSequenceReader<>(new SingleFastqReader(System.in), t -> t);
                         break;
                     case 1:
-                        numberOfReads = 1;
+                        numberOfTargets = 1;
                         String[] s = inputFileNames.get(0).split("\\.");
                         if (s[s.length - 1].equals("fasta") || s[s.length - 1].equals("fa")
                                 || ((s.length > 2) && s[s.length - 1].equals("gz")
                                     && (s[s.length - 2].equals("fasta") || s[s.length - 2].equals("fa"))))
-                            reader = new FastaSequenceReaderWrapper(new FastaReader<>(
-                                    inputFileNames.get(0), NucleotideSequence.ALPHABET));
+                            reader = new IndexedSequenceReader<>(new FastaSequenceReaderWrapper(new FastaReader<>(
+                                    inputFileNames.get(0), NucleotideSequence.ALPHABET)), t -> t);
                         else
-                            reader = new SingleFastqReader(inputFileNames.get(0));
+                            reader = new IndexedSequenceReader<>(new SingleFastqReader(inputFileNames.get(0)), t -> t);
                         break;
                     case 2:
-                        numberOfReads = 2;
-                        reader = new PairedFastqReader(inputFileNames.get(0), inputFileNames.get(1));
+                        numberOfTargets = 2;
+                        reader = new IndexedSequenceReader<>(new PairedFastqReader(inputFileNames.get(0),
+                                inputFileNames.get(1)), t -> t);
                         break;
                     default:
-                        numberOfReads = inputFileNames.size();
-                        SingleFastqReader readers[] = new SingleFastqReader[inputFileNames.size()];
+                        numberOfTargets = inputFileNames.size();
+                        SingleFastqReader[] readers = new SingleFastqReader[inputFileNames.size()];
                         for (int i = 0; i < inputFileNames.size(); i++)
                             readers[i] = new SingleFastqReader(inputFileNames.get(i));
-                        reader = new MultiReader(readers);
+                        reader = new IndexedSequenceReader<>(new MultiReader(readers), t -> t);
                 }
                 break;
             case MIF:
@@ -152,74 +165,105 @@ public final class ReadProcessor {
                         : new MifReader(inputFileNames.get(0));
                 if (inputReadsLimit > 0)
                     mifReader.setParsedReadsLimit(inputReadsLimit);
-                numberOfReads = mifReader.getNumberOfReads();
-                reader = new MifSequenceReader(mifReader);
+                numberOfTargets = mifReader.getNumberOfTargets();
+                reader = new IndexedSequenceReader<>(mifReader, ParsedRead::getOriginalRead);
                 break;
             default:
                 throw new IllegalStateException("Unknown input format: " + inputFormat);
         }
-        int readsInPattern = pattern instanceof SinglePattern ? 1
+        int targetsInPattern = pattern instanceof SinglePattern ? 1
                 : ((MultipleReadsOperator)pattern).getNumberOfPatterns();
-        if (numberOfReads != readsInPattern)
-            throw exitWithError("Mismatched number of patterns (" + readsInPattern + ") and reads ("
-                    + numberOfReads + ")!");
+        if (numberOfTargets != targetsInPattern)
+            throw exitWithError("Mismatched number of patterns (" + targetsInPattern + ") and target reads ("
+                    + numberOfTargets + ")!");
         return reader;
     }
 
-    private MifWriter createWriter() throws IOException {
-        MifHeader mifHeader = new MifHeader(numberOfReads, new ArrayList<>(), false, pattern.getGroupEdges());
-        return (outputFileName == null) ? new MifWriter(new SystemOutStream(), mifHeader)
-                : new MifWriter(outputFileName, mifHeader);
+    private MifWriter createWriter(boolean mismatchedReads) throws IOException {
+        MifHeader mifHeader = new MifHeader(pipelineConfiguration, numberOfTargets, new ArrayList<>(),
+                new ArrayList<>(), pattern.getGroupEdges());
+        if (mismatchedReads)
+            return (notMatchedOutputFileName == null) ? null : new MifWriter(notMatchedOutputFileName, mifHeader);
+        else
+            return (outputFileName == null) ? new MifWriter(new SystemOutStream(), mifHeader)
+                    : new MifWriter(outputFileName, mifHeader);
     }
 
-    private class MifSequenceReader implements OutputPortCloseable<SequenceRead>, CanReportProgress {
-        private final MifReader mifReader;
+    private class IndexedSequenceRead {
+        final SequenceRead sequenceRead;
+        final long index;
+
+        IndexedSequenceRead(SequenceRead sequenceRead, long index) {
+            this.sequenceRead = sequenceRead;
+            this.index = index;
+        }
+    }
+
+    private class IndexedSequenceReader<T> implements OutputPortCloseable<IndexedSequenceRead>, CanReportProgress {
+        private final OutputPortCloseable<? extends T> innerReader;
+        private final Function<T, SequenceRead> toSequenceRead;
+        private final CanReportProgress progress;
         private AtomicLong index = new AtomicLong(0);
 
-        MifSequenceReader(MifReader mifReader) {
-            this.mifReader = mifReader;
+        IndexedSequenceReader(OutputPortCloseable<? extends T> innerReader, Function<T, SequenceRead> toSequenceRead) {
+            this.innerReader = innerReader;
+            this.toSequenceRead = toSequenceRead;
+            this.progress = innerReader instanceof CanReportProgress ? (CanReportProgress)innerReader : null;
         }
 
         @Override
-        public void close() {
-            mifReader.close();
+        public synchronized void close() {
+            innerReader.close();
         }
 
         @Override
-        public SequenceRead take() {
-            ParsedRead parsedRead = mifReader.take();
-            return (parsedRead == null) ? null : setReadId(index.getAndIncrement(), parsedRead.getOriginalRead());
+        public IndexedSequenceRead take() {
+            T t = innerReader.take();
+            if (t == null)
+                return null;
+            else
+                return new IndexedSequenceRead(toSequenceRead.apply(t), index.getAndIncrement());
         }
 
         @Override
         public double getProgress() {
-            return mifReader.getProgress();
+            if (progress != null)
+                return progress.getProgress();
+            else
+                return Double.NaN;
         }
 
         @Override
-        public boolean isFinished() {
-            return mifReader.isFinished();
+        public synchronized boolean isFinished() {
+            return (progress != null) && progress.isFinished();
+        }
+
+        long getOriginalNumberOfReads() {
+            if (inputFormat == FASTQ)
+                throw new IllegalStateException("getOriginalNumberOfReads() must be used only for MIF input!");
+            else
+                return ((MifReader)innerReader).getOriginalNumberOfReads();
         }
     }
 
-    private class ReadParserProcessor implements Processor<SequenceRead, ParsedRead> {
+    private class ReadParserProcessor implements Processor<IndexedSequenceRead, ParsedRead> {
         private final boolean orientedReads;
 
-        public ReadParserProcessor(boolean orientedReads) {
+        ReadParserProcessor(boolean orientedReads) {
             this.orientedReads = orientedReads;
         }
 
         @Override
-        public ParsedRead process(SequenceRead input) {
+        public ParsedRead process(IndexedSequenceRead input) {
             Match bestMatch = null;
             boolean reverseMatch = false;
             if (orientedReads) {
                 MultiNSequenceWithQualityImpl target = new MultiNSequenceWithQualityImpl(StreamSupport.stream(
-                        input.spliterator(), false).map(SingleRead::getData)
+                        input.sequenceRead.spliterator(), false).map(SingleRead::getData)
                         .toArray(NSequenceWithQuality[]::new));
                 bestMatch = pattern.match(target).getBestMatch(fairSorting);
             } else {
-                NSequenceWithQuality[] sequences = StreamSupport.stream(input.spliterator(), false)
+                NSequenceWithQuality[] sequences = StreamSupport.stream(input.sequenceRead.spliterator(), false)
                         .map(SingleRead::getData).toArray(NSequenceWithQuality[]::new);
                 int numberOfReads = sequences.length;
                 if (numberOfReads == 1)
@@ -250,8 +294,9 @@ public final class ReadProcessor {
                 }
             }
 
-            return new ParsedRead(input, reverseMatch, (bestMatch == null) ? null
-                    : descriptionGroups.addDescriptionGroups(bestMatch, input), 0);
+            return new ParsedRead(input.sequenceRead, reverseMatch, (bestMatch == null) ? null
+                    : descriptionGroups.addDescriptionGroups(bestMatch, input.sequenceRead),
+                    0, input.index);
         }
     }
 }

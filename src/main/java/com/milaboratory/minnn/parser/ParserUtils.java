@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -169,7 +169,8 @@ public final class ParserUtils {
                         int filterStartCoordinate = startCoordinate + 1;
                         int filterEndCoordinate = getEndByStart(parentheses,
                                 currentPosition + SCORE_FILTER_START.length() - 1);
-                        String scoreFilterSubstring = query.substring(filterStartCoordinate, filterEndCoordinate + 1);
+                        String scoreFilterSubstring = query.substring(filterStartCoordinate,
+                                filterEndCoordinate + 1);
                         long scoreThreshold = toLong(scoreFilterSubstring.substring(SCORE_FILTER_NAME.length() + 1,
                                 scoreFilterSubstring.length() - 1), "score threshold");
                         int currentNestedLevel = 0;
@@ -193,7 +194,8 @@ public final class ParserUtils {
         if (groupName.length() == 0)
             throw new ParserException("Group name must not be empty!");
         if (!groupName.matches("[a-zA-Z0-9]*"))
-            throw new ParserException("Group names must contain only letters and digits; invalid group name: " + groupName);
+            throw new ParserException("Group names must contain only letters and digits; invalid group name: "
+                    + groupName);
     }
 
     /**

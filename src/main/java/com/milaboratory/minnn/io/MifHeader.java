@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -28,34 +28,42 @@
  */
 package com.milaboratory.minnn.io;
 
+import com.milaboratory.cli.PipelineConfiguration;
 import com.milaboratory.minnn.pattern.GroupEdge;
 
 import java.util.ArrayList;
 
 public class MifHeader {
-    private final int numberOfReads;
+    private final PipelineConfiguration pipelineConfiguration;
+    private final int numberOfTargets;
     private final ArrayList<String> correctedGroups;
-    private final boolean sorted;
+    private final ArrayList<String> sortedGroups;
     private final ArrayList<GroupEdge> groupEdges;
 
-    public MifHeader(int numberOfReads, ArrayList<String> correctedGroups, boolean sorted,
+    public MifHeader(PipelineConfiguration pipelineConfiguration, int numberOfTargets,
+                     ArrayList<String> correctedGroups, ArrayList<String> sortedGroups,
                      ArrayList<GroupEdge> groupEdges) {
-        this.numberOfReads = numberOfReads;
+        this.pipelineConfiguration = pipelineConfiguration;
+        this.numberOfTargets = numberOfTargets;
         this.correctedGroups = correctedGroups;
-        this.sorted = sorted;
+        this.sortedGroups = sortedGroups;
         this.groupEdges = groupEdges;
     }
 
-    public int getNumberOfReads() {
-        return numberOfReads;
+    public PipelineConfiguration getPipelineConfiguration() {
+        return pipelineConfiguration;
+    }
+
+    public int getNumberOfTargets() {
+        return numberOfTargets;
     }
 
     public ArrayList<String> getCorrectedGroups() {
         return correctedGroups;
     }
 
-    public boolean isSorted() {
-        return sorted;
+    public ArrayList<String> getSortedGroups() {
+        return sortedGroups;
     }
 
     public ArrayList<GroupEdge> getGroupEdges() {

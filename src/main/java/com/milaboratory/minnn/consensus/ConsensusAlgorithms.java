@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -26,16 +26,8 @@
  * PARTICULAR PURPOSE, OR THAT THE USE OF THE SOFTWARE WILL NOT INFRINGE ANY
  * PATENT, TRADEMARK OR OTHER RIGHTS.
  */
-package com.milaboratory.minnn.io;
+package com.milaboratory.minnn.consensus;
 
-import java.util.HashMap;
-
-import static com.milaboratory.minnn.io.MinnnDataFormat.*;
-
-public final class MinnnDataFormatNames {
-    public static final HashMap<String, MinnnDataFormat> parameterNames = new HashMap<>();
-    static {
-        parameterNames.put("fastq", FASTQ);
-        parameterNames.put("mif", MIF);
-    }
+public enum ConsensusAlgorithms {
+    SINGLE_CELL, RNA_SEQ, DOUBLE_MULTI_ALIGN
 }

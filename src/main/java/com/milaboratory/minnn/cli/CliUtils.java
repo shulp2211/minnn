@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -28,18 +28,21 @@
  */
 package com.milaboratory.minnn.cli;
 
-import com.beust.jcommander.ParameterException;
+import com.milaboratory.cli.ValidationException;
+import picocli.CommandLine;
 
 import java.text.DecimalFormat;
 
-import static com.milaboratory.core.sequence.SequenceQuality.MAX_QUALITY_VALUE;
+import static com.milaboratory.minnn.cli.Defaults.DEFAULT_MAX_QUALITY;
 
 public final class CliUtils {
+    private CliUtils() {}
+
     public final static DecimalFormat floatFormat = new DecimalFormat("#.##");
 
-    static void validateQuality(int quality) throws ParameterException {
-        if ((quality < 0) || (quality > MAX_QUALITY_VALUE))
-            throw new ParameterException(quality + " is invalid value for quality! Valid values are from 0 to "
-                    + MAX_QUALITY_VALUE + ".");
+    static void validateQuality(int quality, CommandLine commandLine) {
+        if ((quality < 0) || (quality > DEFAULT_MAX_QUALITY))
+            throw new ValidationException(commandLine, quality + " is invalid value for quality! Valid values are "
+                    + "from 0 to " + DEFAULT_MAX_QUALITY + ".", false);
     }
 }

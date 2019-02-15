@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -32,6 +32,8 @@ import java.util.HashMap;
 import java.util.concurrent.Callable;
 
 public final class DebugUtils {
+    private DebugUtils() {}
+
     public static HashMap<String, Long> timeCounter = new HashMap<>();
     public static HashMap<String, Long> callCounter = new HashMap<>();
     public static HashMap<String, Long> eventCounter = new HashMap<>();

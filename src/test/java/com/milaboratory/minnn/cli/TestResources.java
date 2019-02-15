@@ -49,8 +49,8 @@ public class TestResources {
                 TEMP_DIR + "good-quality.mif"));
     }
 
-    public static String getExampleMif(String example) {
-        String common = "extract --input " + examples.get(example).fastq + " --output " + examples.get(example).mif
+    public static String getExampleMif(String example) throws Exception {
+        String common = "extract -f --input " + examples.get(example).fastq + " --output " + examples.get(example).mif
                 + " --mismatch-score -9 --gap-score -10 --single-overlap-penalty -10 --pattern ";
         switch (example) {
             case "twosided":

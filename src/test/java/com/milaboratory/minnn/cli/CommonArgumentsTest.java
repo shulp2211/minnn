@@ -28,11 +28,13 @@
  */
 package com.milaboratory.minnn.cli;
 
+import com.milaboratory.util.VersionInfo;
 import org.junit.*;
 
 import static com.milaboratory.minnn.cli.CommandLineTestUtils.*;
 import static com.milaboratory.minnn.util.CommonTestUtils.*;
 import static com.milaboratory.minnn.util.SystemUtils.*;
+import static org.junit.Assert.*;
 
 public class CommonArgumentsTest {
     @BeforeClass
@@ -42,9 +44,12 @@ public class CommonArgumentsTest {
 
     @Test
     public void simpleTest() throws Exception {
-        assertOutputContains(true, "Usage:", () -> callableExec(" "));
-        assertOutputContains(true, "Usage:", () -> callableExec("-h"));
-        assertOutputContains(true, "Usage:", () -> callableExec("--help"));
+        assertNotNull(VersionInfo.getVersionInfoForArtifact("milib"));
+        assertNotNull(VersionInfo.getVersionInfoForArtifact("minnn"));
+        exec(" ");
+        exec("help");
+        assertOutputContains(true, "-h / --help is not supported", () -> callableExec("-h"));
+        assertOutputContains(true, "-h / --help is not supported", () -> callableExec("--help"));
         assertOutputContains(false, "MiNNN", () -> callableExec("-v"));
         assertOutputContains(false, "MiNNN", () -> callableExec("--version"));
     }

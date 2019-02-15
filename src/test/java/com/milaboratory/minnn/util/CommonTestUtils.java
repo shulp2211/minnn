@@ -32,6 +32,9 @@ import cc.redberry.pipe.CUtils;
 import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.alignment.*;
+import com.milaboratory.core.io.sequence.*;
+import com.milaboratory.core.io.sequence.fastq.SingleFastqReader;
+import com.milaboratory.core.io.sequence.fastq.SingleFastqWriter;
 import com.milaboratory.core.sequence.*;
 import com.milaboratory.minnn.pattern.*;
 import com.milaboratory.test.TestUtil;
@@ -321,7 +324,7 @@ public class CommonTestUtils {
             throw new IllegalArgumentException("maxCoordinate=" + maxCoordinate);
         ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
         while (groupEdgePositions.size() < numGroups * 2) {
-            String groupName = getRandomString(rg.nextInt(30) + 1, "", LETTERS_AND_NUMBERS);
+            String groupName = getRandomString(rg.nextInt(30) + 1, "R", LETTERS_AND_NUMBERS);
             if (groupEdgePositions.stream().anyMatch(g -> g.getGroupEdge().getGroupName().equals(groupName)))
                 continue;
             int leftPosition = rg.nextInt(maxCoordinate);
@@ -387,11 +390,21 @@ public class CommonTestUtils {
         }
     }
 
-    public static SinglePattern getRandomSinglePattern(SinglePattern... patterns) {
-        return getRandomSinglePattern(getRandomPatternAligner(), patterns);
+    public static FullReadPattern getRandomSingleReadPattern(SinglePattern... patterns) {
+        return getRandomSingleReadPattern(getRandomPatternAligner(), patterns);
     }
 
-    public static SinglePattern getRandomSinglePattern(PatternAligner patternAligner, SinglePattern... singlePatterns) {
+    public static FullReadPattern getRandomSingleReadPattern(PatternAligner patternAligner,
+                                                             SinglePattern... singlePatterns) {
+        return wrapWithFullReadPattern(patternAligner, getRandomRawSinglePattern(patternAligner, singlePatterns));
+    }
+
+    public static SinglePattern getRandomRawSinglePattern(SinglePattern... patterns) {
+        return getRandomRawSinglePattern(getRandomPatternAligner(), patterns);
+    }
+
+    public static SinglePattern getRandomRawSinglePattern(PatternAligner patternAligner,
+                                                          SinglePattern... singlePatterns) {
         SinglePattern[] patterns;
         if (singlePatterns.length == 0) {
             int numPatterns = rg.nextInt(5) + 1;
@@ -419,6 +432,13 @@ public class CommonTestUtils {
             default:
                 return new OrPattern(patternAligner, patterns);
         }
+    }
+
+    private static FullReadPattern wrapWithFullReadPattern(PatternAligner patternAligner,
+                                                           SinglePattern singlePattern) {
+        FullReadPattern fullReadPattern = new FullReadPattern(patternAligner, false, singlePattern);
+        fullReadPattern.setTargetId((byte)1);
+        return fullReadPattern;
     }
 
     public static MultipleReadsOperator getRandomMultiReadPattern(MultipleReadsOperator... patterns) {
@@ -520,14 +540,20 @@ public class CommonTestUtils {
     }
 
     public static void assertFileNotEquals(String fileName1, String fileName2) throws Exception {
+        if (fileEquals(fileName1, fileName2))
+            throw new AssertionError();
+    }
+
+    public static boolean fileEquals(String fileName1, String fileName2) throws Exception {
         byte[] file1Bytes = Files.readAllBytes(Paths.get(fileName1));
         byte[] file2Bytes = Files.readAllBytes(Paths.get(fileName2));
         if (file1Bytes.length == file2Bytes.length) {
             for (int i = 0; i < file1Bytes.length; i++)
                 if (file1Bytes[i] != file2Bytes[i])
-                    return;
-            throw new AssertionError();
+                    return false;
+            return true;
         }
+        return false;
     }
 
     public static void gzip(String inputFile, String outputFile) throws IOException {
@@ -567,6 +593,26 @@ public class CommonTestUtils {
         }
         scanner.close();
         return count;
+    }
+
+    public static void seqToFastq(List<NSequenceWithQuality> sequences, String fileName) {
+        try (SequenceWriter<SingleRead> writer = new SingleFastqWriter(fileName)) {
+            long id = 0;
+            for (NSequenceWithQuality seq : sequences)
+                writer.write(new SingleReadImpl(id++, seq, ""));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static List<NSequenceWithQuality> fastqToSeq(String fileName) {
+        List<NSequenceWithQuality> sequences;
+        try (SingleFastqReader reader = new SingleFastqReader(fileName)) {
+            sequences = streamPort(reader).map(SingleRead::getData).collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return sequences;
     }
 
     @FunctionalInterface

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -29,7 +29,9 @@
 package com.milaboratory.minnn.io;
 
 import cc.redberry.pipe.OutputPortCloseable;
+import com.milaboratory.cli.PipelineConfiguration;
 import com.milaboratory.core.io.CompressionType;
+import com.milaboratory.minnn.cli.PipelineConfigurationReaderMiNNN;
 import com.milaboratory.minnn.outputconverter.ParsedRead;
 import com.milaboratory.minnn.pattern.GroupEdge;
 import com.milaboratory.primitivio.PrimitivI;
@@ -40,9 +42,12 @@ import com.milaboratory.util.CountingInputStream;
 import java.io.*;
 import java.util.ArrayList;
 
+import static com.milaboratory.minnn.cli.Magic.*;
+import static com.milaboratory.minnn.util.SystemUtils.*;
 import static java.lang.Double.NaN;
 
-public final class MifReader implements OutputPortCloseable<ParsedRead>, CanReportProgress {
+public final class MifReader extends PipelineConfigurationReaderMiNNN
+        implements OutputPortCloseable<ParsedRead>, CanReportProgress {
     private static final int DEFAULT_BUFFER_SIZE = 1 << 20;
     private final PrimitivI input;
     private final CountingInputStream countingInputStream;
@@ -50,11 +55,15 @@ public final class MifReader implements OutputPortCloseable<ParsedRead>, CanRepo
     private long parsedReadsLimit = -1;
     private long parsedReadsTaken = 0;
     private boolean finished = false;
-    private int numberOfReads;
+    private boolean closed = false;
+    private PipelineConfiguration pipelineConfiguration;
+    private int numberOfTargets;
     private ArrayList<String> correctedGroups = new ArrayList<>();
-    private boolean sortedMif;
+    private ArrayList<String> sortedGroups = new ArrayList<>();
     private ArrayList<GroupEdge> groupEdges = new ArrayList<>();
     private long firstReadSerializedLength = -1;
+    private long originalNumberOfReads = -1;
+    private String mifVersionInfo;
 
     public MifReader(InputStream stream) {
         input = new PrimitivI(this.countingInputStream = new CountingInputStream(stream));
@@ -77,11 +86,21 @@ public final class MifReader implements OutputPortCloseable<ParsedRead>, CanRepo
     }
 
     private void readHeader() {
-        numberOfReads = input.readInt();
+        byte[] magicBytes = new byte[BEGIN_MAGIC_LENGTH];
+        input.readFully(magicBytes);
+        String magicString = new String(magicBytes);
+        if (!magicString.equals(BEGIN_MAGIC))
+            throw exitWithError("Unsupported file format; .mif file of version " + magicString +
+                    " while you are running MiNNN " + BEGIN_MAGIC);
+        mifVersionInfo = input.readUTF();
+        pipelineConfiguration = input.readObject(PipelineConfiguration.class);
+        numberOfTargets = input.readInt();
         int correctedGroupsNum = input.readInt();
         for (int i = 0; i < correctedGroupsNum; i++)
             correctedGroups.add(input.readObject(String.class));
-        sortedMif = input.readBoolean();
+        int sortedGroupsNum = input.readInt();
+        for (int i = 0; i < sortedGroupsNum; i++)
+            sortedGroups.add(input.readObject(String.class));
         int groupEdgesNum = input.readInt();
         for (int i = 0; i < groupEdgesNum; i++) {
             GroupEdge groupEdge = input.readObject(GroupEdge.class);
@@ -91,9 +110,13 @@ public final class MifReader implements OutputPortCloseable<ParsedRead>, CanRepo
     }
 
     @Override
-    public void close() {
-        input.close();
-        finished = true;
+    public synchronized void close() {
+        if (!closed) {
+            originalNumberOfReads = input.readLong();
+            input.close();
+            finished = true;
+            closed = true;
+        }
     }
 
     @Override
@@ -135,16 +158,21 @@ public final class MifReader implements OutputPortCloseable<ParsedRead>, CanRepo
         return parsedRead;
     }
 
-    public int getNumberOfReads() {
-        return numberOfReads;
+    @Override
+    public PipelineConfiguration getPipelineConfiguration() {
+        return pipelineConfiguration;
+    }
+
+    public int getNumberOfTargets() {
+        return numberOfTargets;
     }
 
     public ArrayList<String> getCorrectedGroups() {
         return correctedGroups;
     }
 
-    public boolean isSorted() {
-        return sortedMif;
+    public ArrayList<String> getSortedGroups() {
+        return sortedGroups;
     }
 
     public ArrayList<GroupEdge> getGroupEdges() {
@@ -152,7 +180,11 @@ public final class MifReader implements OutputPortCloseable<ParsedRead>, CanRepo
     }
 
     public MifHeader getHeader() {
-        return new MifHeader(numberOfReads, correctedGroups, sortedMif, groupEdges);
+        return new MifHeader(pipelineConfiguration, numberOfTargets, correctedGroups, sortedGroups, groupEdges);
+    }
+
+    public String getMifVersionInfo() {
+        return mifVersionInfo;
     }
 
     private void calculateFirstReadLength(ParsedRead parsedRead) {
@@ -161,6 +193,12 @@ public final class MifReader implements OutputPortCloseable<ParsedRead>, CanRepo
         outStream.writeObject(parsedRead);
         outStream.close();
         firstReadSerializedLength = counterStream.toByteArray().length;
+    }
+
+    public long getOriginalNumberOfReads() {
+        if (!closed)
+            throw new IllegalStateException("getOriginalNumberOfReads() used when reader is not closed!");
+        return originalNumberOfReads;
     }
 
     public long getEstimatedNumberOfReads() {

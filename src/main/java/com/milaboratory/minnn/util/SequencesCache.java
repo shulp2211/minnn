@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -37,9 +37,11 @@ import gnu.trove.map.hash.TCharObjectHashMap;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.milaboratory.core.sequence.SequenceQuality.MAX_QUALITY_VALUE;
+import static com.milaboratory.minnn.cli.Defaults.DEFAULT_MAX_QUALITY;
 
 public final class SequencesCache {
+    private SequencesCache() {}
+
     public static final HashMap<NucleotideSequence, NucleotideSequence> sequencesCache = new HashMap<>();
     public static final TByteObjectHashMap<SequenceQuality> qualityCache = new TByteObjectHashMap<>();
     public static final HashMap<NucleotideSequence, Wildcard> wildcards = new HashMap<>();
@@ -61,7 +63,7 @@ public final class SequencesCache {
             wildcardCodeToSequence.put(wildcard.getCode(), sequence);
             charToWildcard.put(wildcard.getSymbol(), wildcard);
         });
-        for (byte quality = 0; quality <= MAX_QUALITY_VALUE; quality++)
+        for (byte quality = 0; quality <= DEFAULT_MAX_QUALITY; quality++)
             qualityCache.put(quality, new SequenceQuality(new byte[] { quality }));
     }
 }

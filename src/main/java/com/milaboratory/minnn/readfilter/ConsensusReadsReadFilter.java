@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -43,6 +43,6 @@ public final class ConsensusReadsReadFilter implements ReadFilter {
             return parsedRead;
         else
             return new ParsedRead(parsedRead.getOriginalRead(), parsedRead.isReverseMatch(), null,
-                    parsedRead.getConsensusReads());
+                    parsedRead.getConsensusReads(), parsedRead.getOutputPortId());
     }
 }

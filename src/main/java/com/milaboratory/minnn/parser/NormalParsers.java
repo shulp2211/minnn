@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -685,8 +685,7 @@ final class NormalParsers {
             currentPosition = onLeft ? currentGroupName.start : currentGroupName.bracketsPair.end;
             foundGroupEdgePositions.add(new FoundGroupEdgePosition(new GroupEdgePosition(new GroupEdge(
                  currentGroupName.name, onLeft), onLeft ? 0 : patternLength),
-                    onLeft ? currentGroupName.start : currentGroupName.bracketsPair.end,
-                    onLeft ? currentGroupName.end + 1 : currentGroupName.bracketsPair.end + 1));
+                    currentPosition, onLeft ? currentGroupName.end + 1 : currentGroupName.bracketsPair.end + 1));
             closestGroupIndex = getClosestGroupByPosition(currentPosition, onLeft);
         }
         return foundGroupEdgePositions;
@@ -732,41 +731,67 @@ final class NormalParsers {
      */
     private List<FoundGroupEdgePosition> findGroupsForFuzzyPattern(int start, int end) {
         List<FoundGroupEdgePosition> foundGroupEdgePositions = new ArrayList<>();
-        int patternStringLength = end - start;
-        int ignoredCharactersCount = 0;
-        int ignoredCharactersSearchPosition = start;
         for (NormalSyntaxGroupName groupName : groupNames) {
             int groupStart = groupName.start - start;
-            int groupNameEnd = groupName.end - start;
-            int groupEnd = groupName.bracketsPair.end - start;
+            int groupNameEnd = groupName.end - start;           // inclusive
+            int groupEnd = groupName.bracketsPair.end - start;  // inclusive
+            int patternStringLength = end - start;
             if ((groupStart > 0) && (groupStart < patternStringLength - 1)) {
-                if (groupNameEnd < patternStringLength - 1) {
-                    ignoredCharactersCount += countCharacters(query.substring(ignoredCharactersSearchPosition,
-                            groupName.start), ' ');
-                    ignoredCharactersSearchPosition = groupName.end;
-                    foundGroupEdgePositions.add(new FoundGroupEdgePosition(new GroupEdgePosition(new GroupEdge(
-                            groupName.name, true), groupStart - ignoredCharactersCount), -1, -1));
-                    ignoredCharactersCount += groupNameEnd - groupStart + 1;
-                } else
+                if (groupNameEnd >= patternStringLength - 1)
                     throw new IllegalStateException("FuzzyMatchPattern: start=" + start + ", end=" + end
                             + ", group name: start=" + groupName.start + ", end=" + groupName.end);
+                int ignoredCharactersBeforeStart = countIgnoredCharactersInRange(start, groupName.start);
+                foundGroupEdgePositions.add(new FoundGroupEdgePosition(new GroupEdgePosition(new GroupEdge(
+                        groupName.name, true), groupStart - ignoredCharactersBeforeStart)));
             }
             if ((groupEnd > 0) && (groupEnd < patternStringLength - 1)) {
-                ignoredCharactersCount += countCharacters(query.substring(ignoredCharactersSearchPosition,
-                        groupName.bracketsPair.end), ' ');
-                ignoredCharactersSearchPosition = groupName.bracketsPair.end;
+                int ignoredCharactersBeforeEnd = countIgnoredCharactersInRange(start, groupName.bracketsPair.end);
                 foundGroupEdgePositions.add(new FoundGroupEdgePosition(new GroupEdgePosition(new GroupEdge(
-                        groupName.name, false), groupEnd - ignoredCharactersCount), -1, -1));
-                ignoredCharactersCount++;
+                        groupName.name, false), groupEnd - ignoredCharactersBeforeEnd)));
             }
         }
-        ignoredCharactersCount += countCharacters(query.substring(ignoredCharactersSearchPosition, end), ' ');
 
-        final int patternLength = end - start - ignoredCharactersCount;
+        final int patternLength = end - start - countIgnoredCharactersInRange(start, end);
         foundGroupEdgePositions.addAll(findGroupsOnBorder(start, true, patternLength));
         foundGroupEdgePositions.addAll(findGroupsOnBorder(end - 1, false, patternLength));
-
         return foundGroupEdgePositions;
+    }
+
+    /**
+     * Count ignored characters (spaces, parentheses, colons and group names) in specified range.
+     *
+     * @param start start of search interval in query, inclusive
+     * @param end end of search interval in query, exclusive
+     * @return number of ignored characters inside the specified range
+     */
+    private int countIgnoredCharactersInRange(int start, int end) {
+        if ((start < 0) || (end > query.length()) || (end < start))
+            throw new IllegalArgumentException("countIgnoredCharactersInRange called with start=" + start
+                    + ", end=" + end + " for query " + query);
+        else {
+            int rangeLength = end - start;
+            int ignoredCharactersCount = countCharacters(query.substring(start, end), ' ');
+            for (NormalSyntaxGroupName groupName : groupNames) {
+                int groupStart = groupName.start - start;
+                int groupNameEnd = groupName.end - start;           // inclusive
+                int groupEnd = groupName.bracketsPair.end - start;  // inclusive
+                if (((groupStart < 0) && (groupNameEnd >= 0))
+                        || ((groupStart < rangeLength) && (groupNameEnd > rangeLength - 1)))
+                    throw new IllegalStateException("Name of group " + groupName.name
+                            + " is partially in specified range: start=" + start + ", end=" + end
+                            + ", groupStart=" + groupStart + ", groupNameEnd=" + groupNameEnd + ", query: " + query);
+                else if (groupNameEnd <= groupStart + 1)
+                    throw new IllegalStateException("Wrong state of group " + groupName.name
+                            + ": groupName.start=" + groupName.start + ", groupName.end=" + groupName.end
+                            + ", query: " + query);
+                else if ((groupStart >= 0) && (groupNameEnd < rangeLength))
+                    ignoredCharactersCount += groupNameEnd - groupStart + 1
+                            - countCharacters(query.substring(groupName.start, groupName.end + 1), ' ');
+                if ((groupEnd >= 0) && (groupEnd < rangeLength))
+                    ignoredCharactersCount++;
+            }
+            return ignoredCharactersCount;
+        }
     }
 
     /**
@@ -949,10 +974,10 @@ final class NormalParsers {
                     + bracketsPair.bracketsType);
         boolean isScoreThreshold = scoreThresholds.stream().anyMatch(st -> st.start == bracketsPair.start);
         if (isScoreThreshold) {
-            int colonPosition = query.substring(bracketsPair.start + 1, bracketsPair.end).indexOf(":");
+            String insideBrackets = query.substring(bracketsPair.start + 1, bracketsPair.end);
+            int colonPosition = insideBrackets.indexOf(":");
             if (colonPosition == -1)
-                throw new IllegalStateException("No colon inside brackets with score threshold: "
-                        + query.substring(bracketsPair.start + 1, bracketsPair.end));
+                throw new IllegalStateException("No colon inside brackets with score threshold: " + insideBrackets);
             else
                 return bracketsPair.start + colonPosition + 2;
         } else
@@ -985,6 +1010,10 @@ final class NormalParsers {
         final GroupEdgePosition groupEdgePosition;
         final int start;
         final int end;
+
+        FoundGroupEdgePosition(GroupEdgePosition groupEdgePosition) {
+            this(groupEdgePosition, -1, -1);
+        }
 
         /**
          * Return value for findGroupEdgePositions(): parsed group edge position and its start and end coordinates

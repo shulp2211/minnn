@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -60,7 +60,7 @@ final class ScoreThreshold {
     boolean contains(int start, int end) {
         if ((start >= this.start) && (end <= this.end))
             return true;
-        else if (((start < this.start) && (end <= this.start)) || ((start >= this.end) && (end > this.end))
+        else if (((start < this.start) && (end <= this.start)) || (start >= this.end)
                 || ((start <= this.start) && (end >= this.end)))
             return false;
         else throw new IllegalStateException("Intersection of specified range and this ScoreThreshold: this.start="

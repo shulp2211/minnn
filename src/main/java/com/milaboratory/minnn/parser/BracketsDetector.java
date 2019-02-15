@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -222,8 +222,8 @@ final class BracketsDetector {
      * @param bracesPairs all braces pairs from the query
      * @return list of braces that used for cutting FuzzyMatchPattern, with sides (left/right) and numbers in braces
      */
-    static List<BorderBracesPair> getBorderBraces(String query,
-            List<BracketsPair> bracesPairs) throws ParserException {
+    static List<BorderBracesPair> getBorderBraces(
+            String query, List<BracketsPair> bracesPairs) throws ParserException {
         ArrayList<BorderBracesPair> borderBracesPairs = new ArrayList<>();
         for (BracketsPair bracesPair : bracesPairs)
             if ((bracesPair.start > 0) && ("<>".contains(query.substring(bracesPair.start - 1,
@@ -243,8 +243,8 @@ final class BracketsDetector {
      * @param borderBracesPairs found list of border braces pairs
      * @return list of braces that used for repeat patterns
      */
-    static List<BracketsPair> getRepeatPatternBraces(List<BracketsPair> bracesPairs,
-            List<BorderBracesPair> borderBracesPairs) throws ParserException {
+    static List<BracketsPair> getRepeatPatternBraces(
+            List<BracketsPair> bracesPairs, List<BorderBracesPair> borderBracesPairs) {
         return bracesPairs.stream().filter(bp -> borderBracesPairs.stream()
                 .noneMatch(bf -> bf.start == bp.start)).collect(Collectors.toList());
     }

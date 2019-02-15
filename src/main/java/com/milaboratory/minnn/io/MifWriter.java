@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -28,6 +28,8 @@
  */
 package com.milaboratory.minnn.io;
 
+import com.milaboratory.cli.AppVersionInfo.*;
+import com.milaboratory.cli.PipelineConfigurationWriter;
 import com.milaboratory.minnn.outputconverter.ParsedRead;
 import com.milaboratory.minnn.pattern.GroupEdge;
 import com.milaboratory.primitivio.PrimitivO;
@@ -35,36 +37,46 @@ import com.milaboratory.util.CanReportProgress;
 
 import java.io.*;
 
+import static com.milaboratory.minnn.cli.Magic.*;
+import static com.milaboratory.minnn.util.MinnnVersionInfo.getVersionString;
 import static java.lang.Double.NaN;
 
-public final class MifWriter implements AutoCloseable, CanReportProgress {
+public final class MifWriter implements PipelineConfigurationWriter, AutoCloseable, CanReportProgress {
     private static final int DEFAULT_BUFFER_SIZE = 1 << 20;
     private final PrimitivO output;
-    private boolean finished = false;
+    private boolean closed = false;
     private long estimatedNumberOfReads = -1;
     private long writtenReads = 0;
+    private long originalNumberOfReads = -1;
 
     public MifWriter(OutputStream outputStream, MifHeader mifHeader) {
         output = new PrimitivO(outputStream);
         writeHeader(mifHeader);
     }
 
-    public MifWriter(String file, MifHeader mifHeader) throws IOException {
+    public MifWriter(String file, MifHeader mifHeader)
+            throws IOException {
         output = new PrimitivO(new BufferedOutputStream(new FileOutputStream(file), DEFAULT_BUFFER_SIZE));
         writeHeader(mifHeader);
     }
 
-    public MifWriter(String file, MifHeader mifHeader, int bufferSize) throws IOException {
+    public MifWriter(String file, MifHeader mifHeader, int bufferSize)
+            throws IOException {
         output = new PrimitivO(new BufferedOutputStream(new FileOutputStream(file), bufferSize));
         writeHeader(mifHeader);
     }
 
     private void writeHeader(MifHeader mifHeader) {
-        output.writeInt(mifHeader.getNumberOfReads());
+        output.write(getBeginMagicBytes());
+        output.writeUTF(getVersionString(OutputType.ToFile, false));
+        output.writeObject(mifHeader.getPipelineConfiguration());
+        output.writeInt(mifHeader.getNumberOfTargets());
         output.writeInt(mifHeader.getCorrectedGroups().size());
         for (String correctedGroup : mifHeader.getCorrectedGroups())
             output.writeObject(correctedGroup);
-        output.writeBoolean(mifHeader.isSorted());
+        output.writeInt(mifHeader.getSortedGroups().size());
+        for (String sortedGroup : mifHeader.getSortedGroups())
+            output.writeObject(sortedGroup);
         output.writeInt(mifHeader.getGroupEdges().size());
         for (GroupEdge groupEdge : mifHeader.getGroupEdges()) {
             output.writeObject(groupEdge);
@@ -79,9 +91,17 @@ public final class MifWriter implements AutoCloseable, CanReportProgress {
 
     @Override
     public void close() {
-        output.writeObject(null);
-        output.close();
-        finished = true;
+        if (!closed) {
+            output.writeObject(null);
+            output.writeLong(originalNumberOfReads);
+            output.write(getEndMagicBytes());
+            output.close();
+            closed = true;
+        }
+    }
+
+    public void setOriginalNumberOfReads(long originalNumberOfReads) {
+        this.originalNumberOfReads = originalNumberOfReads;
     }
 
     public void setEstimatedNumberOfReads(long estimatedNumberOfReads) {
@@ -98,6 +118,6 @@ public final class MifWriter implements AutoCloseable, CanReportProgress {
 
     @Override
     public boolean isFinished() {
-        return finished;
+        return closed;
     }
 }

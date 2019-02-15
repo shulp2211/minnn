@@ -17,7 +17,8 @@ extract
  --pattern: Query, pattern specified in MiNNN format.
  --input: Input files. Single file means that there is 1 read or multi-read file; multiple files mean that there is 1 file for each read. If not specified, stdin will be used.
  --output: Output file in "mif" format. If not specified, stdout will be used.
- --input-format: Input data format. "fastq" (default) or "mif".
+ --not-matched-output: Output file for not matched reads in MIF format. If not specified, not matched reads will not be written anywhere.
+ --input-format: Input data format. Available options: FASTQ, MIF.
  --oriented: By default, if there are 2 or more reads, 2 last reads are checked in direct and reverse order. With this flag, only in direct order.
  --match-score: Score for perfectly matched nucleotide.
  --mismatch-score: Score for mismatched nucleotide.
@@ -33,7 +34,7 @@ extract
  --fair-sorting: Use fair sorting and fair best match by score for all patterns.
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
  --threads: Number of threads for parsing reads.
- --description-group-: Description group names and regular expressions to parse expected nucleotide sequences for that groups from read description. Example: --description-group-CELLID1='ATTA.{2-5}GACA' --description-group-CELLID2='.{11}$'
+ --description-group: Description group names and regular expressions to parse expected nucleotide sequences for that groups from read description. Example: --description-group CID1='ATTA.{2-5}GACA' --description-group CID2='.{11}$'
 
 .. _filter:
 
@@ -58,7 +59,7 @@ demultiplex
 .. code-block:: text
 
  Filter Options: Barcodes and sample configuration files that specify sequences for demultiplexing. At least 1 barcode or 1 sample file must be specified. Syntax example: minnn demultiplex --by-barcode UID --by-sample samples.txt input.mif
-
+ --demultiplex-log: Demultiplex log file name, to record names of generated files.
  --output-buffer-size: Write buffer size for each output file.
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
 
@@ -70,8 +71,7 @@ mif2fastq
 
 .. code-block:: text
 
- Group Options: Groups and their file names for output reads. At least 1 group must be specified. Built-in groups R1, R2, R3... used for input reads. Example: --group-R1 out_R1.fastq --group-R2 out_R2.fastq --group-UMI UMI.fastq
-
+ --group: Group Options: Groups and their file names for output reads. At least 1 group must be specified. Built-in groups R1, R2, R3... used for input reads. Example: --group R1=out_R1.fastq --group R2=out_R2.fastq --group UMI=UMI.fastq
  --input: Input file in "mif" format. If not specified, stdin will be used.
  --copy-original-headers: Copy original comments from initial fastq files to comments of output fastq files.
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
@@ -85,6 +85,7 @@ correct
 .. code-block:: text
 
  --groups: Group names for correction.
+ --primary-groups: Primary group names. If specified, all groups from --groups argument will be treated as secondary. Barcode correction will be performed not in scale of the entire input file, but separately in clusters with the same primary group values. If input file is already sorted by primary groups, correction will be faster and less memory consuming. Usage example: correct cell barcodes (CB) first, then sort by CB, then correct UMI for each CB separately. So, for first correction pass use "--groups CB", and for second pass use "--groups UMI --primary-groups CB". If multiple primary groups are specified, clusters will be determined by unique combinations of primary groups values.
  --input: Input file in "mif" format. This argument is required; stdin is not supported.
  --output: Output file in "mif" format. If not specified, stdout will be used.
  --max-mismatches: Maximum number of mismatches between barcodes for which they are considered identical.
@@ -94,8 +95,9 @@ correct
  --max-cluster-depth: Maximum cluster depth for algorithm of similar barcodes clustering.
  --single-substitution-probability: Single substitution probability for clustering algorithm.
  --single-indel-probability: Single insertion/deletion probability for clustering algorithm.
+ --max-unique-barcodes: Maximal number of unique barcodes that will be included into output. Reads containing barcodes with biggest counts will be included, reads with barcodes with smaller counts will be excluded. Value 0 turns off this feature: if this argument is 0, all barcodes will be included.
+ --excluded-barcodes-output: Output file for reads with barcodes excluded by count. If not specified, reads with excluded barcodes will not be written anywhere.
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
- --suppress-warnings: Don't display any warnings.
 
 .. _sort:
 
@@ -109,7 +111,6 @@ sort
  --input: Input file in "mif" format. If not specified, stdin will be used.
  --output: Output file in "mif" format. If not specified, stdout will be used.
  --chunk-size: Chunk size for sorter.
- --suppress-warnings: Don't display any warnings.
 
 .. _consensus:
 
@@ -121,11 +122,41 @@ consensus
 
  --input: Input file in "mif" format. If not specified, stdin will be used.
  --output: Output file in "mif" format. If not specified, stdout will be used.
- --groups: List of groups that represent barcodes. If not specified, all groups will be used.
+ --groups: List of groups that represent barcodes. All these groups must be sorted with "sort" action.
+ --skipped-fraction-to-repeat: Fraction of reads skipped by score threshold that must start the search for another consensus in skipped reads. Value 1 means always get only 1 consensus from one set of reads with identical barcodes.
+ --max-consensuses-per-cluster: Maximal number of consensuses generated from 1 cluster. Every time this threshold is applied to stop searching for new consensuses, warning will be displayed. Too many consensuses per cluster indicate that score threshold, aligner width or skipped fraction to repeat is too low.
+ --reads-min-good-sequence-length: Minimal length of good sequence that will be still considered good after trimming bad quality tails. This parameter is for trimming input reads.
+ --reads-avg-quality-threshold: Minimal average quality for bad quality tails trimmer. This parameter is for trimming input reads.
+ --reads-trim-window-size: Window size for bad quality tails trimmer. This parameter is for trimming input reads.
+ --min-good-sequence-length: Minimal length of good sequence that will be still considered good after trimming bad quality tails. This parameter is for trimming output consensuses.
+ --avg-quality-threshold: Minimal average quality for bad quality tails trimmer. This parameter is for trimming output consensuses.
+ --trim-window-size: Window size for bad quality tails trimmer. This parameter is for trimming output consensuses.
+ --original-read-stats: Save extra statistics for each original read into separate file. Output file in space separated text format.
+ --not-used-reads-output: Write reads not used in consensus assembly into separate file. Output file in "mif" format.
+ -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
+ --max-warnings: Maximum allowed number of warnings; -1 means no limit.
+ --threads: Number of threads for calculating consensus sequences.
+ --kmer-length: K-mer length. Also affects --min-good-sequence-length because good sequence length must not be lower than k-mer length, so the biggest of --kmer-length and --min-good-sequence-length will be used as --min-good-sequence-length value.
+ --kmer-offset: Max offset from the middle of the read when searching k-mers.
+ --kmer-max-errors: Maximal allowed number of mismatches when searching k-mers in sequences.
+
+.. _consensus-dma:
+
+consensus-dma
+-------------
+.. include:: reference_descriptions/consensus-dma.rst
+
+.. code-block:: text
+
+ --input: Input file in "mif" format. If not specified, stdin will be used.
+ --output: Output file in "mif" format. If not specified, stdout will be used.
+ --groups: List of groups that represent barcodes. All these groups must be sorted with "sort" action.
  --width: Window width (maximum allowed number of indels) for banded aligner.
  --aligner-match-score: Score for perfectly matched nucleotide, used in sequences alignment.
  --aligner-mismatch-score: Score for mismatched nucleotide, used in sequences alignment.
  --aligner-gap-score: Score for gap or insertion, used in sequences alignment.
+ --good-quality-mismatch-penalty: Extra score penalty for mismatch when both sequences have good quality.
+ --good-quality-mismatch-threshold: Quality that will be considered good for applying extra mismatch penalty.
  --score-threshold: Score threshold that used to filter reads for calculating consensus.
  --skipped-fraction-to-repeat: Fraction of reads skipped by score threshold that must start the search for another consensus in skipped reads. Value 1 means always get only 1 consensus from one set of reads with identical barcodes.
  --max-consensuses-per-cluster: Maximal number of consensuses generated from 1 cluster. Every time this threshold is applied to stop searching for new consensuses, warning will be displayed. Too many consensuses per cluster indicate that score threshold, aligner width or skipped fraction to repeat is too low.
@@ -135,6 +166,8 @@ consensus
  --min-good-sequence-length: Minimal length of good sequence that will be still considered good after trimming bad quality tails. This parameter is for trimming output consensuses.
  --avg-quality-threshold: Minimal average quality for bad quality tails trimmer. This parameter is for trimming output consensuses.
  --trim-window-size: Window size for bad quality tails trimmer. This parameter is for trimming output consensuses.
+ --original-read-stats: Save extra statistics for each original read into separate file. Output file in space separated text format.
+ --not-used-reads-output: Write reads not used in consensus assembly into separate file. Output file in "mif" format.
  --consensuses-to-separate-groups: If this parameter is specified, consensuses will not be written as reads R1, R2 etc to output file. Instead, original sequences will be written as R1, R2 etc and consensuses will be written as CR1, CR2 etc, so it will be possible to cluster original reads by consensuses using filter / demultiplex actions, or export original reads and corresponding consensuses into separate reads using mif2fastq action.
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
  --max-warnings: Maximum allowed number of warnings; -1 means no limit.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -87,6 +87,7 @@ public final class FullReadPattern extends SinglePattern {
     @Override
     public void setTargetId(byte targetId) {
         super.setTargetId(targetId);
+        operandPattern.setTargetId(targetId);
         targetIdInitialized = true;
     }
 
