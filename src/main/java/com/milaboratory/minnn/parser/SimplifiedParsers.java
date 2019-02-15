@@ -54,7 +54,7 @@ final class SimplifiedParsers {
                                                     ArrayList<GroupEdgePosition> groupEdgePositions)
             throws ParserException {
         List<QuotesPair> quotesPairs = getAllQuotes(str);
-        int commaPositions[] = new int[5];
+        int[] commaPositions = new int[5];
 
         commaPositions[0] = nonQuotedIndexOf(quotesPairs, str, ", ", 0);
         if (commaPositions[0] == -1)
@@ -97,7 +97,7 @@ final class SimplifiedParsers {
     static RepeatPattern parseRepeatPattern(PatternAligner patternAligner, String str,
                                             ArrayList<GroupEdgePosition> groupEdgePositions) throws ParserException {
         List<QuotesPair> quotesPairs = getAllQuotes(str);
-        int commaPositions[] = new int[5];
+        int[] commaPositions = new int[5];
 
         commaPositions[0] = nonQuotedIndexOf(quotesPairs, str, ", ", 0);
         if (commaPositions[0] == -1)
@@ -215,7 +215,8 @@ final class SimplifiedParsers {
     static AndOperator parseAndOperator(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                         ArrayList<MultipleReadsOperator> multiReadPatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
-        MultipleReadsOperator[] operands = multiReadPatterns.toArray(new MultipleReadsOperator[multiReadPatterns.size()]);
+        MultipleReadsOperator[] operands = multiReadPatterns
+                .toArray(new MultipleReadsOperator[multiReadPatterns.size()]);
         validateGroupEdges(true, false, true, operands);
         return new AndOperator(patternAligner, operands);
     }
@@ -223,7 +224,8 @@ final class SimplifiedParsers {
     static OrOperator parseOrOperator(PatternAligner patternAligner, ArrayList<Token> tokenizedSubstring,
                                       ArrayList<MultipleReadsOperator> multiReadPatterns) throws ParserException {
         checkOperandArraySpelling(tokenizedSubstring);
-        MultipleReadsOperator[] operands = multiReadPatterns.toArray(new MultipleReadsOperator[multiReadPatterns.size()]);
+        MultipleReadsOperator[] operands = multiReadPatterns
+                .toArray(new MultipleReadsOperator[multiReadPatterns.size()]);
         validateGroupEdges(true, true, true, operands);
         return new OrOperator(patternAligner, operands);
     }
@@ -244,14 +246,16 @@ final class SimplifiedParsers {
             throw new ParserException("Syntax not parsed correctly for Filter pattern; possibly missing operand: "
                     + tokenizedSubstring);
         if (!tokenizedSubstring.get(0).isString())
-            throw new IllegalArgumentException("Incorrect start in " + tokenizedSubstring + ", expected filter string!");
+            throw new IllegalArgumentException("Incorrect start in " + tokenizedSubstring
+                    + ", expected filter string!");
         String startingSubstring = tokenizedSubstring.get(0).getString();
         if (tokenizedSubstring.get(1).isString())
             throw new IllegalArgumentException("Wrong tokenizedSubstring for FilterPattern: " + tokenizedSubstring);
 
-        if (!startingSubstring.substring(startingSubstring.length() - 2).equals(", "))
+        String expectedComma = startingSubstring.substring(startingSubstring.length() - 2);
+        if (!expectedComma.equals(", "))
             throw new ParserException("Expected ', ' in FilterPattern starting substring, found '"
-                    + startingSubstring.substring(startingSubstring.length() - 2) + "'");
+                    + expectedComma + "'");
 
         String filterString = startingSubstring.substring(0, startingSubstring.length() - 2);
         int parenthesisPosition = filterString.indexOf("(");
@@ -381,7 +385,7 @@ final class SimplifiedParsers {
         checkGroupName(groupName);
 
         boolean isStart;
-        switch (str.substring(commaPosition - 1, str.length())) {
+        switch (str.substring(commaPosition - 1)) {
             case "', true)":
                 isStart = true;
                 break;
@@ -397,28 +401,33 @@ final class SimplifiedParsers {
 
     private static void checkOperandArraySpelling(ArrayList<Token> tokenizedSubstring) throws ParserException {
         if (tokenizedSubstring.size() < 3)
-            throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
+            throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: "
+                    + tokenizedSubstring);
         if (!tokenizedSubstring.get(0).isString())
             throw new IllegalArgumentException("Incorrect string start in " + tokenizedSubstring + ", expected '['");
         else if (!tokenizedSubstring.get(0).getString().equals("["))
             throw new ParserException("Incorrect operand string start: " + tokenizedSubstring.get(0).getString()
                     + ", expected '['");
         if (!tokenizedSubstring.get(tokenizedSubstring.size() - 1).isString())
-            throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
+            throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: "
+                    + tokenizedSubstring);
         else if (!tokenizedSubstring.get(tokenizedSubstring.size() - 1).getString().equals("]"))
             throw new ParserException("Found wrong end of operand array string: "
                     + tokenizedSubstring.get(tokenizedSubstring.size() - 1).getString());
         if (tokenizedSubstring.get(1).isString())
-            throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
+            throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: "
+                    + tokenizedSubstring);
         for (int i = 2; i < tokenizedSubstring.size() - 1; i++) {
             if (i % 2 == 0) {
                 if (!tokenizedSubstring.get(i).isString())
-                    throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
+                    throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: "
+                            + tokenizedSubstring);
                 else if (!tokenizedSubstring.get(i).getString().equals(", "))
                     throw new ParserException("Found wrong delimiter in array of patterns: "
                             + tokenizedSubstring.get(i).getString());
             } else if (tokenizedSubstring.get(i).isString())
-                throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: " + tokenizedSubstring);
+                throw new IllegalArgumentException("Wrong tokenizedSubstring for array of patterns: "
+                        + tokenizedSubstring);
         }
     }
 }

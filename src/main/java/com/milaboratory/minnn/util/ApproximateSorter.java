@@ -180,7 +180,8 @@ public final class ApproximateSorter {
 
             MatchedRange matchedRange = new MatchedRange(target, targetId, 0, combineRanges(sortedMatches));
 
-            return new MatchIntermediate(1, combineMatchScores(matches) + rangesCombinationPenalty,
+            return new MatchIntermediate(1,
+                    combineMatchScores(matches) + rangesCombinationPenalty,
                     sortedMatches[0].getLeftUppercaseDistance(),
                     sortedMatches[sortedMatches.length - 1].getRightUppercaseDistance(),
                     matchedGroupEdges, matchedRange);
@@ -349,7 +350,7 @@ public final class ApproximateSorter {
                 break;
             case INTERSECTION:
                 target = matches[0].getMatchedRange().getTarget();
-                Range ranges[] = new Range[matches.length];
+                Range[] ranges = new Range[matches.length];
 
                 OUTER:
                 for (int i = 0; i < matches.length; i++) {
@@ -486,7 +487,8 @@ public final class ApproximateSorter {
     }
 
     /**
-     * Get SpecificOutputPort for specified operand index, "from" and "to" coordinates for operand pattern match() call.
+     * Get SpecificOutputPort for specified operand index, "from" and "to" coordinates for operand pattern
+     * match() call.
      *
      * @param operandIndex operand index
      * @param from from coordinate for operand pattern match() call, or -1 if conf.from() should be used

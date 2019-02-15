@@ -28,11 +28,9 @@
  */
 package com.milaboratory.minnn.cli;
 
-import com.milaboratory.minnn.consensus.ConsensusAlgorithms;
 import com.milaboratory.minnn.io.MinnnDataFormat;
 
 import static com.milaboratory.core.sequence.SequenceQuality.*;
-import static com.milaboratory.minnn.consensus.ConsensusAlgorithms.*;
 import static com.milaboratory.minnn.io.MinnnDataFormat.*;
 
 public final class Defaults {
@@ -62,7 +60,6 @@ public final class Defaults {
     public final static float DEFAULT_CORRECT_SINGLE_SUBSTITUTION_PROBABILITY = 0.3f;
     public final static float DEFAULT_CORRECT_SINGLE_INDEL_PROBABILITY = 0.1f;
     public final static int DEFAULT_CORRECT_MAX_UNIQUE_BARCODES = 5000;
-    public final static ConsensusAlgorithms DEFAULT_CONSENSUS_ALGORITHM = SINGLE_CELL;
     public final static int DEFAULT_CONSENSUS_ALIGNER_WIDTH = 20;
     public final static int DEFAULT_CONSENSUS_SCORE_THRESHOLD = -100;
     public final static float DEFAULT_CONSENSUS_SKIPPED_FRACTION_TO_REPEAT = 0.05f;

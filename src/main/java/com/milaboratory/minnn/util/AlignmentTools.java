@@ -38,9 +38,9 @@ import static com.milaboratory.core.mutations.Mutation.*;
 public class AlignmentTools {
     private AlignmentTools() {}
 
-    public static long calculateAlignmentScore(long goodQualityMismatchPenalty, byte goodQualityThreshold,
-                                               Alignment<NucleotideSequence> alignment, NSequenceWithQuality seq1,
-                                               NSequenceWithQuality seq2) {
+    public static long calculateAlignmentScore(
+            long goodQualityMismatchPenalty, byte goodQualityThreshold, Alignment<NucleotideSequence> alignment,
+            NSequenceWithQuality seq1, NSequenceWithQuality seq2) {
         long score = (long)(alignment.getScore());
         AlignmentIteratorForward<NucleotideSequence> iterator = alignment.forwardIterator();
         while (iterator.advance()) {

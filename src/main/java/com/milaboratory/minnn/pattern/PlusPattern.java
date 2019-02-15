@@ -62,7 +62,8 @@ public final class PlusPattern extends MultiplePatternsOperator implements CanFi
     public SinglePattern fixBorder(boolean left, int position) {
         int targetOperandIndex = left ? 0 : operandPatterns.length - 1;
         if (operandPatterns[targetOperandIndex] instanceof CanFixBorders) {
-            SinglePattern newOperand = ((CanFixBorders)(operandPatterns[targetOperandIndex])).fixBorder(left, position);
+            SinglePattern newOperand = ((CanFixBorders)(operandPatterns[targetOperandIndex]))
+                    .fixBorder(left, position);
             return new PlusPattern(patternAligner, IntStream.range(0, operandPatterns.length)
                     .mapToObj((int i) -> (i == targetOperandIndex ? newOperand : operandPatterns[i]))
                     .toArray(SinglePattern[]::new));

@@ -190,8 +190,7 @@ final class TokenizedString {
                 deleteIndexLast--;
             }
 
-            for (int i = deleteIndexLast; i >= deleteIndexFirst; --i)
-                tokenizedString.remove(i);
+            tokenizedString.subList(deleteIndexFirst, deleteIndexLast + 1).clear();
         }
 
         assertChainNotBroken();
