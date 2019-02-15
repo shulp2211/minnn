@@ -223,7 +223,7 @@ public class ExtractActionTest {
         exec("correct -f --input " + extractedFile + " --output " + correctedFile + " --groups G1 G3");
         exec("sort -f --input " + correctedFile + " --output " + sortedFile + " --groups G1 G3");
         exec("consensus -f --input " + sortedFile + " --output " + consensusFile + " --groups G1 G3"
-                + " --score-threshold -100 --min-good-sequence-length 2 --reads-min-good-sequence-length 2"
+                + " --min-good-sequence-length 2 --reads-min-good-sequence-length 2"
                 + " --kmer-length 2 --trim-window-size 2 --reads-trim-window-size 2");
         for (String fileName : new String[] { extractedFile, correctedFile, sortedFile, consensusFile })
             assertTrue(new File(fileName).delete());
