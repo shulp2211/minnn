@@ -49,6 +49,9 @@ using pattern sequences and logical operators. This can produce wrong results in
 :code:`--threads` option sets the number of threads for pattern matching. It is recommended to set it equal to the
 number of CPU cores.
 
+:code:`--not-matched-output` argument allows to write not matched reads to the separate MIF file. By default (if this
+argument is not present) not matched reads will not be written anywhere.
+
 Sometimes read description contain barcodes or other nucleotide information. Extract action allows to parse that
 information from description and save it as groups in the output. Syntax for description groups parsing:
 :code:`--description-group GROUPNAME='regular_expression'`. :code:`GROUPNAME` is a group name where nucleotide sequence
