@@ -1,21 +1,18 @@
-Consensus action is used to calculate consensus sequences for all combinations of barcode values. It also allows to
-find multiple consensuses in the same combination of barcodes if there are multiple sequences with the same barcodes
-in the data. Consensus action uses multi-sequence alignment to put multiple sequences to the same coordinate system.
-Then it calculate consensus letter (or deletion) for each position. Consensus action works in 2 stages: first it aligns
-the cluster (group of sequences with same barcodes) to the best sequence from this cluster; best sequence is determined
-by length and quality. On 2nd stage, it aligns all sequences from this cluster to the consensus from 1st stage.
-After both stages, quality trimming is performed on both sides of the consensus, and if the resulting sequence is too
-short, this consensus is discarded. Sequences that have low alignment score with the best sequence are not included in
-consensus calculation. But if there are many remaining sequences (both in case that consensus was calculated and in
-case it was discarded), next consensus calculation will start with the cluster of remaining sequences.
+.. include:: reference_descriptions/consensus-header.rst
 
-**Important:** :ref:`sort` action must be used before consensus action with the same groups in :code:`--groups`
-argument as in consensus action, otherwise the results of consensus action will be wrong!
+Consensus action aligns multiple sequences by searching the most frequent K-mer in all of these sequences and then
+placing all of these sequences to the same coordinate system by offset of the most frequent K-mer in each of
+the sequences. Sequences where the most frequent K-mer (with allowed number of errors specified by
+:code:`--kmer-max-errors` argument) is not found are marked as remaining sequences and not included in current
+consensus calculation. Then consensus action calculates consensus from the current cluster of sequences that are
+already positioned in the same coordinate system. After this, quality trimming is performed on both sides of the
+consensus, and if the resulting sequence is too short, this consensus is discarded. But if there are many remaining
+sequences (both in case that consensus was calculated and in case it was discarded), next consensus calculation will
+start with the cluster of remaining sequences.
 
-:code:`--groups` argument with space separated list of groups can be specified in consensus action to specify which
-groups will be used for consensus calculation. If :code:`--groups` argument is missing, all groups from input file
-(except built-in groups :code:`R1`, :code:`R2` etc) will be used. :code:`--input` and :code:`--output` arguments are
-optional, and if they are missing, stdin and stdout will be used instead of input and output files.
+:code:`--groups` argument with space separated list of groups must be specified in consensus action to specify which
+groups will be used for consensus calculation. This argument is mandatory. :code:`--input` and :code:`--output`
+arguments are optional, and if they are missing, stdin and stdout will be used instead of input and output files.
 
 Examples for consensus action:
 
