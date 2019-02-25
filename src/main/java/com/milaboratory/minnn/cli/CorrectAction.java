@@ -151,8 +151,8 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
             names = {"--max-total-errors"})
     private int totalErrors = DEFAULT_CORRECT_MAX_TOTAL_ERRORS;
 
-    @Option(description = "Threshold for UMI clustering: if smaller UMI count divided to larger UMI count " +
-            "is below this threshold, UMI will be merged to the cluster.",
+    @Option(description = "Threshold for barcode clustering: if smaller barcode count divided to larger barcode " +
+            "count is below this threshold, barcode will be merged to the cluster.",
             names = {"--cluster-threshold"})
     private float threshold = DEFAULT_CORRECT_CLUSTER_THRESHOLD;
 

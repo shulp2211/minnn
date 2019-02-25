@@ -28,7 +28,7 @@ sequences.
 ``\`` character is very important syntax element: it used as read separator. There can be single-read input
 files, in this case ``\`` character must not be used. In multi-read inputs ``\`` must be used, and number
 of reads in pattern must be equal to number of input FASTQ files (or to number of reads in input MIF file if
-:code:`--input-format mif` parameter is used). There can be many reads, but the most common case is 2 reads:
+:code:`--input-format MIF` parameter is used). There can be many reads, but the most common case is 2 reads:
 :code:`R1` and :code:`R2`. By default, extract action will search :code:`R1`, :code:`R2` combination and then try
 the same search with swapped reads :code:`R2`, :code:`R1`. Then it will choose the match with better score. This is
 the default behavior; if you want to check only :code:`R1`, :code:`R2` combination without checking reversed order,

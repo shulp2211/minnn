@@ -54,4 +54,4 @@ following actions:
 
    .. code-block:: text
 
-      minnn mif2fastq --input consensus.mif --group-R1 consensus-R1.fastq --group-R2 consensus-R2.fastq
+      minnn mif2fastq --input consensus.mif --group R1=consensus-R1.fastq --group R2=consensus-R2.fastq

@@ -10,7 +10,8 @@ Filter Syntax
 Filters are used in :ref:`filter` action to set filtering conditions. There are 2 general cases of using filter action:
 
 1. Filtering input data by group value or length.
-2. Filtering output of :ref:`consensus` action to exclude consensuses assembled from too small number of reads.
+2. Filtering output of :ref:`consensus` and :ref:`consensus-dma` actions to exclude consensuses assembled from too
+   small number of reads.
 
 Filtering query must always be specified as separate argument in double quotes. Examples:
 
@@ -47,9 +48,9 @@ where length of the specified group equals to the :code:`value` will be passed t
 
    minnn filter "Len(G1) = 3"
 
-Consensus reads filter is used for filtering MIF files written by :ref:`consensus` action. The syntax is
-:code:`MinConsensusReads=value`. Only consensuses calculated from :code:`value` or more reads will be passed to the
-output. Example:
+Consensus reads filter is used for filtering MIF files written by :ref:`consensus` and :ref:`consensus-dma` actions.
+The syntax is :code:`MinConsensusReads=value`. Only consensuses calculated from :code:`value` or more reads will be
+passed to the output. Example:
 
 .. code-block:: text
 
