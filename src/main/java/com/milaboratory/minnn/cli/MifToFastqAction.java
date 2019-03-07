@@ -42,7 +42,7 @@ import static com.milaboratory.minnn.cli.MifToFastqAction.MIF_TO_FASTQ_ACTION_NA
         sortOptions = false,
         showDefaultValues = true,
         separator = " ",
-        description = "Convert mif file to fastq format.")
+        description = "Convert MIF file to FASTQ format.")
 public final class MifToFastqAction extends ACommandWithOutput implements MiNNNCommand {
     public static final String MIF_TO_FASTQ_ACTION_NAME = "mif2fastq";
 

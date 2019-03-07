@@ -16,7 +16,7 @@ extract
 
  --pattern: Query, pattern specified in MiNNN format.
  --input: Input files. Single file means that there is 1 read or multi-read file; multiple files mean that there is 1 file for each read. If not specified, stdin will be used.
- --output: Output file in "mif" format. If not specified, stdout will be used.
+ --output: Output file in MIF format. If not specified, stdout will be used.
  --not-matched-output: Output file for not matched reads in MIF format. If not specified, not matched reads will not be written anywhere.
  --input-format: Input data format. Available options: FASTQ, MIF.
  --oriented: By default, if there are 2 or more reads, 2 last reads are checked in direct and reverse order. With this flag, only in direct order.
@@ -44,8 +44,8 @@ filter
 
 .. code-block:: text
 
- --input: Input file in "mif" format. If not specified, stdin will be used.
- --output: Output file in "mif" format. If not specified, stdout will be used.
+ --input: Input file in MIF format. If not specified, stdin will be used.
+ --output: Output file in MIF format. If not specified, stdout will be used.
  --fair-sorting: Use fair sorting and fair best match by score for all patterns.
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
  --threads: Number of threads for parsing reads.
@@ -72,7 +72,7 @@ mif2fastq
 .. code-block:: text
 
  --group: Group Options: Groups and their file names for output reads. At least 1 group must be specified. Built-in groups R1, R2, R3... used for input reads. Example: --group R1=out_R1.fastq --group R2=out_R2.fastq --group UMI=UMI.fastq
- --input: Input file in "mif" format. If not specified, stdin will be used.
+ --input: Input file in MIF format. If not specified, stdin will be used.
  --copy-original-headers: Copy original comments from initial fastq files to comments of output fastq files.
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
 
@@ -86,12 +86,12 @@ correct
 
  --groups: Group names for correction.
  --primary-groups: Primary group names. If specified, all groups from --groups argument will be treated as secondary. Barcode correction will be performed not in scale of the entire input file, but separately in clusters with the same primary group values. If input file is already sorted by primary groups, correction will be faster and less memory consuming. Usage example: correct cell barcodes (CB) first, then sort by CB, then correct UMI for each CB separately. So, for first correction pass use "--groups CB", and for second pass use "--groups UMI --primary-groups CB". If multiple primary groups are specified, clusters will be determined by unique combinations of primary groups values.
- --input: Input file in "mif" format. This argument is required; stdin is not supported.
- --output: Output file in "mif" format. If not specified, stdout will be used.
+ --input: Input file in MIF format. This argument is required; stdin is not supported.
+ --output: Output file in MIF format. If not specified, stdout will be used.
  --max-mismatches: Maximum number of mismatches between barcodes for which they are considered identical.
  --max-indels: Maximum number of insertions or deletions between barcodes for which they are considered identical.
  --max-total-errors: Maximum Levenshtein distance between barcodes for which they are considered identical.
- --cluster-threshold: Threshold for UMI clustering: if smaller UMI count divided to larger UMI count is below this threshold, UMI will be merged to the cluster.
+ --cluster-threshold: Threshold for barcode clustering: if smaller barcode count divided to larger barcode count is below this threshold, barcode will be merged to the cluster.
  --max-cluster-depth: Maximum cluster depth for algorithm of similar barcodes clustering.
  --single-substitution-probability: Single substitution probability for clustering algorithm.
  --single-indel-probability: Single insertion/deletion probability for clustering algorithm.
@@ -108,8 +108,8 @@ sort
 .. code-block:: text
 
  --groups: Group names to use for sorting. Priority is in descending order.
- --input: Input file in "mif" format. If not specified, stdin will be used.
- --output: Output file in "mif" format. If not specified, stdout will be used.
+ --input: Input file in MIF format. If not specified, stdin will be used.
+ --output: Output file in MIF format. If not specified, stdout will be used.
  --chunk-size: Chunk size for sorter.
 
 .. _consensus:
@@ -120,8 +120,8 @@ consensus
 
 .. code-block:: text
 
- --input: Input file in "mif" format. If not specified, stdin will be used.
- --output: Output file in "mif" format. If not specified, stdout will be used.
+ --input: Input file in MIF format. If not specified, stdin will be used.
+ --output: Output file in MIF format. If not specified, stdout will be used.
  --groups: List of groups that represent barcodes. All these groups must be sorted with "sort" action.
  --skipped-fraction-to-repeat: Fraction of reads skipped by score threshold that must start the search for another consensus in skipped reads. Value 1 means always get only 1 consensus from one set of reads with identical barcodes.
  --max-consensuses-per-cluster: Maximal number of consensuses generated from 1 cluster. Every time this threshold is applied to stop searching for new consensuses, warning will be displayed. Too many consensuses per cluster indicate that score threshold, aligner width or skipped fraction to repeat is too low.
@@ -132,7 +132,7 @@ consensus
  --avg-quality-threshold: Minimal average quality for bad quality tails trimmer. This parameter is for trimming output consensuses.
  --trim-window-size: Window size for bad quality tails trimmer. This parameter is for trimming output consensuses.
  --original-read-stats: Save extra statistics for each original read into separate file. Output file in space separated text format.
- --not-used-reads-output: Write reads not used in consensus assembly into separate file. Output file in "mif" format.
+ --not-used-reads-output: Write reads not used in consensus assembly into separate file. Output file in MIF format.
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
  --max-warnings: Maximum allowed number of warnings; -1 means no limit.
  --threads: Number of threads for calculating consensus sequences.
@@ -148,8 +148,8 @@ consensus-dma
 
 .. code-block:: text
 
- --input: Input file in "mif" format. If not specified, stdin will be used.
- --output: Output file in "mif" format. If not specified, stdout will be used.
+ --input: Input file in MIF format. If not specified, stdin will be used.
+ --output: Output file in MIF format. If not specified, stdout will be used.
  --groups: List of groups that represent barcodes. All these groups must be sorted with "sort" action.
  --width: Window width (maximum allowed number of indels) for banded aligner.
  --aligner-match-score: Score for perfectly matched nucleotide, used in sequences alignment.
@@ -167,7 +167,7 @@ consensus-dma
  --avg-quality-threshold: Minimal average quality for bad quality tails trimmer. This parameter is for trimming output consensuses.
  --trim-window-size: Window size for bad quality tails trimmer. This parameter is for trimming output consensuses.
  --original-read-stats: Save extra statistics for each original read into separate file. Output file in space separated text format.
- --not-used-reads-output: Write reads not used in consensus assembly into separate file. Output file in "mif" format.
+ --not-used-reads-output: Write reads not used in consensus assembly into separate file. Output file in MIF format.
  --consensuses-to-separate-groups: If this parameter is specified, consensuses will not be written as reads R1, R2 etc to output file. Instead, original sequences will be written as R1, R2 etc and consensuses will be written as CR1, CR2 etc, so it will be possible to cluster original reads by consensuses using filter / demultiplex actions, or export original reads and corresponding consensuses into separate reads using mif2fastq action.
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
  --max-warnings: Maximum allowed number of warnings; -1 means no limit.
@@ -182,7 +182,7 @@ stat-groups
 .. code-block:: text
 
  --groups: Space separated list of groups to output, determines the keys by which the output table will be aggregated.
- --input: Input file in "mif" format. If not specified, stdin will be used.
+ --input: Input file in MIF format. If not specified, stdin will be used.
  --output: Output text file. If not specified, stdout will be used.
  --read-quality-filter: Filter group values with a min (non-aggregated) quality below a given threshold, applied on by-read basis, should be applied prior to any aggregation. 0 value means no threshold.
  --min-quality-filter: Filter group values based on min aggregated quality. 0 value means no filtering.
@@ -202,7 +202,7 @@ stat-positions
  --groups: Space separated list of groups to output, determines IDs allowed in group.id column.
  --reads: Space separated list of original read IDs to output (R1, R2 etc), determines IDs allowed in read column. If not specified, all reads will be used.
  --output-with-seq: Also output matched sequences. If specified, key columns are group.id + read + seq + pos; if not specified, key columns are group.id + read + pos.
- --input: Input file in "mif" format. If not specified, stdin will be used.
+ --input: Input file in MIF format. If not specified, stdin will be used.
  --output: Output text file. If not specified, stdout will be used.
  --min-count-filter: Filter unique group values represented by less than specified number of reads.
  --min-frac-filter: Filter unique group values represented by less than specified fraction of reads.

@@ -3,7 +3,7 @@ and cluster barcodes by similarity and frequency, creating new cluster for each 
 barcode that doesn't have matching cluster by similarity. Then it replaces rare barcodes with the most frequent ones
 from the same cluster and writes reads with corrected barcodes to the output.
 
-Correct action works in 3 stages:
+Correct action works in 3 stages (if :code:`--primary-groups` argument is not present):
 
 1. Reading input file and collecting all barcodes from there.
 2. Sorting and clustering barcodes.
@@ -20,8 +20,15 @@ Examples for correct action:
 .. code-block:: text
 
    minnn correct --groups UMI --input extracted.mif --output corrected.mif --cluster-threshold 0.01
-   minnn correct --groups G1 G3 G2 --input filtered.mif | xz > corrected.mif.xz
-   minnn correct --groups SB1 SB2 --max-total-errors 2 --input data.mif --output corrected.mif
+   minnn correct --groups G1 G3 G2 --max-unique-barcodes 7000 --input filtered.mif | xz > corrected.mif.xz
+   minnn correct --groups SB1 SB2 --max-total-errors 2 --max-unique-barcodes 0 --input data.mif --output corrected.mif
+
+:code:`--max-unique-barcodes` is an important argument: it sets maximal count of unique barcodes that will be included
+in the output file. Only barcodes with highest counts will be included; barcodes with low counts will be filtered out.
+This limit is the same for each group and calculated for each group separately. Reads that contain at least 1 filtered
+out barcode will not be included in the output. You can use :code:`--excluded-barcodes-output` argument if you want
+to write filtered out reads to the separate MIF file, or specify :code:`--max-unique-barcodes 0` to disable filtering
+barcodes by count completely.
 
 Arguments :code:`--max-mismatches`, :code:`--max-indels` and :code:`--max-total-errors` specify how two barcodes can
 differ in the same cluster. Two barcodes for which at least one of these 3 restrictions is not met will never be
@@ -41,5 +48,22 @@ In addition to :code:`--cluster-threshold`, clustering algorithm also uses proba
 in sequence for extra restrictions when barcode cannot be added to cluster. You can set these probabilities manually
 with :code:`--single-substitution-probability` and :code:`--single-indel-probability` arguments. If you don't need this
 feature, set both probabilities to :code:`1`.
+
+:code:`--primary-groups` argument means that barcodes must be corrected inside clusters that are formed from reads with
+the same values of the primary groups. Usage example is correcting UMI separately for each unique cell barcode. It is
+highly recommended to sort input MIF file by primary groups before correction because correction with unsorted primary
+groups is much slower and memory consuming. If primary groups need correction, they must be corrected before sorting.
+For example, we have 2 cell barcodes in groups :code:`CB1` and :code:`CB2` and UMI in group :code:`UMI`, and we want
+to correct cell barcodes, and correct UMI for each unique combination of cell barcodes separately. Then we can use the
+following sequence of commands:
+
+.. code-block:: text
+
+   minnn correct --groups CB1 CB2 --input data.mif --output corrected-primary.mif
+   minnn sort --groups CB1 CB2 --input corrected-primary.mif --output sorted-primary.mif
+   minnn correct --primary-groups CB1 CB2 --groups UMI --input sorted-primary.mif --output corrected-secondary.mif
+
+Note that :code:`--max-unique-barcodes` is counted separately for each cluster if :code:`--primary-groups` argument
+is present, so you may want to set lower value for :code:`--max-unique-barcodes` in this case.
 
 Command line arguments reference for correct action:

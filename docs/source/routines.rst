@@ -20,7 +20,7 @@ action to convert it to FASTQ format. Extracted barcodes will be in read descrip
 .. code-block:: text
 
    minnn extract --pattern "^(barcode:N{8})\*" --input data-R1.fastq data-R2.fastq --output extracted.mif
-   minnn mif2fastq --input extracted.mif --group-R1 barcodes-R1.fastq --group-R2 barcodes-R2.fastq
+   minnn mif2fastq --input extracted.mif --group R1=barcodes-R1.fastq --group R2=barcodes-R2.fastq
 
 **Example 2.** There are 2 barcodes, first starting with :code:`ATT` and ending with :code:`AAA`, with length 9,
 and second starting with :code:`GCC` and ending with :code:`TTT`, with length 12. Reads are oriented (swapping of
@@ -29,7 +29,7 @@ and second starting with :code:`GCC` and ending with :code:`TTT`, with length 12
 .. code-block:: text
 
    minnn extract --pattern "(B1:ATTNNNAAA)\(B2:GCCN{6}TTT)" --oriented --input data-R1.fastq data-R2.fastq --output extracted.mif
-   minnn mif2fastq --input extracted.mif --group-R1 barcodes-R1.fastq --group-R2 barcodes-R2.fastq
+   minnn mif2fastq --input extracted.mif --group R1=barcodes-R1.fastq --group R2=barcodes-R2.fastq
 
 **Example 3.** Good sequence starts with :code:`ATTAGACA`, and first 5 nucleotides can be possibly cut; and if sequence
 starts with something else, we want to skip it. First barcode with length 5 is immediately after :code:`ATTAGACA`,
@@ -40,7 +40,7 @@ to allow substitutions and indels (but with score penalties) inside sequences:
 .. code-block:: text
 
    minnn extract --pattern "^<{5}attagaca(B1:n{5})gccn{5}(B2:tttn{9})+ttagc>>$\*" --score-threshold -25 --input data-R1.fastq data-R2.fastq --output extracted.mif
-   minnn mif2fastq --input extracted.mif --group-R1 barcodes-R1.fastq --group-R2 barcodes-R2.fastq
+   minnn mif2fastq --input extracted.mif --group R1=barcodes-R1.fastq --group R2=barcodes-R2.fastq
 
 .. _demultiplexing:
 
@@ -127,7 +127,7 @@ commands:
 
    minnn extract --pattern "^(UMI:ATTNNN)\*" --input R1.fastq R2.fastq --output extracted.mif
    minnn correct --groups UMI --input extracted.mif --output corrected-UMI.mif
-   minnn mif2fastq --input corrected-UMI.mif --group-R1 corrected-UMI-R1.fastq --group-R2 corrected-UMI-R2.fastq
+   minnn mif2fastq --input corrected-UMI.mif --group R1=corrected-UMI-R1.fastq --group R2=corrected-UMI-R2.fastq
 
 .. _consensus_assembly:
 
@@ -152,6 +152,6 @@ Then we use the following commands:
    minnn correct --groups UMI --input extracted.mif --output corrected.mif
    minnn sort --groups UMI --input corrected.mif --output sorted.mif
    minnn consensus --groups UMI --max-consensuses-per-cluster 1 --input sorted.mif --output consensus.mif
-   minnn mif2fastq --input consensus.mif --group-R1 consensus-R1.fastq --group-R2 consensus-R2.fastq
+   minnn mif2fastq --input consensus.mif --group R1=consensus-R1.fastq --group R2=consensus-R2.fastq
 
 To configure settings for consensus assembly, see the description of available options on :ref:`consensus` action page.

@@ -2,7 +2,8 @@ Filter action is used to filter data from MIF file with specified query and writ
 There are 2 general cases of using filter action:
 
 1. Filtering input data by group value or length.
-2. Filtering output of :ref:`consensus` action to exclude consensuses assembled from too small number of reads.
+2. Filtering output of :ref:`consensus` or :ref:`consensus-dma` action to exclude consensuses assembled from too small
+   number of reads.
 
 Filter action works with queries. Query is mandatory argument and must be enclosed in double quotes :code:`""`. Details
 about filter syntax can be found in :ref:`filter_syntax` section. :code:`--input` and :code:`--output` arguments are

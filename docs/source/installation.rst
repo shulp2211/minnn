@@ -22,7 +22,7 @@ Manual Installation
 
    .. code-block:: text
 
-      minnn --help
+      minnn help
 
    If everything is correct, minnn help will be displayed.
 
@@ -40,6 +40,6 @@ Installation with Homebrew
 
    .. code-block:: text
 
-      minnn --help
+      minnn help
 
    If everything is correct, minnn help will be displayed.

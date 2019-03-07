@@ -31,10 +31,10 @@ package com.milaboratory.minnn.cli;
 class CommonDescriptions {
     private CommonDescriptions() {}
 
-    static final String IN_FILE_NO_STDIN = "Input file in \"mif\" format. This argument is required; stdin is not" +
+    static final String IN_FILE_NO_STDIN = "Input file in MIF format. This argument is required; stdin is not" +
             " supported.";
-    static final String IN_FILE_OR_STDIN = "Input file in \"mif\" format. If not specified, stdin will be used.";
-    static final String OUT_FILE_OR_STDOUT = "Output file in \"mif\" format. If not specified, stdout will be used.";
+    static final String IN_FILE_OR_STDIN = "Input file in MIF format. If not specified, stdin will be used.";
+    static final String OUT_FILE_OR_STDOUT = "Output file in MIF format. If not specified, stdout will be used.";
     static final String OUT_TEXT_FILE = "Output text file. If not specified, stdout will be used.";
     static final String PATTERN_QUERY = "Query, pattern specified in MiNNN format.";
     static final String MATCH_SCORE = "Score for perfectly matched nucleotide.";
@@ -80,7 +80,7 @@ class CommonDescriptions {
     static final String ORIGINAL_READ_STATS = "Save extra statistics for each original read into separate file. " +
             "Output file in space separated text format.";
     static final String CONSENSUS_NOT_USED_READS_OUTPUT = "Write reads not used in consensus assembly into separate " +
-            "file. Output file in \"mif\" format.";
+            "file. Output file in MIF format.";
     static final String CONSENSUSES_TO_SEPARATE_GROUPS = "If this parameter is specified, consensuses will not be " +
             "written as reads R1, R2 etc to output file. Instead, original sequences will be written as R1, R2 etc " +
             "and consensuses will be written as CR1, CR2 etc, so it will be possible to cluster original reads by " +
