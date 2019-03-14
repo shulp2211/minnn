@@ -34,9 +34,11 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.coverage',
-    'sphinx.ext.pngmath',
+#    'sphinx.ext.pngmath',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
+    'nbsphinx',
+    'sphinx.ext.mathjax',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -82,7 +84,7 @@ language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['reference_descriptions/*']
+exclude_patterns = ['reference_descriptions/*', '_build', '**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -363,3 +365,5 @@ epub_exclude_files = ['search.html']
 #epub_use_index = True
 
 highlight_language = 'none'
+
+nbsphinx_execute = 'never'
