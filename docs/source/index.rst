@@ -11,8 +11,6 @@ Contents:
     quickstart
     routines
     usecases
-    RepSeq
-    SingleCell+
     reference
     pattern_syntax
     appendix
