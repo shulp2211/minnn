@@ -1,0 +1,4 @@
+-- Sorter upgrade
+-- New filters: by group quality and N count
+-- --consensuses-to-separate-groups option implemented in Consensus (SingleCell algorithm) action
+-- --min-count option returned to Correct action

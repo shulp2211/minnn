@@ -2,7 +2,8 @@
 minnn 3.0.0 ( 7 мар 2019)
 ========================
 
-
+-- -- Bugfixes for N nucleotides scoring in Extract action
+-- -- Fixes and updates in project dependencies
 
 minnn 2.0.0 (15 фев 2019)
 ========================
