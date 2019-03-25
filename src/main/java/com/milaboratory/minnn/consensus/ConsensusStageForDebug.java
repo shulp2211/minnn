@@ -28,19 +28,6 @@
  */
 package com.milaboratory.minnn.consensus;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
-public class ConsensusAlgorithmRNASeq extends ConsensusAlgorithm {
-    public ConsensusAlgorithmRNASeq() {
-        super(null, 0, 0, 0,
-                0, 0, 0, 0,
-                0, 0, false, null, (byte)0,
-                null);
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public CalculatedConsensuses process(Cluster cluster) {
-        throw new NotImplementedException();
-    }
+public enum ConsensusStageForDebug {
+    NO_STAGE, STAGE1, STAGE2
 }

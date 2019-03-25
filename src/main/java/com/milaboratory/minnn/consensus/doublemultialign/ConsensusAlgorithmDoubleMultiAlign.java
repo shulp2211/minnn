@@ -35,12 +35,12 @@ import com.milaboratory.minnn.consensus.*;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 import java.util.function.Consumer;
 import java.util.stream.*;
 
 import static com.milaboratory.core.alignment.BandedLinearAligner.alignLocalGlobal;
 import static com.milaboratory.core.sequence.quality.QualityTrimmer.trim;
+import static com.milaboratory.minnn.consensus.ConsensusStageForDebug.*;
 import static com.milaboratory.minnn.consensus.OriginalReadStatus.*;
 import static com.milaboratory.minnn.pattern.PatternUtils.*;
 import static com.milaboratory.minnn.util.AlignmentTools.calculateAlignmentScore;
@@ -51,10 +51,6 @@ public class ConsensusAlgorithmDoubleMultiAlign extends ConsensusAlgorithm {
     private final long goodQualityMismatchPenalty;
     private final byte goodQualityMismatchThreshold;
     private final long scoreThreshold;
-    private final boolean toSeparateGroups;
-    private final PrintStream debugOutputStream;
-    private final byte debugQualityThreshold;
-    private final AtomicLong consensusCurrentTempId = new AtomicLong(0);
 
     public ConsensusAlgorithmDoubleMultiAlign(
             Consumer<String> displayWarning, int numberOfTargets, int alignerWidth, int matchScore, int mismatchScore,
@@ -65,16 +61,14 @@ public class ConsensusAlgorithmDoubleMultiAlign extends ConsensusAlgorithm {
             ConcurrentHashMap<Long, OriginalReadData> originalReadsData) {
         super(displayWarning, numberOfTargets, maxConsensusesPerCluster, skippedFractionToRepeat,
                 readsMinGoodSeqLength, readsAvgQualityThreshold, readsTrimWindowSize, minGoodSeqLength,
-                avgQualityThreshold, trimWindowSize, originalReadsData);
+                avgQualityThreshold, trimWindowSize, toSeparateGroups, debugOutputStream, debugQualityThreshold,
+                originalReadsData);
         this.alignerWidth = alignerWidth;
         this.scoring = new LinearGapAlignmentScoring<>(NucleotideSequence.ALPHABET, matchScore, mismatchScore,
                 gapScore);
         this.goodQualityMismatchPenalty = goodQualityMismatchPenalty;
         this.goodQualityMismatchThreshold = goodQualityMismatchThreshold;
         this.scoreThreshold = scoreThreshold;
-        this.toSeparateGroups = toSeparateGroups;
-        this.debugOutputStream = debugOutputStream;
-        this.debugQualityThreshold = debugQualityThreshold;
     }
 
     @Override
@@ -83,8 +77,8 @@ public class ConsensusAlgorithmDoubleMultiAlign extends ConsensusAlgorithm {
         List<DataFromParsedRead> data = trimBadQualityTails(cluster.data);
         if (data.size() == 0) {
             calculatedConsensuses.consensuses.add(new Consensus((debugOutputStream == null) ? null
-                    : new ConsensusDebugData(numberOfTargets, debugQualityThreshold, false), numberOfTargets,
-                    false));
+                    : new ConsensusDebugData(numberOfTargets, debugQualityThreshold, STAGE1, true),
+                    numberOfTargets, false));
             if (cluster.data.size() > 1)
                 displayWarning.accept("WARNING: all reads discarded after quality trimming from cluster of "
                         + cluster.data.size() + " reads! Barcode values: "
@@ -275,7 +269,8 @@ public class ConsensusAlgorithmDoubleMultiAlign extends ConsensusAlgorithm {
             ArrayList<AlignedSubsequences> subsequencesList, SequenceWithAttributes[] bestSequences,
             TargetBarcodes[] barcodes, boolean stage2) {
         ConsensusDebugData debugData = (debugOutputStream == null) ? null
-                : new ConsensusDebugData(numberOfTargets, debugQualityThreshold, stage2);
+                : new ConsensusDebugData(numberOfTargets, debugQualityThreshold, stage2 ? STAGE2 : STAGE1,
+                true);
         int consensusReadsNum = subsequencesList.size();
         long bestSeqReadId = bestSequences[0].getOriginalReadId();
         SequenceWithAttributes[] sequences = new SequenceWithAttributes[numberOfTargets];
