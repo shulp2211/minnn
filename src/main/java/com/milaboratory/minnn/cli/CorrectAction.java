@@ -172,7 +172,7 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
             "barcodes with biggest counts will be included, reads with barcodes with smaller counts will be " +
             "excluded. Value 0 turns off this feature: if this argument is 0, all barcodes will be included.",
             names = {"--max-unique-barcodes"})
-    private int maxUniqueBarcodes = DEFAULT_CORRECT_MAX_UNIQUE_BARCODES;
+    private int maxUniqueBarcodes = 0;
 
     @Option(description = "Barcodes with count less than specified will not be included in the output.",
             names = {"--min-count"})

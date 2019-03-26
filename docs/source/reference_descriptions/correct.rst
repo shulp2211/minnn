@@ -21,14 +21,16 @@ Examples for correct action:
 
    minnn correct --groups UMI --input extracted.mif --output corrected.mif --cluster-threshold 0.01
    minnn correct --groups G1 G3 G2 --max-unique-barcodes 7000 --input filtered.mif | xz > corrected.mif.xz
-   minnn correct --groups SB1 SB2 --max-total-errors 2 --max-unique-barcodes 0 --input data.mif --output corrected.mif
+   minnn correct --groups SB1 SB2 --max-total-errors 2 --input data.mif --output corrected.mif
 
-:code:`--max-unique-barcodes` is an important argument: it sets maximal count of unique barcodes that will be included
-in the output file. Only barcodes with highest counts will be included; barcodes with low counts will be filtered out.
-This limit is the same for each group and calculated for each group separately. Reads that contain at least 1 filtered
-out barcode will not be included in the output. You can use :code:`--excluded-barcodes-output` argument if you want
-to write filtered out reads to the separate MIF file, or specify :code:`--max-unique-barcodes 0` to enable any amount
-of unique barcodes and disable this filtering feature.
+:code:`--max-unique-barcodes` argument is useful for correction of cell barcodes in single cell sequencing: it sets
+maximal count of unique barcodes that will be included in the output file. Only barcodes with highest counts will be
+included; barcodes with low counts will be filtered out. This limit is the same for each group and calculated for each
+group separately, so if you want to set different limits for different groups (for example, for cell barcodes and UMI
+in single cell sequencing), perform separate :code:`correct` action runs for different groups. Reads that contain at
+least 1 filtered out barcode will not be included in the output. You can use :code:`--excluded-barcodes-output`
+argument if you want to write filtered out reads to the separate MIF file. If :code:`--max-unique-barcodes` argument
+is absent or set to :code:`0`, filtering by maximal number of unique barcodes will be disabled.
 
 :code:`--min-count` argument allows to specify count threshold for barcodes directly. Barcodes with lower counts will
 be filtered out. Reads that contain at least 1 filtered out barcode will not be included in the output.
@@ -68,6 +70,6 @@ following sequence of commands:
 
 Note that :code:`--max-unique-barcodes` and :code:`--min-count` are counted separately for each cluster if
 :code:`--primary-groups` argument is present, so you may want to set lower values for :code:`--max-unique-barcodes` and
-:code:`--min-count` in this case.
+:code:`--min-count` arguments if you use them.
 
 Command line arguments reference for correct action:
