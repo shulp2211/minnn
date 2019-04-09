@@ -8,8 +8,8 @@ mkdir -p ${dir}/src/test/resources/big
 cd ${dir}/src/test/resources/big
 
 declare -A links=(
-    ["test01_R1.fastq.gz"]="https://www.dropbox.com/s/rh7tdvotn3xiqzf/test01_R1.fastq.gz?dl=1"
-    ["test01_R2.fastq.gz"]="https://www.dropbox.com/s/sqvluhyr2kon0il/test01_R2.fastq.gz?dl=1"
+    ["test01_R1.fastq.gz"]="https://s3.amazonaws.com/files.milaboratory.com/test-data/test01_R1.fastq.gz"
+    ["test01_R2.fastq.gz"]="https://s3.amazonaws.com/files.milaboratory.com/test-data/test01_R2.fastq.gz"
 )
 
 for filename in "${!links[@]}"; do
