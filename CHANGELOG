@@ -1,4 +1,15 @@
 
+minnn 4.0.0 (11 апр 2019)
+========================
+
+-- -- Sorter upgrade
+-- -- New filters: by group quality and N count
+-- -- --consensuses-to-separate-groups option implemented in Consensus (SingleCell algorithm) action
+-- -- --min-count option returned to Correct action
+-- -- Filtering by maximal number of unique barcodes is disabled by default in Correct action
+-- -- Bugfixes for -n and --overwrite-if-required arguments
+
+
 minnn 3.0.0 ( 7 мар 2019)
 ========================
 
