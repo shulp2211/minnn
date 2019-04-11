@@ -60,7 +60,7 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
         CorrectBarcodesIO correctBarcodesIO = new CorrectBarcodesIO(getFullPipelineConfiguration(), inputFileName,
                 outputFileName, mismatches, indels, totalErrors, threshold, groupNames, primaryGroupNames,
                 maxClusterDepth, singleSubstitutionProbability, singleIndelProbability, maxUniqueBarcodes,
-                excludedBarcodesOutputFileName, inputReadsLimit, quiet);
+                minCount, excludedBarcodesOutputFileName, inputReadsLimit, quiet);
         correctBarcodesIO.go();
     }
 
@@ -93,7 +93,7 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
     public void handleExistenceOfOutputFile(String outFileName) {
         // disable smart overwrite if output file for reads with excluded barcodes is specified
         if (excludedBarcodesOutputFileName != null)
-            MiNNNCommand.super.handleExistenceOfOutputFile(outFileName, forceOverwrite);
+            MiNNNCommand.super.handleExistenceOfOutputFile(outFileName, forceOverwrite || overwriteIfRequired);
         else
             super.handleExistenceOfOutputFile(outFileName);
     }
@@ -102,7 +102,7 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
     public ActionConfiguration getConfiguration() {
         return new CorrectActionConfiguration(new CorrectActionConfiguration.CorrectActionParameters(groupNames,
                 primaryGroupNames, mismatches, indels, totalErrors, threshold, maxClusterDepth,
-                singleSubstitutionProbability, singleIndelProbability, maxUniqueBarcodes, inputReadsLimit));
+                singleSubstitutionProbability, singleIndelProbability, maxUniqueBarcodes, minCount, inputReadsLimit));
     }
 
     @Override
@@ -172,7 +172,11 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
             "barcodes with biggest counts will be included, reads with barcodes with smaller counts will be " +
             "excluded. Value 0 turns off this feature: if this argument is 0, all barcodes will be included.",
             names = {"--max-unique-barcodes"})
-    private int maxUniqueBarcodes = DEFAULT_CORRECT_MAX_UNIQUE_BARCODES;
+    private int maxUniqueBarcodes = 0;
+
+    @Option(description = "Barcodes with count less than specified will not be included in the output.",
+            names = {"--min-count"})
+    private int minCount = 0;
 
     @Option(description = "Output file for reads with barcodes excluded by count. If not specified, reads with " +
             "excluded barcodes will not be written anywhere.",

@@ -164,7 +164,8 @@ public final class ConsensusIO {
                 consensusAlgorithm = new ConsensusAlgorithmSingleCell(this::displayWarning, numberOfTargets,
                         maxConsensusesPerCluster, skippedFractionToRepeat, readsMinGoodSeqLength,
                         readsAvgQualityThreshold, readsTrimWindowSize, minGoodSeqLength, avgQualityThreshold,
-                        trimWindowSize, originalReadsData, kmerLength, kmerMaxOffset, kmerMatchMaxErrors);
+                        trimWindowSize, toSeparateGroups, debugOutputStream, debugQualityThreshold, originalReadsData,
+                        kmerLength, kmerMaxOffset, kmerMatchMaxErrors);
                 break;
         }
     }
@@ -260,7 +261,7 @@ public final class ConsensusIO {
                             writer.write(consensus.toParsedRead());
                     }
                     if (debugOutputStream != null) {
-                        if (!consensus.finalConsensus)
+                        if ((consensusAlgorithmType != DOUBLE_MULTI_ALIGN) || !consensus.finalConsensus)
                             clusterIndex++;
                         consensus.debugData.writeDebugData(debugOutputStream, clusterIndex, i);
                     }

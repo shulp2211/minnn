@@ -26,29 +26,8 @@
  * PARTICULAR PURPOSE, OR THAT THE USE OF THE SOFTWARE WILL NOT INFRINGE ANY
  * PATENT, TRADEMARK OR OTHER RIGHTS.
  */
-package com.milaboratory.minnn.readfilter;
+package com.milaboratory.minnn.consensus;
 
-import com.milaboratory.minnn.outputconverter.MatchedGroup;
-import com.milaboratory.minnn.outputconverter.ParsedRead;
-
-import java.util.stream.Collectors;
-
-import static com.milaboratory.minnn.util.SystemUtils.*;
-
-public interface ReadFilter {
-    ParsedRead filter(ParsedRead parsedRead);
-
-    default ParsedRead notMatchedRead(ParsedRead parsedRead) {
-        return new ParsedRead(parsedRead.getOriginalRead(), parsedRead.isReverseMatch(), null,
-                parsedRead.getConsensusReads(), parsedRead.getOutputPortId());
-    }
-
-    default MatchedGroup getGroupByName(ParsedRead parsedRead, String groupName) {
-        MatchedGroup matchedGroup = parsedRead.getGroupByName(groupName);
-        if (matchedGroup == null)
-            throw exitWithError("Group " + groupName + " not found in the input, available groups are "
-                    + parsedRead.getGroups().stream().map(MatchedGroup::getGroupName).collect(Collectors.toList()));
-        else
-            return matchedGroup;
-    }
+public enum ConsensusStageForDebug {
+    NO_STAGE, STAGE1, STAGE2
 }
