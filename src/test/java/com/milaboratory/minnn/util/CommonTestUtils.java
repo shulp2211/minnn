@@ -324,7 +324,7 @@ public class CommonTestUtils {
             throw new IllegalArgumentException("maxCoordinate=" + maxCoordinate);
         ArrayList<GroupEdgePosition> groupEdgePositions = new ArrayList<>();
         while (groupEdgePositions.size() < numGroups * 2) {
-            String groupName = getRandomString(rg.nextInt(30) + 1, "R", LETTERS_AND_NUMBERS);
+            String groupName = getRandomString(rg.nextInt(25) + 5, "R", LETTERS_AND_NUMBERS);
             if (groupEdgePositions.stream().anyMatch(g -> g.getGroupEdge().getGroupName().equals(groupName)))
                 continue;
             int leftPosition = rg.nextInt(maxCoordinate);
