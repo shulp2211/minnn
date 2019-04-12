@@ -30,19 +30,28 @@ package com.milaboratory.minnn.io;
 
 import cc.redberry.pipe.CUtils;
 import cc.redberry.pipe.OutputPortCloseable;
+import com.google.common.io.NullOutputStream;
 import com.milaboratory.cli.PipelineConfiguration;
 import com.milaboratory.core.io.CompressionType;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.minnn.outputconverter.ParsedRead;
-import com.milaboratory.minnn.outputconverter.ParsedReadObjectSerializer;
-import com.milaboratory.util.SmartProgressReporter;
-import com.milaboratory.util.Sorter;
-import com.milaboratory.util.TempFileManager;
+import com.milaboratory.primitivio.PrimitivI;
+import com.milaboratory.primitivio.PrimitivIState;
+import com.milaboratory.primitivio.PrimitivO;
+import com.milaboratory.primitivio.PrimitivOState;
+import com.milaboratory.util.*;
+import org.apache.commons.io.input.NullInputStream;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static com.milaboratory.minnn.cli.Defaults.DEFAULT_SORT_CHUNK_SIZE;
@@ -80,8 +89,90 @@ public final class SorterIO {
                     .noneMatch(gn::equals)).collect(Collectors.toList());
             if (!suppressWarnings && (notCorrectedGroups.size() != 0))
                 System.err.println("WARNING: group(s) " + notCorrectedGroups + " not corrected before sorting!");
-            OutputPortCloseable<ParsedRead> sorted = Sorter.sort(reader, new ParsedReadComparator(), chunkSize,
-                    new ParsedReadObjectSerializer(reader.getGroupEdges()), tmpFile);
+
+            // Creating I/O states
+            PrimitivOState oState;
+            PrimitivIState iState;
+            {
+                PrimitivO o = new PrimitivO(new NullOutputStream());
+                reader.getGroupEdges().forEach(o::putKnownObject);
+                oState = o.getState();
+
+                PrimitivI i = new PrimitivI(new NullInputStream(0));
+                reader.getGroupEdges().forEach(i::putKnownObject);
+                iState = i.getState();
+            }
+
+            Sorter2<NucleotideSequence[], ParsedRead> sorter = new Sorter2<>(reader,
+                    pr -> sortGroupNames.stream().map(gr -> pr.getGroupValue(gr).getSequence()).toArray(NucleotideSequence[]::new),
+                    (k1, k2) -> {
+                        assert k1.length == k2.length;
+                        int c;
+                        for (int i = 0; i < k1.length; i++) {
+                            NucleotideSequence
+                                    s1 = k1[i],
+                                    s2 = k2[i];
+                            if (s1 == s2)
+                                continue;
+                            if (s1 == null)
+                                return -1;
+                            if (s2 == null)
+                                return 1;
+                            if ((c = (s1.compareTo(s2))) != 0)
+                                return c;
+                        }
+                        return 0;
+                    },
+                    () -> {
+                        VolatileDataInput vi = new VolatileDataInput();
+                        PrimitivI i = iState.createPrimitivI(vi);
+                        VolatileDataOutput vo = new VolatileDataOutput();
+                        PrimitivO o = oState.createPrimitivO(vo);
+
+                        return new Sorter2.Serializer<ParsedRead>() {
+                            @Override
+                            public void serialize(ParsedRead parsedRead, DataOutput dest) throws IOException {
+                                vo.setInternal(dest);
+                                o.writeObject(parsedRead);
+                            }
+
+                            @Override
+                            public ParsedRead deserialize(DataInput source) throws IOException {
+                                vi.setInternal(source);
+                                return i.readObject(ParsedRead.class);
+                            }
+                        };
+                    },
+                    () -> {
+                        VolatileDataInput vi = new VolatileDataInput();
+                        PrimitivI i = new PrimitivI(vi);
+                        VolatileDataOutput vo = new VolatileDataOutput();
+                        PrimitivO o = new PrimitivO(vo);
+
+                        return new Sorter2.Serializer<NucleotideSequence[]>() {
+                            @Override
+                            public void serialize(NucleotideSequence[] nucleotideSequences, DataOutput dest) throws IOException {
+                                vo.setInternal(dest);
+                                o.writeObject(nucleotideSequences);
+                            }
+
+                            @Override
+                            public NucleotideSequence[] deserialize(DataInput source) throws IOException {
+                                vi.setInternal(source);
+                                return i.readObject(NucleotideSequence[].class);
+                            }
+                        };
+                    },
+                    Executors.newCachedThreadPool(),
+                    Runtime.getRuntime().availableProcessors(),
+                    6, 1L << 31, tmpFile.toPath()
+            );
+
+            OutputPortCloseable<ParsedRead> sorted = sorter.run();
+
+            // OutputPortCloseable<ParsedRead> sorted = Sorter.sort(reader, new ParsedReadComparator(), chunkSize,
+            //         new ParsedReadObjectSerializer(reader.getGroupEdges()), tmpFile);
+
             SmartProgressReporter.startProgressReport("Writing", writer, System.err);
             for (ParsedRead parsedRead : CUtils.it(sorted)) {
                 totalReads++;
@@ -119,7 +210,7 @@ public final class SorterIO {
             File inputFile = new File(inputFileName);
             CompressionType ct = CompressionType.detectCompressionType(inputFile);
             int averageBytesPerParsedRead = (ct == CompressionType.None) ? 50 : 15;
-            return (int)Math.min(Math.max(16384, inputFile.length() / averageBytesPerParsedRead / 8),
+            return (int) Math.min(Math.max(16384, inputFile.length() / averageBytesPerParsedRead / 8),
                     DEFAULT_SORT_CHUNK_SIZE);
         }
     }
