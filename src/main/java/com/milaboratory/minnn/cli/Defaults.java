@@ -71,6 +71,7 @@ public final class Defaults {
     public final static int DEFAULT_CONSENSUS_TRIM_WINDOW_SIZE = 20;
     public final static long DEFAULT_CONSENSUS_GOOD_QUALITY_MISMATCH_PENALTY = -17;
     public final static byte DEFAULT_CONSENSUS_GOOD_QUALITY_MISMATCH_THRESHOLD = GOOD_QUALITY_VALUE;
+    public final static int DEFAULT_CONSENSUS_MAX_WARNINGS = 5;
     public final static int DEFAULT_CONSENSUS_KMER_LENGTH = 21;
     public final static int DEFAULT_CONSENSUS_KMER_OFFSET = 15;
     public final static int DEFAULT_CONSENSUS_KMER_MAX_ERRORS = 3;

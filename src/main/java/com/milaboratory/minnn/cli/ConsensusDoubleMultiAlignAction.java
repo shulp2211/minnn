@@ -220,7 +220,7 @@ public final class ConsensusDoubleMultiAlignAction extends ACommandWithSmartOver
 
     @Option(description = MAX_WARNINGS,
             names = {"--max-warnings"})
-    private int maxWarnings = -1;
+    private int maxWarnings = DEFAULT_CONSENSUS_MAX_WARNINGS;
 
     @Option(description = CONSENSUS_NUMBER_OF_THREADS,
             names = {"--threads"})
