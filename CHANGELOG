@@ -1,4 +1,12 @@
 
+minnn 4.0.1 (19 Apr 2019)
+========================
+
+-- Consensus calculation support for unsorted input file
+-- Default --max-warnings is 5 in Consensus actions
+-- Support for --report and --json-report options for report writing
+
+
 minnn 4.0.0 (11 Apr 2019)
 ========================
 
