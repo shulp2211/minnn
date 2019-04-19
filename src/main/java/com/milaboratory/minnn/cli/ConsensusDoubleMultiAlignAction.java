@@ -62,7 +62,8 @@ public final class ConsensusDoubleMultiAlignAction extends ACommandWithSmartOver
                 maxConsensusesPerCluster, readsMinGoodSeqLength, readsAvgQualityThreshold, readsTrimWindowSize,
                 minGoodSeqLength, avgQualityThreshold, trimWindowSize, originalReadStatsFileName,
                 notUsedReadsOutputFileName, toSeparateGroups, inputReadsLimit, actualMaxWarnings, threads,
-                0, 0, 0, debugOutputFileName, debugQualityThreshold);
+                0, 0, 0, reportFileName, jsonReportFileName,
+                debugOutputFileName, debugQualityThreshold);
         consensusIO.go();
 
     }
@@ -225,6 +226,14 @@ public final class ConsensusDoubleMultiAlignAction extends ACommandWithSmartOver
     @Option(description = CONSENSUS_NUMBER_OF_THREADS,
             names = {"--threads"})
     private int threads = DEFAULT_THREADS;
+
+    @Option(description = REPORT,
+            names = "--report")
+    private String reportFileName = null;
+
+    @Option(description = JSON_REPORT,
+            names = "--json-report")
+    private String jsonReportFileName = null;
 
     @Option(description = CONSENSUS_DEBUG_OUTPUT,
             names = {"--debug-output"},

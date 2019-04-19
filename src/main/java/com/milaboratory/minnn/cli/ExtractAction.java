@@ -87,8 +87,8 @@ public final class ExtractAction extends ACommandWithSmartOverwrite implements M
         if (patternGroups.size() > 0)
             throw exitWithError("Error: groups " + patternGroups + " are both in pattern and in description groups!");
         ReadProcessor readProcessor = new ReadProcessor(getFullPipelineConfiguration(), getInputFiles(),
-                outputFileName, notMatchedOutputFileName, pattern, oriented, fairSorting, inputReadsLimit, threads,
-                inputFormat, descriptionGroups);
+                outputFileName, notMatchedOutputFileName, pattern, query, oriented, fairSorting, inputReadsLimit,
+                threads, reportFileName, jsonReportFileName, inputFormat, descriptionGroups);
         readProcessor.processReadsParallel();
     }
 
@@ -225,6 +225,14 @@ public final class ExtractAction extends ACommandWithSmartOverwrite implements M
     @Option(description = "Number of threads for parsing reads.",
             names = "--threads")
     private int threads = DEFAULT_THREADS;
+
+    @Option(description = REPORT,
+            names = "--report")
+    private String reportFileName = null;
+
+    @Option(description = JSON_REPORT,
+            names = "--json-report")
+    private String jsonReportFileName = null;
 
     @Option(description = "Description group names and regular expressions to parse expected " +
             "nucleotide sequences for that groups from read description. Example: --description-group CID1=" +

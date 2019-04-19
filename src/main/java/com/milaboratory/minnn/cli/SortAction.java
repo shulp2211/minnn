@@ -55,7 +55,7 @@ public final class SortAction extends ACommandWithSmartOverwrite implements MiNN
     @Override
     public void run1() {
         SorterIO sorterIO = new SorterIO(getFullPipelineConfiguration(), inputFileName, outputFileName,
-                sortGroupNames, chunkSize, quiet, tmpFile);
+                sortGroupNames, chunkSize, quiet, reportFileName, jsonReportFileName, tmpFile);
         sorterIO.go();
     }
 
@@ -127,6 +127,14 @@ public final class SortAction extends ACommandWithSmartOverwrite implements MiNN
     @Option(description = "Chunk size for sorter.",
             names = {"--chunk-size"})
     private int chunkSize = -1;
+
+    @Option(description = REPORT,
+            names = "--report")
+    private String reportFileName = null;
+
+    @Option(description = JSON_REPORT,
+            names = "--json-report")
+    private String jsonReportFileName = null;
 
     @Option(description = "Custom temp file, used for debugging purposes.",
             names = {"--temp-file"},

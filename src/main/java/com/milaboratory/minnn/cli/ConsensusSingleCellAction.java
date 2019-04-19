@@ -62,7 +62,8 @@ public final class ConsensusSingleCellAction extends ACommandWithSmartOverwrite 
                 maxConsensusesPerCluster, readsMinGoodSeqLength, readsAvgQualityThreshold, readsTrimWindowSize,
                 minGoodSeqLength, avgQualityThreshold, trimWindowSize, originalReadStatsFileName,
                 notUsedReadsOutputFileName, toSeparateGroups, inputReadsLimit, actualMaxWarnings, threads,
-                kmerLength, kmerOffset, kmerMaxErrors, debugOutputFileName, debugQualityThreshold);
+                kmerLength, kmerOffset, kmerMaxErrors, reportFileName, jsonReportFileName,
+                debugOutputFileName, debugQualityThreshold);
         consensusIO.go();
     }
 
@@ -195,6 +196,14 @@ public final class ConsensusSingleCellAction extends ACommandWithSmartOverwrite 
     @Option(description = CONSENSUS_NUMBER_OF_THREADS,
             names = {"--threads"})
     private int threads = DEFAULT_THREADS;
+
+    @Option(description = REPORT,
+            names = "--report")
+    private String reportFileName = null;
+
+    @Option(description = JSON_REPORT,
+            names = "--json-report")
+    private String jsonReportFileName = null;
 
     @Option(description = "K-mer length. Also affects --min-good-sequence-length because good sequence length must "
             + "not be lower than k-mer length, so the biggest of --kmer-length and --min-good-sequence-length "

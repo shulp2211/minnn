@@ -54,7 +54,8 @@ public final class StatGroupsAction extends ACommandWithOutput implements MiNNNC
     @Override
     public void run0() {
         StatGroupsIO statGroupsIO = new StatGroupsIO(groupList, inputFileName, outputFileName, inputReadsLimit,
-                readQualityFilter, minQualityFilter, avgQualityFilter, minCountFilter, minFracFilter);
+                readQualityFilter, minQualityFilter, avgQualityFilter, minCountFilter, minFracFilter,
+                reportFileName, jsonReportFileName);
         statGroupsIO.go();
     }
 
@@ -128,4 +129,12 @@ public final class StatGroupsAction extends ACommandWithOutput implements MiNNNC
     @Option(description = NUMBER_OF_READS,
             names = {"-n", "--number-of-reads"})
     private long inputReadsLimit = 0;
+
+    @Option(description = STAT_REPORT,
+            names = "--report")
+    private String reportFileName = null;
+
+    @Option(description = JSON_REPORT,
+            names = "--json-report")
+    private String jsonReportFileName = null;
 }
