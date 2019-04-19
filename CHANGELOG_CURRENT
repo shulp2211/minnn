@@ -1,3 +1,0 @@
-Consensus calculation support for unsorted input file
-Default --max-warnings is 5 in Consensus actions
-Support for --report and --json-report options for report writing
