@@ -46,6 +46,7 @@ import gnu.trove.map.hash.TLongLongHashMap;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -53,6 +54,7 @@ import java.util.stream.IntStream;
 import static com.milaboratory.minnn.cli.CliUtils.floatFormat;
 import static com.milaboratory.minnn.consensus.ConsensusAlgorithms.*;
 import static com.milaboratory.minnn.consensus.OriginalReadStatus.*;
+import static com.milaboratory.minnn.io.ReportWriter.*;
 import static com.milaboratory.minnn.util.SystemUtils.*;
 import static com.milaboratory.util.TimeUtils.nanoTimeToString;
 
@@ -85,6 +87,9 @@ public final class ConsensusIO {
     private final int kmerLength;
     private final int kmerMaxOffset;
     private final int kmerMatchMaxErrors;
+    private final String reportFileName;
+    private final String jsonReportFileName;
+    private final StringBuilder reportedWarnings = new StringBuilder();
     private final PrintStream debugOutputStream;
     private final byte debugQualityThreshold;
     private final AtomicLong totalReads = new AtomicLong(0);
@@ -105,7 +110,8 @@ public final class ConsensusIO {
                        int readsTrimWindowSize, int minGoodSeqLength, float avgQualityThreshold, int trimWindowSize,
                        String originalReadStatsFileName, String notUsedReadsOutputFileName, boolean toSeparateGroups,
                        long inputReadsLimit, int maxWarnings, int threads, int kmerLength, int kmerMaxOffset,
-                       int kmerMatchMaxErrors, String debugOutputFileName, byte debugQualityThreshold) {
+                       int kmerMatchMaxErrors, String reportFileName, String jsonReportFileName,
+                       String debugOutputFileName, byte debugQualityThreshold) {
         this.pipelineConfiguration = pipelineConfiguration;
         this.consensusGroups = new LinkedHashSet<>(Objects.requireNonNull(groupList));
         this.inputFileName = inputFileName;
@@ -135,6 +141,8 @@ public final class ConsensusIO {
         this.kmerLength = kmerLength;
         this.kmerMaxOffset = kmerMaxOffset;
         this.kmerMatchMaxErrors = kmerMatchMaxErrors;
+        this.reportFileName = reportFileName;
+        this.jsonReportFileName = jsonReportFileName;
         try {
             debugOutputStream = (debugOutputFileName == null) ? null
                     : new PrintStream(new FileOutputStream(debugOutputFileName));
@@ -178,7 +186,6 @@ public final class ConsensusIO {
              MifWriter writer = createWriter(mifHeader = reader.getHeader())) {
             if (inputReadsLimit > 0)
                 reader.setParsedReadsLimit(inputReadsLimit);
-            SmartProgressReporter.startProgressReport("Calculating consensuses", reader, System.err);
             LinkedHashSet<String> notCorrectedGroups = new LinkedHashSet<>(consensusGroups);
             notCorrectedGroups.removeAll(reader.getCorrectedGroups());
             LinkedHashSet<String> notSortedGroups = new LinkedHashSet<>(consensusGroups);
@@ -186,62 +193,82 @@ public final class ConsensusIO {
             if (notCorrectedGroups.size() > 0)
                 displayWarning("WARNING: group(s) " + notCorrectedGroups + " not corrected, but used in " +
                         "consensus calculation!");
-            if (notSortedGroups.size() > 0)
+            OutputPort<Cluster> clusterOutputPort;
+            if (notSortedGroups.size() > 0) {
+                // not all groups are sorted; we must read the entire file into memory to create clusters
                 displayWarning("WARNING: group(s) " + notSortedGroups + " not sorted, but used in " +
-                        "consensus calculation; result will be wrong!");
-            consensusAlgorithmInit();
-            OutputPort<Cluster> clusterOutputPort = new OutputPort<Cluster>() {
-                LinkedHashMap<String, NucleotideSequence> previousGroups = null;
-                Cluster currentCluster = new Cluster(0);
-                int orderedPortIndex = 0;
-                boolean finished = false;
-
-                @Override
-                public synchronized Cluster take() {
-                    if (finished)
-                        return null;
-                    Cluster preparedCluster = null;
-                    while (preparedCluster == null) {
-                        ParsedRead parsedRead = ((inputReadsLimit == 0) || (totalReads.get() < inputReadsLimit))
-                                ? reader.take() : null;
-                        if (parsedRead != null) {
-                            Set<String> allGroups = parsedRead.getGroups().stream().map(MatchedGroup::getGroupName)
-                                    .filter(groupName -> !defaultGroups.get().contains(groupName))
-                                    .collect(Collectors.toSet());
-                            for (String groupName : consensusGroups)
-                                if (!allGroups.contains(groupName))
-                                    throw exitWithError("Group " + groupName + " not found in the input!");
-                            LinkedHashMap<String, NucleotideSequence> currentGroups = parsedRead.getGroups().stream()
-                                    .filter(g -> consensusGroups.contains(g.getGroupName()))
-                                    .collect(LinkedHashMap::new, (m, g) -> m.put(g.getGroupName(),
-                                            g.getValue().getSequence()), Map::putAll);
-                            if (!currentGroups.equals(previousGroups)) {
-                                if (previousGroups != null) {
-                                    preparedCluster = currentCluster;
-                                    currentCluster = new Cluster(++orderedPortIndex);
-                                }
-                                previousGroups = currentGroups;
-                            }
-                            DataFromParsedRead dataFromParsedRead = toSeparateGroups
-                                    ? new DataFromParsedReadWithAllGroups(parsedRead, defaultGroups, consensusGroups)
-                                    : new BasicDataFromParsedRead(parsedRead, defaultGroups, consensusGroups);
-                            currentCluster.data.add(dataFromParsedRead);
-                            if ((originalReadsData != null) && !originalReadsData.containsKey(parsedRead
-                                    .getOriginalRead().getId()))
-                                originalReadsData.put(parsedRead.getOriginalRead().getId(),
-                                        new OriginalReadData(parsedRead));
-                            totalReads.getAndIncrement();
-                        } else {
-                            finished = true;
-                            if (previousGroups != null)
-                                return currentCluster;
-                            else
-                                return null;
-                        }
-                    }
-                    return preparedCluster;
+                        "consensus calculation; consensus calculation will consume much more memory!");
+                SmartProgressReporter.startProgressReport("Reading", reader, System.err);
+                // keys: group names and values; values: created clusters
+                HashMap<LinkedHashMap<String, NucleotideSequence>, Cluster> allClusters = new HashMap<>();
+                AtomicInteger orderedPortIndex = new AtomicInteger(0);
+                for (ParsedRead parsedRead : CUtils.it(reader)) {
+                    LinkedHashMap<String, NucleotideSequence> groups = extractConsensusGroups(parsedRead);
+                    allClusters.computeIfAbsent(groups, g -> new Cluster(orderedPortIndex.getAndIncrement()));
+                    allClusters.get(groups).data.add(extractData(parsedRead));
+                    saveOriginalReadsData(parsedRead);
+                    if (totalReads.incrementAndGet() == inputReadsLimit)
+                        break;
                 }
-            };
+                clusterOutputPort = new OutputPort<Cluster>() {
+                    Iterator<Cluster> clusters = allClusters.values().iterator();
+
+                    @Override
+                    public synchronized Cluster take() {
+                        if (!clusters.hasNext())
+                            return null;
+                        return clusters.next();
+                    }
+                };
+            } else {
+                SmartProgressReporter.startProgressReport("Calculating consensuses", reader, System.err);
+                // all groups are sorted; we can add input reads to the cluster while their group values are the same
+                clusterOutputPort = new OutputPort<Cluster>() {
+                    LinkedHashMap<String, NucleotideSequence> previousGroups = null;
+                    Cluster currentCluster = new Cluster(0);
+                    int orderedPortIndex = 0;
+                    boolean finished = false;
+
+                    @Override
+                    public synchronized Cluster take() {
+                        if (finished)
+                            return null;
+                        Cluster preparedCluster = null;
+                        while (preparedCluster == null) {
+                            ParsedRead parsedRead = ((inputReadsLimit == 0) || (totalReads.get() < inputReadsLimit))
+                                    ? reader.take() : null;
+                            if (parsedRead != null) {
+                                Set<String> allGroups = parsedRead.getGroups().stream().map(MatchedGroup::getGroupName)
+                                        .filter(groupName -> !defaultGroups.get().contains(groupName))
+                                        .collect(Collectors.toSet());
+                                for (String groupName : consensusGroups)
+                                    if (!allGroups.contains(groupName))
+                                        throw exitWithError("Group " + groupName + " not found in the input!");
+                                LinkedHashMap<String, NucleotideSequence> currentGroups =
+                                        extractConsensusGroups(parsedRead);
+                                if (!currentGroups.equals(previousGroups)) {
+                                    if (previousGroups != null) {
+                                        preparedCluster = currentCluster;
+                                        currentCluster = new Cluster(++orderedPortIndex);
+                                    }
+                                    previousGroups = currentGroups;
+                                }
+                                currentCluster.data.add(extractData(parsedRead));
+                                saveOriginalReadsData(parsedRead);
+                                totalReads.getAndIncrement();
+                            } else {
+                                finished = true;
+                                if (previousGroups != null)
+                                    return currentCluster;
+                                else
+                                    return null;
+                            }
+                        }
+                        return preparedCluster;
+                    }
+                };
+            }
+            consensusAlgorithmInit();
 
             OutputPort<CalculatedConsensuses> calculatedConsensusesPort = new ParallelProcessor<>(clusterOutputPort,
                     consensusAlgorithm, threads);
@@ -362,13 +389,41 @@ public final class ConsensusIO {
             }
         }
 
+        StringBuilder reportFileHeader = new StringBuilder();
+        StringBuilder report = new StringBuilder();
+        LinkedHashMap<String, Object> jsonReportData = new LinkedHashMap<>();
+
+        reportFileHeader.append("Report for Consensus command:\n");
+        if (inputFileName == null)
+            reportFileHeader.append("Input is from stdin\n");
+        else
+            reportFileHeader.append("Input file name: ").append(inputFileName).append('\n');
+        if (outputFileName == null)
+            reportFileHeader.append("Output is to stdout\n");
+        else
+            reportFileHeader.append("Output file name: ").append(outputFileName).append('\n');
+        reportFileHeader.append("Consensus assembled by groups: ").append(consensusGroups).append('\n');
+        reportFileHeader.append("Consensus algorithm: ").append(consensusAlgorithmType).append('\n');
+        reportFileHeader.append(reportedWarnings);
+
         long elapsedTime = System.currentTimeMillis() - startTime;
-        System.err.println("\nProcessing time: " + nanoTimeToString(elapsedTime * 1000000));
-        System.err.println("Processed " + totalReads + " reads\n");
-        System.err.println("Calculated " + consensusReads + " consensuses\n");
+        report.append("\nProcessing time: ").append(nanoTimeToString(elapsedTime * 1000000)).append('\n');
+        report.append("Processed ").append(totalReads).append(" reads\n");
+        report.append("Calculated ").append(consensusReads).append(" consensuses\n");
         if (consensusReads > 0)
-            System.err.println("Average reads per consensus: " + floatFormat.format((float)totalReads.get()
-                    / consensusReads) + "\n");
+            report.append("Average reads per consensus: ")
+                    .append(floatFormat.format((float)totalReads.get() / consensusReads)).append("\n");
+
+        jsonReportData.put("inputFileName", inputFileName);
+        jsonReportData.put("outputFileName", outputFileName);
+        jsonReportData.put("consensusGroups", consensusGroups);
+        jsonReportData.put("consensusAlgorithmType", consensusAlgorithmType.toString());
+        jsonReportData.put("elapsedTime", elapsedTime);
+        jsonReportData.put("consensusReads", consensusReads);
+        jsonReportData.put("totalReads", totalReads.get());
+
+        humanReadableReport(reportFileName, reportFileHeader.toString(), report.toString());
+        jsonReport(jsonReportFileName, jsonReportData);
     }
 
     private MifReader createReader() throws IOException {
@@ -398,6 +453,22 @@ public final class ConsensusIO {
                 : new MifWriter(outputFileName, newHeader);
     }
 
+    private LinkedHashMap<String, NucleotideSequence> extractConsensusGroups(ParsedRead parsedRead) {
+        return parsedRead.getGroups().stream().filter(g -> consensusGroups.contains(g.getGroupName()))
+                .collect(LinkedHashMap::new, (m, g) -> m.put(g.getGroupName(), g.getValue().getSequence()),
+                        Map::putAll);
+    }
+
+    private DataFromParsedRead extractData(ParsedRead parsedRead) {
+        return toSeparateGroups ? new DataFromParsedReadWithAllGroups(parsedRead, defaultGroups, consensusGroups)
+                : new BasicDataFromParsedRead(parsedRead, defaultGroups, consensusGroups);
+    }
+
+    private void saveOriginalReadsData(ParsedRead parsedRead) {
+        if ((originalReadsData != null) && !originalReadsData.containsKey(parsedRead.getOriginalRead().getId()))
+            originalReadsData.put(parsedRead.getOriginalRead().getId(), new OriginalReadData(parsedRead));
+    }
+
     private synchronized void displayWarning(String text) {
         if (maxWarnings == -1)
             System.err.println(text);
@@ -407,5 +478,7 @@ public final class ConsensusIO {
             if (warningsDisplayed == maxWarnings)
                 System.err.println("Warnings limit reached!");
         }
+        if (reportFileName != null)
+            reportedWarnings.append(text).append('\n');
     }
 }

@@ -52,7 +52,8 @@ public final class MifToFastqAction extends ACommandWithOutput implements MiNNNC
 
     @Override
     public void run0() {
-        MifToFastqIO mifToFastqIO = new MifToFastqIO(inputFileName, groupsQuery, copyOriginalHeaders, inputReadsLimit);
+        MifToFastqIO mifToFastqIO = new MifToFastqIO(inputFileName, groupsQuery, copyOriginalHeaders, inputReadsLimit,
+                reportFileName, jsonReportFileName);
         mifToFastqIO.go();
     }
 
@@ -99,4 +100,12 @@ public final class MifToFastqAction extends ACommandWithOutput implements MiNNNC
     @Option(description = NUMBER_OF_READS,
             names = {"-n", "--number-of-reads"})
     private long inputReadsLimit = 0;
+
+    @Option(description = REPORT,
+            names = "--report")
+    private String reportFileName = null;
+
+    @Option(description = JSON_REPORT,
+            names = "--json-report")
+    private String jsonReportFileName = null;
 }

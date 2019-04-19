@@ -1,35 +1,42 @@
 
-minnn 4.0.0 (11 апр 2019)
+minnn 4.0.1 (19 Apr 2019)
 ========================
 
--- -- Sorter upgrade
--- -- New filters: by group quality and N count
--- -- --consensuses-to-separate-groups option implemented in Consensus (SingleCell algorithm) action
--- -- --min-count option returned to Correct action
--- -- Filtering by maximal number of unique barcodes is disabled by default in Correct action
--- -- Bugfixes for -n and --overwrite-if-required arguments
+-- Consensus calculation support for unsorted input file
+-- Default --max-warnings is 5 in Consensus actions
+-- Support for --report and --json-report options for report writing
 
 
-minnn 3.0.0 ( 7 мар 2019)
+minnn 4.0.0 (11 Apr 2019)
 ========================
 
--- -- Bugfixes for N nucleotides scoring in Extract action
--- -- Fixes and updates in project dependencies
+-- Sorter upgrade
+-- New filters: by group quality and N count
+-- --consensuses-to-separate-groups option implemented in Consensus (SingleCell algorithm) action
+-- --min-count option returned to Correct action
+-- Filtering by maximal number of unique barcodes is disabled by default in Correct action
+-- Bugfixes for -n and --overwrite-if-required arguments
 
-minnn 2.0.0 (15 фев 2019)
+
+minnn 3.0.0 (7 Mar 2019)
 ========================
 
--- -- Support for wildcards in barcodes in Correct action
--- -- Writing not matched reads to separate file in Extract action
--- -- Writing not used reads to separate file in Consensus action
--- -- Added good quality mismatch penalty to consensus alignment score calculation
--- -- Many bugfixes and improvements in Consensus action
--- -- Bugfixes in docs
+-- Bugfixes for N nucleotides scoring in Extract action
+-- Fixes and updates in project dependencies
 
 
-minnn 1.0.0 (15 авг 2018)
+minnn 2.0.0 (15 Feb 2019)
 ========================
 
--- Initial release.
+-- Support for wildcards in barcodes in Correct action
+-- Writing not matched reads to separate file in Extract action
+-- Writing not used reads to separate file in Consensus action
+-- Added good quality mismatch penalty to consensus alignment score calculation
+-- Many bugfixes and improvements in Consensus action
+-- Bugfixes in docs
 
 
+minnn 1.0.0 (15 Aug 2018)
+========================
+
+-- Initial release
