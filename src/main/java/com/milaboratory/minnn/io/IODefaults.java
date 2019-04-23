@@ -26,21 +26,16 @@
  * PARTICULAR PURPOSE, OR THAT THE USE OF THE SOFTWARE WILL NOT INFRINGE ANY
  * PATENT, TRADEMARK OR OTHER RIGHTS.
  */
-package com.milaboratory.minnn.consensus;
+package com.milaboratory.minnn.io;
 
-import com.milaboratory.minnn.util.DebugUtils.*;
+import static com.milaboratory.minnn.io.IODefaults.CompressionType.*;
 
-public class ConsensusAlgorithmRNASeq extends ConsensusAlgorithm {
-    public ConsensusAlgorithmRNASeq() {
-        super(null, 0, 0, 0,
-                0, 0, 0, 0,
-                0, 0, false, null, (byte)0,
-                null);
-        throw new NotImplementedException();
-    }
+final class IODefaults {
+    private IODefaults() {}
 
-    @Override
-    public CalculatedConsensuses process(Cluster cluster) {
-        throw new NotImplementedException();
-    }
+    final static int DEFAULT_CONCURRENCY = 4;
+    final static int DEFAULT_BLOCK_SIZE = 1024;
+    final static CompressionType DEFAULT_COMPRESSION_TYPE = FAST;
+
+    enum CompressionType { FAST, HIGH }
 }
