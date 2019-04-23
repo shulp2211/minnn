@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 import static com.milaboratory.minnn.cli.CliUtils.*;
 import static com.milaboratory.minnn.io.ReportWriter.*;
 import static com.milaboratory.minnn.util.SystemUtils.*;
-import static com.milaboratory.util.TimeUtils.nanoTimeToString;
+import static com.milaboratory.util.FormatUtils.nanoTimeToString;
 
 public final class StatPositionsIO {
     private final LinkedHashSet<String> groupList;

@@ -56,7 +56,7 @@ import static com.milaboratory.minnn.consensus.ConsensusAlgorithms.*;
 import static com.milaboratory.minnn.consensus.OriginalReadStatus.*;
 import static com.milaboratory.minnn.io.ReportWriter.*;
 import static com.milaboratory.minnn.util.SystemUtils.*;
-import static com.milaboratory.util.TimeUtils.nanoTimeToString;
+import static com.milaboratory.util.FormatUtils.nanoTimeToString;
 
 public final class ConsensusIO {
     private final PipelineConfiguration pipelineConfiguration;

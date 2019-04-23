@@ -49,7 +49,7 @@ import static com.milaboratory.minnn.cli.CliUtils.*;
 import static com.milaboratory.minnn.cli.Defaults.DEFAULT_SORT_CHUNK_SIZE;
 import static com.milaboratory.minnn.io.ReportWriter.*;
 import static com.milaboratory.minnn.util.SystemUtils.*;
-import static com.milaboratory.util.TimeUtils.nanoTimeToString;
+import static com.milaboratory.util.FormatUtils.nanoTimeToString;
 
 public final class SorterIO {
     private final PipelineConfiguration pipelineConfiguration;

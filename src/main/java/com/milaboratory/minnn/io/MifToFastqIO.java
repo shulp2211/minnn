@@ -44,7 +44,7 @@ import java.util.*;
 
 import static com.milaboratory.minnn.io.ReportWriter.*;
 import static com.milaboratory.minnn.util.SystemUtils.exitWithError;
-import static com.milaboratory.util.TimeUtils.nanoTimeToString;
+import static com.milaboratory.util.FormatUtils.nanoTimeToString;
 
 public final class MifToFastqIO {
     private final String inputFileName;

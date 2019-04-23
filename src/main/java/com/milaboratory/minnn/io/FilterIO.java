@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.milaboratory.minnn.cli.CliUtils.floatFormat;
 import static com.milaboratory.minnn.io.ReportWriter.*;
 import static com.milaboratory.minnn.util.SystemUtils.exitWithError;
-import static com.milaboratory.util.TimeUtils.nanoTimeToString;
+import static com.milaboratory.util.FormatUtils.nanoTimeToString;
 
 public final class FilterIO {
     private final PipelineConfiguration pipelineConfiguration;
