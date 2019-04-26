@@ -88,7 +88,7 @@ public final class ExtractAction extends ACommandWithSmartOverwrite implements M
             throw exitWithError("Error: groups " + patternGroups + " are both in pattern and in description groups!");
         ReadProcessor readProcessor = new ReadProcessor(getFullPipelineConfiguration(), getInputFiles(),
                 outputFileName, notMatchedOutputFileName, pattern, query, oriented, fairSorting, inputReadsLimit,
-                threads, reportFileName, jsonReportFileName, inputFormat, descriptionGroups);
+                threads, reportFileName, jsonReportFileName, debugMode, inputFormat, descriptionGroups);
         readProcessor.processReadsParallel();
     }
 

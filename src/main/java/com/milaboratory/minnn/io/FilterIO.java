@@ -60,11 +60,12 @@ public final class FilterIO {
     private final int threads;
     private final String reportFileName;
     private final String jsonReportFileName;
+    private final boolean debugMode;
     private final AtomicLong totalReadsCounter = new AtomicLong(0);
 
     public FilterIO(PipelineConfiguration pipelineConfiguration, ReadFilter readFilter, String filterQuery,
                     String inputFileName, String outputFileName, long inputReadsLimit, int threads,
-                    String reportFileName, String jsonReportFileName) {
+                    String reportFileName, String jsonReportFileName, boolean debugMode) {
         this.pipelineConfiguration = pipelineConfiguration;
         this.readFilter = readFilter;
         this.filterQuery = filterQuery;
@@ -74,11 +75,14 @@ public final class FilterIO {
         this.threads = threads;
         this.reportFileName = reportFileName;
         this.jsonReportFileName = jsonReportFileName;
+        this.debugMode = debugMode;
     }
 
     public void go() {
         long startTime = System.currentTimeMillis();
         long matchedReads = 0;
+        String readerStats = null;
+        String writerStats = null;
         try (MifReader reader = createReader();
              MifWriter writer = createWriter(new MifHeader(pipelineConfiguration, reader.getNumberOfTargets(),
                      reader.getCorrectedGroups(), reader.getSortedGroups(), reader.getGroupEdges()))) {
@@ -97,6 +101,10 @@ public final class FilterIO {
                     writer.write(parsedRead);
                     matchedReads++;
                 }
+            }
+            if (debugMode) {
+                readerStats = reader.getStats().toString();
+                writerStats = writer.getStats().toString();
             }
             reader.close();
             writer.setOriginalNumberOfReads(reader.getOriginalNumberOfReads());
@@ -119,6 +127,11 @@ public final class FilterIO {
         else
             reportFileHeader.append("Output file name: ").append(outputFileName).append('\n');
         reportFileHeader.append("Filter query: ").append(filterQuery).append('\n');
+        if (debugMode) {
+            reportFileHeader.append("\n\nDebug information:\n\n");
+            reportFileHeader.append("Reader stats:\n").append(readerStats).append('\n');
+            reportFileHeader.append("Writer stats:\n").append(writerStats).append("\n\n");
+        }
 
         long elapsedTime = System.currentTimeMillis() - startTime;
         report.append("\nProcessing time: ").append(nanoTimeToString(elapsedTime * 1000000)).append('\n');

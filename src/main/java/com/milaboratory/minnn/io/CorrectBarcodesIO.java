@@ -57,12 +57,14 @@ public final class CorrectBarcodesIO {
     private final boolean suppressWarnings;
     private final String reportFileName;
     private final String jsonReportFileName;
+    private final boolean debugMode;
 
     public CorrectBarcodesIO(PipelineConfiguration pipelineConfiguration, String inputFileName, String outputFileName,
                              List<String> groupNames, List<String> primaryGroupNames,
                              BarcodeClusteringStrategyFactory barcodeClusteringStrategyFactory, int maxUniqueBarcodes,
                              int minCount, String excludedBarcodesOutputFileName, long inputReadsLimit,
-                             boolean suppressWarnings, String reportFileName, String jsonReportFileName) {
+                             boolean suppressWarnings, String reportFileName, String jsonReportFileName,
+                             boolean debugMode) {
         this.pipelineConfiguration = pipelineConfiguration;
         this.inputFileName = inputFileName;
         this.outputFileName = outputFileName;
@@ -77,11 +79,15 @@ public final class CorrectBarcodesIO {
         this.suppressWarnings = suppressWarnings;
         this.reportFileName = reportFileName;
         this.jsonReportFileName = jsonReportFileName;
+        this.debugMode = debugMode;
     }
 
     public void go() {
         long startTime = System.currentTimeMillis();
         CorrectionStats stats;
+        String pass1ReaderStats = null;
+        String pass2ReaderStats = null;
+        String writerStats = null;
         try (MifReader pass1Reader = new MifReader(inputFileName);
              MifReader pass2Reader = (primaryGroups.size() == 0) ? new MifReader(inputFileName) : null;
              MifWriter writer = Objects.requireNonNull(createWriter(pass1Reader.getHeader(), false));
@@ -116,6 +122,12 @@ public final class CorrectBarcodesIO {
                 stats = unsortedClustersCorrect(pass1Reader, writer, excludedBarcodesWriter, inputReadsLimit,
                         barcodeClusteringStrategyFactory, primaryGroups, keyGroups, maxUniqueBarcodes,
                         minCount);
+            if (debugMode) {
+                pass1ReaderStats = pass1Reader.getStats().toString();
+                if (pass2Reader != null)
+                    pass2ReaderStats = pass2Reader.getStats().toString();
+                writerStats = writer.getStats().toString();
+            }
             pass1Reader.close();
             writer.setOriginalNumberOfReads(pass1Reader.getOriginalNumberOfReads());
         } catch (IOException e) {
@@ -139,6 +151,13 @@ public final class CorrectBarcodesIO {
         reportFileHeader.append("Corrected groups: ").append(groupNames).append('\n');
         if (primaryGroups.size() > 0)
             reportFileHeader.append("Primary groups: ").append(primaryGroups).append('\n');
+        if (debugMode) {
+            reportFileHeader.append("\n\nDebug information:\n\n");
+            reportFileHeader.append("Pass 1 reader stats:\n").append(pass1ReaderStats).append('\n');
+            if (pass2ReaderStats != null)
+                reportFileHeader.append("Pass 2 reader stats:\n").append(pass2ReaderStats).append('\n');
+            reportFileHeader.append("Writer stats:\n").append(writerStats).append("\n\n");
+        }
 
         long elapsedTime = System.currentTimeMillis() - startTime;
         report.append("\nProcessing time: ").append(nanoTimeToString(elapsedTime * 1000000)).append('\n');

@@ -74,6 +74,7 @@ public final class ReadProcessor {
     private final int threads;
     private final String reportFileName;
     private final String jsonReportFileName;
+    private final boolean debugMode;
     private final MinnnDataFormat inputFormat;
     private final DescriptionGroups descriptionGroups;
     private final AtomicLong totalReads = new AtomicLong(0);
@@ -81,8 +82,8 @@ public final class ReadProcessor {
     public ReadProcessor(PipelineConfiguration pipelineConfiguration, List<String> inputFileNames,
                          String outputFileName, String notMatchedOutputFileName, Pattern pattern, String patternQuery,
                          boolean orientedReads, boolean fairSorting, long inputReadsLimit, int threads,
-                         String reportFileName, String jsonReportFileName, MinnnDataFormat inputFormat,
-                         DescriptionGroups descriptionGroups) {
+                         String reportFileName, String jsonReportFileName, boolean debugMode,
+                         MinnnDataFormat inputFormat, DescriptionGroups descriptionGroups) {
         if ((inputFormat == MIF) && (inputFileNames.size() > 1))
             throw exitWithError("Mif data format uses single file; specified " + inputFileNames.size()
                     + " input files!");
@@ -99,6 +100,7 @@ public final class ReadProcessor {
         this.threads = threads;
         this.reportFileName = reportFileName;
         this.jsonReportFileName = jsonReportFileName;
+        this.debugMode = debugMode;
         this.inputFormat = inputFormat;
         this.descriptionGroups = descriptionGroups;
     }
@@ -106,6 +108,8 @@ public final class ReadProcessor {
     public void processReadsParallel() {
         long startTime = System.currentTimeMillis();
         long matchedReads = 0;
+        String readerStats = null;
+        String writerStats = null;
         try (IndexedSequenceReader<?> reader = createReader();
              MifWriter writer = Objects.requireNonNull(createWriter(false));
              MifWriter mismatchedReadsWriter = createWriter(true)) {
@@ -122,6 +126,11 @@ public final class ReadProcessor {
                     matchedReads++;
                 } else if (mismatchedReadsWriter != null)
                     mismatchedReadsWriter.write(parsedRead);
+            }
+            if (debugMode) {
+                if (inputFormat == MIF)
+                    readerStats = reader.getMifReader().getStats().toString();
+                writerStats = writer.getStats().toString();
             }
             reader.close();
             long originalNumberOfReads = (inputFormat == MIF) ? reader.getOriginalNumberOfReads() : totalReads.get();
@@ -156,6 +165,12 @@ public final class ReadProcessor {
             reportFileHeader.append("Output file for not matched reads: ").append(notMatchedOutputFileName)
                     .append('\n');
         reportFileHeader.append("Pattern: ").append(patternQuery).append('\n');
+        if (debugMode) {
+            reportFileHeader.append("\n\nDebug information:\n\n");
+            if (inputFormat == MIF)
+                reportFileHeader.append("Reader stats:\n").append(readerStats).append('\n');
+            reportFileHeader.append("Writer stats:\n").append(writerStats).append("\n\n");
+        }
 
         long elapsedTime = System.currentTimeMillis() - startTime;
         report.append("\nProcessing time: ").append(nanoTimeToString(elapsedTime * 1000000)).append('\n');
@@ -330,11 +345,15 @@ public final class ReadProcessor {
             return finished;
         }
 
-        long getOriginalNumberOfReads() {
-            if (inputFormat == FASTQ)
-                throw new IllegalStateException("getOriginalNumberOfReads() must be used only for MIF input!");
+        MifReader getMifReader() {
+            if (inputFormat == MIF)
+                return (MifReader)innerReader;
             else
-                return ((MifReader)innerReader).getOriginalNumberOfReads();
+                throw new IllegalStateException("getMifReader() must be used only with MIF input!");
+        }
+
+        long getOriginalNumberOfReads() {
+            return getMifReader().getOriginalNumberOfReads();
         }
     }
 

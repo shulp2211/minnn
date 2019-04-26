@@ -64,7 +64,8 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
                 new SimpleMutationProbability(singleSubstitutionProbability, singleIndelProbability));
         CorrectBarcodesIO correctBarcodesIO = new CorrectBarcodesIO(getFullPipelineConfiguration(), inputFileName,
                 outputFileName, groupNames, primaryGroupNames, barcodeClusteringStrategyFactory, maxUniqueBarcodes,
-                minCount, excludedBarcodesOutputFileName, inputReadsLimit, quiet, reportFileName, jsonReportFileName);
+                minCount, excludedBarcodesOutputFileName, inputReadsLimit, quiet, reportFileName, jsonReportFileName,
+                debugMode);
         correctBarcodesIO.go();
     }
 

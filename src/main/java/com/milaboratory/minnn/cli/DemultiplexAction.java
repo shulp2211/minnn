@@ -64,7 +64,7 @@ public final class DemultiplexAction extends ACommandWithSmartOverwrite implemen
         prepareDemultiplexArguments();
         DemultiplexIO demultiplexIO = new DemultiplexIO(getFullPipelineConfiguration(),
                 parsedDemultiplexArguments.inputFileName, parsedDemultiplexArguments.demultiplexArguments,
-                logFileName, outputBufferSize, inputReadsLimit, reportFileName, jsonReportFileName);
+                logFileName, inputReadsLimit, reportFileName, jsonReportFileName);
         demultiplexIO.go();
     }
 
@@ -143,10 +143,6 @@ public final class DemultiplexAction extends ACommandWithSmartOverwrite implemen
             names = {"--demultiplex-log"},
             required = true)
     private String logFileName = null;
-
-    @Option(description = "Write buffer size for each output file.",
-            names = {"--output-buffer-size"})
-    private int outputBufferSize = DEFAULT_DEMULTIPLEX_OUTPUT_BUFFER_SIZE;
 
     @Option(description = "Number of reads to take; 0 value means to take the entire input file.",
             names = {"-n", "--number-of-reads"})

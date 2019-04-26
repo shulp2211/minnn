@@ -54,7 +54,6 @@ public final class DemultiplexIO {
     private final String inputFileName;
     private final List<DemultiplexFilter> demultiplexFilters;
     private final String logFileName;
-    private final int outputBufferSize;
     private final long inputReadsLimit;
     private final String reportFileName;
     private final String jsonReportFileName;
@@ -65,13 +64,12 @@ public final class DemultiplexIO {
     private long originalNumberOfReads;
 
     public DemultiplexIO(PipelineConfiguration pipelineConfiguration, String inputFileName,
-                         List<DemultiplexArgument> demultiplexArguments, String logFileName, int outputBufferSize,
-                         long inputReadsLimit, String reportFileName, String jsonReportFileName) {
+                         List<DemultiplexArgument> demultiplexArguments, String logFileName, long inputReadsLimit,
+                         String reportFileName, String jsonReportFileName) {
         this.pipelineConfiguration = pipelineConfiguration;
         this.inputFileName = inputFileName;
         this.demultiplexFilters = demultiplexArguments.stream().map(this::parseFilter).collect(Collectors.toList());
         this.logFileName = logFileName;
-        this.outputBufferSize = outputBufferSize;
         this.inputReadsLimit = inputReadsLimit;
         this.reportFileName = reportFileName;
         this.jsonReportFileName = jsonReportFileName;
@@ -344,9 +342,9 @@ public final class DemultiplexIO {
         MifWriter getWriter() {
             if (writer == null) {
                 try {
-                    writer = new MifWriter(toString(), header, outputBufferSize);
+                    writer = new MifWriter(toString(), header);
                 } catch (IOException e) {
-                    throw exitWithError(e.getMessage());
+                    throw exitWithError(e.toString());
                 }
             }
             return writer;
@@ -355,7 +353,11 @@ public final class DemultiplexIO {
         void closeWriter() {
             if (writer != null) {
                 writer.setOriginalNumberOfReads(originalNumberOfReads);
-                writer.close();
+                try {
+                    writer.close();
+                } catch (IOException e) {
+                    throw exitWithError(e.toString());
+                }
             }
             writer = null;
         }
