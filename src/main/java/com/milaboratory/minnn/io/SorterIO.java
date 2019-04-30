@@ -61,11 +61,12 @@ public final class SorterIO {
     private final boolean suppressWarnings;
     private final String reportFileName;
     private final String jsonReportFileName;
+    private final boolean debugMode;
     private final File tmpFile;
 
     public SorterIO(PipelineConfiguration pipelineConfiguration, String inputFileName, String outputFileName,
                     List<String> sortGroupNames, int chunkSize, boolean suppressWarnings,
-                    String reportFileName, String jsonReportFileName, String tmpFile) {
+                    String reportFileName, String jsonReportFileName, boolean debugMode, String tmpFile) {
         this.pipelineConfiguration = pipelineConfiguration;
         this.inputFileName = inputFileName;
         this.outputFileName = outputFileName;
@@ -74,6 +75,7 @@ public final class SorterIO {
         this.suppressWarnings = suppressWarnings;
         this.reportFileName = reportFileName;
         this.jsonReportFileName = jsonReportFileName;
+        this.debugMode = debugMode;
         this.tmpFile = (tmpFile != null) ? new File(tmpFile) : TempFileManager.getTempFile((outputFileName == null)
                 ? null : Paths.get(new File(outputFileName).getAbsolutePath()).getParent());
     }
@@ -81,6 +83,8 @@ public final class SorterIO {
     public void go() {
         long startTime = System.currentTimeMillis();
         long totalReads = 0;
+        String readerStats = null;
+        String writerStats = null;
         try (MifReader reader = createReader();
              MifWriter writer = createWriter(reader.getHeader())) {
             validateInputGroups(reader, sortGroupNames, true);
@@ -97,6 +101,10 @@ public final class SorterIO {
                 if (totalReads == 1)
                     writer.setEstimatedNumberOfReads(reader.getEstimatedNumberOfReads());
                 writer.write(parsedRead);
+            }
+            if (debugMode) {
+                readerStats = reader.getStats().toString();
+                writerStats = writer.getStats().toString();
             }
             reader.close();
             writer.setOriginalNumberOfReads(reader.getOriginalNumberOfReads());
@@ -119,6 +127,11 @@ public final class SorterIO {
         else
             reportFileHeader.append("Output file name: ").append(outputFileName).append('\n');
         reportFileHeader.append("Sorted groups: ").append(sortGroupNames).append('\n');
+        if (debugMode) {
+            reportFileHeader.append("\n\nDebug information:\n\n");
+            reportFileHeader.append("Reader stats:\n").append(readerStats).append('\n');
+            reportFileHeader.append("Writer stats:\n").append(writerStats).append("\n\n");
+        }
 
         long elapsedTime = System.currentTimeMillis() - startTime;
         report.append("\nProcessing time: ").append(nanoTimeToString(elapsedTime * 1000000)).append('\n');

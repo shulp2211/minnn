@@ -56,9 +56,10 @@ public final class MifToFastqIO {
     private final long inputReadsLimit;
     private final String reportFileName;
     private final String jsonReportFileName;
+    private final boolean debugMode;
 
     public MifToFastqIO(String inputFileName, LinkedHashMap<String, String> outputGroups, boolean copyOriginalHeaders,
-                        long inputReadsLimit, String reportFileName, String jsonReportFileName) {
+                        long inputReadsLimit, String reportFileName, String jsonReportFileName, boolean debugMode) {
         this.inputFileName = inputFileName;
         this.outputGroupNames = new String[outputGroups.size()];
         this.outputFileNames = new String[outputGroups.size()];
@@ -72,11 +73,13 @@ public final class MifToFastqIO {
         this.inputReadsLimit = inputReadsLimit;
         this.reportFileName = reportFileName;
         this.jsonReportFileName = jsonReportFileName;
+        this.debugMode = debugMode;
     }
 
     public void go() {
         long startTime = System.currentTimeMillis();
         long totalReads = 0;
+        String readerStats = null;
         try (MifReader reader = createReader();
              SequenceWriter writer = createWriter()) {
             LinkedHashSet<String> availableGroupNames = reader.getGroupEdges().stream().map(GroupEdge::getGroupName)
@@ -94,6 +97,8 @@ public final class MifToFastqIO {
                 if (++totalReads == inputReadsLimit)
                     break;
             }
+            if (debugMode)
+                readerStats = reader.getStats().toString();
         } catch (IOException e) {
             throw exitWithError(e.getMessage());
         }
@@ -110,6 +115,10 @@ public final class MifToFastqIO {
             reportFileHeader.append("Input file name: ").append(inputFileName).append('\n');
         reportFileHeader.append("Output group names: ").append(Arrays.toString(outputGroupNames)).append('\n');
         reportFileHeader.append("Output file names: ").append(Arrays.toString(outputFileNames)).append('\n');
+        if (debugMode) {
+            reportFileHeader.append("\n\nDebug information:\n\n");
+            reportFileHeader.append("Reader stats:\n").append(readerStats).append("\n\n");
+        }
 
         long elapsedTime = System.currentTimeMillis() - startTime;
         report.append("\nProcessing time: ").append(nanoTimeToString(elapsedTime * 1000000)).append('\n');

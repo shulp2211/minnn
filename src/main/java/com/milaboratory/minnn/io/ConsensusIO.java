@@ -90,6 +90,7 @@ public final class ConsensusIO {
     private final int kmerMatchMaxErrors;
     private final String reportFileName;
     private final String jsonReportFileName;
+    private final boolean debugMode;
     private final StringBuilder reportedWarnings = new StringBuilder();
     private final PrintStream debugOutputStream;
     private final byte debugQualityThreshold;
@@ -110,7 +111,7 @@ public final class ConsensusIO {
                        int readsTrimWindowSize, int minGoodSeqLength, float avgQualityThreshold, int trimWindowSize,
                        String originalReadStatsFileName, String notUsedReadsOutputFileName, boolean toSeparateGroups,
                        long inputReadsLimit, int maxWarnings, int threads, int kmerLength, int kmerMaxOffset,
-                       int kmerMatchMaxErrors, String reportFileName, String jsonReportFileName,
+                       int kmerMatchMaxErrors, String reportFileName, String jsonReportFileName, boolean debugMode,
                        String debugOutputFileName, byte debugQualityThreshold) {
         this.pipelineConfiguration = pipelineConfiguration;
         this.consensusGroups = new LinkedHashSet<>(Objects.requireNonNull(groupList));
@@ -143,6 +144,7 @@ public final class ConsensusIO {
         this.kmerMatchMaxErrors = kmerMatchMaxErrors;
         this.reportFileName = reportFileName;
         this.jsonReportFileName = jsonReportFileName;
+        this.debugMode = debugMode;
         try {
             debugOutputStream = (debugOutputFileName == null) ? null
                     : new PrintStream(new FileOutputStream(debugOutputFileName));
@@ -182,6 +184,8 @@ public final class ConsensusIO {
         long startTime = System.currentTimeMillis();
         MifHeader mifHeader;
         long originalNumberOfReads;
+        String readerStats = null;
+        String writerStats = null;
         try (MifReader reader = createReader();
              MifWriter writer = createWriter(mifHeader = reader.getHeader())) {
             if (inputReadsLimit > 0)
@@ -293,6 +297,10 @@ public final class ConsensusIO {
                         consensus.debugData.writeDebugData(debugOutputStream, clusterIndex, i);
                     }
                 }
+            }
+            if (debugMode) {
+                readerStats = reader.getStats().toString();
+                writerStats = writer.getStats().toString();
             }
             reader.close();
             originalNumberOfReads = reader.getOriginalNumberOfReads();
@@ -423,6 +431,11 @@ public final class ConsensusIO {
         reportFileHeader.append("Consensus assembled by groups: ").append(consensusGroups).append('\n');
         reportFileHeader.append("Consensus algorithm: ").append(consensusAlgorithmType).append('\n');
         reportFileHeader.append(reportedWarnings);
+        if (debugMode) {
+            reportFileHeader.append("\n\nDebug information:\n\n");
+            reportFileHeader.append("Reader stats:\n").append(readerStats).append('\n');
+            reportFileHeader.append("Writer stats:\n").append(writerStats).append("\n\n");
+        }
 
         long elapsedTime = System.currentTimeMillis() - startTime;
         report.append("\nProcessing time: ").append(nanoTimeToString(elapsedTime * 1000000)).append('\n');
