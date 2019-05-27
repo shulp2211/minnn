@@ -36,6 +36,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import static com.milaboratory.minnn.util.CommonTestUtils.*;
 import static org.junit.Assert.*;
@@ -178,8 +179,8 @@ public class MultiPatternTest {
 
     @Test
     public void scoringRandomTest() throws Exception {
-        for (int i = 0; i < 1000; i++) {
-            NucleotideSequenceCaseSensitive motifs[] = new NucleotideSequenceCaseSensitive[2];
+        for (int i = 0; i < 10000; i++) {
+            NucleotideSequenceCaseSensitive[] motifs = new NucleotideSequenceCaseSensitive[2];
             motifs[0] = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET, 5, 50);
             motifs[1] = TestUtil.randomSequence(NucleotideSequenceCaseSensitive.ALPHABET, 5, 50);
             MultiNSequenceWithQuality target = new MultiNSequenceWithQualityImpl(
@@ -192,8 +193,13 @@ public class MultiPatternTest {
             assertEquals(pattern0.match(target.get(0)).getBestMatch().getScore()
                     + pattern1.match(target.get(1)).getBestMatch().getScore(),
                     multiPattern0.match(target).getBestMatch().getScore());
-            if (!motifs[0].toString().equals(motifs[1].toString()))
-                assertNull(multiPattern1.match(target).getBestMatch());
+            if (!motifs[0].toString().equals(motifs[1].toString())) {
+                Match multiPattern1Match = multiPattern1.match(target).getBestMatch();
+                if (multiPattern1Match != null)
+                    System.out.println("motifs: " + Arrays.toString(motifs) + ", multiPattern1: "
+                            + multiPattern1.toString());
+                assertNull(multiPattern1Match);
+            }
         }
     }
 
