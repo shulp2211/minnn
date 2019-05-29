@@ -26,38 +26,30 @@
  * PARTICULAR PURPOSE, OR THAT THE USE OF THE SOFTWARE WILL NOT INFRINGE ANY
  * PATENT, TRADEMARK OR OTHER RIGHTS.
  */
-package com.milaboratory.minnn.correct;
+package com.milaboratory.minnn.stat;
 
-import com.milaboratory.core.sequence.NucleotideSequence;
+import static com.milaboratory.minnn.cli.Defaults.DEFAULT_MAX_QUALITY;
 
-final class SequenceCounter implements Comparable<SequenceCounter> {
-    final MultiSequence multiSequence;
-    long count;
+public final class StatUtils {
+    private StatUtils() {}
 
-    SequenceCounter(NucleotideSequence sequence) {
-        multiSequence = new MultiSequence(sequence);
-        count = 0;
+    /**
+     * Calculate error probability by quality value.
+     *
+     * @param quality   quality, parameter is float to support average qualities of sequences
+     * @return          probability of error
+     */
+    public static float qualityToProbability(float quality) {
+        return (float)Math.pow(10.0, -quality / 10);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        SequenceCounter that = (SequenceCounter)o;
-        // MultiSequence objects will perform mutual merge if equal
-        return multiSequence.equals(that.multiSequence);
-    }
-
-    @Override
-    public int hashCode() {
-        return 0;
-    }
-
-    // compareTo is reversed to start from bigger counts
-    @Override
-    public int compareTo(SequenceCounter other) {
-        int comparisonResult = -Long.compare(count, other.count);
-        // disable equal counts because they lead to objects loss
-        return (comparisonResult == 0) ? 1 : comparisonResult;
+    public static byte probabilityToQuality(float probability) {
+        double calculatedValue = -10 * Math.log10(probability);
+        if (calculatedValue < 0)
+            return 0;
+        else if (calculatedValue > DEFAULT_MAX_QUALITY)
+            return DEFAULT_MAX_QUALITY;
+        else
+            return (byte)calculatedValue;
     }
 }
