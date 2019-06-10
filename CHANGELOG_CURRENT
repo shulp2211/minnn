@@ -1,8 +1,0 @@
-Max errors settings and CLI interface changed in Correct action
---max-errors-share is used by default in Correct action
-Cluster threshold filtering is turned off by default in Correct action
-Better chunk size auto detection in Sort action
-Better error messages for wrong or missing input groups
-Bugfixes for default groups overriding
-Bugfix for description groups
-Small optimizations for Correct and Consensus
