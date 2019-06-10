@@ -28,8 +28,13 @@
  */
 package com.milaboratory.minnn.consensus;
 
+import gnu.trove.map.hash.TByteObjectHashMap;
+
+import java.util.List;
+
 public interface DataFromParsedRead {
-    SequenceWithAttributes[] getSequences();
-    TargetBarcodes[] getBarcodes();
+    TByteObjectHashMap<SequenceWithAttributes> getSequences();
+    List<Barcode> getBarcodes();
     long getOriginalReadId();
+    boolean isDefaultGroupsOverride();
 }

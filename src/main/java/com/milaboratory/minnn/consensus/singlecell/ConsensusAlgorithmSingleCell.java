@@ -31,6 +31,7 @@ package com.milaboratory.minnn.consensus.singlecell;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.minnn.consensus.*;
+import gnu.trove.map.hash.TByteObjectHashMap;
 import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.set.hash.TLongHashSet;
 
@@ -66,6 +67,7 @@ public class ConsensusAlgorithmSingleCell extends ConsensusAlgorithm {
 
     @Override
     public CalculatedConsensuses process(Cluster cluster) {
+        defaultGroupsOverride.set(cluster.data.get(0).isDefaultGroupsOverride());
         CalculatedConsensuses calculatedConsensuses = new CalculatedConsensuses(cluster.orderedPortIndex);
         List<DataFromParsedRead> remainingData = trimBadQualityTails(cluster.data);
         int clusterSize = cluster.data.size();
@@ -125,17 +127,18 @@ public class ConsensusAlgorithmSingleCell extends ConsensusAlgorithm {
     }
 
     private OffsetSearchResults searchOffsets(List<DataFromParsedRead> data) {
-        TLongIntHashMap[] kmerOffsetsForTargets = new TLongIntHashMap[numberOfTargets];
+        TByteObjectHashMap<TLongIntHashMap> kmerOffsetsForTargets = new TByteObjectHashMap<>();
         TLongHashSet skippedReads = new TLongHashSet();
 
-        TargetBarcodes[] barcodes = null;
-        for (int targetIndex = 0; targetIndex < numberOfTargets; targetIndex++) {
+        List<Barcode> barcodes = null;
+        // targetIds only for target sequences, so -1 is not needed here
+        for (byte targetId = 1; targetId <= numberOfTargets; targetId++) {
             HashMap<KMer, KMer> allKMers = new HashMap<>();
             for (DataFromParsedRead currentReadData : data) {
                 if (barcodes == null)
                     barcodes = currentReadData.getBarcodes();
                 if (!skippedReads.contains(currentReadData.getOriginalReadId())) {
-                    SequenceWithAttributes seq = currentReadData.getSequences()[targetIndex];
+                    SequenceWithAttributes seq = currentReadData.getSequences().get(targetId);
                     int length = seq.size();
                     if (length < kmerLength)
                         throw new IllegalStateException("length: " + length + ", kmerLength: " + kmerLength);
@@ -160,7 +163,7 @@ public class ConsensusAlgorithmSingleCell extends ConsensusAlgorithm {
             for (DataFromParsedRead currentReadData : data) {
                 long readId = currentReadData.getOriginalReadId();
                 if (!skippedReads.contains(readId)) {
-                    int bestKMerPosition = locateKMer(currentReadData.getSequences()[targetIndex].getSeq(),
+                    int bestKMerPosition = locateKMer(currentReadData.getSequences().get(targetId).getSeq(),
                             mostFrequentKMer.seq);
                     if (bestKMerPosition == -1)
                         skippedReads.add(readId);
@@ -168,7 +171,7 @@ public class ConsensusAlgorithmSingleCell extends ConsensusAlgorithm {
                         currentTargetOffsets.put(readId, bestKMerPosition);
                 }
             }
-            kmerOffsetsForTargets[targetIndex] = currentTargetOffsets;
+            kmerOffsetsForTargets.put(targetId, currentTargetOffsets);
         }
 
         ArrayList<DataFromParsedRead> usedReads = new ArrayList<>();
@@ -228,13 +231,14 @@ public class ConsensusAlgorithmSingleCell extends ConsensusAlgorithm {
     private Consensus calculateConsensus(OffsetSearchResults offsetSearchResults) {
         ConsensusDebugData debugData = (debugOutputStream == null) ? null
                 : new ConsensusDebugData(numberOfTargets, debugQualityThreshold, NO_STAGE, false);
-        SequenceWithAttributes[] sequences = new SequenceWithAttributes[numberOfTargets];
+        TByteObjectHashMap<SequenceWithAttributes> sequences = new TByteObjectHashMap<>();
         long[] usedReadIds = offsetSearchResults.getUsedReadsIds();
-        for (int targetIndex = 0; targetIndex < numberOfTargets; targetIndex++) {
-            TLongIntHashMap kmerOffsets = offsetSearchResults.kmerOffsetsForTargets[targetIndex];
+        // targetIds only for target sequences, so -1 is not needed here
+        for (byte targetId = 1; targetId <= numberOfTargets; targetId++) {
+            TLongIntHashMap kmerOffsets = offsetSearchResults.kmerOffsetsForTargets.get(targetId);
             AlignedSequencesMatrix alignedSequencesMatrix = new AlignedSequencesMatrix();
             for (DataFromParsedRead currentRead : offsetSearchResults.usedReads)
-                alignedSequencesMatrix.addRow(currentRead.getSequences()[targetIndex],
+                alignedSequencesMatrix.addRow(currentRead.getSequences().get(targetId),
                         kmerOffsets.get(currentRead.getOriginalReadId()));
 
             ArrayList<SequenceWithAttributes> consensusLetters = new ArrayList<>();
@@ -249,7 +253,7 @@ public class ConsensusAlgorithmSingleCell extends ConsensusAlgorithm {
             }
 
             if (debugData != null) {
-                ArrayList<ArrayList<SequenceWithAttributes>> debugDataForThisTarget = debugData.data.get(targetIndex);
+                ArrayList<ArrayList<SequenceWithAttributes>> debugDataForThisTarget = debugData.data.get(targetId - 1);
                 for (long currentReadId : usedReadIds) {
                     ArrayList<SequenceWithAttributes> currentReadLetters = new ArrayList<>();
                     for (int coordinate = alignedSequencesMatrix.getMinCoordinate();
@@ -257,7 +261,7 @@ public class ConsensusAlgorithmSingleCell extends ConsensusAlgorithm {
                         currentReadLetters.add(alignedSequencesMatrix.letterAt(currentReadId, coordinate));
                     debugDataForThisTarget.add(currentReadLetters);
                 }
-                debugData.consensusData.set(targetIndex, consensusLetters);
+                debugData.consensusData.set(targetId - 1, consensusLetters);
             }
 
             // consensus sequence assembling
@@ -289,11 +293,12 @@ public class ConsensusAlgorithmSingleCell extends ConsensusAlgorithm {
                 return new Consensus(debugData, numberOfTargets, true);
             }
             consensusSequence = consensusSequence.getSubSequence(trimResultLeft + 1, trimResultRight);
-            sequences[targetIndex] = consensusSequence;
+            sequences.put(targetId, consensusSequence);
         }
 
         Consensus consensus = new Consensus(sequences, offsetSearchResults.barcodes,
-                offsetSearchResults.usedReads.size(), debugData, numberOfTargets, true, -1);
+                offsetSearchResults.usedReads.size(), debugData, numberOfTargets, true, -1,
+                defaultGroupsOverride.get());
         setUsedReadsStatus(usedReadIds, USED_IN_CONSENSUS);
         if (originalReadsData != null)
             Arrays.stream(usedReadIds).forEach(readId -> originalReadsData.get(readId).consensus = consensus);

@@ -50,13 +50,15 @@ public class BasePatternAligner implements PatternAligner {
      * @param bitapMaxErrors 0 or positive; maximum allowed number of errors for bitap
      * @param maxOverlap 0 or positive; maximum allowed number of overlapped nucleotides between 2 patterns
      */
-    public BasePatternAligner(PatternAndTargetAlignmentScoring scoring, long penaltyThreshold,
-            long singleOverlapPenalty, int bitapMaxErrors, int maxOverlap) {
+    public BasePatternAligner(
+            PatternAndTargetAlignmentScoring scoring, long penaltyThreshold, long singleOverlapPenalty,
+            int bitapMaxErrors, int maxOverlap) {
         this(scoring, penaltyThreshold, singleOverlapPenalty, bitapMaxErrors, maxOverlap, -1);
     }
 
-    private BasePatternAligner(PatternAndTargetAlignmentScoring scoring, long penaltyThreshold,
-            long singleOverlapPenalty, int bitapMaxErrors, int maxOverlap, int leftBorder) {
+    private BasePatternAligner(
+            PatternAndTargetAlignmentScoring scoring, long penaltyThreshold, long singleOverlapPenalty,
+            int bitapMaxErrors, int maxOverlap, int leftBorder) {
         this.scoring = scoring;
         this.penaltyThreshold = penaltyThreshold;
         this.singleOverlapPenalty = singleOverlapPenalty;

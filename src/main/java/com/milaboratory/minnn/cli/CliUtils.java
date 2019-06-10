@@ -38,8 +38,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.milaboratory.minnn.cli.Defaults.DEFAULT_MAX_QUALITY;
-import static com.milaboratory.minnn.util.SystemUtils.exitWithError;
+import static com.milaboratory.minnn.cli.Defaults.*;
+import static com.milaboratory.minnn.util.SystemUtils.*;
 
 public final class CliUtils {
     private CliUtils() {}

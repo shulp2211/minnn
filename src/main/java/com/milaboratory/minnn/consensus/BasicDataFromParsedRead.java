@@ -30,75 +30,61 @@ package com.milaboratory.minnn.consensus;
 
 import com.milaboratory.minnn.outputconverter.MatchedGroup;
 import com.milaboratory.minnn.outputconverter.ParsedRead;
+import gnu.trove.map.hash.TByteObjectHashMap;
 
 import java.util.*;
 import java.util.stream.*;
 
 public class BasicDataFromParsedRead implements DataFromParsedRead {
-    protected final SequenceWithAttributes[] sequences;
-    protected final TargetBarcodes[] barcodes;
+    protected final TByteObjectHashMap<SequenceWithAttributes> sequences;
+    protected final List<Barcode> barcodes;
     protected final long originalReadId;
+    protected final boolean defaultGroupsOverride;
 
-    public BasicDataFromParsedRead(ParsedRead parsedRead, DefaultGroups defaultGroups,
-                                   LinkedHashSet<String> consensusGroups) {
-        LinkedHashSet<String> defaultGroupsSet = defaultGroups.get();
-        int numberOfTargets = defaultGroups.getNumberOfTargets();
+    public BasicDataFromParsedRead(ParsedRead parsedRead, LinkedHashSet<String> consensusGroups) {
+        LinkedHashSet<String> defaultGroupNames = parsedRead.getDefaultGroupNames();
         originalReadId = parsedRead.getOriginalRead().getId();
         List<MatchedGroup> parsedReadGroups = parsedRead.getGroups();
         List<MatchedGroup> extractedGroups = parsedReadGroups.stream()
-                .filter(g -> defaultGroupsSet.contains(g.getGroupName())).collect(Collectors.toList());
-        if (extractedGroups.size() != numberOfTargets)
-            throw new IllegalArgumentException("Wrong number of target groups in ParsedRead: expected "
-                    + numberOfTargets + ", target groups in ParsedRead: " + parsedRead.getGroups().stream()
-                    .map(MatchedGroup::getGroupName).filter(defaultGroupsSet::contains).collect(Collectors.toList()));
-        sequences = new SequenceWithAttributes[numberOfTargets];
-        extractedGroups.forEach(group ->
-                sequences[getTargetIndex(group.getTargetId(), parsedRead.isReverseMatch())] =
-                        new SequenceWithAttributes(group.getValue().getSequence(), group.getValue().getQuality(),
-                                originalReadId));
-        barcodes = IntStream.range(0, numberOfTargets).mapToObj(i -> new TargetBarcodes(new ArrayList<>()))
-                .toArray(TargetBarcodes[]::new);
+                .filter(g -> defaultGroupNames.contains(g.getGroupName())).collect(Collectors.toList());
+        sequences = new TByteObjectHashMap<>();
+        extractedGroups.forEach(group -> sequences.put(group.getTargetId(), new SequenceWithAttributes(
+                group.getValue().getSequence(), group.getValue().getQuality(), originalReadId)));
+        barcodes = new ArrayList<>();
         parsedReadGroups.forEach(group -> {
             SequenceWithAttributes sequenceWithAttributes = new SequenceWithAttributes(
                     group.getValue().getSequence(), group.getValue().getQuality(), originalReadId);
-            if (consensusGroups.contains(group.getGroupName())) {
-                int targetIndex = getTargetIndex(group.getTargetId(), parsedRead.isReverseMatch());
-                ArrayList<Barcode> currentTargetList = barcodes[targetIndex].targetBarcodes;
-                currentTargetList.add(new Barcode(group.getGroupName(), sequenceWithAttributes));
-            }
+            if (consensusGroups.contains(group.getGroupName()))
+                barcodes.add(new Barcode(group.getGroupName(), sequenceWithAttributes, group.getTargetId()));
         });
+        defaultGroupsOverride = parsedRead.isNumberOfTargetsOverride();
     }
 
-    public BasicDataFromParsedRead(SequenceWithAttributes[] sequences, TargetBarcodes[] barcodes,
-                                   long originalReadId) {
+    public BasicDataFromParsedRead(TByteObjectHashMap<SequenceWithAttributes> sequences, List<Barcode> barcodes,
+                                   long originalReadId, boolean defaultGroupsOverride) {
         this.sequences = sequences;
         this.barcodes = barcodes;
         this.originalReadId = originalReadId;
-    }
-
-    protected int getTargetIndex(byte targetId, boolean isReverseMatch) {
-        int index = targetId - 1;
-        if (isReverseMatch) {
-            if (index == 0)
-                index = 1;
-            else if (index == 1)
-                index = 0;
-        }
-        return index;
+        this.defaultGroupsOverride = defaultGroupsOverride;
     }
 
     @Override
-    public SequenceWithAttributes[] getSequences() {
-        return sequences.clone();
+    public TByteObjectHashMap<SequenceWithAttributes> getSequences() {
+        return sequences;
     }
 
     @Override
-    public TargetBarcodes[] getBarcodes() {
-        return barcodes.clone();
+    public List<Barcode> getBarcodes() {
+        return barcodes;
     }
 
     @Override
     public long getOriginalReadId() {
         return originalReadId;
+    }
+
+    @Override
+    public boolean isDefaultGroupsOverride() {
+        return defaultGroupsOverride;
     }
 }

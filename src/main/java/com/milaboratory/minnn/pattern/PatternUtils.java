@@ -33,11 +33,17 @@ import com.milaboratory.core.alignment.Alignment;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.core.sequence.NucleotideSequenceCaseSensitive;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static com.milaboratory.minnn.parser.Parser.BUILTIN_READ_GROUPS_NUM;
 
 public final class PatternUtils {
     private PatternUtils() {}
+
+    static final Map<String, Byte> defaultGroupIds = IntStream.rangeClosed(1, BUILTIN_READ_GROUPS_NUM)
+            .mapToObj(i -> (byte)i).collect(Collectors.toMap(targetId -> "R" + targetId, Byte::new));
 
     public static int invertCoordinate(int x) {
         return -2 - x;
@@ -93,27 +99,36 @@ public final class PatternUtils {
     /**
      * Generate match from alignment, for FuzzyMatchPattern and RepeatPattern.
      *
-     * @param alignment alignment for pattern and target
-     * @param target target
-     * @param targetId target id, comes from SinglePattern (FuzzyMatch or Repeat) that generates this match
-     * @param firstUppercase position of the first uppercase letter in the pattern; or -1 if all letters are lowercase
-     * @param lastUppercase position of the last uppercase letter in the pattern; or -1 if all letters are lowercase
-     * @param groupEdgePositions group edge positions in the pattern; must be already corrected
-     *                           with fixGroupEdgePositions()
-     * @param extraScorePenalty extra score penalty specified by pattern; 0 or negative
+     * @param alignment             alignment for pattern and target
+     * @param target                target
+     * @param targetId              target id, comes from SinglePattern (FuzzyMatch or Repeat)
+     *                              that generates this match
+     * @param firstUppercase        position of the first uppercase letter in the pattern;
+     *                              or -1 if all letters are lowercase
+     * @param lastUppercase         position of the last uppercase letter in the pattern;
+     *                              or -1 if all letters are lowercase
+     * @param groupEdgePositions    group edge positions in the pattern; must be already corrected
+     *                              with fixGroupEdgePositions()
+     * @param extraScorePenalty     extra score penalty specified by pattern; 0 or negative
+     * @param overrideTargetIds     true if there were groups R1, R2 etc in the pattern, so targetIds override
+     *                              is needed; in this case groups R1, R2, R3 etc will have targetIds based
+     *                              on their name, and all other groups will have targetId -1
      * @return generated match
      */
     static MatchIntermediate generateMatch(Alignment<NucleotideSequenceCaseSensitive> alignment,
             NSequenceWithQuality target, byte targetId, int firstUppercase, int lastUppercase,
-            List<GroupEdgePosition> groupEdgePositions, long extraScorePenalty) {
+            List<GroupEdgePosition> groupEdgePositions, long extraScorePenalty, boolean overrideTargetIds) {
         Range foundRange = alignment.getSequence2Range();
         long matchScore = (long)alignment.getScore() + extraScorePenalty;
         MatchedRange matchedRange = new MatchedRange(target, targetId, 0, foundRange);
         ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
 
         for (GroupEdgePosition groupEdgePosition : groupEdgePositions) {
+            byte matchedGroupTargetId = overrideTargetIds
+                    ? defaultGroupIds.getOrDefault(groupEdgePosition.getGroupEdge().getGroupName(), (byte)-1)
+                    : targetId;
             int foundGroupEdgePosition = toSeq2Position(alignment, groupEdgePosition.getPosition());
-            MatchedGroupEdge matchedGroupEdge = new MatchedGroupEdge(target, targetId, 0,
+            MatchedGroupEdge matchedGroupEdge = new MatchedGroupEdge(target, matchedGroupTargetId, 0,
                     groupEdgePosition.getGroupEdge(), foundGroupEdgePosition);
             matchedGroupEdges.add(matchedGroupEdge);
         }
