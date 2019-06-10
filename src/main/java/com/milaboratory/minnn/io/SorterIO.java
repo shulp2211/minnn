@@ -45,10 +45,11 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.milaboratory.minnn.cli.Defaults.DEFAULT_SORT_CHUNK_SIZE;
+import static com.milaboratory.minnn.cli.CliUtils.*;
+import static com.milaboratory.minnn.cli.Defaults.*;
 import static com.milaboratory.minnn.io.ReportWriter.*;
-import static com.milaboratory.minnn.util.SystemUtils.exitWithError;
-import static com.milaboratory.util.TimeUtils.nanoTimeToString;
+import static com.milaboratory.minnn.util.SystemUtils.*;
+import static com.milaboratory.util.FormatUtils.nanoTimeToString;
 
 public final class SorterIO {
     private final PipelineConfiguration pipelineConfiguration;
@@ -81,6 +82,7 @@ public final class SorterIO {
         long totalReads = 0;
         try (MifReader reader = createReader();
              MifWriter writer = createWriter(reader.getHeader())) {
+            validateInputGroups(reader, sortGroupNames, true);
             SmartProgressReporter.startProgressReport("Reading", reader, System.err);
             List<String> notCorrectedGroups = sortGroupNames.stream().filter(gn -> reader.getCorrectedGroups().stream()
                     .noneMatch(gn::equals)).collect(Collectors.toList());
@@ -143,15 +145,17 @@ public final class SorterIO {
     }
 
     private int estimateChunkSize() {
+        int defaultChunkSize = (int)Math.max(DEFAULT_SORT_MIN_CHUNK_SIZE,
+                Runtime.getRuntime().freeMemory() * DEFAULT_SORT_CHUNK_MEMORY_SHARE);
         if (inputFileName == null)
-            return DEFAULT_SORT_CHUNK_SIZE;
+            return defaultChunkSize;
         else {
             // heuristic to auto-determine chunk size by input file size
             File inputFile = new File(inputFileName);
             CompressionType ct = CompressionType.detectCompressionType(inputFile);
             int averageBytesPerParsedRead = (ct == CompressionType.None) ? 50 : 15;
-            return (int)Math.min(Math.max(16384, inputFile.length() / averageBytesPerParsedRead / 8),
-                    DEFAULT_SORT_CHUNK_SIZE);
+            return (int)Math.min(Math.max(DEFAULT_SORT_MIN_CHUNK_SIZE,
+                    inputFile.length() / averageBytesPerParsedRead / 8), defaultChunkSize);
         }
     }
 

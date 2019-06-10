@@ -32,7 +32,7 @@
 
     <groupId>com.milaboratory</groupId>
     <artifactId>minnn</artifactId>
-    <version>4.0.1</version>
+    <version>5.0.0</version>
     <packaging>jar</packaging>
     <name>minnn</name>
 
@@ -65,7 +65,7 @@
         <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
-            <version>3.7.0</version>
+            <version>3.8.0</version>
         </dependency>
 
         <dependency>

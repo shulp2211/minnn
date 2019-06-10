@@ -59,16 +59,16 @@ public class ExtractActionTest {
             String testOutput2Single = TEMP_DIR + "output2_single.mif";
 
             String[] args1 = {"extract", "-f", "--pattern",
-                    inQuotes("MultiPattern([FullReadPattern(false, FuzzyMatchPattern(GAAGCA, 1, 0, -1, -1, " +
+                    inQuotes("MultiPattern([FullReadPattern(FuzzyMatchPattern(GAAGCA, 1, 0, -1, -1, " +
                             "[GroupEdgePosition(GroupEdge('UMI', true), 2), " +
                             "GroupEdgePosition(GroupEdge('UMI', false), 4)])), " +
-                            "FullReadPattern(false, FuzzyMatchPattern(AA, 0, 0, -1, -1))])"),
+                            "FullReadPattern(FuzzyMatchPattern(AA, 0, 0, -1, -1))])"),
                     "--input", testInputR1, testInputR2, "--output", testOutput1Double,
                     "--devel-parser-syntax", "--score-threshold", "0"};
             main(args1);
 
             String[] args2 = {"extract", "-f", "--score-threshold", "0", "--devel-parser-syntax", "--match-score", "0",
-                    "--oriented", "--pattern", inQuotes("FullReadPattern(false, FuzzyMatchPattern(ATTAGACA, " +
+                    "--oriented", "--pattern", inQuotes("FullReadPattern(FuzzyMatchPattern(ATTAGACA, " +
                     "0, 0, -1, -1))"), "--input", testInputR1, "--output", testOutput1Single};
             main(args2);
 
@@ -182,13 +182,26 @@ public class ExtractActionTest {
         String inputFile = getExampleMif("twosided");
         String fastqR1 = TEMP_DIR + "desc_group_test_R1.fastq";
         String fastqR2 = TEMP_DIR + "desc_group_test_R2.fastq";
-        String outputFile = TEMP_DIR + "desc_group_test_out.mif";
+        String extracted = TEMP_DIR + "desc_group_test_extracted.mif";
+        String corrected = TEMP_DIR + "desc_group_test_corrected.mif";
+        String consensus = TEMP_DIR + "desc_group_test_consensus.mif";
+        String extractToFastqR1 = TEMP_DIR + "desc_group_test_extracted_R1.fastq";
+        String extractToFastqR2 = TEMP_DIR + "desc_group_test_extracted_R2.fastq";
+        String consensusToFastqR1 = TEMP_DIR + "desc_group_test_consensus_R1.fastq";
+        String consensusToFastqR2 = TEMP_DIR + "desc_group_test_consensus_R2.fastq";
         exec("mif2fastq -f --copy-original-headers --input " + inputFile + " --group R1=" + fastqR1
                 + " --group R2=" + fastqR2);
-        exec("extract -f --input " + fastqR1 + " " + fastqR2 + " --output " + outputFile
+        exec("extract -f --input " + fastqR1 + " " + fastqR2 + " --output " + extracted
                 + " --description-group DG1='(?<=G1~)[a-zA-Z]*(?=~)' --pattern \"(G1:cccnn)\\*\""
                 + " --description-group DG4='G4~(?<seq>[a-zA-Z]*)~(?<qual>.*?)\\{' --score-threshold 0");
-        for (String fileName : new String[] { inputFile, fastqR1, fastqR2, outputFile })
+        exec("correct -f --input " + extracted + " --output " + corrected + " --groups G1 DG4");
+        exec("consensus -f --input " + corrected + " --output " + consensus + " --groups DG1 G1 DG4");
+        exec("mif2fastq -f --input " + extracted
+                + " --group R1=" + extractToFastqR1 + " R2=" + extractToFastqR2);
+        exec("mif2fastq -f --input " + consensus
+                + " --group R1=" + consensusToFastqR1 + " --group R2=" + consensusToFastqR2);
+        for (String fileName : new String[] { inputFile, fastqR1, fastqR2, extracted, corrected, consensus,
+                extractToFastqR1, extractToFastqR2, consensusToFastqR1, consensusToFastqR2 })
             assertTrue(new File(fileName).delete());
     }
 

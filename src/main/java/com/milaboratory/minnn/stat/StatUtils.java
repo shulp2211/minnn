@@ -26,27 +26,30 @@
  * PARTICULAR PURPOSE, OR THAT THE USE OF THE SOFTWARE WILL NOT INFRINGE ANY
  * PATENT, TRADEMARK OR OTHER RIGHTS.
  */
-package com.milaboratory.minnn.consensus;
+package com.milaboratory.minnn.stat;
 
-import java.util.LinkedHashSet;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import static com.milaboratory.minnn.cli.Defaults.DEFAULT_MAX_QUALITY;
 
-public final class DefaultGroups {
-    private final int numberOfTargets;
-    private final LinkedHashSet<String> defaultGroups;
+public final class StatUtils {
+    private StatUtils() {}
 
-    public DefaultGroups(int numberOfTargets) {
-        this.numberOfTargets = numberOfTargets;
-        this.defaultGroups = IntStream.rangeClosed(1, numberOfTargets).mapToObj(i -> "R" + i)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+    /**
+     * Calculate error probability by quality value.
+     *
+     * @param quality   quality, parameter is float to support average qualities of sequences
+     * @return          probability of error
+     */
+    public static float qualityToProbability(float quality) {
+        return (float)Math.pow(10.0, -quality / 10);
     }
 
-    public int getNumberOfTargets() {
-        return numberOfTargets;
-    }
-
-    public LinkedHashSet<String> get() {
-        return new LinkedHashSet<>(defaultGroups);
+    public static byte probabilityToQuality(float probability) {
+        double calculatedValue = -10 * Math.log10(probability);
+        if (calculatedValue < 0)
+            return 0;
+        else if (calculatedValue > DEFAULT_MAX_QUALITY)
+            return DEFAULT_MAX_QUALITY;
+        else
+            return (byte)calculatedValue;
     }
 }

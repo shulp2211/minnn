@@ -29,20 +29,18 @@
 package com.milaboratory.minnn.io;
 
 import com.milaboratory.cli.PipelineConfiguration;
-import com.milaboratory.minnn.correct.BarcodeClusteringStrategy;
+import com.milaboratory.minnn.correct.BarcodeClusteringStrategyFactory;
 import com.milaboratory.minnn.correct.CorrectionStats;
-import com.milaboratory.minnn.stat.SimpleMutationProbability;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import static com.milaboratory.minnn.cli.CliUtils.floatFormat;
+import static com.milaboratory.minnn.cli.CliUtils.*;
 import static com.milaboratory.minnn.correct.CorrectionAlgorithms.*;
 import static com.milaboratory.minnn.io.ReportWriter.*;
 import static com.milaboratory.minnn.util.SystemUtils.*;
-import static com.milaboratory.util.TimeUtils.nanoTimeToString;
+import static com.milaboratory.util.FormatUtils.nanoTimeToString;
 
 public final class CorrectBarcodesIO {
     private final PipelineConfiguration pipelineConfiguration;
@@ -50,7 +48,7 @@ public final class CorrectBarcodesIO {
     private final String outputFileName;
     private final List<String> groupNames;
     private final LinkedHashSet<String> primaryGroups;
-    private final BarcodeClusteringStrategy barcodeClusteringStrategy;
+    private final BarcodeClusteringStrategyFactory barcodeClusteringStrategyFactory;
     private final int maxUniqueBarcodes;
     private final int minCount;
     private final String excludedBarcodesOutputFileName;
@@ -60,19 +58,17 @@ public final class CorrectBarcodesIO {
     private final String jsonReportFileName;
 
     public CorrectBarcodesIO(PipelineConfiguration pipelineConfiguration, String inputFileName, String outputFileName,
-                             int mismatches, int indels, int totalErrors, float threshold, List<String> groupNames,
-                             List<String> primaryGroupNames, int maxClusterDepth, float singleSubstitutionProbability,
-                             float singleIndelProbability, int maxUniqueBarcodes, int minCount,
-                             String excludedBarcodesOutputFileName, long inputReadsLimit, boolean suppressWarnings,
-                             String reportFileName, String jsonReportFileName) {
+                             List<String> groupNames, List<String> primaryGroupNames,
+                             BarcodeClusteringStrategyFactory barcodeClusteringStrategyFactory, int maxUniqueBarcodes,
+                             int minCount, String excludedBarcodesOutputFileName, long inputReadsLimit,
+                             boolean suppressWarnings, String reportFileName, String jsonReportFileName) {
         this.pipelineConfiguration = pipelineConfiguration;
         this.inputFileName = inputFileName;
         this.outputFileName = outputFileName;
         this.groupNames = groupNames;
         this.primaryGroups = (primaryGroupNames == null) ? new LinkedHashSet<>()
                 : new LinkedHashSet<>(primaryGroupNames);
-        this.barcodeClusteringStrategy = new BarcodeClusteringStrategy(mismatches, indels, totalErrors, threshold,
-                maxClusterDepth, new SimpleMutationProbability(singleSubstitutionProbability, singleIndelProbability));
+        this.barcodeClusteringStrategyFactory = barcodeClusteringStrategyFactory;
         this.maxUniqueBarcodes = maxUniqueBarcodes;
         this.minCount = minCount;
         this.excludedBarcodesOutputFileName = excludedBarcodesOutputFileName;
@@ -94,10 +90,7 @@ public final class CorrectBarcodesIO {
                 if (primaryGroups.size() == 0)
                     Objects.requireNonNull(pass2Reader).setParsedReadsLimit(inputReadsLimit);
             }
-            Set<String> defaultGroups = IntStream.rangeClosed(1, pass1Reader.getNumberOfTargets())
-                    .mapToObj(i -> "R" + i).collect(Collectors.toSet());
-            if (groupNames.stream().anyMatch(defaultGroups::contains))
-                throw exitWithError("Default groups R1, R2, etc should not be specified for correction!");
+            validateInputGroups(pass1Reader, groupNames, false);
             LinkedHashSet<String> keyGroups = new LinkedHashSet<>(groupNames);
             if (!suppressWarnings && (pass1Reader.getSortedGroups().size() > 0) && (primaryGroups.size() == 0))
                 System.err.println("WARNING: correcting sorted MIF file; output file will be unsorted!");
@@ -113,14 +106,14 @@ public final class CorrectBarcodesIO {
                         "corrected again!");
             if (primaryGroups.size() == 0)
                 stats = fullFileCorrect(pass1Reader, pass2Reader, writer, excludedBarcodesWriter, inputReadsLimit,
-                        barcodeClusteringStrategy, defaultGroups, keyGroups, maxUniqueBarcodes, minCount);
+                        barcodeClusteringStrategyFactory, keyGroups, maxUniqueBarcodes, minCount);
             else if (unsortedPrimaryGroups.size() == 0)
                 stats = sortedClustersCorrect(pass1Reader, writer, excludedBarcodesWriter, inputReadsLimit,
-                        barcodeClusteringStrategy, defaultGroups, primaryGroups, keyGroups, maxUniqueBarcodes,
+                        barcodeClusteringStrategyFactory, primaryGroups, keyGroups, maxUniqueBarcodes,
                         minCount);
             else
                 stats = unsortedClustersCorrect(pass1Reader, writer, excludedBarcodesWriter, inputReadsLimit,
-                        barcodeClusteringStrategy, defaultGroups, primaryGroups, keyGroups, maxUniqueBarcodes,
+                        barcodeClusteringStrategyFactory, primaryGroups, keyGroups, maxUniqueBarcodes,
                         minCount);
             pass1Reader.close();
             writer.setOriginalNumberOfReads(pass1Reader.getOriginalNumberOfReads());

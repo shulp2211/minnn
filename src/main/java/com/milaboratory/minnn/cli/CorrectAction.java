@@ -32,7 +32,9 @@ import com.milaboratory.cli.ACommandWithSmartOverwrite;
 import com.milaboratory.cli.ActionConfiguration;
 import com.milaboratory.cli.AppVersionInfo;
 import com.milaboratory.cli.PipelineConfiguration;
+import com.milaboratory.minnn.correct.BarcodeClusteringStrategyFactory;
 import com.milaboratory.minnn.io.CorrectBarcodesIO;
+import com.milaboratory.minnn.stat.SimpleMutationProbability;
 import picocli.CommandLine.*;
 
 import java.util.*;
@@ -57,9 +59,12 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
 
     @Override
     public void run1() {
+        BarcodeClusteringStrategyFactory barcodeClusteringStrategyFactory = new BarcodeClusteringStrategyFactory(
+                maxErrorsCountMultiplier, maxErrorsWorstBarcodesShare, maxErrorsShare, maxErrors,
+                threshold, maxClusterDepth,
+                new SimpleMutationProbability(singleSubstitutionProbability, singleIndelProbability));
         CorrectBarcodesIO correctBarcodesIO = new CorrectBarcodesIO(getFullPipelineConfiguration(), inputFileName,
-                outputFileName, mismatches, indels, totalErrors, threshold, groupNames, primaryGroupNames,
-                maxClusterDepth, singleSubstitutionProbability, singleIndelProbability, maxUniqueBarcodes,
+                outputFileName, groupNames, primaryGroupNames, barcodeClusteringStrategyFactory, maxUniqueBarcodes,
                 minCount, excludedBarcodesOutputFileName, inputReadsLimit, quiet, reportFileName, jsonReportFileName);
         correctBarcodesIO.go();
     }
@@ -72,6 +77,9 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
     @Override
     public void validate() {
         MiNNNCommand.super.validate(getInputFiles(), getOutputFiles());
+        if ((maxErrorsCountMultiplier < 0) && (maxErrorsShare < 0) && (maxErrors < 0))
+            throwValidationException("All 3 methods of calculating maximal number of errors for " +
+                    "barcodes clustering are disabled (set to negative); enable at least one!");
     }
 
     @Override
@@ -101,8 +109,9 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
     @Override
     public ActionConfiguration getConfiguration() {
         return new CorrectActionConfiguration(new CorrectActionConfiguration.CorrectActionParameters(groupNames,
-                primaryGroupNames, mismatches, indels, totalErrors, threshold, maxClusterDepth,
-                singleSubstitutionProbability, singleIndelProbability, maxUniqueBarcodes, minCount, inputReadsLimit));
+                primaryGroupNames, maxErrorsCountMultiplier, maxErrorsWorstBarcodesShare, maxErrorsShare, maxErrors,
+                threshold, maxClusterDepth, singleSubstitutionProbability, singleIndelProbability, maxUniqueBarcodes,
+                minCount, inputReadsLimit));
     }
 
     @Override
@@ -138,21 +147,37 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
             names = {"--output"})
     private String outputFileName = null;
 
-    @Option(description = "Maximum number of mismatches between barcodes for which they are considered identical.",
-            names = {"--max-mismatches"})
-    private int mismatches = DEFAULT_CORRECT_MAX_MISMATCHES;
+    @Option(description = "Relative maximal allowed number of errors (Levenshtein distance) between barcodes for " +
+            "which they are considered identical. It is multiplied on average barcode length to calculate maximal " +
+            "allowed number of errors. This max errors calculation method is enabled by default. " +
+            CORRECT_MAX_ERRORS_COMMON,
+            names = "--max-errors-share")
+    private float maxErrorsShare = DEFAULT_MAX_ERRORS_SHARE;
 
-    @Option(description = "Maximum number of insertions or deletions between barcodes for which they are " +
-            "considered identical.",
-            names = {"--max-indels"})
-    private int indels = DEFAULT_CORRECT_MAX_INDELS;
+    @Option(description = "Maximal Levenshtein distance between barcodes for which they are considered identical. " +
+            CORRECT_MAX_ERRORS_COMMON,
+            names = {"--max-errors"})
+    private int maxErrors = -1;
 
-    @Option(description = "Maximum Levenshtein distance between barcodes for which they are considered identical.",
-            names = {"--max-total-errors"})
-    private int totalErrors = DEFAULT_CORRECT_MAX_TOTAL_ERRORS;
+    @Option(description = "Multiplier to count maximum Levenshtein distance between barcodes for which they are " +
+            "considered identical. It is multiplied on error probability based on average of minimal barcode " +
+            "qualities from a share of barcodes with worst qualities; then multiplied on average barcode length. " +
+            "If this max errors calculation method is enabled, recommended value is 1. " +
+            CORRECT_MAX_ERRORS_COMMON,
+            names = "--max-errors-count-multiplier")
+    private float maxErrorsCountMultiplier = -1f;
+
+    @Option(description = "Share of barcodes with worst qualities that is used to calculate error probability " +
+            "if --max-errors-count-multiplier option is used.",
+            names = "--max-errors-worst-barcodes-share")
+    private float maxErrorsWorstBarcodesShare = DEFAULT_MAX_ERRORS_WORST_BARCODES_SHARE;
 
     @Option(description = "Threshold for barcode clustering: if smaller barcode count divided to larger barcode " +
-            "count is below this threshold, barcode will be merged to the cluster.",
+            "count is below this threshold, barcode will be merged to the cluster. This feature is turned off " +
+            "(set to 1) by default, because there is already filtering by --single-substitution-probability and " +
+            "--single-indel-probability enabled. You can turn on this filter (set the threshold) and set single " +
+            "error probabilities to 1; or you can use both filters (by cluster threshold and by single error " +
+            "probabilities) if you want.",
             names = {"--cluster-threshold"})
     private float threshold = DEFAULT_CORRECT_CLUSTER_THRESHOLD;
 

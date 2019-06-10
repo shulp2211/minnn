@@ -34,9 +34,11 @@ import java.util.ArrayList;
 
 public abstract class Pattern {
     protected final PatternAligner patternAligner;
+    protected final boolean defaultGroupsOverride;
 
-    Pattern(PatternAligner patternAligner) {
+    Pattern(PatternAligner patternAligner, boolean defaultGroupsOverride) {
         this.patternAligner = patternAligner;
+        this.defaultGroupsOverride = defaultGroupsOverride;
     }
 
     /**
@@ -56,6 +58,10 @@ public abstract class Pattern {
 
     public PatternAligner getPatternAligner() {
         return patternAligner;
+    }
+
+    public boolean isDefaultGroupsOverride() {
+        return defaultGroupsOverride;
     }
 
     /**
