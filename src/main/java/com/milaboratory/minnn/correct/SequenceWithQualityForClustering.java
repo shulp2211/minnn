@@ -28,36 +28,32 @@
  */
 package com.milaboratory.minnn.correct;
 
-import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.core.sequence.*;
 
-final class SequenceCounter implements Comparable<SequenceCounter> {
-    final MultiSequence multiSequence;
-    long count;
+class SequenceWithQualityForClustering extends Sequence<SequenceWithQualityForClustering> {
+    final NSequenceWithQuality nSequenceWithQuality;
 
-    SequenceCounter(NSequenceWithQuality sequence) {
-        multiSequence = new MultiSequence(sequence);
-        count = 0;
+    SequenceWithQualityForClustering(NSequenceWithQuality nSequenceWithQuality) {
+        this.nSequenceWithQuality = nSequenceWithQuality;
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        SequenceCounter that = (SequenceCounter)o;
-        // MultiSequence objects will perform mutual merge if equal by wildcards
-        return multiSequence.equals(that.multiSequence);
+    public byte codeAt(int position) {
+        return nSequenceWithQuality.getSequence().codeAt(position);
     }
 
     @Override
-    public int hashCode() {
-        return 0;
+    public Alphabet<SequenceWithQualityForClustering> getAlphabet() {
+        return (Alphabet)(NucleotideSequence.ALPHABET);
     }
 
-    // compareTo is reversed to start from bigger counts
     @Override
-    public int compareTo(SequenceCounter other) {
-        int comparisonResult = -Long.compare(count, other.count);
-        // disable equal counts because they lead to objects loss
-        return (comparisonResult == 0) ? 1 : comparisonResult;
+    public SequenceWithQualityForClustering getRange(int from, int to) {
+        return new SequenceWithQualityForClustering(nSequenceWithQuality.getRange(from, to));
+    }
+
+    @Override
+    public int size() {
+        return nSequenceWithQuality.size();
     }
 }

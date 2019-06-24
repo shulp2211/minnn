@@ -28,36 +28,19 @@
  */
 package com.milaboratory.minnn.correct;
 
-import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.core.tree.MutationGuide;
 
-final class SequenceCounter implements Comparable<SequenceCounter> {
-    final MultiSequence multiSequence;
-    long count;
+import static com.milaboratory.core.mutations.MutationType.*;
+import static com.milaboratory.minnn.cli.Defaults.DEFAULT_VERY_GOOD_QUALITY;
 
-    SequenceCounter(NSequenceWithQuality sequence) {
-        multiSequence = new MultiSequence(sequence);
-        count = 0;
-    }
+class MutationGuideForClustering implements MutationGuide<SequenceWithQualityForClustering> {
+    static MutationGuideForClustering INSTANCE = new MutationGuideForClustering();
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        SequenceCounter that = (SequenceCounter)o;
-        // MultiSequence objects will perform mutual merge if equal by wildcards
-        return multiSequence.equals(that.multiSequence);
-    }
+    private MutationGuideForClustering() {}
 
     @Override
-    public int hashCode() {
-        return 0;
-    }
-
-    // compareTo is reversed to start from bigger counts
-    @Override
-    public int compareTo(SequenceCounter other) {
-        int comparisonResult = -Long.compare(count, other.count);
-        // disable equal counts because they lead to objects loss
-        return (comparisonResult == 0) ? 1 : comparisonResult;
+    public boolean allowMutation(SequenceWithQualityForClustering reference, int position, byte type, byte to) {
+        return (getType(type) == Insertion)
+                || (reference.nSequenceWithQuality.getQuality().value(position) < DEFAULT_VERY_GOOD_QUALITY);
     }
 }

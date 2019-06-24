@@ -43,11 +43,10 @@ import java.util.stream.Collectors;
 import static com.milaboratory.core.sequence.quality.QualityTrimmer.trim;
 import static com.milaboratory.minnn.cli.Defaults.*;
 import static com.milaboratory.minnn.consensus.OriginalReadStatus.*;
+import static com.milaboratory.minnn.stat.StatUtils.*;
 import static com.milaboratory.minnn.util.SequencesCache.*;
 
 public abstract class ConsensusAlgorithm implements Processor<Cluster, CalculatedConsensuses> {
-    private static final double OVERFLOW_PROTECTION_MIN = 1E-100D;
-    private static final double OVERFLOW_PROTECTION_MAX = 1E100D;
     private static final NucleotideSequence[] consensusMajorBases = new NucleotideSequence[] {
             sequencesCache.get(new NucleotideSequence("A")), sequencesCache.get(new NucleotideSequence("T")),
             sequencesCache.get(new NucleotideSequence("G")), sequencesCache.get(new NucleotideSequence("C")) };
@@ -115,7 +114,7 @@ public abstract class ConsensusAlgorithm implements Processor<Cluster, Calculate
             double product = Math.pow(gamma, -letterCounts.get(majorBase));
             for (SequenceWithAttributes currentLetter : baseLetters)
                 if (!currentLetter.isEmpty()) {
-                    double errorProbability = Math.pow(10.0, -currentLetter.getQual().value(0) / 10.0);
+                    double errorProbability = qualityToProbability(currentLetter.getQual().value(0));
                     if (currentLetter.getSeq().equals(majorBase))
                         product *= (1 - errorProbability) / Math.max(OVERFLOW_PROTECTION_MIN, errorProbability);
                     else
@@ -125,7 +124,7 @@ public abstract class ConsensusAlgorithm implements Processor<Cluster, Calculate
                 }
 
             double majorErrorProbability = 1.0 / (1 + product);
-            double quality = -10 * Math.log10(majorErrorProbability);
+            double quality = probabilityToQuality(majorErrorProbability);
             if (quality > bestQuality) {
                 bestMajorBase = majorBase;
                 bestQuality = quality;
