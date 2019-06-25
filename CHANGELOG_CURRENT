@@ -1,0 +1,3 @@
+Correct action now uses reads quality while checking for allowed mutations
+Removed --max-errors-count-multiplier and --max-errors-worst-barcodes-share from Correct action
+--max-errors-share argument now sets max errors to at least 1 (to avoid 0 for short barcodes)
