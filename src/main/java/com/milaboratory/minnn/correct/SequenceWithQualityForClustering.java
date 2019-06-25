@@ -28,36 +28,32 @@
  */
 package com.milaboratory.minnn.correct;
 
-import com.milaboratory.core.tree.TreeSearchParameters;
-import com.milaboratory.minnn.stat.MutationProbability;
+import com.milaboratory.core.sequence.*;
 
-public final class BarcodeClusteringStrategyFactory {
-    private final float maxErrorsShare;
-    private final int maxErrors;
-    private final float threshold;
-    private final int maxClusterDepth;
-    private final MutationProbability mutationProbability;
+class SequenceWithQualityForClustering extends Sequence<SequenceWithQualityForClustering> {
+    final NSequenceWithQuality nSequenceWithQuality;
 
-    public BarcodeClusteringStrategyFactory(
-            float maxErrorsShare, int maxErrors, float threshold, int maxClusterDepth,
-            MutationProbability mutationProbability) {
-        this.maxErrorsShare = maxErrorsShare;
-        this.maxErrors = maxErrors;
-        this.threshold = threshold;
-        this.maxClusterDepth = maxClusterDepth;
-        this.mutationProbability = mutationProbability;
+    SequenceWithQualityForClustering(NSequenceWithQuality nSequenceWithQuality) {
+        this.nSequenceWithQuality = nSequenceWithQuality;
     }
 
-    boolean averageBarcodeLengthRequired() {
-        return maxErrorsShare >= 0;
+    @Override
+    public byte codeAt(int position) {
+        return nSequenceWithQuality.getSequence().codeAt(position);
     }
 
-    BarcodeClusteringStrategy createStrategy(float averageBarcodeLength) {
-        int calculatedMaxErrors = (maxErrors >= 0) ? maxErrors : Integer.MAX_VALUE;
-        if (maxErrorsShare >= 0)
-            calculatedMaxErrors = Math.min(calculatedMaxErrors, Math.max(1,
-                    Math.round(maxErrorsShare * averageBarcodeLength)));
-        return new BarcodeClusteringStrategy(new TreeSearchParameters(calculatedMaxErrors, calculatedMaxErrors,
-                calculatedMaxErrors, calculatedMaxErrors), threshold, maxClusterDepth, mutationProbability);
+    @Override
+    public Alphabet<SequenceWithQualityForClustering> getAlphabet() {
+        return (Alphabet)(NucleotideSequence.ALPHABET);
+    }
+
+    @Override
+    public SequenceWithQualityForClustering getRange(int from, int to) {
+        return new SequenceWithQualityForClustering(nSequenceWithQuality.getRange(from, to));
+    }
+
+    @Override
+    public int size() {
+        return nSequenceWithQuality.size();
     }
 }

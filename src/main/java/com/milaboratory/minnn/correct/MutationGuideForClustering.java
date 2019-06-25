@@ -28,36 +28,19 @@
  */
 package com.milaboratory.minnn.correct;
 
-import com.milaboratory.core.tree.TreeSearchParameters;
-import com.milaboratory.minnn.stat.MutationProbability;
+import com.milaboratory.core.tree.MutationGuide;
 
-public final class BarcodeClusteringStrategyFactory {
-    private final float maxErrorsShare;
-    private final int maxErrors;
-    private final float threshold;
-    private final int maxClusterDepth;
-    private final MutationProbability mutationProbability;
+import static com.milaboratory.core.mutations.MutationType.*;
+import static com.milaboratory.minnn.cli.Defaults.DEFAULT_VERY_GOOD_QUALITY;
 
-    public BarcodeClusteringStrategyFactory(
-            float maxErrorsShare, int maxErrors, float threshold, int maxClusterDepth,
-            MutationProbability mutationProbability) {
-        this.maxErrorsShare = maxErrorsShare;
-        this.maxErrors = maxErrors;
-        this.threshold = threshold;
-        this.maxClusterDepth = maxClusterDepth;
-        this.mutationProbability = mutationProbability;
-    }
+class MutationGuideForClustering implements MutationGuide<SequenceWithQualityForClustering> {
+    static MutationGuideForClustering INSTANCE = new MutationGuideForClustering();
 
-    boolean averageBarcodeLengthRequired() {
-        return maxErrorsShare >= 0;
-    }
+    private MutationGuideForClustering() {}
 
-    BarcodeClusteringStrategy createStrategy(float averageBarcodeLength) {
-        int calculatedMaxErrors = (maxErrors >= 0) ? maxErrors : Integer.MAX_VALUE;
-        if (maxErrorsShare >= 0)
-            calculatedMaxErrors = Math.min(calculatedMaxErrors, Math.max(1,
-                    Math.round(maxErrorsShare * averageBarcodeLength)));
-        return new BarcodeClusteringStrategy(new TreeSearchParameters(calculatedMaxErrors, calculatedMaxErrors,
-                calculatedMaxErrors, calculatedMaxErrors), threshold, maxClusterDepth, mutationProbability);
+    @Override
+    public boolean allowMutation(SequenceWithQualityForClustering reference, int position, byte type, byte to) {
+        return (getType(type) == Insertion)
+                || (reference.nSequenceWithQuality.getQuality().value(position) < DEFAULT_VERY_GOOD_QUALITY);
     }
 }

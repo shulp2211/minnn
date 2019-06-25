@@ -40,14 +40,11 @@ import com.milaboratory.minnn.outputconverter.ParsedRead;
 import com.milaboratory.minnn.pattern.Match;
 import com.milaboratory.minnn.pattern.MatchedGroupEdge;
 import com.milaboratory.util.SmartProgressReporter;
-import gnu.trove.map.hash.TByteIntHashMap;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import static com.milaboratory.minnn.cli.Defaults.*;
-import static com.milaboratory.minnn.stat.StatUtils.*;
 import static com.milaboratory.minnn.util.SystemUtils.*;
 
 public final class CorrectionAlgorithms {
@@ -59,7 +56,6 @@ public final class CorrectionAlgorithms {
             LinkedHashSet<String> keyGroups, int maxUniqueBarcodes, int minCount) {
         boolean filterByCount = (maxUniqueBarcodes > 0) || (minCount > 1);
         Set<GroupData> groupsData = keyGroups.stream().map(groupName -> new GroupData(groupName, filterByCount,
-                barcodeClusteringStrategyFactory.averageErrorProbabilityRequired(),
                 barcodeClusteringStrategyFactory.averageBarcodeLengthRequired())).collect(Collectors.toSet());
         long totalReads = 0;
         long correctedReads = 0;
@@ -236,19 +232,20 @@ public final class CorrectionAlgorithms {
         SequenceCounterExtractor sequenceCounterExtractor = new SequenceCounterExtractor();
         for (GroupData groupData : groupsData) {
             if (groupData.parsedReadsCount > 0) {
-                Clustering<SequenceCounter, NucleotideSequence> clustering = new Clustering<>(
+                Clustering<SequenceCounter, SequenceWithQualityForClustering> clustering = new Clustering<>(
                         groupData.getSortedSequences(), sequenceCounterExtractor,
-                        barcodeClusteringStrategyFactory.createStrategy(groupData.calculateErrorProbability(
-                                barcodeClusteringStrategyFactory.getMaxErrorsWorstBarcodesShare()),
-                                (float)(groupData.lengthSum) / groupData.parsedReadsCount));
+                        barcodeClusteringStrategyFactory.createStrategy(
+                                (float)(groupData.lengthSum) / groupData.parsedReadsCount),
+                        MutationGuideForClustering.INSTANCE);
                 if (reportProgress)
                     SmartProgressReporter.startProgressReport("Clustering barcodes in group "
                                     + groupData.groupName, clustering, System.err);
                 clustering.performClustering().forEach(cluster -> {
-                    NucleotideSequence headSequence = cluster.getHead().multiSequence.getBestSequence();
+                    NSequenceWithQuality headSequence = cluster.getHead().multiSequence.getSequence();
                     cluster.processAllChildren(child -> {
-                        child.getHead().multiSequence.sequences.keySet()
-                                .forEach(seq -> groupData.correctionMap.put(seq, headSequence));
+                        child.getHead().multiSequence.getSequences()
+                                .forEach(seq -> groupData.correctionMap.put(seq.getSequence(),
+                                        headSequence.getSequence()));
                         return true;
                     });
                 });
@@ -349,7 +346,8 @@ public final class CorrectionAlgorithms {
                     + ", got " + newMatch.getGroups().stream().map(MatchedGroup::getGroupName)
                     .filter(defaultGroups::contains).collect(Collectors.toList()));
         return new CorrectBarcodesResult(new ParsedRead(parsedRead.getOriginalRead(), parsedRead.isReverseMatch(),
-                parsedRead.getRawNumberOfTargetsOverride(), newMatch, 0), numCorrectedBarcodes, excluded);
+                parsedRead.getRawNumberOfTargetsOverride(), newMatch, 0), numCorrectedBarcodes,
+                excluded);
     }
 
     /**
@@ -374,7 +372,6 @@ public final class CorrectionAlgorithms {
             int maxUniqueBarcodes, int minCount) {
         boolean filterByCount = (maxUniqueBarcodes > 0) || (minCount > 1);
         Set<GroupData> groupsData = keyGroups.stream().map(groupName -> new GroupData(groupName, filterByCount,
-                barcodeClusteringStrategyFactory.averageErrorProbabilityRequired(),
                 barcodeClusteringStrategyFactory.averageBarcodeLengthRequired())).collect(Collectors.toSet());
         long correctedReads = 0;
         long excludedReads = 0;
@@ -407,11 +404,9 @@ public final class CorrectionAlgorithms {
     private static class GroupData {
         final String groupName;
         final boolean filterByCount;
-        final boolean averageErrorProbabilityRequired;
         final boolean averageBarcodeLengthRequired;
         final Map<NucleotideSequence, SequenceCounter> sequenceCounters = new HashMap<>();
         final Map<NucleotideSequence, RawSequenceCounter> notCorrectedBarcodeCounters;
-        final TByteIntHashMap worstQualitiesCounts;
         // keys: not corrected sequences, values: corrected sequences
         final Map<NucleotideSequence, NucleotideSequence> correctionMap = new HashMap<>();
         // barcodes that are not filtered out if filtering by count is enabled
@@ -419,21 +414,18 @@ public final class CorrectionAlgorithms {
         long lengthSum = 0;
         long parsedReadsCount = 0;
 
-        GroupData(String groupName, boolean filterByCount, boolean averageErrorProbabilityRequired,
-                  boolean averageBarcodeLengthRequired) {
+        GroupData(String groupName, boolean filterByCount, boolean averageBarcodeLengthRequired) {
             this.groupName = groupName;
             this.filterByCount = filterByCount;
-            this.averageErrorProbabilityRequired = averageErrorProbabilityRequired;
             this.averageBarcodeLengthRequired = averageBarcodeLengthRequired;
             this.notCorrectedBarcodeCounters = filterByCount ? new HashMap<>() : null;
-            this.worstQualitiesCounts = averageErrorProbabilityRequired ? new TByteIntHashMap() : null;
             this.includedBarcodes = filterByCount ? new HashSet<>() : null;
         }
 
         void processSequence(NSequenceWithQuality seqWithQuality) {
             // creating multi-sequence counters, without merging multi-sequences on this stage
             NucleotideSequence seq = seqWithQuality.getSequence();
-            sequenceCounters.putIfAbsent(seq, new SequenceCounter(seq));
+            sequenceCounters.putIfAbsent(seq, new SequenceCounter(seqWithQuality));
             sequenceCounters.get(seq).count++;
 
             // counting raw barcode sequences if filtering by count is enabled
@@ -445,38 +437,11 @@ public final class CorrectionAlgorithms {
             if (averageBarcodeLengthRequired)
                 lengthSum += seq.size();
 
-            if (averageErrorProbabilityRequired) {
-                byte minQuality = seqWithQuality.getQuality().minValue();
-                worstQualitiesCounts.adjustOrPutValue(minQuality, 1, 1);
-            }
-
             parsedReadsCount++;
         }
 
         TreeSet<SequenceCounter> getSortedSequences() {
             return new TreeSet<>(sequenceCounters.values());
-        }
-
-        float calculateErrorProbability(float maxErrorsWorstBarcodesShare) {
-            if (!averageErrorProbabilityRequired)
-                return 1f;
-            float totalWorstBarcodes = maxErrorsWorstBarcodesShare * parsedReadsCount;
-            if (totalWorstBarcodes < 1)
-                return 1f;
-            int sumQuality = 0;
-            int countedBarcodes = 0;
-            for (byte quality = 0; quality <= DEFAULT_MAX_QUALITY; quality++) {
-                int currentBarcodesCount = worstQualitiesCounts.get(quality);
-                if (countedBarcodes + currentBarcodesCount < totalWorstBarcodes) {
-                    sumQuality += quality * currentBarcodesCount;
-                    countedBarcodes += currentBarcodesCount;
-                } else {
-                    int remainingCount = (int)(totalWorstBarcodes - countedBarcodes);
-                    sumQuality += quality * remainingCount;
-                    break;
-                }
-            }
-            return qualityToProbability(sumQuality / totalWorstBarcodes);
         }
 
         @Override

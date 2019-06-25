@@ -36,20 +36,20 @@ public final class StatUtils {
     /**
      * Calculate error probability by quality value.
      *
-     * @param quality   quality, parameter is float to support average qualities of sequences
+     * @param quality   quality, parameter is double to support average qualities of sequences
      * @return          probability of error
      */
-    public static float qualityToProbability(float quality) {
-        return (float)Math.pow(10.0, -quality / 10);
+    public static double qualityToProbability(double quality) {
+        return Math.pow(10.0, -quality / 10);
     }
 
-    public static byte probabilityToQuality(float probability) {
+    public static double probabilityToQuality(double probability) {
         double calculatedValue = -10 * Math.log10(probability);
         if (calculatedValue < 0)
             return 0;
         else if (calculatedValue > DEFAULT_MAX_QUALITY)
             return DEFAULT_MAX_QUALITY;
         else
-            return (byte)calculatedValue;
+            return calculatedValue;
     }
 }
