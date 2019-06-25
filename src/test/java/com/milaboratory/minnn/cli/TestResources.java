@@ -28,6 +28,7 @@
  */
 package com.milaboratory.minnn.cli;
 
+import java.io.File;
 import java.util.*;
 
 import static com.milaboratory.minnn.cli.CommandLineTestUtils.*;
@@ -49,7 +50,7 @@ public class TestResources {
                 TEMP_DIR + "good-quality.mif"));
     }
 
-    public static String getExampleMif(String example) throws Exception {
+    public static String getExampleMif(String example) {
         String common = "extract -f --input " + examples.get(example).fastq + " --output " + examples.get(example).mif
                 + " --mismatch-score -9 --gap-score -10 --single-overlap-penalty -10 --pattern ";
         switch (example) {
@@ -72,6 +73,17 @@ public class TestResources {
                 throw new IllegalArgumentException("Unknown example: " + example);
         }
         return examples.get(example).mif;
+    }
+
+    public static String getBigOrSmallFastqTestFileNames(String bigR1, String bigR2) {
+        String smallR1 = TEST_RESOURCES_PATH + "sample_r1.fastq.gz";
+        String smallR2 = TEST_RESOURCES_PATH + "sample_r2.fastq.gz";
+        String fullBigR1 = TEST_RESOURCES_PATH + "big/" + bigR1;
+        String fullBigR2 = TEST_RESOURCES_PATH + "big/" + bigR2;
+        boolean bigFilesExist = new File(fullBigR1).exists() && new File(fullBigR2).exists();
+        String inputFileR1 = bigFilesExist ? fullBigR1 : smallR1;
+        String inputFileR2 = bigFilesExist ? fullBigR2 : smallR2;
+        return inputFileR1 + " " + inputFileR2;
     }
 
     private static class ExampleMif {

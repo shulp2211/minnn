@@ -67,16 +67,10 @@ public class SpecialCasesTest {
 
     @Test
     public void correctionSpeedTest() throws Exception {
-        String smallR1 = TEST_RESOURCES_PATH + "sample_r1.fastq.gz";
-        String smallR2 = TEST_RESOURCES_PATH + "sample_r2.fastq.gz";
-        String bigR1 = TEST_RESOURCES_PATH + "big/kit_data_R1.fastq.gz";
-        String bigR2 = TEST_RESOURCES_PATH + "big/kit_data_R2.fastq.gz";
-        boolean bigFilesExist = new File(bigR1).exists() && new File(bigR2).exists();
-        String inputFileR1 = bigFilesExist ? bigR1 : smallR1;
-        String inputFileR2 = bigFilesExist ? bigR2 : smallR2;
+        String inputFastqFiles = getBigOrSmallFastqTestFileNames("test01_R1.fastq.gz", "test01_R2.fastq.gz");
         String extractOutput = TEMP_DIR + "extracted.mif";
         String correctOutput = TEMP_DIR + "corrected.mif";
-        exec("extract -f --input " + inputFileR1 + " " + inputFileR2 + " --output " + extractOutput
+        exec("extract -f --input " + inputFastqFiles + " --output " + extractOutput
                 + " --score-threshold -25 --bitap-max-errors 5"
                 + " --pattern \"(FULL:tggtatcaacgcagagt(UMI:nnnntnnnntnnnn)tct)\\*\"");
         exec("correct -f --groups UMI --input " + extractOutput + " --output " + correctOutput
@@ -182,5 +176,31 @@ public class SpecialCasesTest {
                 "extract -f --input " + inputFile + " --output " + inputFile + " --input-format MIF"
                         + " --pattern \"(UMI:NNNNNNNN)(R1:gaca)\\atta(R16:nnn)\""));
         assertTrue(new File(inputFile).delete());
+    }
+
+    @Test
+    public void barcodesLengthTest() throws Exception {
+        String inputFastqFiles = getBigOrSmallFastqTestFileNames("SRR7191987_1.fastq", "SRR7191987_2.fastq");
+        String extracted = TEMP_DIR + "extracted.mif";
+        String fastqR1 = TEMP_DIR + "R1.fastq";
+        String fastqR2 = TEMP_DIR + "R2.fastq";
+        String pattern = inputFastqFiles.contains("SRR")
+                ? "\"^(B1:N{8:12})gagtgattgcttgtgacgccaa(B2:N{8})(UMI:N{8})\\*\""
+                : "\"^(B1:N{8:12})gagt(B2:N{8})(UMI:N{8})\\*\"";
+        exec("extract -f --input " + inputFastqFiles + " --output " + extracted + " --pattern " + pattern);
+        exec("mif2fastq -f --input " + extracted + " --group R1=" + fastqR1 + " R2=" + fastqR2);
+        BufferedReader reader = new BufferedReader(new FileReader(fastqR1));
+        String firstLine = reader.readLine();
+        reader.close();
+        for (String fileName : new String[] { extracted, fastqR1, fastqR2 })
+            assertTrue(new File(fileName).delete());
+        String[] firstLineParts = firstLine.split("\\|");
+        for (int i = 0; i <= 2; i++) {
+            String[] currentPartTokens = firstLineParts[i].split("~");
+            if (i == 0)
+                assertTrue((currentPartTokens[1].length() >= 8) && (currentPartTokens[1].length() <= 12));
+            else
+                assertEquals(8, currentPartTokens[1].length());
+        }
     }
 }
