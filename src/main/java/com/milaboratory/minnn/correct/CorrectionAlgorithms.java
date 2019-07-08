@@ -233,7 +233,7 @@ public final class CorrectionAlgorithms {
         for (GroupData groupData : groupsData) {
             if (groupData.parsedReadsCount > 0) {
                 Clustering<SequenceCounter, SequenceWithQualityForClustering> clustering = new Clustering<>(
-                        groupData.getSortedSequences(), sequenceCounterExtractor,
+                        groupData.getSequenceCounters(), sequenceCounterExtractor,
                         barcodeClusteringStrategyFactory.createStrategy(
                                 (float)(groupData.lengthSum) / groupData.parsedReadsCount),
                         MutationGuideForClustering.INSTANCE);
@@ -241,11 +241,10 @@ public final class CorrectionAlgorithms {
                     SmartProgressReporter.startProgressReport("Clustering barcodes in group "
                                     + groupData.groupName, clustering, System.err);
                 clustering.performClustering().forEach(cluster -> {
-                    NSequenceWithQuality headSequence = cluster.getHead().multiSequence.getSequence();
+                    NSequenceWithQuality headSequence = cluster.getHead().getSequence();
                     cluster.processAllChildren(child -> {
-                        child.getHead().multiSequence.getSequences()
-                                .forEach(seq -> groupData.correctionMap.put(seq.getSequence(),
-                                        headSequence.getSequence()));
+                        child.getHead().getOriginalSequences().forEach(seq ->
+                                groupData.correctionMap.put(seq, headSequence.getSequence()));
                         return true;
                     });
                 });
@@ -405,7 +404,9 @@ public final class CorrectionAlgorithms {
         final String groupName;
         final boolean filterByCount;
         final boolean averageBarcodeLengthRequired;
-        final Map<NucleotideSequence, SequenceCounter> sequenceCounters = new HashMap<>();
+        // largest counts are first in the tree
+        final TreeSet<SequenceCounter> sequenceCounters = new TreeSet<>(SequenceCounter::compareForTreeSet);
+        final HashMap<NucleotideSequence, SequenceCounter> counterBySeqCache = new HashMap<>();
         final Map<NucleotideSequence, RawSequenceCounter> notCorrectedBarcodeCounters;
         // keys: not corrected sequences, values: corrected sequences
         final Map<NucleotideSequence, NucleotideSequence> correctionMap = new HashMap<>();
@@ -423,10 +424,28 @@ public final class CorrectionAlgorithms {
         }
 
         void processSequence(NSequenceWithQuality seqWithQuality) {
-            // creating multi-sequence counters, without merging multi-sequences on this stage
+            // try to add the sequence to any of the existing counters or create new counter
             NucleotideSequence seq = seqWithQuality.getSequence();
-            sequenceCounters.putIfAbsent(seq, new SequenceCounter(seqWithQuality));
-            sequenceCounters.get(seq).count++;
+            SequenceCounter cachedCounter = counterBySeqCache.get(seq);
+            if (cachedCounter != null) {
+                if (!cachedCounter.add(seqWithQuality))
+                    throw new IllegalStateException("Failed to add sequence " + seq + " to counter "
+                            + cachedCounter.getOriginalSequences() + " (count " + cachedCounter.getCount()
+                            + ", consensus sequence " + cachedCounter.getSequence() + ")!");
+            } else {
+                boolean matchingCounterFound = false;
+                for (SequenceCounter counter : sequenceCounters)
+                    if (counter.add(seqWithQuality)) {
+                        matchingCounterFound = true;
+                        counterBySeqCache.put(seq, counter);
+                        break;
+                    }
+                if (!matchingCounterFound) {
+                    SequenceCounter newCounter = new SequenceCounter(seqWithQuality, sequenceCounters.size());
+                    sequenceCounters.add(newCounter);
+                    counterBySeqCache.put(seq, newCounter);
+                }
+            }
 
             // counting raw barcode sequences if filtering by count is enabled
             if (filterByCount) {
@@ -435,13 +454,13 @@ public final class CorrectionAlgorithms {
             }
 
             if (averageBarcodeLengthRequired)
-                lengthSum += seq.size();
+                lengthSum += seqWithQuality.size();
 
             parsedReadsCount++;
         }
 
-        TreeSet<SequenceCounter> getSortedSequences() {
-            return new TreeSet<>(sequenceCounters.values());
+        Collection<SequenceCounter> getSequenceCounters() {
+            return sequenceCounters;
         }
 
         @Override
