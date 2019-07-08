@@ -1,7 +1,11 @@
 
-minnn 6.0.1 ( 8 Jul 2019)
+minnn 6.0.1 (8 Jul 2019)
 ========================
 
+-- Correct action bugfixes and improved reads quality usage
+-- Bugfix in consensus quality calculation
+-- Added MiNNN version to all reports
+-- Limited maximal value for estimated sort chunk size
 
 
 minnn 6.0.0 (25 Jun 2019)
