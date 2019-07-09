@@ -428,22 +428,21 @@ public final class CorrectionAlgorithms {
             NucleotideSequence seq = seqWithQuality.getSequence();
             SequenceCounter cachedCounter = counterBySeqCache.get(seq);
             if (cachedCounter != null) {
-                if (!cachedCounter.add(seqWithQuality))
+                if (!cachedCounter.tryToAdd(seqWithQuality))
                     throw new IllegalStateException("Failed to add sequence " + seq + " to counter "
                             + cachedCounter.getOriginalSequences() + " (count " + cachedCounter.getCount()
                             + ", consensus sequence " + cachedCounter.getSequence() + ")!");
+                cachedCounter.updateConsensusSequence();
             } else {
-                boolean matchingCounterFound = false;
-                for (SequenceCounter counter : sequenceCounters)
-                    if (counter.add(seqWithQuality)) {
-                        matchingCounterFound = true;
-                        counterBySeqCache.put(seq, counter);
-                        break;
-                    }
-                if (!matchingCounterFound) {
+                SequenceCounter foundCounter = sequenceCounters.parallelStream()
+                        .filter(counter -> counter.tryToAdd(seqWithQuality)).findFirst().orElse(null);
+                if (foundCounter == null) {
                     SequenceCounter newCounter = new SequenceCounter(seqWithQuality, sequenceCounters.size());
                     sequenceCounters.add(newCounter);
                     counterBySeqCache.put(seq, newCounter);
+                } else {
+                    foundCounter.updateConsensusSequence();
+                    counterBySeqCache.put(seq, foundCounter);
                 }
             }
 

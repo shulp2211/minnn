@@ -40,17 +40,18 @@ import static com.milaboratory.minnn.util.SequencesCache.*;
 
 final class SequenceCounter implements Comparable<SequenceCounter> {
     private NSequenceWithQuality consensusSequence;
+    private PreparedNewConsensusData preparedData = null;
     private final Set<NucleotideSequence> uniqueOriginalSequences = new HashSet<>();
     private final int index;
     private long count;
     private boolean containsWildcards;
-    private boolean maxQuality;
+    private boolean isMaxQuality;
 
     SequenceCounter(NSequenceWithQuality sequence, int index) {
         this.consensusSequence = sequence;
         uniqueOriginalSequences.add(sequence.getSequence());
         this.containsWildcards = sequence.getSequence().containsWildcards();
-        this.maxQuality = !containsWildcards && (sequence.getQuality().minValue() == DEFAULT_MAX_QUALITY);
+        this.isMaxQuality = !containsWildcards && (sequence.getQuality().minValue() == DEFAULT_MAX_QUALITY);
         this.index = index;
         this.count = 1;
     }
@@ -67,34 +68,60 @@ final class SequenceCounter implements Comparable<SequenceCounter> {
     }
 
     /**
-     * Add other sequence to this counter if other sequence equals by wildcards, otherwise return false.
+     * Check if other sequence can be added (equals by wildcards) and prepare updated consensus sequence if
+     * the other sequence can be added. This function is designed to be run in parallel in multiple sequence counters
+     * to perform parallel wildcards check and consensus sequence calculation.
      *
      * @param other other sequence
-     * @return      true if other sequence was added, otherwise false
+     * @return      true if other sequence can be added and new consensus data is prepared, otherwise false
      */
-    boolean add(NSequenceWithQuality other) {
+    boolean tryToAdd(NSequenceWithQuality other) {
         boolean otherContainsWildcards = other.getSequence().containsWildcards();
         if (containsWildcards || otherContainsWildcards) {
             if (equalByWildcards(consensusSequence, other)) {
-                consensusSequence = multipleSequencesMerged(Arrays.asList(consensusSequence, other));
-                maxQuality = false;
-                uniqueOriginalSequences.add(other.getSequence());
-                containsWildcards = false;
-                count++;
+                NSequenceWithQuality newConsensusSequence = multipleSequencesMerged(Arrays.asList(
+                        consensusSequence, other));
+                NucleotideSequence originalSequence = other.getSequence();
+                preparedData = new PreparedNewConsensusData(newConsensusSequence, true,
+                        originalSequence, false);
                 return true;
-            } else
+            } else {
+                preparedData = null;
                 return false;
+            }
         } else {
             if (consensusSequence.getSequence().equals(other.getSequence())) {
-                if (!maxQuality) {
-                    consensusSequence = multipleSequencesMerged(Arrays.asList(consensusSequence, other));
-                    maxQuality = (consensusSequence.getQuality().minValue() == DEFAULT_MAX_QUALITY);
+                if (isMaxQuality)
+                    preparedData = new PreparedNewConsensusData(consensusSequence, false,
+                            null, true);
+                else {
+                    NSequenceWithQuality newConsensusSequence = multipleSequencesMerged(Arrays.asList(
+                            consensusSequence, other));
+                    preparedData = new PreparedNewConsensusData(newConsensusSequence, false,
+                            null,
+                            newConsensusSequence.getQuality().minValue() == DEFAULT_MAX_QUALITY);
                 }
-                count++;
                 return true;
-            } else
+            } else {
+                preparedData = null;
                 return false;
+            }
         }
+    }
+
+    /**
+     * Update consensus sequence for this counter. This function must be called only after successful tryToAdd() call.
+     */
+    void updateConsensusSequence() {
+        consensusSequence = preparedData.newConsensusSequence;
+        if (preparedData.containedWildcards) {
+            isMaxQuality = false;
+            uniqueOriginalSequences.add(Objects.requireNonNull(preparedData.originalSequence));
+            containsWildcards = false;
+        } else
+            isMaxQuality = preparedData.isMaxQuality;
+        count++;
+        preparedData = null;
     }
 
     long getCount() {
@@ -138,5 +165,20 @@ final class SequenceCounter implements Comparable<SequenceCounter> {
                 return false;
         }
         return true;
+    }
+
+    private class PreparedNewConsensusData {
+        final NSequenceWithQuality newConsensusSequence;
+        final boolean containedWildcards;
+        final NucleotideSequence originalSequence;
+        final boolean isMaxQuality;
+
+        PreparedNewConsensusData(NSequenceWithQuality newConsensusSequence, boolean containedWildcards,
+                                 NucleotideSequence originalSequence, boolean isMaxQuality) {
+            this.newConsensusSequence = newConsensusSequence;
+            this.containedWildcards = containedWildcards;
+            this.originalSequence = originalSequence;
+            this.isMaxQuality = isMaxQuality;
+        }
     }
 }
