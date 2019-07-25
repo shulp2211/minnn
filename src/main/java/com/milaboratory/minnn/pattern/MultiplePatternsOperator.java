@@ -28,30 +28,25 @@
  */
 package com.milaboratory.minnn.pattern;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.*;
 
 abstract class MultiplePatternsOperator extends SinglePattern {
     protected final SinglePattern[] operandPatterns;
     protected final ArrayList<GroupEdge> groupEdges;
 
-    MultiplePatternsOperator(PatternAligner patternAligner, boolean defaultGroupsOverride,
-                             SinglePattern... operandPatterns) {
-        this(patternAligner, defaultGroupsOverride, true, operandPatterns);
+    MultiplePatternsOperator(PatternConfiguration conf, SinglePattern... operandPatterns) {
+        this(conf, true, operandPatterns);
     }
 
     /**
      * Common constructor for multiple patterns operator.
      *
-     * @param patternAligner pattern aligner; it also provides information about scoring and pattern overlap limits
-     * @param defaultGroupsOverride true if there is default groups override in any pattern in the query
+     * @param conf pattern configuration: it provides information about scoring and pattern overlap limits
      * @param checkGroupEdges true if check that operands contain equal group edges must be performed
      * @param operandPatterns patterns that come as operands for the operator
      */
-    MultiplePatternsOperator(PatternAligner patternAligner, boolean defaultGroupsOverride, boolean checkGroupEdges,
-                             SinglePattern... operandPatterns) {
-        super(patternAligner, defaultGroupsOverride);
+    MultiplePatternsOperator(PatternConfiguration conf, boolean checkGroupEdges, SinglePattern... operandPatterns) {
+        super(conf);
         this.operandPatterns = operandPatterns;
         this.groupEdges = new ArrayList<>();
         for (SinglePattern pattern : operandPatterns)
@@ -60,14 +55,20 @@ abstract class MultiplePatternsOperator extends SinglePattern {
             throw new IllegalStateException("Operands contain equal group edges!");
     }
 
+    protected MultiplePatternsOperator(
+            PatternConfiguration conf, byte targetId, SinglePattern[] operandPatterns,
+            ArrayList<GroupEdge> groupEdges) {
+        super(conf, targetId);
+        this.operandPatterns = operandPatterns;
+        this.groupEdges = groupEdges;
+    }
+
     @Override
     public ArrayList<GroupEdge> getGroupEdges() {
         return groupEdges;
     }
 
-    @Override
-    void setTargetId(byte targetId) {
-        super.setTargetId(targetId);
-        Arrays.stream(operandPatterns).forEach(sp -> sp.setTargetId(targetId));
+    protected SinglePattern[] setTargetIdForOperands() {
+        return Arrays.stream(operandPatterns).map(sp -> sp.setTargetId(targetId)).toArray(SinglePattern[]::new);
     }
 }

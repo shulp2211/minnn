@@ -35,12 +35,18 @@ import java.util.ArrayList;
 
 public final class FullReadPattern extends SinglePattern {
     private final SinglePattern operandPattern;
-    private boolean targetIdInitialized = false;
+    private final boolean targetIdInitialized;
 
-    public FullReadPattern(PatternAligner patternAligner, boolean defaultGroupsOverride,
-                           SinglePattern operandPattern) {
-        super(patternAligner, defaultGroupsOverride);
+    public FullReadPattern(PatternConfiguration conf, SinglePattern operandPattern) {
+        super(conf);
         this.operandPattern = operandPattern;
+        this.targetIdInitialized = false;
+    }
+
+    private FullReadPattern(PatternConfiguration conf, byte targetId, SinglePattern operandPattern) {
+        super(conf, targetId);
+        this.operandPattern = operandPattern;
+        this.targetIdInitialized = true;
     }
 
     @Override
@@ -53,7 +59,7 @@ public final class FullReadPattern extends SinglePattern {
         if (!targetIdInitialized)
             throw new IllegalStateException(
                     "getGroupEdges() called for FullReadPattern when targetId is not initialized!");
-        if (defaultGroupsOverride)
+        if (conf.defaultGroupsOverride)
             return operandPattern.getGroupEdges();
         else {
             String mainGroupName = "R" + targetId;
@@ -84,10 +90,10 @@ public final class FullReadPattern extends SinglePattern {
     }
 
     @Override
-    public void setTargetId(byte targetId) {
-        super.setTargetId(targetId);
-        operandPattern.setTargetId(targetId);
-        targetIdInitialized = true;
+    public SinglePattern setTargetId(byte targetId) {
+        validateTargetId(targetId);
+        SinglePattern newOperandPattern = operandPattern.setTargetId(targetId);
+        return new FullReadPattern(conf, targetId, newOperandPattern);
     }
 
     public SinglePattern getOperand() {
@@ -108,7 +114,7 @@ public final class FullReadPattern extends SinglePattern {
         @Override
         public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
             OutputPort<MatchIntermediate> operandPort = operandPattern.match(target, from, to).getMatches(fairSorting);
-            return defaultGroupsOverride ? operandPort : () -> {
+            return conf.defaultGroupsOverride ? operandPort : () -> {
                 MatchIntermediate match = operandPort.take();
                 if (match == null) return null;
                 String mainGroupName = "R" + targetId;

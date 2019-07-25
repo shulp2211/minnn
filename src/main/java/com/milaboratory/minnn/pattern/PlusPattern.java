@@ -32,6 +32,7 @@ import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.minnn.util.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
@@ -39,9 +40,14 @@ import static com.milaboratory.minnn.pattern.MatchValidationType.ORDER;
 import static com.milaboratory.minnn.util.UnfairSorterConfiguration.unfairSorterPortLimits;
 
 public final class PlusPattern extends MultiplePatternsOperator implements CanFixBorders {
-    public PlusPattern(PatternAligner patternAligner, boolean defaultGroupsOverride,
-                       SinglePattern... operandPatterns) {
-        super(patternAligner, defaultGroupsOverride, operandPatterns);
+    public PlusPattern(PatternConfiguration conf, SinglePattern... operandPatterns) {
+        super(conf, operandPatterns);
+    }
+
+    private PlusPattern(
+            PatternConfiguration conf, byte targetId, SinglePattern[] operandPatterns,
+            ArrayList<GroupEdge> groupEdges) {
+        super(conf, targetId, operandPatterns, groupEdges);
     }
 
     @Override
@@ -65,11 +71,18 @@ public final class PlusPattern extends MultiplePatternsOperator implements CanFi
         if (operandPatterns[targetOperandIndex] instanceof CanFixBorders) {
             SinglePattern newOperand = ((CanFixBorders)(operandPatterns[targetOperandIndex]))
                     .fixBorder(left, position);
-            return new PlusPattern(patternAligner, defaultGroupsOverride, IntStream.range(0, operandPatterns.length)
+            return new PlusPattern(conf, IntStream.range(0, operandPatterns.length)
                     .mapToObj((int i) -> (i == targetOperandIndex ? newOperand : operandPatterns[i]))
                     .toArray(SinglePattern[]::new));
         } else
             return this;
+    }
+
+    @Override
+    SinglePattern setTargetId(byte targetId) {
+        validateTargetId(targetId);
+        SinglePattern[] newOperandPatterns = setTargetIdForOperands();
+        return new PlusPattern(conf, targetId, newOperandPatterns, groupEdges);
     }
 
     private class PlusPatternMatchingResult implements MatchingResult {
@@ -85,10 +98,10 @@ public final class PlusPattern extends MultiplePatternsOperator implements CanFi
 
         @Override
         public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
-            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, patternAligner,
-                    true, fairSorting, ORDER, unfairSorterPortLimits.get(PlusPattern.class),
-                    operandPatterns);
-            return new ApproximateSorter(conf).getOutputPort();
+            ApproximateSorterConfiguration approximateSorterConfiguration = new ApproximateSorterConfiguration(target,
+                    from, to, conf, true, fairSorting, ORDER,
+                    unfairSorterPortLimits.get(PlusPattern.class), operandPatterns);
+            return new ApproximateSorter(approximateSorterConfiguration).getOutputPort();
         }
     }
 }

@@ -26,30 +26,23 @@
  * PARTICULAR PURPOSE, OR THAT THE USE OF THE SOFTWARE WILL NOT INFRINGE ANY
  * PATENT, TRADEMARK OR OTHER RIGHTS.
  */
-package com.milaboratory.minnn.cli;
+package com.milaboratory.minnn.parser;
 
-import org.junit.*;
+import com.milaboratory.minnn.pattern.PatternConfiguration;
 
-import java.io.File;
-
-import static com.milaboratory.minnn.cli.CommandLineTestUtils.*;
 import static com.milaboratory.minnn.util.CommonTestUtils.*;
-import static com.milaboratory.minnn.util.SystemUtils.*;
-import static org.junit.Assert.*;
 
-public class GenerateDocsActionTest {
-    @BeforeClass
-    public static void init() {
-        exitOnError = false;
-        File outputFilesDirectory = new File(TEMP_DIR);
-        if (!outputFilesDirectory.exists())
-            throw exitWithError("Directory for temporary output files " + TEMP_DIR + " does not exist!");
+class ParserTestUtils {
+    static Parser getTestParser() {
+        return new Parser(new ParserConfiguration(getTestScoring(), Long.MIN_VALUE,
+                -1, 0, -1, 0));
     }
 
-    @Test
-    public void simpleTest() throws Exception {
-        String tempFile = TEMP_DIR + "generateDocsTest.rst";
-        exec("docs --output " + tempFile);
-        assertTrue(new File(tempFile).delete());
+    static Parser getRandomParser() {
+        PatternConfiguration patternConfiguration = getRandomPatternConfiguration();
+        ParserConfiguration parserConfiguration = new ParserConfiguration(patternConfiguration.scoring,
+                patternConfiguration.scoreThreshold, -rg.nextInt(3), rg.nextInt(4),
+                patternConfiguration.maxOverlap, -rg.nextInt(4));
+        return new Parser(parserConfiguration);
     }
 }
