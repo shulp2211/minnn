@@ -42,8 +42,14 @@ import static com.milaboratory.minnn.util.UnfairSorterConfiguration.unfairSorter
  * if all arguments didn't match.
  */
 public final class OrPattern extends MultiplePatternsOperator implements CanFixBorders {
-    public OrPattern(PatternAligner patternAligner, boolean defaultGroupsOverride, SinglePattern... operandPatterns) {
-        super(patternAligner, defaultGroupsOverride, false, operandPatterns);
+    public OrPattern(PatternConfiguration conf, SinglePattern... operandPatterns) {
+        super(conf, false, operandPatterns);
+    }
+
+    private OrPattern(
+            PatternConfiguration conf, byte targetId, SinglePattern[] operandPatterns,
+            ArrayList<GroupEdge> groupEdges) {
+        super(conf, targetId, operandPatterns, groupEdges);
     }
 
     @Override
@@ -82,9 +88,16 @@ public final class OrPattern extends MultiplePatternsOperator implements CanFixB
 
     @Override
     public SinglePattern fixBorder(boolean left, int position) {
-        return new OrPattern(patternAligner, defaultGroupsOverride, Arrays.stream(operandPatterns)
+        return new OrPattern(conf, Arrays.stream(operandPatterns)
                 .map(p -> (p instanceof CanFixBorders ? ((CanFixBorders)p).fixBorder(left, position) : p))
                 .toArray(SinglePattern[]::new));
+    }
+
+    @Override
+    SinglePattern setTargetId(byte targetId) {
+        validateTargetId(targetId);
+        SinglePattern[] newOperandPatterns = setTargetIdForOperands();
+        return new OrPattern(conf, targetId, newOperandPatterns, groupEdges);
     }
 
     private class OrPatternMatchingResult implements MatchingResult {
@@ -100,10 +113,10 @@ public final class OrPattern extends MultiplePatternsOperator implements CanFixB
 
         @Override
         public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
-            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, patternAligner,
-                    false, fairSorting, FIRST, unfairSorterPortLimits.get(OrPattern.class),
-                    operandPatterns);
-            return new ApproximateSorter(conf).getOutputPort();
+            ApproximateSorterConfiguration approximateSorterConfiguration = new ApproximateSorterConfiguration(target,
+                    from, to, conf, false, fairSorting, FIRST,
+                    unfairSorterPortLimits.get(OrPattern.class), operandPatterns);
+            return new ApproximateSorter(approximateSorterConfiguration).getOutputPort();
         }
     }
 }

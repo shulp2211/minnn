@@ -43,9 +43,14 @@ public final class FilterPattern extends SinglePattern implements CanBeSingleSeq
     private final Filter filter;
     private final Pattern pattern;
 
-    public FilterPattern(PatternAligner patternAligner, boolean defaultGroupsOverride,
-                         Filter filter, Pattern pattern) {
-        super(patternAligner, defaultGroupsOverride);
+    public FilterPattern(PatternConfiguration conf, Filter filter, Pattern pattern) {
+        super(conf);
+        this.filter = filter;
+        this.pattern = pattern;
+    }
+
+    private FilterPattern(PatternConfiguration conf, byte targetId, Filter filter, Pattern pattern) {
+        super(conf, targetId);
         this.filter = filter;
         this.pattern = pattern;
     }
@@ -84,11 +89,12 @@ public final class FilterPattern extends SinglePattern implements CanBeSingleSeq
     }
 
     @Override
-    void setTargetId(byte targetId) {
-        super.setTargetId(targetId);
-        if (pattern instanceof SinglePattern)
-            ((SinglePattern)pattern).setTargetId(targetId);
-        else
+    SinglePattern setTargetId(byte targetId) {
+        validateTargetId(targetId);
+        if (pattern instanceof SinglePattern) {
+            SinglePattern newOperandPattern = ((SinglePattern)pattern).setTargetId(targetId);
+            return new FilterPattern(conf, targetId, filter, newOperandPattern);
+        } else
             throw new IllegalStateException("setTargetId() called for argument of class " + pattern.getClass());
     }
 
@@ -100,8 +106,7 @@ public final class FilterPattern extends SinglePattern implements CanBeSingleSeq
     @Override
     public SinglePattern fixBorder(boolean left, int position) {
         if (pattern instanceof CanFixBorders) {
-            return new FilterPattern(patternAligner, defaultGroupsOverride, filter,
-                    ((CanFixBorders)pattern).fixBorder(left, position));
+            return new FilterPattern(conf, filter, ((CanFixBorders)pattern).fixBorder(left, position));
         } else
             return this;
     }

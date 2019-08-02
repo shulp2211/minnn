@@ -36,17 +36,15 @@ public abstract class MultipleReadsOperator extends Pattern {
     private final boolean singlePatternOperands;
     private LinkedHashSet<GroupEdge> groupEdges = null;
 
-    MultipleReadsOperator(PatternAligner patternAligner, boolean defaultGroupsOverride,
-                          MultipleReadsOperator... operandPatterns) {
-        super(patternAligner, defaultGroupsOverride);
+    MultipleReadsOperator(PatternConfiguration conf, MultipleReadsOperator... operandPatterns) {
+        super(conf);
         this.operandPatterns = operandPatterns;
         this.singlePatterns = new SinglePattern[0];
         this.singlePatternOperands = false;
     }
 
-    MultipleReadsOperator(PatternAligner patternAligner, boolean defaultGroupsOverride,
-                          SinglePattern... singlePatterns) {
-        super(patternAligner, defaultGroupsOverride);
+    MultipleReadsOperator(PatternConfiguration conf, SinglePattern... singlePatterns) {
+        super(conf);
         this.singlePatterns = singlePatterns;
         this.operandPatterns = new MultipleReadsOperator[0];
         this.singlePatternOperands = true;

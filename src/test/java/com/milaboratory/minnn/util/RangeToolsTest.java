@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, MiLaboratory LLC
+ * Copyright (c) 2016-2019, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -34,9 +34,9 @@ import com.milaboratory.core.sequence.NucleotideSequence;
 import com.milaboratory.minnn.pattern.MatchIntermediate;
 import com.milaboratory.minnn.pattern.SinglePattern;
 import com.milaboratory.test.TestUtil;
-import org.junit.Test;
+import org.junit.*;
 
-import java.util.Arrays;
+import java.util.*;
 
 import static com.milaboratory.minnn.util.CommonTestUtils.*;
 import static com.milaboratory.minnn.util.RangeTools.*;
@@ -93,7 +93,7 @@ public class RangeToolsTest {
     @Test
     public void combineRangesRandomTest() throws Exception {
         for (int i = 0; i < 1000; i++) {
-            SinglePattern pattern = getRandomRawSinglePattern(getRandomPatternAligner());
+            SinglePattern pattern = getRandomRawSinglePattern(getRandomPatternConfiguration());
             NSequenceWithQuality target = new NSequenceWithQuality(TestUtil.randomSequence(NucleotideSequence.ALPHABET,
                     10, 100).toString());
             MatchIntermediate[] matches = streamPort(pattern.match(target).getMatches())

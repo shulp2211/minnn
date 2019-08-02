@@ -32,6 +32,7 @@ import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.minnn.util.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
@@ -39,9 +40,14 @@ import static com.milaboratory.minnn.pattern.MatchValidationType.FOLLOWING;
 import static com.milaboratory.minnn.util.UnfairSorterConfiguration.*;
 
 public final class SequencePattern extends MultiplePatternsOperator implements CanBeSingleSequence, CanFixBorders {
-    public SequencePattern(PatternAligner patternAligner, boolean defaultGroupsOverride,
-                           SinglePattern... operandPatterns) {
-        super(patternAligner, defaultGroupsOverride, operandPatterns);
+    public SequencePattern(PatternConfiguration conf, SinglePattern... operandPatterns) {
+        super(conf, operandPatterns);
+    }
+
+    private SequencePattern(
+            PatternConfiguration conf, byte targetId, SinglePattern[] operandPatterns,
+            ArrayList<GroupEdge> groupEdges) {
+        super(conf, targetId, operandPatterns, groupEdges);
     }
 
     @Override
@@ -56,7 +62,7 @@ public final class SequencePattern extends MultiplePatternsOperator implements C
 
     @Override
     public int estimateMaxLength() {
-        int maxGap = Math.max(patternAligner.maxOverlap(), patternAligner.bitapMaxErrors());
+        int maxGap = Math.max(conf.maxOverlap, conf.bitapMaxErrors);
         int summaryLength = maxGap * (operandPatterns.length - 1);
         for (SinglePattern currentPattern : operandPatterns) {
             int currentPatternMaxLength = currentPattern.estimateMaxLength();
@@ -90,12 +96,18 @@ public final class SequencePattern extends MultiplePatternsOperator implements C
         if (operandPatterns[targetOperandIndex] instanceof CanFixBorders) {
             SinglePattern newOperand = ((CanFixBorders)(operandPatterns[targetOperandIndex]))
                     .fixBorder(left, position);
-            return new SequencePattern(patternAligner, defaultGroupsOverride,
-                    IntStream.range(0, operandPatterns.length)
+            return new SequencePattern(conf, IntStream.range(0, operandPatterns.length)
                     .mapToObj((int i) -> (i == targetOperandIndex ? newOperand : operandPatterns[i]))
                     .toArray(SinglePattern[]::new));
         } else
             return this;
+    }
+
+    @Override
+    SinglePattern setTargetId(byte targetId) {
+        validateTargetId(targetId);
+        SinglePattern[] newOperandPatterns = setTargetIdForOperands();
+        return new SequencePattern(conf, targetId, newOperandPatterns, groupEdges);
     }
 
     private class SequencePatternMatchingResult implements MatchingResult {
@@ -111,10 +123,10 @@ public final class SequencePattern extends MultiplePatternsOperator implements C
 
         @Override
         public OutputPort<MatchIntermediate> getMatches(boolean fairSorting) {
-            ApproximateSorterConfiguration conf = new ApproximateSorterConfiguration(target, from, to, patternAligner,
-                    true, fairSorting, FOLLOWING, unfairSorterPortLimits.get(SequencePattern.class),
-                    operandPatterns);
-            return new ApproximateSorter(conf).getOutputPort();
+            ApproximateSorterConfiguration approximateSorterConfiguration = new ApproximateSorterConfiguration(target,
+                    from, to, conf, true, fairSorting, FOLLOWING,
+                    unfairSorterPortLimits.get(SequencePattern.class), operandPatterns);
+            return new ApproximateSorter(approximateSorterConfiguration).getOutputPort();
         }
     }
 }

@@ -26,30 +26,25 @@
  * PARTICULAR PURPOSE, OR THAT THE USE OF THE SOFTWARE WILL NOT INFRINGE ANY
  * PATENT, TRADEMARK OR OTHER RIGHTS.
  */
-package com.milaboratory.minnn.cli;
+package com.milaboratory.minnn.io;
 
-import org.junit.*;
+import java.io.*;
+import java.util.*;
 
-import java.io.File;
-
-import static com.milaboratory.minnn.cli.CommandLineTestUtils.*;
-import static com.milaboratory.minnn.util.CommonTestUtils.*;
 import static com.milaboratory.minnn.util.SystemUtils.*;
-import static org.junit.Assert.*;
 
-public class GenerateDocsActionTest {
-    @BeforeClass
-    public static void init() {
-        exitOnError = false;
-        File outputFilesDirectory = new File(TEMP_DIR);
-        if (!outputFilesDirectory.exists())
-            throw exitWithError("Directory for temporary output files " + TEMP_DIR + " does not exist!");
-    }
+public final class IOUtils {
+    private IOUtils() {}
 
-    @Test
-    public void simpleTest() throws Exception {
-        String tempFile = TEMP_DIR + "generateDocsTest.rst";
-        exec("docs --output " + tempFile);
-        assertTrue(new File(tempFile).delete());
+    public static List<String> readLines(String filename) {
+        List<String> lines = new ArrayList<>();
+        File file = new File(filename);
+        try (Scanner scanner = new Scanner(file)) {
+            while (scanner.hasNextLine())
+                lines.add(scanner.nextLine());
+        } catch (IOException e) {
+            throw exitWithError(e.getMessage());
+        }
+        return lines;
     }
 }

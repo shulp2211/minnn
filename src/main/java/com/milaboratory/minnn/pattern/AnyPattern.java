@@ -40,8 +40,13 @@ import static com.milaboratory.minnn.pattern.PatternUtils.defaultGroupIds;
 public final class AnyPattern extends SinglePattern {
     private final ArrayList<GroupEdge> groupEdges;
 
-    public AnyPattern(PatternAligner patternAligner, boolean defaultGroupsOverride, ArrayList<GroupEdge> groupEdges) {
-        super(patternAligner, defaultGroupsOverride);
+    public AnyPattern(PatternConfiguration conf, ArrayList<GroupEdge> groupEdges) {
+        super(conf);
+        this.groupEdges = groupEdges;
+    }
+
+    private AnyPattern(PatternConfiguration conf, byte targetId, ArrayList<GroupEdge> groupEdges) {
+        super(conf, targetId);
         this.groupEdges = groupEdges;
     }
 
@@ -73,6 +78,12 @@ public final class AnyPattern extends SinglePattern {
         return 1;
     }
 
+    @Override
+    SinglePattern setTargetId(byte targetId) {
+        validateTargetId(targetId);
+        return new AnyPattern(conf, targetId, groupEdges);
+    }
+
     private class AnyPatternMatchingResult implements MatchingResult {
         private final NSequenceWithQuality target;
         private final int from;
@@ -99,7 +110,7 @@ public final class AnyPattern extends SinglePattern {
 
                 MatchedRange matchedRange = new MatchedRange(target, targetId, 0, new Range(from, to));
                 ArrayList<MatchedGroupEdge> matchedGroupEdges = groupEdges.stream().map(ge -> {
-                    byte matchedGroupTargetId = defaultGroupsOverride
+                    byte matchedGroupTargetId = conf.defaultGroupsOverride
                             ? defaultGroupIds.getOrDefault(ge.getGroupName(), (byte)-1) : targetId;
                     return new MatchedGroupEdge(target, matchedGroupTargetId, 0, ge,
                             ge.isStart() ? 0 : target.size());
