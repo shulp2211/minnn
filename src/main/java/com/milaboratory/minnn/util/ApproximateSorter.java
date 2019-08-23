@@ -255,7 +255,8 @@ public final class ApproximateSorter {
                     currentPortMatchesList = new ArrayList<>();
                     do {
                         currentMatch = currentPort.take();
-                        if ((currentMatch != null) || (areNullMatchesAllowed() && (currentPortMatchesList.size() == 0)))
+                        if ((currentMatch != null)
+                                || (areNullMatchesAllowed() && (currentPortMatchesList.size() == 0)))
                             currentPortMatchesList.add(currentMatch);
                     } while (currentMatch != null);
                 } else
@@ -266,7 +267,7 @@ public final class ApproximateSorter {
             }
 
             for (int i = 0; i < totalNumberOfCombinations; i++) {
-                if (areCompatible(matchIndexes) && !alreadyReturned(matchIndexes)) {
+                if (areCompatible(matchIndexes) && newUniqueCombination(matchIndexes)) {
                     for (int j = 0; j < numberOfOperands; j++)
                         currentMatches[j] = allMatches.get(j).get(matchIndexes[j]);
                     IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, matchIndexes);
@@ -297,7 +298,7 @@ public final class ApproximateSorter {
                 // all variables with "Unordered" suffix must be converted with operandOrder[] before using as index
                 int firstFoundNullIndexUnordered = numberOfOperands - 1;
                 currentMatches = getMatchesByIndexes(matchIndexes);
-                if (!alreadyReturned(matchIndexes) && Arrays.stream(currentMatches).noneMatch(Objects::isNull)) {
+                if (newUniqueCombination(matchIndexes) && Arrays.stream(currentMatches).noneMatch(Objects::isNull)) {
                     IncompatibleIndexes incompatibleIndexes = findIncompatibleIndexes(currentMatches, matchIndexes);
                     if (incompatibleIndexes == null) {
                         MatchIntermediate combinedMatch = combineMatches(currentMatches);
@@ -352,16 +353,16 @@ public final class ApproximateSorter {
             case INTERSECTION:
                 target = matches[0].getMatchedRange().getTarget();
                 Range[] ranges = new Range[matches.length];
-
-                OUTER:
-                for (int i = 0; i < matches.length; i++) {
-                    ranges[i] = matches[i].getRange();
-                    for (int j = 0; j < i; j++)     // Compare with all previously added matches
-                        if (checkFullIntersection(ranges[i], ranges[j])
-                                || checkOverlap(target, matches[i], matches[j])) {
-                            result = new IncompatibleIndexes(j, indexes[j], i, indexes[i]);
-                            break OUTER;
-                        }
+                { OUTER:
+                    for (int i = 0; i < matches.length; i++) {
+                        ranges[i] = matches[i].getRange();
+                        for (int j = 0; j < i; j++)     // Compare with all previously added matches
+                            if (checkFullIntersection(ranges[i], ranges[j])
+                                    || checkOverlap(target, matches[i], matches[j])) {
+                                result = new IncompatibleIndexes(j, indexes[j], i, indexes[i]);
+                                break OUTER;
+                            }
+                    }
                 }
                 break;
             case ORDER:
@@ -408,13 +409,13 @@ public final class ApproximateSorter {
     }
 
     /**
-     * Check if this combination of matches was already returned on first stages of unfair sorter.
+     * Check if this combination of matches is new and was not returned on first stages of unfair sorter.
      *
      * @param indexes indexes of matches
-     * @return true if combination was already returned, otherwise false
+     * @return false if we use unfair sorting and combination was already returned, otherwise true
      */
-    private boolean alreadyReturned(int[] indexes) {
-        return !conf.fairSorting && unfairReturnedCombinationsHashes.contains(Arrays.hashCode(indexes));
+    private boolean newUniqueCombination(int[] indexes) {
+        return conf.fairSorting || !unfairReturnedCombinationsHashes.contains(Arrays.hashCode(indexes));
     }
 
     /**
@@ -496,11 +497,13 @@ public final class ApproximateSorter {
      * Get SpecificOutputPort for specified operand index, "from" and "to" coordinates for operand pattern
      * match() call.
      *
-     * @param operandIndex operand index
-     * @param from from coordinate for operand pattern match() call, or -1 if conf.from() should be used
-     * @param to to coordinate for operand pattern match() call, or -1 if conf.to() should be used
-     * @param estimatedMaxOverlap estimated max overlap between this and previous match, or -1 if not used
-     * @return new SpecificOutputPort with specified parameters
+     * @param operandIndex          operand index
+     * @param from                  from coordinate for operand pattern match() call,
+     *                              or -1 if conf.from() should be used
+     * @param to                    to coordinate for operand pattern match() call,
+     *                              or -1 if conf.to() should be used
+     * @param estimatedMaxOverlap   estimated max overlap between this and previous match, or -1 if not used
+     * @return                      new SpecificOutputPort with specified parameters
      */
     private SpecificOutputPort getPortWithParams(int operandIndex, int from, int to, int estimatedMaxOverlap) {
         SpecificOutputPortIndex currentPortIndex = new SpecificOutputPortIndex(operandIndex, from, to);
@@ -555,10 +558,32 @@ public final class ApproximateSorter {
     }
 
     /**
+     * Get SpecificOutputPort for first operand (by conf.operandOrder), using "from" and "to" calculated by
+     * left and right patterns minimal length.
+     *
+     * @return new SpecificOutputPort with calculated parameters
+     */
+    private SpecificOutputPort getFirstOperandPort() {
+        int firstOperandIndex = conf.operandOrder()[0];
+        int from = conf.firstOperandFrom();
+        int to = conf.firstOperandTo();
+        SpecificOutputPortIndex currentPortIndex = new SpecificOutputPortIndex(firstOperandIndex, from, to);
+        SpecificOutputPort firstOperandPort = unfairOutputPorts.get(currentPortIndex);
+        if (firstOperandPort == null) {
+            SinglePattern firstPattern = (SinglePattern)(conf.operandPatterns[firstOperandIndex]);
+            int portLimit = unfairSorterPortLimits.get(firstPattern.getClass());
+            firstOperandPort = new SpecificOutputPort(firstPattern.match(conf.target.get(0), from, to)
+                    .getMatches(false), firstOperandIndex, from, to, portLimit);
+            unfairOutputPorts.put(currentPortIndex, firstOperandPort);
+        }
+        return firstOperandPort;
+    }
+
+    /**
      * Get array of matches by array of match indexes in output ports.
      *
-     * @param portValueIndexes array of indexes in output ports of pattern operands
-     * @return array of matches
+     * @param portValueIndexes  array of indexes in output ports of pattern operands
+     * @return                  array of matches
      */
     private MatchIntermediate[] getMatchesByIndexes(int[] portValueIndexes) {
         int numberOfOperands = conf.operandPatterns.length;
@@ -569,7 +594,7 @@ public final class ApproximateSorter {
         if (conf.specificOutputPorts) {
             int[] operandOrder = conf.operandOrder();
             int firstOperandIndex = operandOrder[0];
-            matches[firstOperandIndex] = getPortWithParams(firstOperandIndex).get(portValueIndexes[firstOperandIndex]);
+            matches[firstOperandIndex] = getFirstOperandPort().get(portValueIndexes[firstOperandIndex]);
             for (int i = 1; i < numberOfOperands; i++) {
                 int currentOperandIndex = operandOrder[i];
                 boolean previousMatchIsLeft = currentOperandIndex > firstOperandIndex;
@@ -690,7 +715,8 @@ public final class ApproximateSorter {
         public MatchIntermediate take() {
             if (alwaysReturnNull) return null;
             if (conf.fairSorting) return takeSorted();
-            if (++unfairSorterTakenValues > conf.unfairSorterLimit) {
+            if ((conf.specificOutputPorts && (conf.firstOperandFrom() >= conf.firstOperandTo()))
+                    || (++unfairSorterTakenValues > conf.unfairSorterLimit)) {
                 alwaysReturnNull = true;
                 return null;
             }
@@ -917,7 +943,7 @@ public final class ApproximateSorter {
         private MatchIntermediate takeMatchOrNull(int[] indexes) {
             MatchIntermediate[] currentMatches;
             if (areCompatible(indexes)) {
-                if (!alreadyReturned(indexes)) {
+                if (newUniqueCombination(indexes)) {
                     rememberReturnedCombination(indexes);
                     currentMatches = getMatchesByIndexes(indexes);
 

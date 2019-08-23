@@ -92,6 +92,10 @@ The following syntax constructions are allowed:
 
 :code:`a{4:}` - interval from specified number (inclusive) to the entire sequence
 
+**Special Case:** if :code:`n` or :code:`N` nucleotide is used before curly brackets, indels and pattern overlaps
+(see :code:`--max-overlap` parameter below) are disabled, so lowercase :code:`n` and uppercase :code:`N` are
+equivalent when used before curly brackets.
+
 Symbols :code:`^` and :code:`$` can be used to restrict matched sequence to start or end of the target sequence.
 :code:`^` mark must be in the start of the query for the read, and it means that the query match must start from
 the beginning of the read sequence. :code:`$` mark must be in the end, and it means that the query match must be in the
@@ -169,7 +173,8 @@ score threshold value followed by :code:`:` after opening bracket. Examples:
 
 Matched operands of :code:`&`, :code:`+` and sequence patterns can overlap, but overlaps add penalty to match score.
 You can control maximum overlap size and overlapping letter penalty by :code:`--max-overlap` and
-:code:`--single-overlap-penalty` parameters.
+:code:`--single-overlap-penalty` parameters. :code:`-1` value for :code:`--max-overlap` parameters means no restriction
+on maximum overlap size.
 
 **Important:** parentheses that used for groups are not treated as square brackets; instead, they treated as group
 edges attached to nucleotide sequences. So, the following examples are different: first example creates sequence

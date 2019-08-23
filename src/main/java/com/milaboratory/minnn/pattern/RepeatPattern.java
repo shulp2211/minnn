@@ -32,6 +32,7 @@ import cc.redberry.pipe.OutputPort;
 import com.milaboratory.core.Range;
 import com.milaboratory.core.alignment.Alignment;
 import com.milaboratory.core.sequence.*;
+import gnu.trove.map.hash.TCharObjectHashMap;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -127,26 +128,24 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
 
     @Override
     public MatchingResult match(NSequenceWithQuality target, int from, int to) {
-        int fixedLeftBorder = (this.fixedLeftBorder > -2) ? this.fixedLeftBorder
-                : target.size() - 1 - invertCoordinate(this.fixedLeftBorder);
-        int fixedRightBorder = (this.fixedRightBorder > -2) ? this.fixedRightBorder
-                : target.size() - 1 - invertCoordinate(this.fixedRightBorder);
-        int fromWithBorder = (fixedLeftBorder == -1) ? from : Math.max(from, fixedLeftBorder);
-        // to is exclusive and fixedRightBorder is inclusive
-        int toWithBorder = (fixedRightBorder == -1) ? to : Math.min(to, fixedRightBorder + 1);
-        return new RepeatPatternMatchingResult(fixedLeftBorder, fixedRightBorder, target,
-                fromWithBorder, toWithBorder);
+        SimplePatternBorders borders = new SimplePatternBorders(target.size(), from, to,
+                fixedLeftBorder, fixedRightBorder);
+        return new RepeatPatternMatchingResult(borders.fixedLeftBorder, borders.fixedRightBorder, target,
+                borders.fromWithBorder, borders.toWithBorder);
+    }
+
+    @Override
+    public int estimateMinLength() {
+        return Math.max(1, minRepeats - (Character.isLowerCase(patternSeq.symbolAt(0)) ? conf.bitapMaxErrors
+                : 0));
     }
 
     @Override
     public int estimateMaxLength() {
         if (maxRepeats == Integer.MAX_VALUE)
             return -1;
-        else {
-            boolean useBitapMaxErrors = Character.isLowerCase(patternSeq.symbolAt(0))
-                    && !nLetters.contains(patternSeq.toString());
-            return maxRepeats + (useBitapMaxErrors ? conf.bitapMaxErrors : 0);
-        }
+        else
+            return maxRepeats + (Character.isLowerCase(patternSeq.symbolAt(0)) ? conf.bitapMaxErrors : 0);
     }
 
     @Override
@@ -160,11 +159,9 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
 
         if ((fixedLeftBorder != -1) || (fixedRightBorder != -1))
             return Math.min(fixedSequenceMaxComplexity, repeatsRangeLength);
-        else {
-            int minRepeatsFactor = nLetters.contains(patternSeq.toString()) ? 1 : minRepeats;
+        else
             return notFixedSequenceMinComplexity + repeatsRangeLength * singleNucleotideComplexity
-                    * lettersComplexity.get(patternSeq.symbolAt(0)) / minRepeatsFactor;
-        }
+                    * lettersComplexity.get(patternSeq.symbolAt(0)) / minRepeats;
     }
 
     @Override
@@ -174,23 +171,10 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
 
     @Override
     public SinglePattern fixBorder(boolean left, int position) {
-        int newLeftBorder = fixedLeftBorder;
-        int newRightBorder = fixedRightBorder;
-        if (left) {
-            if (newLeftBorder == -1)
-                newLeftBorder = position;
-            else if (newLeftBorder != position)
-                throw new IllegalStateException(toString() + ": trying to set fixed left border to " + position
-                        + " when it is already fixed at " + newLeftBorder + "!");
-        } else {
-            if (newRightBorder == -1)
-                newRightBorder = position;
-            else if (newRightBorder != position)
-                throw new IllegalStateException(toString() + ": trying to set fixed right border to " + position
-                        + " when it is already fixed at " + newRightBorder + "!");
-        }
-        return new RepeatPattern(conf, patternSeq, minRepeats, maxRepeats, newLeftBorder, newRightBorder,
-                groupEdgePositions);
+        LeftAndRightBorders newBorders = prepareNewBorders(left, position, fixedLeftBorder, fixedRightBorder,
+                toString());
+        return new RepeatPattern(conf, patternSeq, minRepeats, maxRepeats,
+                newBorders.fixedLeftBorder, newBorders.fixedRightBorder, groupEdgePositions);
     }
 
     @Override
@@ -207,8 +191,8 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
         private final int from;
         private final int to;
 
-        RepeatPatternMatchingResult(int fixedLeftBorder, int fixedRightBorder, NSequenceWithQuality target,
-                                    int from, int to) {
+        RepeatPatternMatchingResult(
+                int fixedLeftBorder, int fixedRightBorder, NSequenceWithQuality target, int from, int to) {
             this.fixedLeftBorder = fixedLeftBorder;
             this.fixedRightBorder = fixedRightBorder;
             this.target = target;
@@ -229,7 +213,8 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
             private final TargetSections targetSections;
 
             /* Length of longest valid section starting from this position (index1) in target inside (from->to) range.
-             * Section is valid when number of errors (index2) isn't bigger than bitapMaxErrors in PatternAligner. */
+             * Section is valid when number of errors (index2) isn't bigger than bitapMaxErrors
+             * in PatternConfiguration. */
             private final int[][] longestValidSections;
 
             private final NucleotideSequenceCaseSensitive[] sequences;
@@ -243,21 +228,20 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
             private int currentPosition = 0;
 
             // Data structures used for fair sorting and for matching in fixed position.
-            private MatchIntermediate[] allMatches;
-            private boolean sortingPerformed = false;
-            private int takenValues = 0;
+            private TreeSet<ComparableMatch> allMatches = null;
+            private Iterator<ComparableMatch> allMatchesIterator = null;
 
             RepeatPatternOutputPort(boolean fairSorting) {
                 int maxErrors = conf.bitapMaxErrors;
+                this.maxRepeats = Math.min(RepeatPattern.this.maxRepeats, to - from);
                 this.fixedBorder = (fixedLeftBorder != -1) || (fixedRightBorder != -1);
-                if (from >= to)
+                if ((from >= to) || (minRepeats > this.maxRepeats + maxErrors)
+                        || ((fixedLeftBorder != -1) && (from > fixedLeftBorder + maxErrors))
+                        || ((fixedRightBorder != -1) && (to <= fixedRightBorder - maxErrors)))
                     noMoreMatches = true;
                 this.uppercasePattern = Character.isUpperCase(patternSeq.symbolAt(0));
-                this.maxRepeats = Math.min(RepeatPattern.this.maxRepeats, to - from);
                 this.fairSorting = fairSorting;
                 this.currentRepeats = maxRepeats + maxErrors;
-                if (this.currentRepeats < minRepeats)
-                    noMoreMatches = true;
 
                 if (!noMoreMatches) {
                     this.targetSections = new TargetSections(target.getSequence().toString().substring(from, to),
@@ -311,18 +295,21 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                             int firstUppercase = uppercasePattern ? 0 : -1;
                             int lastUppercase = uppercasePattern ? repeats - 1 : -1;
                             Alignment<NucleotideSequenceCaseSensitive> alignment = conf.patternAligner.align(conf,
-                                    sequences[repeats - minRepeats], target,
+                                    uppercasePattern, sequences[repeats - minRepeats], target,
                                     currentRange.getUpper() - 1);
-                            Range targetRange = alignment.getSequence2Range();
-                            UniqueAlignedSequence alignedSequence = new UniqueAlignedSequence(targetRange, repeats);
-                            if ((alignment.getScore() >= conf.scoreThreshold)
-                                    && !uniqueAlignedSequencesUnfair.contains(alignedSequence)) {
-                                uniqueAlignedSequencesUnfair.add(alignedSequence);
-                                pointToNextUnfairMatch();
-                                return generateMatch(alignment, target, targetId, firstUppercase, lastUppercase,
-                                        fixGroupEdgePositions(groupEdgePositions, 0, targetRange.length()),
-                                        conf.patternAligner.repeatsPenalty(conf, patternSeq, repeats, maxRepeats),
-                                        conf.defaultGroupsOverride);
+                            if (alignment != null) {
+                                Range targetRange = alignment.getSequence2Range();
+                                UniqueAlignedSequence alignedSequence = new UniqueAlignedSequence(
+                                        targetRange, repeats);
+                                if ((alignment.getScore() >= conf.scoreThreshold)
+                                        && !uniqueAlignedSequencesUnfair.contains(alignedSequence)) {
+                                    uniqueAlignedSequencesUnfair.add(alignedSequence);
+                                    pointToNextUnfairMatch();
+                                    return generateMatch(alignment, target, targetId, firstUppercase, lastUppercase,
+                                            fixGroupEdgePositions(groupEdgePositions, 0, targetRange.length()),
+                                            conf.patternAligner.repeatsPenalty(conf, patternSeq, repeats, maxRepeats),
+                                            conf.defaultGroupsOverride);
+                                }
                             }
                         }
                     }
@@ -347,32 +334,21 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
             }
 
             private MatchIntermediate takeFair() {
-                if (!sortingPerformed) {
+                if (allMatchesIterator == null)
                     fillAllMatchesForFairSorting();
-                    Arrays.sort(allMatches,
-                            Comparator.comparingInt((MatchIntermediate match) -> match.getRange().length()).reversed());
-                    Arrays.sort(allMatches, Comparator.comparingLong(MatchIntermediate::getScore).reversed());
-                    sortingPerformed = true;
-                }
-                if (takenValues == allMatches.length) return null;
-                return allMatches[takenValues++];
+                return (allMatchesIterator.hasNext()) ? allMatchesIterator.next().match : null;
             }
 
             private MatchIntermediate takeFromFixedPosition() {
-                if (!sortingPerformed) {
+                if (allMatchesIterator == null) {
                     if (fixedRightBorder != -1)
                         fillAllMatchesForFixedRightBorder();
                     else if (fixedLeftBorder != -1)
                         fillAllMatchesForFixedLeftBorder();
                     else throw new IllegalArgumentException("Wrong call of takeFromFixedPosition: fixedLeftBorder="
                                 + fixedLeftBorder + ", fixedRightBorder=" + fixedRightBorder);
-                    Arrays.sort(allMatches,
-                            Comparator.comparingInt((MatchIntermediate match) -> match.getRange().length()).reversed());
-                    Arrays.sort(allMatches, Comparator.comparingLong(MatchIntermediate::getScore).reversed());
-                    sortingPerformed = true;
                 }
-                if (takenValues == allMatches.length) return null;
-                return allMatches[takenValues++];
+                return (allMatchesIterator.hasNext()) ? allMatchesIterator.next().match : null;
             }
 
             /**
@@ -389,9 +365,8 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                             uniqueRanges.add(new Range(i + from, Math.min(to, i + repeats + from)));
                     }
 
-                ArrayList<MatchIntermediate> allMatchesList = getMatchesList(uniqueRanges, conf);
-                allMatches = new MatchIntermediate[allMatchesList.size()];
-                allMatchesList.toArray(allMatches);
+                allMatches = getAllMatchesTreeSet(uniqueRanges, conf);
+                allMatchesIterator = allMatches.iterator();
             }
 
             /**
@@ -408,9 +383,8 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                             uniqueRanges.add(new Range(i + from, Math.min(to, i + repeats + from)));
                     }
 
-                ArrayList<MatchIntermediate> allMatchesList = getMatchesList(uniqueRanges, conf.setLeftBorder(from));
-                allMatches = new MatchIntermediate[allMatchesList.size()];
-                allMatchesList.toArray(allMatches);
+                allMatches = getAllMatchesTreeSet(uniqueRanges, conf.setLeftBorder(from));
+                allMatchesIterator = allMatches.iterator();
             }
 
             /**
@@ -421,7 +395,8 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                 PatternConfiguration fixedConfiguration = (fixedLeftBorder == -1) ? conf : conf.setLeftBorder(from);
                 int maxErrors = fixedConfiguration.bitapMaxErrors;
 
-                for (int repeats = maxRepeats + maxErrors; repeats >= Math.max(1, minRepeats - maxErrors); repeats--) {
+                for (int repeats = maxRepeats + maxErrors;
+                     repeats >= Math.max(1, minRepeats - maxErrors); repeats--) {
                     int minIndex = (fixedLeftBorder == -1) ? Math.max(0, to - from - repeats - maxErrors) : 0;
                     int maxIndex = (fixedLeftBorder == -1) ? to - from - repeats
                             : Math.min(maxErrors, to - from - repeats);
@@ -432,23 +407,22 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                     }
                 }
 
-                ArrayList<MatchIntermediate> allMatchesList = getMatchesList(uniqueRanges, fixedConfiguration);
-                allMatches = new MatchIntermediate[allMatchesList.size()];
-                allMatchesList.toArray(allMatches);
+                allMatches = getAllMatchesTreeSet(uniqueRanges, fixedConfiguration);
+                allMatchesIterator = allMatches.iterator();
             }
 
             /**
-             * Get list of aligned matches from specified set of ranges. Used for fair sorting and
+             * Get TreeSet of aligned matches from specified set of ranges. Used for fair sorting and
              * for matching with fixed border.
              *
              * @param uniqueRanges          set of ranges where to use aligner
              * @param patternConfiguration  pattern configuration, may be configured for matching with fixed
              *                              or not fixed border
-             * @return                      list of aligned matches
+             * @return                      TreeSet of aligned matches
              */
-            private ArrayList<MatchIntermediate> getMatchesList(
+            private TreeSet<ComparableMatch> getAllMatchesTreeSet(
                     HashSet<Range> uniqueRanges, PatternConfiguration patternConfiguration) {
-                ArrayList<MatchIntermediate> allMatchesList = new ArrayList<>();
+                TreeSet<ComparableMatch> allMatchesTreeSet = new TreeSet<>();
                 Alignment<NucleotideSequenceCaseSensitive> alignment;
                 HashSet<UniqueAlignedSequence> uniqueAlignedSequences = new HashSet<>();
 
@@ -456,22 +430,26 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
                     int repeats = Math.max(minRepeats, Math.min(maxRepeats, range.length()));
                     int firstUppercase = uppercasePattern ? 0 : -1;
                     int lastUppercase = uppercasePattern ? repeats - 1 : -1;
-                    alignment = patternConfiguration.patternAligner.align(patternConfiguration,
+                    alignment = patternConfiguration.patternAligner.align(patternConfiguration, uppercasePattern,
                             sequences[repeats - minRepeats], target, range.getUpper() - 1);
-                    Range targetRange = alignment.getSequence2Range();
-                    UniqueAlignedSequence alignedSequence = new UniqueAlignedSequence(targetRange, repeats);
-                    if ((alignment.getScore() >= patternConfiguration.scoreThreshold)
-                            && !uniqueAlignedSequences.contains(alignedSequence)) {
-                        uniqueAlignedSequences.add(alignedSequence);
-                        allMatchesList.add(generateMatch(alignment, target, targetId, firstUppercase, lastUppercase,
-                                fixGroupEdgePositions(groupEdgePositions, 0, targetRange.length()),
-                                patternConfiguration.patternAligner.repeatsPenalty(patternConfiguration, patternSeq,
-                                        repeats, maxRepeats),
-                                patternConfiguration.defaultGroupsOverride));
+                    if (alignment != null) {
+                        Range targetRange = alignment.getSequence2Range();
+                        UniqueAlignedSequence alignedSequence = new UniqueAlignedSequence(targetRange, repeats);
+                        if ((alignment.getScore() >= patternConfiguration.scoreThreshold)
+                                && !uniqueAlignedSequences.contains(alignedSequence)) {
+                            uniqueAlignedSequences.add(alignedSequence);
+                            MatchIntermediate match = generateMatch(alignment, target, targetId,
+                                    firstUppercase, lastUppercase,
+                                    fixGroupEdgePositions(groupEdgePositions, 0, targetRange.length()),
+                                    patternConfiguration.patternAligner.repeatsPenalty(patternConfiguration,
+                                            patternSeq, repeats, maxRepeats),
+                                    patternConfiguration.defaultGroupsOverride);
+                            allMatchesTreeSet.add(new ComparableMatch(range, match));
+                        }
                     }
                 }
 
-                return allMatchesList;
+                return allMatchesTreeSet;
             }
 
             /**
@@ -533,25 +511,15 @@ public final class RepeatPattern extends SinglePattern implements CanBeSingleSeq
         final int[] sections;
         final boolean firstMatching;
 
-        private static HashMap<Character, String> allMatchingLetters = new HashMap<>();
+        private static TCharObjectHashMap<String> allMatchingLetters = new TCharObjectHashMap<>();
         static {
-            allMatchingLetters.put('A', "Aa");
-            allMatchingLetters.put('T', "Tt");
-            allMatchingLetters.put('G', "Gg");
-            allMatchingLetters.put('C', "Cc");
-            allMatchingLetters.put('W', "AaTtWw");
-            allMatchingLetters.put('S', "GgCcSs");
-            allMatchingLetters.put('M', "AaCcMm");
-            allMatchingLetters.put('K', "GgTtKk");
-            allMatchingLetters.put('R', "AaGgRr");
-            allMatchingLetters.put('Y', "CcTtYy");
-            allMatchingLetters.put('B', "TtGgCcYySsKkBb");
-            allMatchingLetters.put('V', "AaGgCcRrSsMmVv");
-            allMatchingLetters.put('H', "AaTtCcYyWwMmHh");
-            allMatchingLetters.put('D', "AaTtGgRrWwKkDd");
-            allMatchingLetters.put('N', "AaTtGgCcRrYySsWwKkMmBbDdHhVvNn");
-            new HashSet<>(allMatchingLetters.keySet())
-                    .forEach(l -> allMatchingLetters.put(Character.toLowerCase(l), allMatchingLetters.get(l)));
+            for (Wildcard wildcard : NucleotideSequenceCaseSensitive.ALPHABET.getAllWildcards()) {
+                char letter = wildcard.getSymbol();
+                StringBuilder matchingLetters = new StringBuilder();
+                NucleotideSequenceCaseSensitive.ALPHABET.getAllWildcards().stream().filter(wildcard::intersectsWith)
+                        .forEach(targetWildcard -> matchingLetters.append(targetWildcard.getSymbol()));
+                allMatchingLetters.put(letter, matchingLetters.toString());
+            }
         }
 
         TargetSections(String targetSubstring, NucleotideSequenceCaseSensitive patternSeq) {
