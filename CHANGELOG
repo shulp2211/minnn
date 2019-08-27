@@ -2,6 +2,11 @@
 minnn 7.0.2 (27 Aug 2019)
 ========================
 
+
+
+minnn 7.0.2 (27 Aug 2019)
+========================
+
 -- Performance optimizations in Extract action
 -- Default --max-errors-share reduced from 0.2 to 0.15 in Correct action
 
