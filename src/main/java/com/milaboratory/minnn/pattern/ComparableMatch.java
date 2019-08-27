@@ -28,33 +28,47 @@
  */
 package com.milaboratory.minnn.pattern;
 
-public interface CanFixBorders {
-    /**
-     * Set fixed left or right border for this pattern.
-     *
-     * @param left      true for left border, false for right border
-     * @param position  coordinate for fixed border
-     * @return          copy of this pattern with fixed border
-     */
-    SinglePattern fixBorder(boolean left, int position);
+import com.milaboratory.core.Range;
 
-    default LeftAndRightBorders prepareNewBorders(
-            boolean left, int position, int oldLeftBorder, int oldRightBorder, String patternString) {
-        int newLeftBorder = oldLeftBorder;
-        int newRightBorder = oldRightBorder;
-        if (left) {
-            if (newLeftBorder == -1)
-                newLeftBorder = position;
-            else if (newLeftBorder != position)
-                throw new IllegalStateException(patternString + ": trying to set fixed left border to " + position
-                        + " when it is already fixed at " + newLeftBorder + "!");
-        } else {
-            if (newRightBorder == -1)
-                newRightBorder = position;
-            else if (newRightBorder != position)
-                throw new IllegalStateException(patternString + ": trying to set fixed right border to " + position
-                        + " when it is already fixed at " + newRightBorder + "!");
-        }
-        return new LeftAndRightBorders(newLeftBorder, newRightBorder);
+final class ComparableMatch implements Comparable<ComparableMatch> {
+    private final Range range;
+    final MatchIntermediate match;
+
+    /**
+     * Comparable match to create TreeSet of matches, sorted by match scores (starting from high scores) and,
+     * if scores are equal, by sequence lengths (starting from long sequences).
+     *
+     * @param range unique range of matched sequence
+     * @param match match with calculated score and alignment
+     */
+    ComparableMatch(Range range, MatchIntermediate match) {
+        this.range = range;
+        this.match = match;
+    }
+
+    @Override
+    public int compareTo(ComparableMatch other) {
+        // start from high scores
+        int result = -Long.compare(match.getScore(), other.match.getScore());
+        // if scores are equal, start from long sequences
+        if (result == 0)
+            result = -Integer.compare(range.length(), other.range.length());
+        // if lengths are equal, start from left sequences
+        if (result == 0)
+            result = Integer.compare(range.getLower(), other.range.getLower());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ComparableMatch that = (ComparableMatch)o;
+        return range.equals(that.range);
+    }
+
+    @Override
+    public int hashCode() {
+        return range.hashCode();
     }
 }
