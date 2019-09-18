@@ -1,1 +1,2 @@
 Performance optimizations in Extract, Correct and Consensus actions
+Default --max-errors-share reduced from 0.15 to 0.12 in Correct action
