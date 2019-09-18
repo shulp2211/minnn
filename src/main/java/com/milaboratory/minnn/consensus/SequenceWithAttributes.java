@@ -75,7 +75,7 @@ public final class SequenceWithAttributes {
         if (cachedSeq == null)
             cachedSeq = seqPart;
         SequenceQuality cachedQual = ((qualPart != null) && (qualPart.size() == 1))
-                ? qualityCache.get(qualPart.value(0)) : qualPart;
+                ? getCachedQuality(qualPart.value(0)) : qualPart;
         return new SequenceWithAttributes(cachedSeq, cachedQual, originalReadId);
     }
 
@@ -95,6 +95,10 @@ public final class SequenceWithAttributes {
     }
 
     public NSequenceWithQuality toNSequenceWithQuality() {
+        if (isNull())
+            throw new IllegalStateException("Tried to convert null SequenceWithAttributes to NSequenceWithQuality!");
+        if (isEmpty())
+            return NSequenceWithQuality.EMPTY;
         return new NSequenceWithQuality(seq, qual);
     }
 
