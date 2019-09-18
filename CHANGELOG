@@ -1,4 +1,11 @@
 
+minnn 7.0.4 (18 Sep 2019)
+========================
+
+-- Performance optimizations in Correct and Consensus actions
+-- Default --max-errors-share reduced from 0.15 to 0.12 in Correct action
+
+
 minnn 7.0.3 (5 Sep 2019)
 ========================
 
