@@ -91,7 +91,10 @@ public final class CorrectBarcodesIO {
                 if (primaryGroups.size() == 0)
                     Objects.requireNonNull(pass2Reader).setParsedReadsLimit(inputReadsLimit);
             }
-            validateInputGroups(pass1Reader, groupNames, false);
+            validateInputGroups(pass1Reader, groupNames, false, "--groups");
+            if (primaryGroups.size() > 0)
+                validateInputGroups(pass1Reader, primaryGroups, false,
+                        "--primary-groups");
             LinkedHashSet<String> keyGroups = new LinkedHashSet<>(groupNames);
             if (!suppressWarnings && (pass1Reader.getSortedGroups().size() > 0) && (primaryGroups.size() == 0))
                 System.err.println("WARNING: correcting sorted MIF file; output file will be unsorted!");
@@ -118,6 +121,8 @@ public final class CorrectBarcodesIO {
                         minCount);
             pass1Reader.close();
             writer.setOriginalNumberOfReads(pass1Reader.getOriginalNumberOfReads());
+            if (excludedBarcodesWriter != null)
+                excludedBarcodesWriter.setOriginalNumberOfReads(pass1Reader.getOriginalNumberOfReads());
         } catch (IOException e) {
             throw exitWithError(e.getMessage());
         }
@@ -128,14 +133,14 @@ public final class CorrectBarcodesIO {
 
         reportFileHeader.append("MiNNN v").append(getShortestVersionString()).append('\n');
         reportFileHeader.append("Report for Correct command:\n");
-        if (inputFileName == null)
-            reportFileHeader.append("Input is from stdin\n");
-        else
-            reportFileHeader.append("Input file name: ").append(inputFileName).append('\n');
+        reportFileHeader.append("Input file name: ").append(inputFileName).append('\n');
         if (outputFileName == null)
             reportFileHeader.append("Output is to stdout\n");
         else
             reportFileHeader.append("Output file name: ").append(outputFileName).append('\n');
+        if (excludedBarcodesOutputFileName != null)
+            reportFileHeader.append("Output file for excluded reads: ").append(excludedBarcodesOutputFileName)
+                    .append('\n');
         reportFileHeader.append("Corrected groups: ").append(groupNames).append('\n');
         if (primaryGroups.size() > 0)
             reportFileHeader.append("Primary groups: ").append(primaryGroups).append('\n');
@@ -153,6 +158,7 @@ public final class CorrectBarcodesIO {
         jsonReportData.put("version", getShortestVersionString());
         jsonReportData.put("inputFileName", inputFileName);
         jsonReportData.put("outputFileName", outputFileName);
+        jsonReportData.put("excludedBarcodesOutputFileName", excludedBarcodesOutputFileName);
         jsonReportData.put("groupNames", groupNames);
         jsonReportData.put("primaryGroups", primaryGroups);
         jsonReportData.put("elapsedTime", elapsedTime);
