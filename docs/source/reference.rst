@@ -37,6 +37,8 @@ extract
  --report: File to write report in human readable form. If not specified, report is displayed on screen only.
  --json-report: File to write command execution stats in JSON format.
  --description-group: Description group names and regular expressions to parse expected nucleotide sequences for that groups from read description. Example: --description-group CID1='ATTA.{2-5}GACA' --description-group CID2='.{11}$'
+ --overwrite-if-required: Overwrite output file if it is corrupted or if it was generated from different input file or with different parameters. -f / --force-overwrite overrides this option.
+ -f, --force-overwrite: Force overwrite of output file(s).
 
 .. _filter:
 
@@ -54,6 +56,8 @@ filter
  --threads: Number of threads for parsing reads.
  --report: File to write report in human readable form. If not specified, report is displayed on screen only.
  --json-report: File to write command execution stats in JSON format.
+ --overwrite-if-required: Overwrite output file if it is corrupted or if it was generated from different input file or with different parameters. -f / --force-overwrite overrides this option.
+ -f, --force-overwrite: Force overwrite of output file(s).
 
 .. _demultiplex:
 
@@ -69,6 +73,8 @@ demultiplex
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
  --report: File to write report in human readable form. If not specified, report is displayed on screen only.
  --json-report: File to write command execution stats in JSON format.
+ --overwrite-if-required: Overwrite output file if it is corrupted or if it was generated from different input file or with different parameters. -f / --force-overwrite overrides this option.
+ -f, --force-overwrite: Force overwrite of output file(s).
 
 .. _mif2fastq:
 
@@ -84,6 +90,7 @@ mif2fastq
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
  --report: File to write report in human readable form. If not specified, report is displayed on screen only.
  --json-report: File to write command execution stats in JSON format.
+ -f, --force-overwrite: Force overwrite of output file(s).
 
 .. _correct:
 
@@ -109,6 +116,9 @@ correct
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
  --report: File to write report in human readable form. If not specified, report is displayed on screen only.
  --json-report: File to write command execution stats in JSON format.
+ --overwrite-if-required: Overwrite output file if it is corrupted or if it was generated from different input file or with different parameters. -f / --force-overwrite overrides this option.
+ -f, --force-overwrite: Force overwrite of output file(s).
+ -nw, --no-warnings: Suppress all warning messages.
 
 .. _sort:
 
@@ -124,6 +134,9 @@ sort
  --chunk-size: Chunk size for sorter.
  --report: File to write report in human readable form. If not specified, report is displayed on screen only.
  --json-report: File to write command execution stats in JSON format.
+ --overwrite-if-required: Overwrite output file if it is corrupted or if it was generated from different input file or with different parameters. -f / --force-overwrite overrides this option.
+ -f, --force-overwrite: Force overwrite of output file(s).
+ -nw, --no-warnings: Suppress all warning messages.
 
 .. _consensus:
 
@@ -155,6 +168,9 @@ consensus
  --kmer-length: K-mer length. Also affects --min-good-sequence-length because good sequence length must not be lower than k-mer length, so the biggest of --kmer-length and --min-good-sequence-length will be used as --min-good-sequence-length value.
  --kmer-offset: Max offset from the middle of the read when searching k-mers.
  --kmer-max-errors: Maximal allowed number of mismatches when searching k-mers in sequences.
+ --overwrite-if-required: Overwrite output file if it is corrupted or if it was generated from different input file or with different parameters. -f / --force-overwrite overrides this option.
+ -f, --force-overwrite: Force overwrite of output file(s).
+ -nw, --no-warnings: Suppress all warning messages.
 
 .. _consensus-dma:
 
@@ -190,6 +206,9 @@ consensus-dma
  --threads: Number of threads for calculating consensus sequences.
  --report: File to write report in human readable form. If not specified, report is displayed on screen only.
  --json-report: File to write command execution stats in JSON format.
+ --overwrite-if-required: Overwrite output file if it is corrupted or if it was generated from different input file or with different parameters. -f / --force-overwrite overrides this option.
+ -f, --force-overwrite: Force overwrite of output file(s).
+ -nw, --no-warnings: Suppress all warning messages.
 
 .. _stat-groups:
 
@@ -210,6 +229,7 @@ stat-groups
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
  --report: File to write brief command execution stats in human readable form. If not specified, these stats are displayed on screen only.
  --json-report: File to write command execution stats in JSON format.
+ -f, --force-overwrite: Force overwrite of output file(s).
 
 .. _stat-positions:
 
@@ -229,6 +249,7 @@ stat-positions
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
  --report: File to write brief command execution stats in human readable form. If not specified, these stats are displayed on screen only.
  --json-report: File to write command execution stats in JSON format.
+ -f, --force-overwrite: Force overwrite of output file(s).
 
 .. _decontaminate:
 
@@ -247,6 +268,8 @@ decontaminate
  -n, --number-of-reads: Number of reads to take; 0 value means to take the entire input file.
  --report: File to write report in human readable form. If not specified, report is displayed on screen only.
  --json-report: File to write command execution stats in JSON format.
+ --overwrite-if-required: Overwrite output file if it is corrupted or if it was generated from different input file or with different parameters. -f / --force-overwrite overrides this option.
+ -f, --force-overwrite: Force overwrite of output file(s).
 
 .. _report:
 
