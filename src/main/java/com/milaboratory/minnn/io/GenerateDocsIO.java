@@ -97,7 +97,7 @@ public final class GenerateDocsIO {
                         + ".. code-block:: text\n");
                 ArrayList<String> parameterDescriptions = new ArrayList<>();
                 ArrayList<String> parameterDescriptionsLast = new ArrayList<>();
-                for (Field field : actionClass.getDeclaredFields()) {
+                for (Field field : getAllDeclaredFields(actionClass)) {
                     FieldType fieldType = getFieldType(field);
                     if ((fieldType != UNKNOWN) && !isHidden(field)) {
                         if (fieldType == PARAMETERS) {
@@ -133,7 +133,7 @@ public final class GenerateDocsIO {
         }
     }
 
-    private ArrayList<String> getOptionNames(AnnotatedElement annotatedElement) {
+    private static ArrayList<String> getOptionNames(AnnotatedElement annotatedElement) {
         Object value = getAnnotationValueObject(annotatedElement, "names", Stream.of(Option.class));
         ArrayList<String> optionNames = new ArrayList<>();
         if (value.getClass().isArray()) {
@@ -144,7 +144,7 @@ public final class GenerateDocsIO {
         return optionNames;
     }
 
-    private String getAnnotationStringParameter(AnnotatedElement annotatedElement, String parameterName) {
+    private static String getAnnotationStringParameter(AnnotatedElement annotatedElement, String parameterName) {
         Object value = getAnnotationValueObject(annotatedElement, parameterName,
                 Stream.of(Command.class, Option.class, Parameters.class));
         if (value instanceof RuntimeException)
@@ -157,7 +157,7 @@ public final class GenerateDocsIO {
         }
     }
 
-    private FieldType getFieldType(AnnotatedElement annotatedElement) {
+    private static FieldType getFieldType(AnnotatedElement annotatedElement) {
         Object value = getAnnotationValueObject(annotatedElement, "description",
                 Stream.of(Option.class));
         if (!(value instanceof RuntimeException))
@@ -174,8 +174,9 @@ public final class GenerateDocsIO {
         return !(value instanceof RuntimeException) && (boolean)value;
     }
 
-    private Object getAnnotationValueObject(AnnotatedElement annotatedElement, String parameterName,
-                                            Stream<Class<? extends Annotation>> annotationClasses) {
+    private static Object getAnnotationValueObject(
+            AnnotatedElement annotatedElement, String parameterName,
+            Stream<Class<? extends Annotation>> annotationClasses) {
         Annotation annotation = annotationClasses
                 .map((Function<Class<? extends Annotation>, Annotation>)annotatedElement::getAnnotation)
                 .filter(Objects::nonNull).findFirst().orElse(null);
@@ -191,12 +192,22 @@ public final class GenerateDocsIO {
         return new RuntimeException("Parameter " + parameterName + " not found in annotation " + annotation);
     }
 
-    private String title(String str, boolean topLevel) {
+    private static List<Field> getAllDeclaredFields(Class actionClass) {
+        List<Field> allDeclaredFields = new ArrayList<>(Arrays.asList(actionClass.getDeclaredFields()));
+        Class superClass = actionClass.getSuperclass();
+        while (superClass != null) {
+            allDeclaredFields.addAll(Arrays.asList(superClass.getDeclaredFields()));
+            superClass = superClass.getSuperclass();
+        }
+        return allDeclaredFields;
+    }
+
+    private static String title(String str, boolean topLevel) {
         String line = Stream.generate(() -> "=").limit(str.length()).collect(Collectors.joining());
         return (topLevel ? "" : line + "\n") + str + "\n" + line;
     }
 
-    private String subtitle(String str) {
+    private static String subtitle(String str) {
         return ".. _" + str + ":\n\n" + str + "\n"
                 + Stream.generate(() -> "-").limit(str.length()).collect(Collectors.joining());
     }
