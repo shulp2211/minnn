@@ -13,12 +13,16 @@ described below), one output file for each sample; and reads that didn't match a
 You can specify multiple :code:`--by-barcode` and :code:`--by-sample` options, but note that output file will be
 created for each combination of barcode values and samples, so this command can create very big number of files!
 
+:code:`--demultiplex-log` argument is mandatory. It specifies the name of output text file where the list of all
+output files will be written. You can use the log file from previous run and add :code:`--overwrite-if-required`
+argument if you want to use smart overwrite feature: overwrite output files only if the input file had changed.
+
 Examples for demultiplex action:
 
 .. code-block:: text
 
-   minnn demultiplex --output-buffer-size 30000 --by-barcode SB1 corrected.mif
-   minnn demultiplex --by-sample samples1.txt --by-sample samples2.txt --by-barcode UMI data.mif
+   minnn demultiplex --output-buffer-size 30000 --by-barcode SB1 corrected.mif --demultiplex-log log.txt
+   minnn demultiplex --demultiplex-log 1.log --by-sample samples1.txt --by-sample samples2.txt --by-barcode UMI in.mif
 
 **Sample file format:**
 
