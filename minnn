@@ -119,9 +119,9 @@ then
         targetXmx=${maxMb}
     fi
 
-    if [[ ${targetXmx} -lt 1000 ]];
+    if [[ ${targetXmx} -lt 600 ]];
     then
-        targetXmx=1000
+        targetXmx=600
     fi
 
     javaArgs+=("-Xmx${targetXmx}m")
