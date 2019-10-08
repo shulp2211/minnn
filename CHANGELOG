@@ -1,5 +1,12 @@
 
-minnn 7.1.1 ( 2 Oct 2019)
+minnn 7.1.2 ( 8 Oct 2019)
+========================
+
+-- Minimal autodetect value for -Xmx is set to 1000m
+-- Updated milib and dependencies
+
+
+minnn 7.1.1 (2 Oct 2019)
 ========================
 
 -- Asterisk wildcards support in Demultiplex sample files

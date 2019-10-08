@@ -59,7 +59,7 @@ perform barcodes correction (see :ref:`correcting_umi_sequence` section) before 
 
    minnn extract --pattern "^(UMI:N{6})\*" --input data-R1.fastq data-R2.fastq --output extracted.mif
    minnn correct --groups UMI --input extracted.mif --output corrected.mif
-   minnn demultiplex --by-barcode UMI corrected.mif
+   minnn demultiplex --by-barcode UMI corrected.mif --demultiplex-log demultiplex.log
 
 Note that splitting data by unique UMI values can result in very big number of output files!
 
@@ -83,7 +83,7 @@ And then issue the following commands:
 
    minnn extract --pattern "^(UMI:N{6})\*" --input data-R1.fastq data-R2.fastq --output extracted.mif
    minnn correct --groups UMI --input extracted.mif --output corrected.mif
-   minnn demultiplex --by-sample umi_samples.txt corrected.mif
+   minnn demultiplex --by-sample umi_samples.txt corrected.mif --demultiplex-log demultiplex.log
 
 **Example 3.** We extracted sequence barcodes with :ref:`extract` action into :code:`extracted.mif` file, and we named
 these barcodes :code:`SB1` and :code:`SB2`. Now we want to put sequences with specified combinations of :code:`SB1`
