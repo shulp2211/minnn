@@ -116,7 +116,7 @@ public final class MifReader extends PipelineConfigurationReaderMiNNN
     @Override
     public synchronized void close() {
         if (!closed) {
-            originalNumberOfReads = input.readLong();
+            originalNumberOfReads = finished ? input.readLong() : parsedReadsTaken;
             input.close();
             finished = true;
             closed = true;
