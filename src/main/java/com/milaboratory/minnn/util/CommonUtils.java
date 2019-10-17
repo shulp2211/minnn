@@ -28,10 +28,52 @@
  */
 package com.milaboratory.minnn.util;
 
+import com.milaboratory.core.sequence.NucleotideSequence;
+
 public final class CommonUtils {
     private CommonUtils() {}
 
     public static String stripQuotes(String str) {
         return str.replaceAll("^\"|\"$", "");
+    }
+
+    public static int calculateLevenshteinDistance(NucleotideSequence seq1, NucleotideSequence seq2) {
+        int arraySize1 = seq1.size() + 1;
+        int arraySize2 = seq2.size() + 1;
+
+        // the array of distances
+        int[] cost = new int[arraySize1];
+        int[] newCost = new int[arraySize1];
+
+        // initial cost of skipping prefix in seq1
+        for (int i = 0; i < arraySize1; i++)
+            cost[i] = i;
+
+        // transformation cost for each letter in seq2
+        for (int j = 1; j < arraySize2; j++) {
+            // initial cost of skipping prefix in seq2
+            newCost[0] = j;
+
+            // transformation cost for each letter in seq1
+            for (int i = 1; i < arraySize1; i++) {
+                // matching current letters in both strings
+                int match = (seq1.codeAt(i - 1) == seq2.codeAt(j - 1)) ? 0 : 1;
+
+                // computing cost for each transformation
+                int costReplace = cost[i - 1] + match;
+                int costInsert  = cost[i] + 1;
+                int costDelete  = newCost[i - 1] + 1;
+
+                // keep minimum cost
+                newCost[i] = Math.min(Math.min(costInsert, costDelete), costReplace);
+            }
+
+            int[] tmp = cost;
+            cost = newCost;
+            newCost = tmp;
+        }
+
+        // the distance is the cost for transforming all letters in both strings
+        return cost[arraySize1 - 1];
     }
 }

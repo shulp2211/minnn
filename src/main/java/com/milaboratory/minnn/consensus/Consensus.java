@@ -45,14 +45,15 @@ public final class Consensus {
     public final ConsensusDebugData debugData;
     public final boolean isConsensus;
     public final ArrayList<DataFromParsedReadWithAllGroups> savedOriginalSequences = new ArrayList<>();
-    private final int numberOfTargets;
+    public final int numberOfTargets;
     public final boolean finalConsensus;
     public final long tempId;
     private final boolean defaultGroupsOverride;
 
-    public Consensus(TByteObjectHashMap<SequenceWithAttributes> sequences, List<Barcode> barcodes,
-                     int consensusReadsNum, ConsensusDebugData debugData, int numberOfTargets, boolean finalConsensus,
-                     long tempId, boolean defaultGroupsOverride) {
+    public Consensus(
+            TByteObjectHashMap<SequenceWithAttributes> sequences, List<Barcode> barcodes, int consensusReadsNum,
+            ConsensusDebugData debugData, int numberOfTargets, boolean finalConsensus, long tempId,
+            boolean defaultGroupsOverride) {
         this.sequences = sequences;
         this.barcodes = barcodes;
         this.consensusReadsNum = consensusReadsNum;
