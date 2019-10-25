@@ -30,14 +30,16 @@ package com.milaboratory.minnn.io;
 
 import com.milaboratory.cli.PipelineConfiguration;
 import com.milaboratory.minnn.correct.BarcodeClusteringStrategyFactory;
+import com.milaboratory.minnn.correct.CorrectionAlgorithms;
 import com.milaboratory.minnn.correct.CorrectionStats;
+import com.milaboratory.minnn.correct.WildcardsCollapsingMethod;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.milaboratory.minnn.cli.CliUtils.*;
-import static com.milaboratory.minnn.correct.CorrectionAlgorithms.*;
+import static com.milaboratory.minnn.correct.WildcardsCollapsingMethod.*;
 import static com.milaboratory.minnn.io.ReportWriter.*;
 import static com.milaboratory.minnn.util.MinnnVersionInfo.getShortestVersionString;
 import static com.milaboratory.minnn.util.SystemUtils.*;
@@ -53,16 +55,18 @@ public final class CorrectBarcodesIO {
     private final int maxUniqueBarcodes;
     private final int minCount;
     private final String excludedBarcodesOutputFileName;
+    private final WildcardsCollapsingMethod wildcardsCollapsingMethod;
     private final long inputReadsLimit;
     private final boolean suppressWarnings;
     private final String reportFileName;
     private final String jsonReportFileName;
 
-    public CorrectBarcodesIO(PipelineConfiguration pipelineConfiguration, String inputFileName, String outputFileName,
-                             List<String> groupNames, List<String> primaryGroupNames,
-                             BarcodeClusteringStrategyFactory barcodeClusteringStrategyFactory, int maxUniqueBarcodes,
-                             int minCount, String excludedBarcodesOutputFileName, long inputReadsLimit,
-                             boolean suppressWarnings, String reportFileName, String jsonReportFileName) {
+    public CorrectBarcodesIO(
+            PipelineConfiguration pipelineConfiguration, String inputFileName, String outputFileName,
+            List<String> groupNames, List<String> primaryGroupNames,
+            BarcodeClusteringStrategyFactory barcodeClusteringStrategyFactory, int maxUniqueBarcodes, int minCount,
+            String excludedBarcodesOutputFileName, boolean fairWildcardsCollapsing, boolean disableWildcardsCollapsing,
+            long inputReadsLimit, boolean suppressWarnings, String reportFileName, String jsonReportFileName) {
         this.pipelineConfiguration = pipelineConfiguration;
         this.inputFileName = inputFileName;
         this.outputFileName = outputFileName;
@@ -73,6 +77,8 @@ public final class CorrectBarcodesIO {
         this.maxUniqueBarcodes = maxUniqueBarcodes;
         this.minCount = minCount;
         this.excludedBarcodesOutputFileName = excludedBarcodesOutputFileName;
+        this.wildcardsCollapsingMethod = disableWildcardsCollapsing ? DISABLED_COLLAPSING
+                : (fairWildcardsCollapsing ? FAIR_COLLAPSING : UNFAIR_COLLAPSING);
         this.inputReadsLimit = inputReadsLimit;
         this.suppressWarnings = suppressWarnings;
         this.reportFileName = reportFileName;
@@ -108,17 +114,17 @@ public final class CorrectBarcodesIO {
             if (!suppressWarnings && (correctedAgainGroups.size() != 0))
                 System.err.println("WARNING: group(s) " + correctedAgainGroups + " already corrected and will be " +
                         "corrected again!");
+            CorrectionAlgorithms correctionAlgorithms = new CorrectionAlgorithms(inputReadsLimit,
+                    barcodeClusteringStrategyFactory, maxUniqueBarcodes, minCount, wildcardsCollapsingMethod);
             if (primaryGroups.size() == 0)
-                stats = fullFileCorrect(pass1Reader, pass2Reader, writer, excludedBarcodesWriter, inputReadsLimit,
-                        barcodeClusteringStrategyFactory, keyGroups, maxUniqueBarcodes, minCount);
+                stats = correctionAlgorithms.fullFileCorrect(pass1Reader, pass2Reader, writer, excludedBarcodesWriter,
+                        keyGroups);
             else if (unsortedPrimaryGroups.size() == 0)
-                stats = sortedClustersCorrect(pass1Reader, writer, excludedBarcodesWriter, inputReadsLimit,
-                        barcodeClusteringStrategyFactory, primaryGroups, keyGroups, maxUniqueBarcodes,
-                        minCount);
+                stats = correctionAlgorithms.sortedClustersCorrect(pass1Reader, writer, excludedBarcodesWriter,
+                        primaryGroups, keyGroups);
             else
-                stats = unsortedClustersCorrect(pass1Reader, writer, excludedBarcodesWriter, inputReadsLimit,
-                        barcodeClusteringStrategyFactory, primaryGroups, keyGroups, maxUniqueBarcodes,
-                        minCount);
+                stats = correctionAlgorithms.unsortedClustersCorrect(pass1Reader, writer, excludedBarcodesWriter,
+                        primaryGroups, keyGroups);
             pass1Reader.close();
             writer.setOriginalNumberOfReads(pass1Reader.getOriginalNumberOfReads());
             if (excludedBarcodesWriter != null)
@@ -161,6 +167,9 @@ public final class CorrectBarcodesIO {
         jsonReportData.put("excludedBarcodesOutputFileName", excludedBarcodesOutputFileName);
         jsonReportData.put("groupNames", groupNames);
         jsonReportData.put("primaryGroups", primaryGroups);
+        jsonReportData.put("maxUniqueBarcodes", maxUniqueBarcodes);
+        jsonReportData.put("minCount", minCount);
+        jsonReportData.put("wildcardsCollapsingMethod", wildcardsCollapsingMethod);
         jsonReportData.put("elapsedTime", elapsedTime);
         jsonReportData.put("correctedReads", stats.correctedReads);
         jsonReportData.put("excludedReads", stats.excludedReads);

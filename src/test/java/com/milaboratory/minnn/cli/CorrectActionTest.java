@@ -189,23 +189,24 @@ public class CorrectActionTest {
     public void preparedMifClustersTest() throws Exception {
         for (boolean sorted : new boolean[] { true, false }) {
             String inputFile = getExampleMif("twosided");
-            for (int i = 0; i <= 1; i++) {
+            for (int i = 0; i <= 2; i++) {
                 String currentInput = (i == 0) ? inputFile : TEMP_DIR + "correctedSecondary" + i + ".mif";
                 String currentPrimaryOutput = TEMP_DIR + "correctedPrimary" + (i + 1) + ".mif";
                 String currentSortedOutput = TEMP_DIR + "sortedPrimary" + (i + 1) + ".mif";
                 String currentSecondaryOutput = TEMP_DIR + "correctedSecondary" + (i + 1) + ".mif";
                 exec("correct -f --groups G1 G2 --input " + currentInput + " --output " + currentPrimaryOutput
                         + " --max-errors-share 0.4 --cluster-threshold 0.4 --single-substitution-probability 0.002"
-                        + " --single-indel-probability 0.001");
+                        + " --single-indel-probability 0.001 --fair-wildcards-collapsing");
                 if (sorted)
                     exec("sort -f --groups G1 G2 --input " + currentPrimaryOutput
                             + " --output " + currentSortedOutput);
                 exec("correct -f --primary-groups G1 G2 --groups G3 G4 --input "
                         + (sorted ? currentSortedOutput : currentPrimaryOutput)
                         + " --output " + currentSecondaryOutput + " --max-errors-share 0.4 --cluster-threshold 0.4"
-                        + " --single-substitution-probability 0.002 --single-indel-probability 0.001");
+                        + " --single-substitution-probability 0.002 --single-indel-probability 0.001"
+                        + " --fair-wildcards-collapsing");
                 assertFileNotEquals(currentInput, currentSecondaryOutput);
-                if (i == 0) {
+                if (i < 2) {
                     assertMifNotEqualsAsFastq(currentInput, currentSecondaryOutput, true);
                 } else {
                     if (sorted)
@@ -224,7 +225,7 @@ public class CorrectActionTest {
                 }
             }
             assertTrue(new File(inputFile).delete());
-            for (int i = 1; i <= 2; i++) {
+            for (int i = 1; i <= 3; i++) {
                 for (String prefix : new String[] { "correctedPrimary", "correctedSecondary" })
                     assertTrue(new File(TEMP_DIR + prefix + i + ".mif").delete());
                 if (sorted)
