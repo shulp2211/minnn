@@ -98,6 +98,7 @@ public final class ConsensusIO {
     private final TLongLongHashMap consensusFinalIds;
     private ConsensusAlgorithm consensusAlgorithm;
     private long consensusReads = 0;
+    private long clustersCount = 0;
     private int warningsDisplayed = 0;
     private LinkedHashSet<String> consensusGroups;
     private int numberOfTargets;
@@ -274,8 +275,9 @@ public final class ConsensusIO {
                     consensusAlgorithm, threads);
             OrderedOutputPort<CalculatedConsensuses> orderedConsensusesPort = new OrderedOutputPort<>(
                     calculatedConsensusesPort, cc -> cc.orderedPortIndex);
-            int clusterIndex = -1;
+            long subclusterDebugIndex = -1;
             for (CalculatedConsensuses calculatedConsensuses : CUtils.it(orderedConsensusesPort)) {
+                clustersCount++;
                 for (int i = 0; i < calculatedConsensuses.consensuses.size(); i++) {
                     Consensus consensus = calculatedConsensuses.consensuses.get(i);
                     if (consensus.isConsensus && consensus.finalConsensus) {
@@ -289,8 +291,8 @@ public final class ConsensusIO {
                     }
                     if (debugOutputStream != null) {
                         if ((consensusAlgorithmType != DOUBLE_MULTI_ALIGN) || !consensus.finalConsensus)
-                            clusterIndex++;
-                        consensus.debugData.writeDebugData(debugOutputStream, clusterIndex, i);
+                            subclusterDebugIndex++;
+                        consensus.debugData.writeDebugData(debugOutputStream, subclusterDebugIndex, i);
                     }
                 }
             }
@@ -307,38 +309,46 @@ public final class ConsensusIO {
                     new FileOutputStream(originalReadStatsFileName))) {
                 List<String> defaultGroups = IntStream.rangeClosed(1, numberOfTargets).mapToObj(i -> "R" + i)
                         .collect(Collectors.toList());
-                StringBuilder header = new StringBuilder("read.id consensus.id status consensus.best.id reads.num");
+                StringBuilder header = new StringBuilder();
+                header.append("read.id ");              // common column 1
+                header.append("consensus.id ");         // common column 2
+                header.append("status ");               // common column 3
+                header.append("consensus.best.id ");    // common column 4
+                header.append("reads.num");             // common column 5
                 for (String groupName : defaultGroups) {
-                    header.append(' ').append(groupName).append(".seq ");
-                    header.append(groupName).append(".qual ");
-                    header.append(groupName).append(".consensus.seq ");
-                    header.append(groupName).append(".consensus.qual ");
-                    header.append(groupName).append(".alignment.score.stage1 ");
-                    header.append(groupName).append(".alignment.score.stage2");
+                    header.append(' ').append(groupName).append(".seq ");           // target column 1
+                    header.append(groupName).append(".qual ");                      // target column 2
+                    header.append(groupName).append(".consensus.seq ");             // target column 3
+                    header.append(groupName).append(".consensus.qual ");            // target column 4
+                    header.append(groupName).append(".consensus.distance ");        // target column 5
+                    header.append(groupName).append(".read.trimmed ");              // target column 6
+                    header.append(groupName).append(".consensus.trimmed ");         // target column 7
+                    header.append(groupName).append(".alignment.score.stage1 ");    // target column 8
+                    header.append(groupName).append(".alignment.score.stage2");     // target column 9
                 }
                 originalReadsDataWriter.println(header);
 
                 for (long readId = 0; readId < originalNumberOfReads; readId++) {
                     OriginalReadData currentReadData = originalReadsData.get(readId);
                     OriginalReadStatus status = (currentReadData == null) ? NOT_MATCHED : currentReadData.status;
-                    Consensus consensus = (status == USED_IN_CONSENSUS) ? currentReadData.consensus : null;
+                    Consensus consensus = (status == USED_IN_CONSENSUS) ? currentReadData.getConsensus() : null;
 
                     StringBuilder line = new StringBuilder();
-                    line.append(readId).append(' ');
-                    if (consensus == null)
-                        line.append("-1 ");
-                    else {
+                    line.append(readId).append(' ');        // common column 1
+                    if (consensus == null) {
+                        line.append("-1 ");                 // common column 2
+                    } else {
                         long finalId = Objects.requireNonNull(consensusFinalIds).get(consensus.tempId);
                         if (finalId == -1)
                             throw new IllegalStateException("Consensus finalId == -1 for tempId " + consensus.tempId);
-                        line.append(finalId).append(' ');
+                        line.append(finalId).append(' ');   // common column 2
                     }
-                    line.append(status.name()).append(' ');
+                    line.append(status.name()).append(' '); // common column 3
                     line.append((consensus == null) ? -1 : consensus.sequences.get((byte)1).getOriginalReadId())
-                            .append(' ');
-                    line.append((consensus == null) ? 0 : consensus.consensusReadsNum);
-                    // targetIndex is targetId - 1
+                            .append(' ');                   // common column 4
+                    line.append((consensus == null) ? 0 : consensus.consensusReadsNum);     // common column 5
                     for (int targetIndex = 0; targetIndex < numberOfTargets; targetIndex++) {
+                        byte targetId = (byte)(targetIndex + 1);
                         long alignmentScoreStage1 = Long.MIN_VALUE;
                         long alignmentScoreStage2 = Long.MIN_VALUE;
                         if ((status == CONSENSUS_DISCARDED_TRIM_STAGE1) || (status == CONSENSUS_DISCARDED_TRIM_STAGE2)
@@ -352,13 +362,13 @@ public final class ConsensusIO {
                             if (alignmentScoresStage2 != null)
                                 alignmentScoreStage2 = alignmentScoresStage2[targetIndex];
                         }
-                        if (currentReadData == null)
-                            line.append(" - -");
-                        else {
+                        if (currentReadData == null) {
+                            line.append(" - -");        // target columns 1, 2
+                        } else {
                             ParsedRead parsedRead = currentReadData.read;
                             NSequenceWithQuality currentOriginalRead;
                             if (parsedRead.isNumberOfTargetsOverride()) {
-                                currentOriginalRead = parsedRead.getGroupValue("R" + (targetIndex + 1));
+                                currentOriginalRead = parsedRead.getMatchTarget(targetId);
                             } else {
                                 int originalTargetIndex = targetIndex;
                                 if (parsedRead.isReverseMatch()) {
@@ -370,17 +380,37 @@ public final class ConsensusIO {
                                 currentOriginalRead = parsedRead.getOriginalRead().getRead(originalTargetIndex)
                                         .getData();
                             }
-                            line.append(' ').append(currentOriginalRead.getSequence());
-                            line.append(' ').append(currentOriginalRead.getQuality());
+                            line.append(' ').append(currentOriginalRead.getSequence());     // target column 1
+                            line.append(' ').append(currentOriginalRead.getQuality());      // target column 2
                         }
                         if (consensus == null) {
-                            line.append(" - - ").append(Long.MIN_VALUE).append(' ').append(Long.MIN_VALUE);
+                            line.append(" - - -1 ");    // target columns 3, 4, 5
                         } else {
-                            SequenceWithAttributes currentSeq = consensus.sequences.get((byte)(targetIndex + 1));
-                            line.append(' ').append(currentSeq.getSeq());
-                            line.append(' ').append(currentSeq.getQual());
-                            line.append(' ').append(alignmentScoreStage1);
-                            line.append(' ').append(alignmentScoreStage2);
+                            SequenceWithAttributes currentSeq = consensus.sequences.get(targetId);
+                            line.append(' ').append(currentSeq.getSeq());                   // target column 3
+                            line.append(' ').append(currentSeq.getQual());                  // target column 4
+                            int consensusDistance = (currentReadData == null) ? -1
+                                    : currentReadData.getConsensusDistance(targetId);
+                            line.append(' ').append(consensusDistance).append(' ');         // target column 5
+                        }
+                        if (currentReadData == null) {
+                            line.append("0 ");      // target column 6
+                        } else {
+                            // target column 6
+                            line.append(currentReadData.trimmedLettersCounters.byTargetId.get(targetId)).append(' ');
+                        }
+                        if ((currentReadData == null) || (currentReadData.consensusTrimmedLettersCounters == null)) {
+                            line.append('0');      // target column 7
+                        } else {
+                            // target column 7
+                            line.append(currentReadData.consensusTrimmedLettersCounters.byTargetId.get(targetId));
+                        }
+                        if (consensus == null) {
+                            // target columns 8, 9
+                            line.append(' ').append(Long.MIN_VALUE).append(' ').append(Long.MIN_VALUE);
+                        } else {
+                            line.append(' ').append(alignmentScoreStage1);      // target column 8
+                            line.append(' ').append(alignmentScoreStage2);      // target column 9
                         }
                     }
                     originalReadsDataWriter.println(line);
@@ -431,6 +461,9 @@ public final class ConsensusIO {
         if (consensusReads > 0)
             report.append("Average reads per consensus: ")
                     .append(floatFormat.format((float)totalReads.get() / consensusReads)).append("\n");
+        if (clustersCount > 0)
+            report.append("Average number of consensuses per barcode group: ")
+                    .append(floatFormat.format((float)consensusReads / clustersCount)).append("\n");
 
         jsonReportData.put("version", getShortestVersionString());
         jsonReportData.put("inputFileName", inputFileName);
@@ -438,8 +471,9 @@ public final class ConsensusIO {
         jsonReportData.put("consensusGroups", consensusGroups);
         jsonReportData.put("consensusAlgorithmType", consensusAlgorithmType.toString());
         jsonReportData.put("elapsedTime", elapsedTime);
-        jsonReportData.put("consensusReads", consensusReads);
         jsonReportData.put("totalReads", totalReads.get());
+        jsonReportData.put("consensusReads", consensusReads);
+        jsonReportData.put("clustersCount", clustersCount);
 
         humanReadableReport(reportFileName, reportFileHeader.toString(), report.toString());
         jsonReport(jsonReportFileName, jsonReportData);
@@ -479,7 +513,7 @@ public final class ConsensusIO {
 
     private DataFromParsedRead extractData(ParsedRead parsedRead) {
         return toSeparateGroups ? new DataFromParsedReadWithAllGroups(parsedRead, consensusGroups)
-                : new BasicDataFromParsedRead(parsedRead, consensusGroups);
+                : new DataFromParsedRead(parsedRead, consensusGroups);
     }
 
     private void saveOriginalReadsData(ParsedRead parsedRead) {

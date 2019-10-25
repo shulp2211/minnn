@@ -29,18 +29,42 @@
 package com.milaboratory.minnn.consensus;
 
 import com.milaboratory.minnn.outputconverter.ParsedRead;
+import gnu.trove.map.hash.TByteIntHashMap;
 
 import java.util.*;
 
 import static com.milaboratory.minnn.consensus.OriginalReadStatus.*;
+import static com.milaboratory.minnn.util.CommonUtils.*;
 
 public final class OriginalReadData {
     public final ParsedRead read;
     public OriginalReadStatus status = NOT_USED_IN_CONSENSUS;
-    public Consensus consensus = null;
+    public TrimmedLettersCounters trimmedLettersCounters = null;
+    public TrimmedLettersCounters consensusTrimmedLettersCounters = null;
+    private Consensus consensus = null;
+    private TByteIntHashMap consensusDistances = null;
     public List<long[]> alignmentScores = Arrays.asList(null, null);
 
     public OriginalReadData(ParsedRead read) {
         this.read = read;
+    }
+
+    public void setConsensus(Consensus consensus) {
+        this.consensus = consensus;
+        if (consensus.sequences != null) {
+            if (consensusDistances == null)
+                consensusDistances = new TByteIntHashMap();
+            for (byte targetId = 1; targetId <= consensus.numberOfTargets; targetId++)
+                consensusDistances.put(targetId, calculateLevenshteinDistance(
+                        read.getMatchTarget(targetId).getSequence(), consensus.sequences.get(targetId).getSeq()));
+        }
+    }
+
+    public Consensus getConsensus() {
+        return consensus;
+    }
+
+    public int getConsensusDistance(byte targetId) {
+        return (consensusDistances == null) ? -1 : consensusDistances.get(targetId);
     }
 }

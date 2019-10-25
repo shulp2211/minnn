@@ -1,5 +1,14 @@
 
-minnn 7.1.2 ( 8 Oct 2019)
+minnn 8.0.0 (25 Oct 2019)
+========================
+
+-- Correction performance improvements; --fair-wildcards-collapsing and 
+   --disable-wildcards-collapsing options
+-- Bugfixes and improvements for Consensus --original-read-stats argument; new data fields in the 
+   stats file
+
+
+minnn 7.1.2 (8 Oct 2019)
 ========================
 
 -- Minimal autodetect value for -Xmx is set to 1000m
