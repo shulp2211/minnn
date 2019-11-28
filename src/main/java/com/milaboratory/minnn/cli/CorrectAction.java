@@ -64,8 +64,8 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
                 new SimpleMutationProbability(singleSubstitutionProbability, singleIndelProbability));
         CorrectBarcodesIO correctBarcodesIO = new CorrectBarcodesIO(getFullPipelineConfiguration(), inputFileName,
                 outputFileName, groupNames, primaryGroupNames, barcodeClusteringStrategyFactory, maxUniqueBarcodes,
-                minCount, excludedBarcodesOutputFileName, fairWildcardsCollapsing, disableWildcardsCollapsing,
-                inputReadsLimit, quiet, reportFileName, jsonReportFileName);
+                minCount, excludedBarcodesOutputFileName, wildcardsCollapsingMergeThreshold,
+                inputReadsLimit, quiet, threads, reportFileName, jsonReportFileName);
         correctBarcodesIO.go();
     }
 
@@ -80,9 +80,6 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
         if ((maxErrorsShare < 0) && (maxErrors < 0))
             throwValidationException("Both --max-errors and --max-errors-share are disabled (set to negative); " +
                     "enable at least one!");
-        if (fairWildcardsCollapsing && disableWildcardsCollapsing)
-            throwValidationException("Options --fair-wildcards-collapsing and --disable-wildcards-collapsing " +
-                    "must not be enabled simultaneously!");
     }
 
     @Override
@@ -114,7 +111,7 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
         return new CorrectActionConfiguration(new CorrectActionConfiguration.CorrectActionParameters(groupNames,
                 primaryGroupNames, maxErrorsShare, maxErrors, threshold, maxClusterDepth,
                 singleSubstitutionProbability, singleIndelProbability, maxUniqueBarcodes, minCount,
-                fairWildcardsCollapsing, disableWildcardsCollapsing, inputReadsLimit));
+                wildcardsCollapsingMergeThreshold, inputReadsLimit, threads));
     }
 
     @Override
@@ -184,37 +181,33 @@ public final class CorrectAction extends ACommandWithSmartOverwrite implements M
             names = {"--single-indel-probability"})
     private float singleIndelProbability = DEFAULT_CORRECT_SINGLE_INDEL_PROBABILITY;
 
-    @Option(description = "Maximal number of unique barcodes that will be included into output. Reads containing " +
-            "barcodes with biggest counts will be included, reads with barcodes with smaller counts will be " +
-            "excluded. Value 0 turns off this feature: if this argument is 0, all barcodes will be included.",
+    @Option(description = MAX_UNIQUE_BARCODES,
             names = {"--max-unique-barcodes"})
     private int maxUniqueBarcodes = 0;
 
-    @Option(description = "Barcodes with count less than specified will not be included in the output.",
+    @Option(description = MIN_COUNT,
             names = {"--min-count"})
     private int minCount = 0;
 
-    @Option(description = "Output file for reads with barcodes excluded by count. If not specified, reads with " +
-            "excluded barcodes will not be written anywhere.",
+    @Option(description = EXCLUDED_BARCODES_OUTPUT,
             names = {"--excluded-barcodes-output"})
     private String excludedBarcodesOutputFileName = null;
 
-    @Option(description = "Use slow but more precise method of merging for barcodes that equal by wildcards " +
-            "(for example, AAAT and ANNT). With this option barcodes will be sorted by count, and barcodes with " +
-            "high counts will be attempted to merge first. Also, this option enables keeping quality of corrected " +
-            "barcodes and saving barcodes with quality to the output.",
-            names = {"--fair-wildcards-collapsing"})
-    private boolean fairWildcardsCollapsing = false;
-
-    @Option(description = "Don't merge different barcodes that equal by wildcards (for example, AAAT and ANNT). " +
-            "This option also disables merging barcodes by quality. It improves performance significantly, and can " +
-            "be used when barcodes correction is not needed, and command is run only to filter barcodes by count.",
-            names = {"--disable-wildcards-collapsing"})
-    private boolean disableWildcardsCollapsing = false;
+    @Option(description = "On wildcards collapsing stage, when merging cluster of barcodes with pure letter in " +
+            "a position and cluster of barcodes with wildcard in that position, clusters will be merged if " +
+            "pure letter cluster size multiplied on this threshold is greater or equal to wildcard cluster size, " +
+            "otherwise clusters will be treated as different barcodes.",
+            names = {"-w", "--wildcards-collapsing-merge-threshold"})
+    private float wildcardsCollapsingMergeThreshold = DEFAULT_CORRECT_WILDCARDS_COLLAPSING_MERGE_THRESHOLD;
 
     @Option(description = NUMBER_OF_READS,
             names = {"-n", "--number-of-reads"})
     private long inputReadsLimit = 0;
+
+    @Option(description = "Number of threads for barcodes correction. Multi-threading is used only with " +
+            "--primary-groups argument: correction for different primary groups can be performed in parallel.",
+            names = "--threads")
+    private int threads = DEFAULT_THREADS;
 
     @Option(description = REPORT,
             names = "--report")

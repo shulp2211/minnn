@@ -28,6 +28,29 @@
  */
 package com.milaboratory.minnn.correct;
 
-public enum WildcardsCollapsingMethod {
-    FAIR_COLLAPSING, UNFAIR_COLLAPSING, DISABLED_COLLAPSING
+import com.milaboratory.core.sequence.NSequenceWithQuality;
+
+import java.util.Objects;
+
+class SequenceWithQualityAndCount {
+    final NSequenceWithQuality seq;
+    long count;
+
+    SequenceWithQualityAndCount(NSequenceWithQuality seq) {
+        this.seq = Objects.requireNonNull(seq);
+        count = 0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SequenceWithQualityAndCount that = (SequenceWithQualityAndCount)o;
+        return seq.equals(that.seq);
+    }
+
+    @Override
+    public int hashCode() {
+        return seq.hashCode();
+    }
 }

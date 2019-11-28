@@ -35,73 +35,78 @@ import com.milaboratory.core.mutations.Mutation;
 import com.milaboratory.core.mutations.MutationType;
 import com.milaboratory.core.mutations.Mutations;
 import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.core.tree.MutationGuide;
 import com.milaboratory.core.tree.NeighborhoodIterator;
 import com.milaboratory.core.tree.TreeSearchParameters;
-import com.milaboratory.minnn.stat.MutationProbability;
+import com.milaboratory.minnn.stat.SimpleMutationProbability;
 
 import java.util.Objects;
 
+import static com.milaboratory.core.sequence.NucleotideSequence.ALPHABET;
+
 final class BarcodeClusteringStrategy
-        implements ClusteringStrategy<SequenceCounter, SequenceWithQualityForClustering> {
+        implements ClusteringStrategy<SequenceWithQualityAndCount, SequenceWithQualityForClustering> {
     private final TreeSearchParameters treeSearchParameters;
     private final float threshold;
     private final int maxClusterDepth;
-    private final MutationProbability mutationProbability;
+    private final SimpleMutationProbability mutationProbability;
+    private final float indelProbability;
 
     BarcodeClusteringStrategy(TreeSearchParameters treeSearchParameters, float threshold, int maxClusterDepth,
-                              MutationProbability mutationProbability) {
+                              SimpleMutationProbability mutationProbability) {
         this.treeSearchParameters = treeSearchParameters;
         this.threshold = threshold;
         this.maxClusterDepth = maxClusterDepth;
         this.mutationProbability = mutationProbability;
+        this.indelProbability = mutationProbability.mutationProbability((byte)-1, (byte)0, (byte)0, (byte)0);
     }
 
     @Override
     public boolean canAddToCluster(
-            Cluster<SequenceCounter> cluster, SequenceCounter minorSequenceCounter,
-            NeighborhoodIterator<SequenceWithQualityForClustering, SequenceCounter[]> iterator) {
+            Cluster<SequenceWithQualityAndCount> cluster, SequenceWithQualityAndCount minorSequenceCounter,
+            NeighborhoodIterator<SequenceWithQualityForClustering, SequenceWithQualityAndCount[]> iterator) {
         Alignment<SequenceWithQualityForClustering> currentAlignment = iterator.getCurrentAlignment();
         Mutations<SequenceWithQualityForClustering> currentMutations = currentAlignment.getAbsoluteMutations();
         NSequenceWithQuality seq1 = currentAlignment.getSequence1().nSequenceWithQuality;
-        NSequenceWithQuality seq2 = minorSequenceCounter.getSequence();
-        long majorClusterCount = cluster.getHead().getCount();
-        long minorClusterCount = minorSequenceCounter.getCount();
+        NSequenceWithQuality seq2 = minorSequenceCounter.seq;
+        long majorClusterCount = cluster.getHead().count;
+        long minorClusterCount = minorSequenceCounter.count;
         float expected = majorClusterCount;
+        boolean equalByWildcards = currentMutations.countOfIndels() == 0;
         for (int i = 0; i < currentMutations.size(); i++) {
-            int position1;
-            int position2;
-            NSequenceWithQuality from;
-            NSequenceWithQuality to;
             MutationType mutationType = Objects.requireNonNull(Mutation.getType(currentMutations.getMutation(i)));
             switch (mutationType) {
                 case Substitution:
-                    position1 = currentMutations.getPositionByIndex(i);
-                    position2 = currentMutations.convertToSeq2Position(position1);
-                    from = seq1.getRange(position1, position1 + 1);
-                    to = seq2.getRange(position2, position2 + 1);
+                    int position1 = currentMutations.getPositionByIndex(i);
+                    int position2 = currentMutations.convertToSeq2Position(position1);
+                    byte from = seq1.getSequence().codeAt(position1);
+                    byte fromQual = seq1.getQuality().value(position1);
+                    byte to = seq2.getSequence().codeAt(position2);
+                    byte toQual = seq2.getQuality().value(position2);
+                    expected *= mutationProbability.mutationProbability(from, fromQual, to, toQual);
+                    equalByWildcards &= ALPHABET.codeToWildcard(from).intersectsWith(ALPHABET.codeToWildcard(to));
                     break;
                 case Insertion:
-                    position1 = currentMutations.getPositionByIndex(i);
-                    position2 = currentMutations.convertToSeq2Position(position1) - 1;
-                    from = NSequenceWithQuality.EMPTY;
-                    to = seq2.getRange(position2, position2 + 1);
-                    break;
                 case Deletion:
-                    position1 = currentMutations.getPositionByIndex(i);
-                    from = seq1.getRange(position1, position1 + 1);
-                    to = NSequenceWithQuality.EMPTY;
+                    expected *= indelProbability;
                     break;
                 default:
                     throw new IllegalStateException("Wrong mutation type: " + mutationType);
             }
-            expected *= mutationProbability.mutationProbability(from, to);
         }
-        return (minorClusterCount <= expected) && ((float)minorClusterCount / majorClusterCount < threshold);
+        return !equalByWildcards && (minorClusterCount <= expected)
+                && ((float)minorClusterCount / majorClusterCount < threshold);
     }
 
     @Override
-    public TreeSearchParameters getSearchParameters() {
+    public TreeSearchParameters getSearchParameters(Cluster<SequenceWithQualityAndCount> cluster) {
         return treeSearchParameters;
+    }
+
+    @Override
+    public MutationGuide<SequenceWithQualityForClustering> getMutationGuide(
+            Cluster<SequenceWithQualityAndCount> cluster) {
+        return MutationGuideForClustering.INSTANCE;
     }
 
     @Override
@@ -110,7 +115,7 @@ final class BarcodeClusteringStrategy
     }
 
     @Override
-    public int compare(SequenceCounter c1, SequenceCounter c2) {
-        return c1.compareTo(c2);
+    public int compare(SequenceWithQualityAndCount s1, SequenceWithQualityAndCount s2) {
+        return Long.compare(s1.count, s2.count);
     }
 }

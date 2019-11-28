@@ -46,7 +46,6 @@ import gnu.trove.map.hash.TLongLongHashMap;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -203,7 +202,7 @@ public final class ConsensusIO {
                 SmartProgressReporter.startProgressReport("Reading", reader, System.err);
                 // keys: group names and values; values: created clusters
                 HashMap<LinkedHashMap<String, NucleotideSequence>, Cluster> allClusters = new HashMap<>();
-                AtomicInteger orderedPortIndex = new AtomicInteger(0);
+                AtomicLong orderedPortIndex = new AtomicLong(0);
                 for (ParsedRead parsedRead : CUtils.it(reader)) {
                     LinkedHashMap<String, NucleotideSequence> groups = extractConsensusGroups(parsedRead);
                     allClusters.computeIfAbsent(groups, g -> new Cluster(orderedPortIndex.getAndIncrement()));
@@ -517,8 +516,8 @@ public final class ConsensusIO {
     }
 
     private void saveOriginalReadsData(ParsedRead parsedRead) {
-        if ((originalReadsData != null) && !originalReadsData.containsKey(parsedRead.getOriginalRead().getId()))
-            originalReadsData.put(parsedRead.getOriginalRead().getId(), new OriginalReadData(parsedRead));
+        if (originalReadsData != null)
+            originalReadsData.putIfAbsent(parsedRead.getOriginalRead().getId(), new OriginalReadData(parsedRead));
     }
 
     private synchronized void displayWarning(String text) {

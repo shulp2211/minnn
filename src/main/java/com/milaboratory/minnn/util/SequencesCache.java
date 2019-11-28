@@ -34,7 +34,9 @@ import gnu.trove.map.hash.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.milaboratory.core.sequence.NucleotideSequence.ALPHABET;
 import static com.milaboratory.minnn.cli.Defaults.*;
+import static com.milaboratory.minnn.stat.StatUtils.*;
 
 public final class SequencesCache {
     private SequencesCache() {}
@@ -44,10 +46,9 @@ public final class SequencesCache {
     public static final TObjectIntHashMap<NucleotideSequence> majorBasesIndexes = new TObjectIntHashMap<>();
     public static final int majorBasesEmptyIndex;
     public static final List<NucleotideSequence> allLetters = new ArrayList<>();
-    public static final HashMap<NucleotideSequence, Wildcard> wildcards = new HashMap<>();
-    public static final TByteObjectHashMap<NucleotideSequence> wildcardCodeToSequence = new TByteObjectHashMap<>();
-    public static final TCharObjectHashMap<Wildcard> charToWildcard = new TCharObjectHashMap<>();
-    public static final TObjectLongHashMap<NucleotideSequence> basicLettersMasks = new TObjectLongHashMap<>();
+    public static final NucleotideSequence[] codeToSequence = new NucleotideSequence[ALPHABET.size()];
+    public static final long[] basicLettersMasks = new long[ALPHABET.basicSize()];
+    public static final float[] qualityToLetterProbabilityCache = new float[DEFAULT_MAX_QUALITY + 1];
     private static TByteObjectHashMap<SequenceQuality> qualityCache = null;
     private static HashMap<NSequenceWithQuality, NSequenceWithQuality> seqWithQualityCache = null;
     private static TIntObjectHashMap<NucleotideSequenceCaseSensitive> sequencesOfN = null;
@@ -55,7 +56,7 @@ public final class SequencesCache {
             sequencesOfCharacters = null;
 
     static {
-        List<String> alphabet = NucleotideSequence.ALPHABET.getAllWildcards().stream()
+        List<String> alphabet = ALPHABET.getAllWildcards().stream()
                 .map(wildcard -> String.valueOf(wildcard.getSymbol())).collect(Collectors.toList());
         alphabet.stream().map(NucleotideSequence::new).forEach(seq -> sequencesCache.put(seq, seq));
         alphabet.forEach(first -> alphabet.forEach(second -> {
@@ -71,17 +72,18 @@ public final class SequencesCache {
             majorBasesIndexes.put(consensusMajorBases[i], i);
         majorBasesEmptyIndex = majorBasesIndexes.get(NucleotideSequence.EMPTY);
 
-        NucleotideSequence.ALPHABET.getAllWildcards().forEach(wildcard -> {
+        ALPHABET.getAllWildcards().forEach(wildcard -> {
             String letter = String.valueOf(wildcard.getSymbol());
             NucleotideSequence sequence = sequencesCache.get(new NucleotideSequence(letter));
             allLetters.add(sequence);
-            wildcards.put(sequence, wildcard);
-            wildcardCodeToSequence.put(wildcard.getCode(), sequence);
-            charToWildcard.put(wildcard.getSymbol(), wildcard);
+            codeToSequence[wildcard.getCode()] = sequence;
         });
 
-        NucleotideSequence.ALPHABET.getAllWildcards().stream().filter(Wildcard::isBasic).forEach(wildcard ->
-                basicLettersMasks.put(wildcardCodeToSequence.get(wildcard.getCode()), wildcard.getBasicMask()));
+        for (byte i = 0; i < basicLettersMasks.length; i++)
+            basicLettersMasks[i] = ALPHABET.codeToWildcard(i).getBasicMask();
+
+        for (byte i = 0; i <= DEFAULT_MAX_QUALITY; i++)
+            qualityToLetterProbabilityCache[i] = (float)(1 - qualityToProbability(i));
     }
 
     private static synchronized void initQualityCaches(boolean withSequences) {

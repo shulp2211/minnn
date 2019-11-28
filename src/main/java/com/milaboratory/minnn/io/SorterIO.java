@@ -43,7 +43,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.milaboratory.minnn.cli.CliUtils.*;
 import static com.milaboratory.minnn.cli.Defaults.*;
@@ -58,20 +57,19 @@ public final class SorterIO {
     private final String outputFileName;
     private final List<String> sortGroupNames;
     private final int chunkSize;
-    private final boolean suppressWarnings;
     private final String reportFileName;
     private final String jsonReportFileName;
     private final File tmpFile;
 
-    public SorterIO(PipelineConfiguration pipelineConfiguration, String inputFileName, String outputFileName,
-                    List<String> sortGroupNames, int chunkSize, boolean suppressWarnings,
-                    String reportFileName, String jsonReportFileName, String tmpFile) {
+    public SorterIO(
+            PipelineConfiguration pipelineConfiguration, String inputFileName, String outputFileName,
+            List<String> sortGroupNames, int chunkSize, String reportFileName, String jsonReportFileName,
+            String tmpFile) {
         this.pipelineConfiguration = pipelineConfiguration;
         this.inputFileName = inputFileName;
         this.outputFileName = outputFileName;
         this.sortGroupNames = sortGroupNames;
         this.chunkSize = (chunkSize == -1) ? estimateChunkSize() : chunkSize;
-        this.suppressWarnings = suppressWarnings;
         this.reportFileName = reportFileName;
         this.jsonReportFileName = jsonReportFileName;
         this.tmpFile = (tmpFile != null) ? new File(tmpFile) : TempFileManager.getTempFile((outputFileName == null)
@@ -85,10 +83,6 @@ public final class SorterIO {
              MifWriter writer = createWriter(reader.getHeader())) {
             validateInputGroups(reader, sortGroupNames, true, "--groups");
             SmartProgressReporter.startProgressReport("Reading", reader, System.err);
-            List<String> notCorrectedGroups = sortGroupNames.stream().filter(gn -> reader.getCorrectedGroups().stream()
-                    .noneMatch(gn::equals)).collect(Collectors.toList());
-            if (!suppressWarnings && (notCorrectedGroups.size() != 0))
-                System.err.println("WARNING: group(s) " + notCorrectedGroups + " not corrected before sorting!");
             OutputPortCloseable<ParsedRead> sorted = Sorter.sort(reader, new ParsedReadComparator(), chunkSize,
                     new ParsedReadObjectSerializer(reader.getGroupEdges()), tmpFile);
             SmartProgressReporter.startProgressReport("Writing", writer, System.err);
@@ -159,23 +153,38 @@ public final class SorterIO {
         return (int)(Math.max(DEFAULT_SORT_MIN_CHUNK_SIZE, Math.min(DEFAULT_SORT_MAX_CHUNK_SIZE, chunkSize)));
     }
 
+    // comparator that moves reads with wildcards in any group to the end
     private class ParsedReadComparator implements Comparator<ParsedRead> {
         @Override
         public int compare(ParsedRead parsedRead1, ParsedRead parsedRead2) {
+            boolean firstContainsWildcards = false;
+            boolean secondContainsWildcards = false;
+            int comparisonResult = 0;
             for (String groupName : sortGroupNames) {
                 NSequenceWithQuality read1Value = parsedRead1.getBestMatch().getGroupValue(groupName);
                 NSequenceWithQuality read2Value = parsedRead2.getBestMatch().getGroupValue(groupName);
-                if ((read1Value == null) && (read2Value != null))
-                    return -1;
-                else if ((read1Value != null) && (read2Value == null))
-                    return 1;
-                else if (read1Value != null) {
-                    int compareValue = read1Value.getSequence().compareTo(read2Value.getSequence());
-                    if (compareValue != 0)
-                        return compareValue;
+                if ((read1Value != null) && !firstContainsWildcards)
+                    firstContainsWildcards = read1Value.getSequence().containsWildcards();
+                if ((read2Value != null) && !secondContainsWildcards)
+                    secondContainsWildcards = read2Value.getSequence().containsWildcards();
+
+                if (comparisonResult == 0) {
+                    if ((read1Value == null) && (read2Value != null))
+                        comparisonResult = -1;
+                    else if ((read1Value != null) && (read2Value == null))
+                        comparisonResult = 1;
+                    else if (read1Value != null)
+                        comparisonResult = read1Value.getSequence().compareTo(read2Value.getSequence());
                 }
+
+                if (firstContainsWildcards && secondContainsWildcards && (comparisonResult != 0))
+                    return comparisonResult;
             }
-            return 0;
+            if (firstContainsWildcards && !secondContainsWildcards)
+                return 1;
+            else if (!firstContainsWildcards && secondContainsWildcards)
+                return -1;
+            return comparisonResult;
         }
     }
 }
