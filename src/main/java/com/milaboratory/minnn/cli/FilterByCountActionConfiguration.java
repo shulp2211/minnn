@@ -34,97 +34,87 @@ import com.milaboratory.cli.ActionConfiguration;
 import com.milaboratory.primitivio.annotations.Serializable;
 import com.milaboratory.util.GlobalObjectMappers;
 
-import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Objects;
 
-import static com.milaboratory.minnn.cli.FilterAction.FILTER_ACTION_NAME;
+import static com.milaboratory.minnn.cli.FilterByCountAction.FILTER_BY_COUNT_ACTION_NAME;
 
-public final class FilterActionConfiguration implements ActionConfiguration {
-    private static final String FILTER_ACTION_VERSION_ID = "3";
-    private final FilterActionParameters filterParameters;
+public final class FilterByCountActionConfiguration implements ActionConfiguration {
+    private static final String FILTER_BY_COUNT_ACTION_VERSION_ID = "1";
+    private final FilterByCountActionParameters filterByCountParameters;
 
     @JsonCreator
-    public FilterActionConfiguration(@JsonProperty("filterParameters") FilterActionParameters filterParameters) {
-        this.filterParameters = filterParameters;
+    public FilterByCountActionConfiguration(
+            @JsonProperty("filterByCountParameters") FilterByCountActionParameters filterByCountParameters) {
+        this.filterByCountParameters = filterByCountParameters;
     }
 
     @Override
     public String actionName() {
-        return FILTER_ACTION_NAME;
+        return FILTER_BY_COUNT_ACTION_NAME;
     }
 
     @Override
     public String versionId() {
-        return FILTER_ACTION_VERSION_ID;
+        return FILTER_BY_COUNT_ACTION_VERSION_ID;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if ((o == null) || (getClass() != o.getClass())) return false;
-        FilterActionConfiguration that = (FilterActionConfiguration)o;
-        return filterParameters.equals(that.filterParameters);
+        FilterByCountActionConfiguration that = (FilterByCountActionConfiguration)o;
+        return filterByCountParameters.equals(that.filterByCountParameters);
     }
 
     @Override
     public int hashCode() {
-        return filterParameters.hashCode();
+        return filterByCountParameters.hashCode();
     }
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY,
             isGetterVisibility = JsonAutoDetect.Visibility.NONE, getterVisibility = JsonAutoDetect.Visibility.NONE)
     @Serializable(asJson = true)
-    public static final class FilterActionParameters implements java.io.Serializable {
-        private String filterQuery;
-        private LinkedHashMap<String, String> barcodeWhitelistFiles;
-        private LinkedHashMap<String, String> barcodeWhitelistPatternFiles;
-        private boolean fairSorting;
+    public static final class FilterByCountActionParameters implements java.io.Serializable {
+        private List<String> groupNames;
+        private int maxUniqueBarcodes;
+        private int minCount;
         private long inputReadsLimit;
 
         @JsonCreator
-        public FilterActionParameters(
-                @JsonProperty("filterQuery") String filterQuery,
-                @JsonProperty("barcodeWhitelistFiles") LinkedHashMap<String, String> barcodeWhitelistFiles,
-                @JsonProperty("barcodeWhitelistPatternFiles")
-                        LinkedHashMap<String, String> barcodeWhitelistPatternFiles,
-                @JsonProperty("fairSorting") boolean fairSorting,
+        public FilterByCountActionParameters(
+                @JsonProperty("groupNames") List<String> groupNames,
+                @JsonProperty("maxUniqueBarcodes") int maxUniqueBarcodes,
+                @JsonProperty("minCount") int minCount,
                 @JsonProperty("inputReadsLimit") long inputReadsLimit) {
-            this.filterQuery = filterQuery;
-            this.barcodeWhitelistFiles = barcodeWhitelistFiles;
-            this.fairSorting = fairSorting;
+            this.groupNames = groupNames;
+            this.maxUniqueBarcodes = maxUniqueBarcodes;
+            this.minCount = minCount;
             this.inputReadsLimit = inputReadsLimit;
         }
 
-        public String getFilterQuery() {
-            return filterQuery;
+        public List<String> getGroupNames() {
+            return groupNames;
         }
 
-        public void setFilterQuery(String filterQuery) {
-            this.filterQuery = filterQuery;
+        public void setGroupNames(List<String> groupNames) {
+            this.groupNames = groupNames;
         }
 
-        public LinkedHashMap<String, String> getBarcodeWhitelistFiles() {
-            return barcodeWhitelistFiles;
+        public int getMaxUniqueBarcodes() {
+            return maxUniqueBarcodes;
         }
 
-        public void setBarcodeWhitelistFiles(LinkedHashMap<String, String> barcodeWhitelistFiles) {
-            this.barcodeWhitelistFiles = barcodeWhitelistFiles;
+        public void setMaxUniqueBarcodes(int maxUniqueBarcodes) {
+            this.maxUniqueBarcodes = maxUniqueBarcodes;
         }
 
-        public LinkedHashMap<String, String> getBarcodeWhitelistPatternFiles() {
-            return barcodeWhitelistPatternFiles;
+        public int getMinCount() {
+            return minCount;
         }
 
-        public void setBarcodeWhitelistPatternFiles(LinkedHashMap<String, String> barcodeWhitelistPatternFiles) {
-            this.barcodeWhitelistPatternFiles = barcodeWhitelistPatternFiles;
-        }
-
-        public boolean isFairSorting() {
-            return fairSorting;
-        }
-
-        public void setFairSorting(boolean fairSorting) {
-            this.fairSorting = fairSorting;
+        public void setMinCount(int minCount) {
+            this.minCount = minCount;
         }
 
         public long getInputReadsLimit() {
@@ -139,22 +129,18 @@ public final class FilterActionConfiguration implements ActionConfiguration {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            FilterActionParameters that = (FilterActionParameters)o;
-            if (fairSorting != that.fairSorting) return false;
+            FilterByCountActionParameters that = (FilterByCountActionParameters)o;
+            if (maxUniqueBarcodes != that.maxUniqueBarcodes) return false;
+            if (minCount != that.minCount) return false;
             if (inputReadsLimit != that.inputReadsLimit) return false;
-            if (!Objects.equals(filterQuery, that.filterQuery)) return false;
-            if (!Objects.equals(barcodeWhitelistFiles, that.barcodeWhitelistFiles))
-                return false;
-            return Objects.equals(barcodeWhitelistPatternFiles, that.barcodeWhitelistPatternFiles);
+            return Objects.equals(groupNames, that.groupNames);
         }
 
         @Override
         public int hashCode() {
-            int result = filterQuery != null ? filterQuery.hashCode() : 0;
-            result = 31 * result + (barcodeWhitelistFiles != null ? barcodeWhitelistFiles.hashCode() : 0);
-            result = 31 * result + (barcodeWhitelistPatternFiles != null
-                    ? barcodeWhitelistPatternFiles.hashCode() : 0);
-            result = 31 * result + (fairSorting ? 1 : 0);
+            int result = groupNames != null ? groupNames.hashCode() : 0;
+            result = 31 * result + maxUniqueBarcodes;
+            result = 31 * result + minCount;
             result = 31 * result + (int)(inputReadsLimit ^ (inputReadsLimit >>> 32));
             return result;
         }

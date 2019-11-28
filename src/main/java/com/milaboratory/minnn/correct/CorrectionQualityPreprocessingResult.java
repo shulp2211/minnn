@@ -28,33 +28,32 @@
  */
 package com.milaboratory.minnn.correct;
 
-import com.milaboratory.core.sequence.*;
+import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.SequenceQualityBuilder;
 
-class SequenceWithQualityForClustering extends Sequence<SequenceWithQualityForClustering> {
-    final NSequenceWithQuality nSequenceWithQuality;
+import java.util.*;
 
-    SequenceWithQualityForClustering(NSequenceWithQuality nSequenceWithQuality) {
-        this.nSequenceWithQuality = nSequenceWithQuality;
-    }
+import static com.milaboratory.minnn.cli.Defaults.DEFAULT_MAX_QUALITY;
 
-    @Override
-    public byte codeAt(int position) {
-        return nSequenceWithQuality.getSequence().codeAt(position);
-    }
+public final class CorrectionQualityPreprocessingResult {
+    public final Map<String, NSequenceWithQuality> groupValues;
+    public final int clusterSize;
+    public final Map<String, NucleotideSequence> primaryGroups;
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public Alphabet<SequenceWithQualityForClustering> getAlphabet() {
-        return (Alphabet)(NucleotideSequence.ALPHABET);
-    }
-
-    @Override
-    public SequenceWithQualityForClustering getRange(int from, int to) {
-        return new SequenceWithQualityForClustering(nSequenceWithQuality.getRange(from, to));
-    }
-
-    @Override
-    public int size() {
-        return nSequenceWithQuality.size();
+    public CorrectionQualityPreprocessingResult(
+            Map<String, NucleotideSequence> groupSequences, Map<String, long[]> groupQualities, int clusterSize,
+            Map<String, NucleotideSequence> primaryGroups) {
+        this.groupValues = new HashMap<>();
+        for (Map.Entry<String, NucleotideSequence> entry : groupSequences.entrySet()) {
+            String groupName = entry.getKey();
+            NucleotideSequence seq = entry.getValue();
+            SequenceQualityBuilder builder = new SequenceQualityBuilder();
+            for (int i = 0; i < seq.size(); i++)
+                builder.append((byte)Math.min(DEFAULT_MAX_QUALITY, groupQualities.get(groupName)[i]));
+            this.groupValues.put(groupName, new NSequenceWithQuality(seq, builder.createAndDestroy()));
+        }
+        this.clusterSize = clusterSize;
+        this.primaryGroups = primaryGroups;
     }
 }

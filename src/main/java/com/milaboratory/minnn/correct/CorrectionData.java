@@ -28,33 +28,21 @@
  */
 package com.milaboratory.minnn.correct;
 
-import com.milaboratory.core.sequence.*;
+import java.util.*;
+import java.util.stream.Collectors;
 
-class SequenceWithQualityForClustering extends Sequence<SequenceWithQualityForClustering> {
-    final NSequenceWithQuality nSequenceWithQuality;
+public final class CorrectionData {
+    final LinkedHashMap<String, CorrectionGroupData> keyGroupsData;
+    public final long orderedPortIndex;
+    long parsedReadsCount = 0;
+    long totalWildcardsCount = 0;
+    long totalNucleotidesCount = 0;
 
-    SequenceWithQualityForClustering(NSequenceWithQuality nSequenceWithQuality) {
-        this.nSequenceWithQuality = nSequenceWithQuality;
-    }
-
-    @Override
-    public byte codeAt(int position) {
-        return nSequenceWithQuality.getSequence().codeAt(position);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public Alphabet<SequenceWithQualityForClustering> getAlphabet() {
-        return (Alphabet)(NucleotideSequence.ALPHABET);
-    }
-
-    @Override
-    public SequenceWithQualityForClustering getRange(int from, int to) {
-        return new SequenceWithQualityForClustering(nSequenceWithQuality.getRange(from, to));
-    }
-
-    @Override
-    public int size() {
-        return nSequenceWithQuality.size();
+    public CorrectionData(
+            LinkedHashSet<String> keyGroups, long orderedPortIndex, boolean filterByCount) {
+        this.keyGroupsData = keyGroups.stream().collect(Collectors.toMap(
+                keyGroup -> keyGroup, keyGroup -> new CorrectionGroupData(filterByCount),
+                (a, b) -> b, LinkedHashMap::new));
+        this.orderedPortIndex = orderedPortIndex;
     }
 }

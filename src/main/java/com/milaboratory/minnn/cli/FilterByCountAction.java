@@ -28,35 +28,39 @@
  */
 package com.milaboratory.minnn.cli;
 
-import com.milaboratory.cli.*;
-import com.milaboratory.minnn.io.SorterIO;
+import com.milaboratory.cli.ACommandWithSmartOverwrite;
+import com.milaboratory.cli.ActionConfiguration;
+import com.milaboratory.cli.AppVersionInfo;
+import com.milaboratory.cli.PipelineConfiguration;
+import com.milaboratory.minnn.io.FilterByCountIO;
 import picocli.CommandLine.*;
 
 import java.util.*;
 
 import static com.milaboratory.minnn.cli.CommonDescriptions.*;
 import static com.milaboratory.minnn.cli.Defaults.*;
+import static com.milaboratory.minnn.cli.FilterByCountAction.FILTER_BY_COUNT_ACTION_NAME;
 import static com.milaboratory.minnn.cli.PipelineConfigurationReaderMiNNN.pipelineConfigurationReaderInstance;
-import static com.milaboratory.minnn.cli.SortAction.SORT_ACTION_NAME;
 import static com.milaboratory.minnn.io.MifInfoExtractor.mifInfoExtractor;
 
-@Command(name = SORT_ACTION_NAME,
+@Command(name = FILTER_BY_COUNT_ACTION_NAME,
         sortOptions = false,
         showDefaultValues = true,
         separator = " ",
-        description = "Sort reads by contents (nucleotide sequences) of specified groups.")
-public final class SortAction extends ACommandWithSmartOverwrite implements MiNNNCommand {
-    public static final String SORT_ACTION_NAME = "sort";
+        description = "Filter reads by count of barcode values.")
+public final class FilterByCountAction extends ACommandWithSmartOverwrite implements MiNNNCommand {
+    public static final String FILTER_BY_COUNT_ACTION_NAME = "filter-by-count";
 
-    public SortAction() {
+    public FilterByCountAction() {
         super(APP_NAME, mifInfoExtractor, pipelineConfigurationReaderInstance);
     }
 
     @Override
     public void run1() {
-        SorterIO sorterIO = new SorterIO(getFullPipelineConfiguration(), inputFileName, outputFileName,
-                sortGroupNames, chunkSize, reportFileName, jsonReportFileName, tmpFile);
-        sorterIO.go();
+        FilterByCountIO filterByCountIO = new FilterByCountIO(getFullPipelineConfiguration(), inputFileName,
+                outputFileName, groupNames, maxUniqueBarcodes, minCount, excludedBarcodesOutputFileName,
+                inputReadsLimit, reportFileName, jsonReportFileName);
+        filterByCountIO.go();
     }
 
     @Override
@@ -71,10 +75,7 @@ public final class SortAction extends ACommandWithSmartOverwrite implements MiNN
 
     @Override
     protected List<String> getInputFiles() {
-        List<String> inputFileNames = new ArrayList<>();
-        if (inputFileName != null)
-            inputFileNames.add(inputFileName);
-        return inputFileNames;
+        return Collections.singletonList(inputFileName);
     }
 
     @Override
@@ -82,13 +83,15 @@ public final class SortAction extends ACommandWithSmartOverwrite implements MiNN
         List<String> outputFileNames = new ArrayList<>();
         if (outputFileName != null)
             outputFileNames.add(outputFileName);
+        if (excludedBarcodesOutputFileName != null)
+            outputFileNames.add(excludedBarcodesOutputFileName);
         return outputFileNames;
     }
 
     @Override
     public void handleExistenceOfOutputFile(String outFileName) {
-        // disable smart overwrite if input is from pipe
-        if (inputFileName == null)
+        // disable smart overwrite if output file for reads with excluded barcodes is specified
+        if (excludedBarcodesOutputFileName != null)
             MiNNNCommand.super.handleExistenceOfOutputFile(outFileName, forceOverwrite || overwriteIfRequired);
         else
             super.handleExistenceOfOutputFile(outFileName);
@@ -96,37 +99,47 @@ public final class SortAction extends ACommandWithSmartOverwrite implements MiNN
 
     @Override
     public ActionConfiguration getConfiguration() {
-        return new SortActionConfiguration(new SortActionConfiguration.SortActionParameters(sortGroupNames,
-                chunkSize));
+        return new FilterByCountActionConfiguration(new FilterByCountActionConfiguration
+                .FilterByCountActionParameters(groupNames, maxUniqueBarcodes, minCount, inputReadsLimit));
     }
 
     @Override
     public PipelineConfiguration getFullPipelineConfiguration() {
-        if (inputFileName != null)
-            return PipelineConfiguration.appendStep(pipelineConfigurationReader.fromFile(inputFileName,
-                    binaryFileInfoExtractor.getFileInfo(inputFileName)), getInputFiles(), getConfiguration(),
-                    AppVersionInfo.get());
-        else
-            return PipelineConfiguration.mkInitial(new ArrayList<>(), getConfiguration(), AppVersionInfo.get());
+        return PipelineConfiguration.appendStep(pipelineConfigurationReader.fromFile(inputFileName,
+                binaryFileInfoExtractor.getFileInfo(inputFileName)), getInputFiles(), getConfiguration(),
+                AppVersionInfo.get());
     }
 
-    @Option(description = "Group names to use for sorting. Priority is in descending order.",
+    @Option(description = "Group names for filtering by count.",
             names = {"--groups"},
             required = true,
             arity = "1..*")
-    private List<String> sortGroupNames = null;
+    private List<String> groupNames = null;
 
-    @Option(description = IN_FILE_OR_STDIN,
-            names = {"--input"})
+    @Option(description = IN_FILE_NO_STDIN,
+            names = {"--input"},
+            required = true)
     private String inputFileName = null;
 
     @Option(description = OUT_FILE_OR_STDOUT,
             names = {"--output"})
     private String outputFileName = null;
 
-    @Option(description = "Chunk size for sorter.",
-            names = {"--chunk-size"})
-    private int chunkSize = -1;
+    @Option(description = MAX_UNIQUE_BARCODES,
+            names = {"--max-unique-barcodes"})
+    private int maxUniqueBarcodes = 0;
+
+    @Option(description = MIN_COUNT,
+            names = {"--min-count"})
+    private int minCount = 0;
+
+    @Option(description = EXCLUDED_BARCODES_OUTPUT,
+            names = {"--excluded-barcodes-output"})
+    private String excludedBarcodesOutputFileName = null;
+
+    @Option(description = NUMBER_OF_READS,
+            names = {"-n", "--number-of-reads"})
+    private long inputReadsLimit = 0;
 
     @Option(description = REPORT,
             names = "--report")
@@ -135,9 +148,4 @@ public final class SortAction extends ACommandWithSmartOverwrite implements MiNN
     @Option(description = JSON_REPORT,
             names = "--json-report")
     private String jsonReportFileName = null;
-
-    @Option(description = "Custom temp file, used for debugging purposes.",
-            names = {"--temp-file"},
-            hidden = true)
-    private String tmpFile = null;
 }

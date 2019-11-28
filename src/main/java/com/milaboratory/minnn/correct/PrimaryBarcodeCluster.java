@@ -28,33 +28,15 @@
  */
 package com.milaboratory.minnn.correct;
 
-import com.milaboratory.core.sequence.*;
+import java.util.List;
 
-class SequenceWithQualityForClustering extends Sequence<SequenceWithQualityForClustering> {
-    final NSequenceWithQuality nSequenceWithQuality;
+public final class PrimaryBarcodeCluster {
+    public final List<CorrectionQualityPreprocessingResult> preprocessingResults;
+    public final long orderedPortIndex;
 
-    SequenceWithQualityForClustering(NSequenceWithQuality nSequenceWithQuality) {
-        this.nSequenceWithQuality = nSequenceWithQuality;
-    }
-
-    @Override
-    public byte codeAt(int position) {
-        return nSequenceWithQuality.getSequence().codeAt(position);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public Alphabet<SequenceWithQualityForClustering> getAlphabet() {
-        return (Alphabet)(NucleotideSequence.ALPHABET);
-    }
-
-    @Override
-    public SequenceWithQualityForClustering getRange(int from, int to) {
-        return new SequenceWithQualityForClustering(nSequenceWithQuality.getRange(from, to));
-    }
-
-    @Override
-    public int size() {
-        return nSequenceWithQuality.size();
+    public PrimaryBarcodeCluster(
+            List<CorrectionQualityPreprocessingResult> preprocessingResults, long orderedPortIndex) {
+        this.preprocessingResults = preprocessingResults;
+        this.orderedPortIndex = orderedPortIndex;
     }
 }

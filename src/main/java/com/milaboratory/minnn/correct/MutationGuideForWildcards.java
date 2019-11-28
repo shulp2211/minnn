@@ -28,53 +28,26 @@
  */
 package com.milaboratory.minnn.correct;
 
-import com.milaboratory.core.sequence.NSequenceWithQuality;
-import com.milaboratory.core.sequence.NucleotideSequence;
+import com.milaboratory.core.sequence.Wildcard;
+import com.milaboratory.core.tree.MutationGuide;
 
-import java.util.*;
+import static com.milaboratory.core.sequence.NucleotideSequence.ALPHABET;
 
-final class SimpleSequenceCounter implements SequenceCounter {
-    private final NSequenceWithQuality seq;
-    private final Collection<NucleotideSequence> originalSequences;
-    private final int index;
-    long count;
+final class MutationGuideForWildcards implements MutationGuide<SequenceWithQualityForClustering> {
+    static MutationGuideForWildcards INSTANCE = new MutationGuideForWildcards();
 
-    SimpleSequenceCounter(NucleotideSequence seq, int index) {
-        this.seq = new NSequenceWithQuality(seq);
-        this.originalSequences = Collections.singletonList(seq);
-        this.index = index;
-    }
+    private MutationGuideForWildcards() {}
 
     @Override
-    public NSequenceWithQuality getSequence() {
-        return seq;
-    }
-
-    @Override
-    public Collection<NucleotideSequence> getOriginalSequences() {
-        return originalSequences;
-    }
-
-    @Override
-    public int getIndex() {
-        return index;
-    }
-
-    @Override
-    public long getCount() {
-        return count;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        SequenceCounter that = (SequenceCounter)o;
-        return index == that.getIndex();
-    }
-
-    @Override
-    public int hashCode() {
-        return index;
+    public boolean allowMutation(SequenceWithQualityForClustering reference, int position, byte type, byte to) {
+        if (type != 0)
+            return false;
+        byte from = reference.codeAt(position);
+        if (ALPHABET.isWildcard(from) || ALPHABET.isWildcard(to)) {
+            Wildcard w1 = ALPHABET.codeToWildcard(from);
+            Wildcard w2 = ALPHABET.codeToWildcard(to);
+            return w1.intersectsWith(w2);
+        } else
+            return false;
     }
 }

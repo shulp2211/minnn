@@ -200,7 +200,7 @@ public final class StatPositionsIO {
             return "group.id read pos count percent";
     }
 
-    private class StatGroupsKey {
+    private static class StatGroupsKey {
         final String groupName;
         final String readId;
         final int position;

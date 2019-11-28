@@ -28,33 +28,28 @@
  */
 package com.milaboratory.minnn.correct;
 
-import com.milaboratory.core.sequence.*;
+import com.milaboratory.core.sequence.NSequenceWithQuality;
+import com.milaboratory.core.sequence.NucleotideSequence;
 
-class SequenceWithQualityForClustering extends Sequence<SequenceWithQualityForClustering> {
-    final NSequenceWithQuality nSequenceWithQuality;
+import java.util.*;
 
-    SequenceWithQualityForClustering(NSequenceWithQuality nSequenceWithQuality) {
-        this.nSequenceWithQuality = nSequenceWithQuality;
-    }
+final class CorrectionGroupData {
+    // intermediate counters for wildcards clustering
+    Set<SequenceWithWildcardsCount> wildcardCounters = new HashSet<>();
+    // counters for final clustering for correction
+    Set<SequenceWithQualityAndCount> sequenceCounters = new HashSet<>();
+    // keys: sequences after wildcards collapsing, values: original sequences that were collapsed by wildcards
+    Map<NucleotideSequence, Set<NucleotideSequence>> originalSequencesWithWildcards = new HashMap<>();
+    // keys: not corrected sequences, values: corrected sequences
+    final Map<NucleotideSequence, NSequenceWithQuality> correctionMap = new HashMap<>();
+    // counters for original not corrected barcodes, for filtering by count
+    Map<NucleotideSequence, SequenceCounter> notCorrectedBarcodeCounters;
+    // barcodes that are not filtered out if filtering by count is enabled
+    final Set<NucleotideSequence> includedBarcodes;
+    long lengthSum = 0;
 
-    @Override
-    public byte codeAt(int position) {
-        return nSequenceWithQuality.getSequence().codeAt(position);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public Alphabet<SequenceWithQualityForClustering> getAlphabet() {
-        return (Alphabet)(NucleotideSequence.ALPHABET);
-    }
-
-    @Override
-    public SequenceWithQualityForClustering getRange(int from, int to) {
-        return new SequenceWithQualityForClustering(nSequenceWithQuality.getRange(from, to));
-    }
-
-    @Override
-    public int size() {
-        return nSequenceWithQuality.size();
+    CorrectionGroupData(boolean filterByCount) {
+        this.notCorrectedBarcodeCounters = filterByCount ? new HashMap<>() : null;
+        this.includedBarcodes = filterByCount ? new HashSet<>() : null;
     }
 }
