@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019, MiLaboratory LLC
+ * Copyright (c) 2016-2020, MiLaboratory LLC
  * All Rights Reserved
  *
  * Permission to use, copy, modify and distribute any part of this program for
@@ -52,9 +52,9 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static com.milaboratory.minnn.cli.CliUtils.floatFormat;
+import static com.milaboratory.minnn.cli.Defaults.BUILTIN_READ_GROUPS_NUM;
 import static com.milaboratory.minnn.io.MinnnDataFormat.*;
 import static com.milaboratory.minnn.io.ReportWriter.*;
-import static com.milaboratory.minnn.parser.Parser.BUILTIN_READ_GROUPS_NUM;
 import static com.milaboratory.minnn.util.MinnnVersionInfo.getShortestVersionString;
 import static com.milaboratory.minnn.util.SystemUtils.exitWithError;
 import static com.milaboratory.util.FormatUtils.nanoTimeToString;
