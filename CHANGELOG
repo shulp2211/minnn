@@ -1,4 +1,11 @@
 
+minnn 9.1 (23 Jan 2020)
+========================
+
+-- Bugfixes for correction algorithm
+-- Bugfix for memory leak in Consensus --report option
+
+
 minnn 9.0 (28 Nov 2019)
 ========================
 
