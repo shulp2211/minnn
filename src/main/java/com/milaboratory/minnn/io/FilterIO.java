@@ -54,6 +54,8 @@ public final class FilterIO {
     private final PipelineConfiguration pipelineConfiguration;
     private final ReadFilter readFilter;
     private final String filterQuery;
+    private final String barcodeWhitelistFiles;
+    private final String barcodeWhitelistPatternFiles;
     private final String inputFileName;
     private final String outputFileName;
     private final long inputReadsLimit;
@@ -62,12 +64,16 @@ public final class FilterIO {
     private final String jsonReportFileName;
     private final AtomicLong totalReadsCounter = new AtomicLong(0);
 
-    public FilterIO(PipelineConfiguration pipelineConfiguration, ReadFilter readFilter, String filterQuery,
-                    String inputFileName, String outputFileName, long inputReadsLimit, int threads,
-                    String reportFileName, String jsonReportFileName) {
+    public FilterIO(
+            PipelineConfiguration pipelineConfiguration, ReadFilter readFilter, String filterQuery,
+            String barcodeWhitelistFiles, String barcodeWhitelistPatternFiles,
+            String inputFileName, String outputFileName, long inputReadsLimit, int threads,
+            String reportFileName, String jsonReportFileName) {
         this.pipelineConfiguration = pipelineConfiguration;
         this.readFilter = readFilter;
         this.filterQuery = filterQuery;
+        this.barcodeWhitelistFiles = barcodeWhitelistFiles;
+        this.barcodeWhitelistPatternFiles = barcodeWhitelistPatternFiles;
         this.inputFileName = inputFileName;
         this.outputFileName = outputFileName;
         this.inputReadsLimit = inputReadsLimit;
@@ -118,7 +124,13 @@ public final class FilterIO {
             reportFileHeader.append("Output is to stdout\n");
         else
             reportFileHeader.append("Output file name: ").append(outputFileName).append('\n');
-        reportFileHeader.append("Filter query: ").append(filterQuery).append('\n');
+        if (filterQuery != null)
+            reportFileHeader.append("Filter query: ").append(filterQuery).append('\n');
+        if (barcodeWhitelistFiles != null)
+            reportFileHeader.append("Barcode whitelist files: ").append(barcodeWhitelistFiles).append('\n');
+        if (barcodeWhitelistPatternFiles != null)
+            reportFileHeader.append("Barcode whitelist pattern files: ")
+                    .append(barcodeWhitelistPatternFiles).append('\n');
 
         long elapsedTime = System.currentTimeMillis() - startTime;
         report.append("\nProcessing time: ").append(nanoTimeToString(elapsedTime * 1000000)).append('\n');
@@ -130,6 +142,8 @@ public final class FilterIO {
         jsonReportData.put("inputFileName", inputFileName);
         jsonReportData.put("outputFileName", outputFileName);
         jsonReportData.put("filterQuery", filterQuery);
+        jsonReportData.put("barcodeWhitelistFiles", barcodeWhitelistFiles);
+        jsonReportData.put("barcodeWhitelistPatternFiles", barcodeWhitelistPatternFiles);
         jsonReportData.put("elapsedTime", elapsedTime);
         jsonReportData.put("matchedReads", matchedReads);
         jsonReportData.put("totalReads", totalReadsCounter.get());
