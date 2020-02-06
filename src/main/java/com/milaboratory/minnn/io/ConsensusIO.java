@@ -149,7 +149,7 @@ public final class ConsensusIO {
             this.reportFileOutputStream = null;
         else
             try {
-                this.reportFileOutputStream = new PrintStream(new FileOutputStream(reportFileName));
+                this.reportFileOutputStream = new PrintStream(new FileOutputStream(reportFileName, true));
             } catch (IOException e) {
                 throw exitWithError(e.toString());
             }
@@ -487,7 +487,7 @@ public final class ConsensusIO {
 
         System.err.println(report.toString());
         if (reportFileOutputStream != null) {
-            reportFileOutputStream.print(report.toString());
+            reportFileOutputStream.println(report.toString());
             reportFileOutputStream.close();
         }
         jsonReport(jsonReportFileName, jsonReportData);
