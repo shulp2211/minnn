@@ -48,6 +48,7 @@ import static com.milaboratory.minnn.cli.ExtractAction.EXTRACT_ACTION_NAME;
 import static com.milaboratory.minnn.cli.FilterAction.FILTER_ACTION_NAME;
 import static com.milaboratory.minnn.cli.FilterByCountAction.FILTER_BY_COUNT_ACTION_NAME;
 import static com.milaboratory.minnn.cli.GenerateDocsAction.GENERATE_DOCS_ACTION_NAME;
+import static com.milaboratory.minnn.cli.MifInfoAction.MIF_INFO_ACTION_NAME;
 import static com.milaboratory.minnn.cli.MifToFastqAction.MIF_TO_FASTQ_ACTION_NAME;
 import static com.milaboratory.minnn.cli.ReportAction.REPORT_ACTION_NAME;
 import static com.milaboratory.minnn.cli.SortAction.SORT_ACTION_NAME;
@@ -139,6 +140,7 @@ public final class Main {
                 .addSubcommand(CONSENSUS_DOUBLE_MULTI_ALIGN_ACTION_NAME, ConsensusDoubleMultiAlignAction.class)
                 .addSubcommand(MIF_TO_FASTQ_ACTION_NAME, MifToFastqAction.class)
                 .addSubcommand(DECONTAMINATE_ACTION_NAME, DecontaminateAction.class)
+                .addSubcommand(MIF_INFO_ACTION_NAME, MifInfoAction.class)
                 .addSubcommand(GENERATE_DOCS_ACTION_NAME, GenerateDocsAction.class)
                 .addSubcommand("help", HelpCommand.class);
         cmd.setSeparator(" ");

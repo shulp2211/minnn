@@ -143,14 +143,6 @@ public final class StatPositionsIO {
 
         long elapsedTime = System.currentTimeMillis() - startTime;
         report.append("\nProcessing time: ").append(nanoTimeToString(elapsedTime * 1000000)).append('\n');
-        if (correctedGroups.size() == 0)
-            report.append("Input MIF file is not corrected\n");
-        else
-            report.append("Groups ").append(correctedGroups).append(" in input MIF file are corrected\n");
-        if (sortedGroups.size() == 0)
-            report.append("Input MIF file is not sorted\n");
-        else
-            report.append("Groups ").append(sortedGroups).append(" in input MIF file are sorted\n");
         report.append("Checked ").append(totalReads).append(" reads, ").append(totalReads * groupList.size())
                 .append(" groups\n");
         long countedGroups = table.stream().mapToLong(line -> line.count).sum();
