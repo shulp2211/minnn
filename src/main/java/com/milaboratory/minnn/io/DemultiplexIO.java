@@ -46,7 +46,8 @@ import java.util.stream.Collectors;
 import static com.milaboratory.minnn.cli.CliUtils.floatFormat;
 import static com.milaboratory.minnn.cli.Defaults.*;
 import static com.milaboratory.minnn.io.ReportWriter.*;
-import static com.milaboratory.minnn.util.MinnnVersionInfo.getShortestVersionString;
+import static com.milaboratory.minnn.util.MinnnVersionInfo.*;
+import static com.milaboratory.minnn.util.MinnnVersionInfoType.*;
 import static com.milaboratory.minnn.util.SystemUtils.exitWithError;
 import static com.milaboratory.util.FormatUtils.nanoTimeToString;
 
@@ -118,7 +119,7 @@ public final class DemultiplexIO {
         StringBuilder report = new StringBuilder();
         LinkedHashMap<String, Object> jsonReportData = new LinkedHashMap<>();
 
-        reportFileHeader.append("MiNNN v").append(getShortestVersionString()).append('\n');
+        reportFileHeader.append("MiNNN v").append(getVersionString(VERSION_INFO_SHORTEST)).append('\n');
         reportFileHeader.append("Report for Demultiplex command:\n");
         if (inputFileName == null)
             reportFileHeader.append("Input is from stdin\n");
@@ -132,7 +133,7 @@ public final class DemultiplexIO {
         report.append("Processed ").append(totalReads).append(" reads, matched ").append(matchedReads)
                 .append(" reads (").append(floatFormat.format(percent)).append("%)\n");
 
-        jsonReportData.put("version", getShortestVersionString());
+        jsonReportData.put("version", getVersionString(VERSION_INFO_SHORTEST));
         jsonReportData.put("inputFileName", inputFileName);
         jsonReportData.put("prefix", prefix);
         jsonReportData.put("outputFilesNum", outputFileNames.size());

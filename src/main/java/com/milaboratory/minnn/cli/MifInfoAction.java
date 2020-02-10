@@ -72,8 +72,8 @@ public final class MifInfoAction extends ACommandWithOutput implements MiNNNComm
     private String inputFileName = null;
 
     @Option(description = "Don't count reads, display only info from header.",
-            names = "--no-reads-count")
-    private boolean noReadsCount;
+            names = {"-q", "--quick", "--no-reads-count"})
+    private boolean noReadsCount = false;
 
     @Option(description = REPORT,
             names = "--report")

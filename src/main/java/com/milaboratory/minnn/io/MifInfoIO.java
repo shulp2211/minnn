@@ -37,10 +37,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static com.milaboratory.minnn.cli.CliUtils.floatFormat;
-import static com.milaboratory.minnn.io.ReportWriter.humanReadableReport;
-import static com.milaboratory.minnn.io.ReportWriter.jsonReport;
-import static com.milaboratory.minnn.util.MinnnVersionInfo.getShortestVersionString;
+import static com.milaboratory.minnn.io.ReportWriter.*;
+import static com.milaboratory.minnn.util.MinnnVersionInfo.*;
+import static com.milaboratory.minnn.util.MinnnVersionInfoType.*;
 import static com.milaboratory.minnn.util.SystemUtils.exitWithError;
 import static com.milaboratory.util.FormatUtils.nanoTimeToString;
 
@@ -60,8 +59,8 @@ public final class MifInfoIO {
     public void go() {
         long startTime = System.currentTimeMillis();
         String mifVersionInfo;
-        long originalNumberOfReads;
         long numberOfReads = 0;
+        long originalNumberOfReads = 0;
         int numberOfTargets;
         List<String> allGroups;
         List<String> correctedGroups;
@@ -69,7 +68,6 @@ public final class MifInfoIO {
 
         try (MifReader reader = new MifReader(inputFileName)) {
             mifVersionInfo = reader.getMifVersionInfo();
-            originalNumberOfReads = reader.getOriginalNumberOfReads();
             MifHeader header = reader.getHeader();
             numberOfTargets = header.getNumberOfTargets();
             allGroups = reader.getGroupEdges().stream().map(GroupEdge::getGroupName).distinct()
@@ -79,12 +77,14 @@ public final class MifInfoIO {
             if (!noReadsCount) {
                 SmartProgressReporter.startProgressReport("Counting reads", reader, System.err);
                 numberOfReads = StreamSupport.stream(CUtils.it(reader).spliterator(), false).count();
+                reader.close();
+                originalNumberOfReads = reader.getOriginalNumberOfReads();
             }
         } catch (IOException e) {
             throw exitWithError(e.getMessage());
         }
 
-        String reportFileHeader = "MiNNN v" + getShortestVersionString() +
+        String reportFileHeader = "MiNNN v" + getVersionString(VERSION_INFO_SHORTEST) +
                 "\nReport for MifInfo command:\n" +
                 "Input file name: " + inputFileName + '\n';
         StringBuilder report = new StringBuilder();
@@ -109,7 +109,7 @@ public final class MifInfoIO {
         else
             report.append("Groups ").append(sortedGroups).append(" in file are sorted\n");
 
-        jsonReportData.put("version", getShortestVersionString());
+        jsonReportData.put("version", getVersionString(VERSION_INFO_SHORTEST));
         jsonReportData.put("inputFileName", inputFileName);
         jsonReportData.put("mifVersionInfo", mifVersionInfo);
         jsonReportData.put("numberOfTargets", numberOfTargets);
