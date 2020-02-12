@@ -34,10 +34,7 @@ import com.milaboratory.core.sequence.SequenceBuilder;
 import com.milaboratory.core.sequence.Wildcard;
 import com.milaboratory.minnn.outputconverter.ParsedRead;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static com.milaboratory.core.sequence.NucleotideSequence.ALPHABET;
 import static com.milaboratory.minnn.util.SystemUtils.exitWithError;
@@ -57,11 +54,8 @@ public final class WhitelistReadFilter implements ReadFilter {
             }
 
             if (seq.containsWildcards())
-                new WildcardSequence(seq).addAllCombinationsTo(sequences);
-
-            // Sequences with wildcards will also be added "as is",
-            // so exact match will also be detected
-
+                saveAllWildcardCombinations(seq);
+            // Sequences with wildcards will also be added "as is", so exact match will also be detected
             sequences.add(seq);
         }
     }
@@ -75,25 +69,22 @@ public final class WhitelistReadFilter implements ReadFilter {
             return notMatchedRead(parsedRead);
     }
 
-    protected static class WildcardSequence {
-        final Wildcard[] letters;
-
-        WildcardSequence(NucleotideSequence sequence) {
-            this.letters = new Wildcard[sequence.size()];
-            for (int i = 0; i < sequence.size(); i++)
-                letters[i] = ALPHABET.codeToWildcard(sequence.codeAt(i));
+    /**
+     * Adds all possible combinations of basic letters that this wildcard matches.
+     */
+    private void saveAllWildcardCombinations(NucleotideSequence seq) {
+        Wildcard[] letters = new Wildcard[seq.size()];
+        for (int i = 0; i < seq.size(); i++)
+            letters[i] = ALPHABET.codeToWildcard(seq.codeAt(i));
+        for (int[] tuple : Combinatorics.tuples(Arrays.stream(letters).mapToInt(Wildcard::basicSize).toArray())) {
+            SequenceBuilder<NucleotideSequence> builder = ALPHABET.createBuilder().ensureCapacity(letters.length);
+            for (int i = 0; i < tuple.length; i++)
+                builder.append(letters[i].getMatchingCode(tuple[i]));
+            sequences.add(builder.createAndDestroy());
         }
+    }
 
-        /**
-         * Adds all possible combinations of basic letters that this wildcard matches
-         */
-        void addAllCombinationsTo(Set<NucleotideSequence> sequences) {
-            for (int[] tuple : Combinatorics.tuples(Arrays.stream(letters).mapToInt(Wildcard::basicSize).toArray())) {
-                SequenceBuilder<NucleotideSequence> builder = ALPHABET.createBuilder().ensureCapacity(letters.length);
-                for (int i = 0; i < tuple.length; i++)
-                    builder.append(letters[i].getMatchingCode(tuple[i]));
-                sequences.add(builder.createAndDestroy());
-            }
-        }
+    protected Set<NucleotideSequence> getSequences() {
+        return sequences;
     }
 }
