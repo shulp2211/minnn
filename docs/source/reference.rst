@@ -19,7 +19,7 @@ extract
  --output: Output file in MIF format. If not specified, stdout will be used.
  --not-matched-output: Output file for not matched reads in MIF format. If not specified, not matched reads will not be written anywhere.
  --input-format: Input data format. Available options: FASTQ, MIF.
- --oriented: By default, if there are 2 or more reads, 2 last reads are checked in direct and reverse order. With this flag, only in direct order.
+ --try-reverse-order: If there are 2 or more reads, check 2 last reads in direct and reverse order.
  --match-score: Score for perfectly matched nucleotide.
  --mismatch-score: Score for mismatched nucleotide.
  --uppercase-mismatch-score: Score for mismatched uppercase nucleotide.

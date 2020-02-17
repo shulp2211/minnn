@@ -15,7 +15,7 @@ barcodes from :code:`data-R1.fastq` and :code:`data-R2.fastq` files and write re
 and :code:`barcodes-R2.fastq` files. Extract action writes output data in MIF format, so we use :ref:`mif2fastq`
 action to convert it to FASTQ format. Extracted barcodes will be in read description lines of output FASTQ files.
 
-**Example 1.** Barcode is first 8 nucleotides of the sequence:
+**Example 1.** Barcode is first 8 nucleotides of :code:`R1`:
 
 .. code-block:: text
 
@@ -23,23 +23,24 @@ action to convert it to FASTQ format. Extracted barcodes will be in read descrip
    minnn mif2fastq --input extracted.mif --group R1=barcodes-R1.fastq --group R2=barcodes-R2.fastq
 
 **Example 2.** There are 2 barcodes, first starting with :code:`ATT` and ending with :code:`AAA`, with length 9,
-and second starting with :code:`GCC` and ending with :code:`TTT`, with length 12. Reads are oriented (swapping of
-:code:`R1` and :code:`R2` is not allowed), and first barcode is always in :code:`R1` and second in :code:`R2`:
+and second starting with :code:`GCC` and ending with :code:`TTT`, with length 12. Swapping of :code:`R1` and :code:`R2`
+is not allowed, first barcode is always in :code:`R1` and second in :code:`R2`:
 
 .. code-block:: text
 
-   minnn extract --pattern "(B1:ATTNNNAAA)\(B2:GCCN{6}TTT)" --oriented --input data-R1.fastq data-R2.fastq --output extracted.mif
+   minnn extract --pattern "(B1:ATTNNNAAA)\(B2:GCCN{6}TTT)" --input data-R1.fastq data-R2.fastq --output extracted.mif
    minnn mif2fastq --input extracted.mif --group R1=barcodes-R1.fastq --group R2=barcodes-R2.fastq
 
 **Example 3.** Good sequence starts with :code:`ATTAGACA`, and first 5 nucleotides can be possibly cut; and if sequence
 starts with something else, we want to skip it. First barcode with length 5 is immediately after :code:`ATTAGACA`,
 then there must be :code:`GGC` and any 5 nucleotides, and then the second barcode starting with :code:`TTT` with
-length 12. Also, good sequence must end with :code:`TTAGC`, and last 2 nucleotides can be possibly cut. And we want
-to allow substitutions and indels (but with score penalties) inside sequences:
+length 12. Also, good sequence must end with :code:`TTAGC`, and last 2 nucleotides can be possibly cut. :code:`R1` and
+:code:`R2` can be in reverse order in some reads. And we want to allow substitutions and indels (but with score
+penalties) inside sequences:
 
 .. code-block:: text
 
-   minnn extract --pattern "^<{5}attagaca(B1:n{5})gccn{5}(B2:tttn{9})+ttagc>>$\*" --score-threshold -25 --input data-R1.fastq data-R2.fastq --output extracted.mif
+   minnn extract --pattern "^<{5}attagaca(B1:n{5})gccn{5}(B2:tttn{9})+ttagc>>$\*" --try-reverse-order --score-threshold -25 --input data-R1.fastq data-R2.fastq --output extracted.mif
    minnn mif2fastq --input extracted.mif --group R1=barcodes-R1.fastq --group R2=barcodes-R2.fastq
 
 .. _demultiplexing:

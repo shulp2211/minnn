@@ -93,7 +93,7 @@ public class DemultiplexActionTest {
         }};
 
         exec("extract -f --input-format MIF --input " + startFile + " --output " + inputFile
-                + " --pattern \"(G1:NNN)&(G2:AANA)\\(G3:ntt)&(G4:nnnn)\""
+                + " --pattern \"(G1:NNN)&(G2:AANA)\\(G3:ntt)&(G4:nnnn)\" --try-reverse-order"
                 + " --threads 5 --mismatch-score -9 --gap-score -10 --single-overlap-penalty -10");
         Arrays.stream(getOutputFiles()).map(File::delete).forEach(Assert::assertTrue);
 
