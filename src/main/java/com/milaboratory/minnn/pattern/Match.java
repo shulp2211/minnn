@@ -154,19 +154,19 @@ public class Match {
     }
 
     public static Match read(PrimitivI input) {
-        int numberOfPatterns = input.readVarIntZigZag();
-        long score = input.readVarLongZigZag();
+        int numberOfPatterns = input.readInt();
+        long score = input.readLong();
         ArrayList<MatchedGroupEdge> matchedGroupEdges = new ArrayList<>();
-        int matchedGroupEdgesNum = input.readVarIntZigZag();
+        int matchedGroupEdgesNum = input.readInt();
         for (int i = 0; i < matchedGroupEdgesNum; i++)
             matchedGroupEdges.add(input.readObject(MatchedGroupEdge.class));
         return new Match(numberOfPatterns, score, matchedGroupEdges);
     }
 
     public static void write(PrimitivO output, Match object) {
-        output.writeVarIntZigZag(object.getNumberOfTargets());
-        output.writeVarLongZigZag(object.getScore());
-        output.writeVarIntZigZag(object.getMatchedGroupEdges().size());
+        output.writeInt(object.getNumberOfTargets());
+        output.writeLong(object.getScore());
+        output.writeInt(object.getMatchedGroupEdges().size());
         for (MatchedGroupEdge matchedGroupEdge : object.getMatchedGroupEdges())
             output.writeObject(matchedGroupEdge);
     }
