@@ -75,7 +75,7 @@ public final class PerformanceTestIO {
             mifReader = reader;
             SmartProgressReporter.startProgressReport("Processing", reader, System.err);
             OutputPort<ParsedRead> bufferedReaderPort = CUtils.buffered(reader, 4 * 10000);
-            OutputPort<SequenceRead> sequenceReads = new SequenceReadOutputPort(bufferedReaderPort);
+            OutputPort<SequenceRead> sequenceReads = new DummySequenceReadOutputPort(bufferedReaderPort);
             OutputPort<SequenceRead> bufferedSequenceReads = CUtils.buffered(sequenceReads, 4 * 10000);
             for (SequenceRead sequenceRead : CUtils.it(bufferedSequenceReads)) {
                 writer.write(sequenceRead);
@@ -260,6 +260,25 @@ public final class PerformanceTestIO {
                 return null;
             else
                 return parsedRead.toSequenceRead(false, mifReader.groupEdges, "R1");
+        }
+    }
+
+    private class DummySequenceReadOutputPort implements OutputPort<SequenceRead> {
+        final OutputPort<ParsedRead> bufferedReader;
+        SequenceRead firstRead = null;
+
+        DummySequenceReadOutputPort(OutputPort<ParsedRead> bufferedReader) {
+            this.bufferedReader = bufferedReader;
+        }
+
+        @Override
+        public SequenceRead take() {
+            ParsedRead parsedRead = bufferedReader.take();
+            if (parsedRead == null)
+                return null;
+            else if (firstRead == null)
+                firstRead = parsedRead.toSequenceRead(false, mifReader.groupEdges, "R1");
+            return firstRead;
         }
     }
 }
