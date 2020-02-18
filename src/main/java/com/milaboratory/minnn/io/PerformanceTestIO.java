@@ -29,6 +29,7 @@
 package com.milaboratory.minnn.io;
 
 import cc.redberry.pipe.CUtils;
+import cc.redberry.pipe.OutputPort;
 import cc.redberry.pipe.OutputPortCloseable;
 import com.milaboratory.cli.PipelineConfiguration;
 import com.milaboratory.cli.PipelineConfigurationWriter;
@@ -58,6 +59,7 @@ import static java.lang.Double.NaN;
 public final class PerformanceTestIO {
     private final String inputFileName;
     private final String outputFileName;
+    private MifReaderForTest mifReader;
 
     public PerformanceTestIO(String inputFileName, String outputFileName) {
         this.inputFileName = inputFileName;
@@ -70,9 +72,12 @@ public final class PerformanceTestIO {
         long totalReads = 0;
         try (MifReaderForTest reader = new MifReaderForTest();
              SequenceWriter writer = new SingleFastqWriter(outputFileName)) {
+            mifReader = reader;
             SmartProgressReporter.startProgressReport("Processing", reader, System.err);
-            OutputPortCloseable<SequenceRead> sequenceReads = new SequenceReadOutputPort(reader);
-            for (SequenceRead sequenceRead : CUtils.it(sequenceReads)) {
+            OutputPort<ParsedRead> bufferedReaderPort = CUtils.buffered(reader, 4 * 10000);
+            OutputPort<SequenceRead> sequenceReads = new SequenceReadOutputPort(bufferedReaderPort);
+            OutputPort<SequenceRead> bufferedSequenceReads = CUtils.buffered(sequenceReads, 4 * 10000);
+            for (SequenceRead sequenceRead : CUtils.it(bufferedSequenceReads)) {
                 writer.write(sequenceRead);
             }
         } catch (IOException e) {
@@ -241,25 +246,20 @@ public final class PerformanceTestIO {
         }
     }
 
-    private class SequenceReadOutputPort implements OutputPortCloseable<SequenceRead> {
-        final MifReaderForTest reader;
+    private class SequenceReadOutputPort implements OutputPort<SequenceRead> {
+        final OutputPort<ParsedRead> bufferedReader;
 
-        SequenceReadOutputPort(MifReaderForTest reader) {
-            this.reader = reader;
+        SequenceReadOutputPort(OutputPort<ParsedRead> bufferedReader) {
+            this.bufferedReader = bufferedReader;
         }
 
         @Override
         public SequenceRead take() {
-            ParsedRead parsedRead = reader.take();
+            ParsedRead parsedRead = bufferedReader.take();
             if (parsedRead == null)
                 return null;
             else
-                return parsedRead.toSequenceRead(false, reader.groupEdges, "R1");
-        }
-
-        @Override
-        public void close() {
-            reader.close();
+                return parsedRead.toSequenceRead(false, mifReader.groupEdges, "R1");
         }
     }
 }
