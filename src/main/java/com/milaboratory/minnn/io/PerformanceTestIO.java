@@ -103,6 +103,7 @@ public final class PerformanceTestIO {
     private class MifReaderForTest extends PipelineConfigurationReaderMiNNN
             implements OutputPortCloseable<ParsedRead>, CanReportProgress {
         final int BUFFER_SIZE = 1 << 20;
+        final DataInput dataInput;
         final PrimitivI input;
         final CountingInputStream countingInputStream;
         final long size;
@@ -114,21 +115,25 @@ public final class PerformanceTestIO {
         ArrayList<String> correctedGroups = new ArrayList<>();
         ArrayList<String> sortedGroups = new ArrayList<>();
         ArrayList<GroupEdge> groupEdges = new ArrayList<>();
-        long firstReadSerializedLength = -1;
+        int firstReadSerializedLength = -1;
         long originalNumberOfReads = -1;
         String mifVersionInfo;
+
+        ParsedRead firstRead = null;
+        byte[] dummyBuffer = null;
 
         public MifReaderForTest() throws IOException {
             File file = new File(inputFileName);
             CompressionType ct = CompressionType.detectCompressionType(file);
             this.countingInputStream = new CountingInputStream(new FileInputStream(file));
             if (ct == CompressionType.None) {
-                input = new PrimitivI(new BufferedInputStream(this.countingInputStream, BUFFER_SIZE));
+                dataInput = new DataInputStream(new BufferedInputStream(this.countingInputStream, BUFFER_SIZE));
                 size = file.length();
             } else {
-                input = new PrimitivI(ct.createInputStream(this.countingInputStream, BUFFER_SIZE));
+                dataInput = new DataInputStream(ct.createInputStream(this.countingInputStream, BUFFER_SIZE));
                 size = -1;
             }
+            input = new PrimitivI(dataInput);
             readHeader();
         }
 
@@ -163,7 +168,7 @@ public final class PerformanceTestIO {
         @Override
         public synchronized void close() {
             if (!closed) {
-                originalNumberOfReads = finished ? input.readLong() : parsedReadsTaken;
+                originalNumberOfReads = parsedReadsTaken;
                 input.close();
                 finished = true;
                 closed = true;
@@ -182,15 +187,20 @@ public final class PerformanceTestIO {
         public synchronized ParsedRead take() {
             if (finished)
                 return null;
-            ParsedRead parsedRead = input.readObject(ParsedRead.class);
-            if (parsedRead == null)
-                finished = true;
-            else {
-                if (firstReadSerializedLength == -1)
-                    calculateFirstReadLength(parsedRead);
-                parsedReadsTaken++;
+            if (firstRead == null) {
+                firstRead = input.readObject(ParsedRead.class);
+                calculateFirstReadLength(firstRead);
+            } else {
+                dummyBuffer = new byte[firstReadSerializedLength];
+                try {
+                    dataInput.readFully(dummyBuffer);
+                } catch (IOException e) {
+                    finished = true;
+                    return null;
+                }
             }
-            return parsedRead;
+            parsedReadsTaken++;
+            return firstRead;
         }
 
         @Override
