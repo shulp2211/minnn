@@ -31,12 +31,19 @@ package com.milaboratory.minnn.io;
 import cc.redberry.pipe.CUtils;
 import cc.redberry.pipe.OutputPort;
 import cc.redberry.pipe.OutputPortCloseable;
+import cc.redberry.pipe.Processor;
+import cc.redberry.pipe.blocks.Merger;
+import cc.redberry.pipe.blocks.ParallelProcessor;
+import cc.redberry.pipe.util.Chunk;
+import cc.redberry.pipe.util.OrderedOutputPort;
 import com.milaboratory.cli.PipelineConfiguration;
 import com.milaboratory.cli.PipelineConfigurationWriter;
 import com.milaboratory.core.io.CompressionType;
 import com.milaboratory.core.io.sequence.SequenceRead;
 import com.milaboratory.core.io.sequence.SequenceWriter;
+import com.milaboratory.core.io.sequence.SingleReadImpl;
 import com.milaboratory.core.io.sequence.fastq.SingleFastqWriter;
+import com.milaboratory.core.sequence.NSequenceWithQuality;
 import com.milaboratory.minnn.cli.PipelineConfigurationReaderMiNNN;
 import com.milaboratory.minnn.outputconverter.ParsedRead;
 import com.milaboratory.minnn.pattern.GroupEdge;
@@ -74,11 +81,15 @@ public final class PerformanceTestIO {
              SequenceWriter writer = new SingleFastqWriter(outputFileName)) {
             mifReader = reader;
             SmartProgressReporter.startProgressReport("Processing", reader, System.err);
-            OutputPort<ParsedRead> bufferedReaderPort = CUtils.buffered(reader, 4 * 10000);
-            OutputPort<SequenceRead> sequenceReads = new DummySequenceReadOutputPort(bufferedReaderPort);
-            OutputPort<SequenceRead> bufferedSequenceReads = CUtils.buffered(sequenceReads, 4 * 10000);
-            for (SequenceRead sequenceRead : CUtils.it(bufferedSequenceReads)) {
+            Merger<Chunk<ParsedRead>> bufferedReaderPort = CUtils.buffered(CUtils.chunked(reader, 4 * 20000),
+                    4 * 10000);
+            OutputPort<Chunk<SequenceRead>> sequenceReads = new ParallelProcessor<>(bufferedReaderPort,
+                    CUtils.chunked(new DummyProcessor()), 1);
+            OrderedOutputPort<SequenceRead> orderedReadsPort = new OrderedOutputPort<>(CUtils.unchunked(sequenceReads),
+                    SequenceRead::getId);
+            for (SequenceRead sequenceRead : CUtils.it(orderedReadsPort)) {
                 writer.write(sequenceRead);
+                totalReads++;
             }
         } catch (IOException e) {
             throw exitWithError(e.getMessage());
@@ -279,6 +290,25 @@ public final class PerformanceTestIO {
             else if (firstRead == null)
                 firstRead = parsedRead.toSequenceRead(false, mifReader.groupEdges, "R1");
             return firstRead;
+        }
+    }
+
+    private class DummyProcessor implements Processor<ParsedRead, SequenceRead> {
+        long id = 0;
+        NSequenceWithQuality seq = null;
+        String description = null;
+
+        @Override
+        public SequenceRead process(ParsedRead parsedRead) {
+            if (parsedRead == null)
+                return null;
+            else if (seq == null) {
+                SingleReadImpl firstRead = (SingleReadImpl)(parsedRead.toSequenceRead(false,
+                        mifReader.groupEdges, "R1"));
+                seq = firstRead.getData();
+                description = firstRead.getDescription();
+            }
+            return new SingleReadImpl(id++, seq, description);
         }
     }
 }
