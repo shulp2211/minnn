@@ -84,7 +84,7 @@ public final class PerformanceTestIO {
             Merger<Chunk<ParsedRead>> bufferedReaderPort = CUtils.buffered(CUtils.chunked(reader, 4 * 20000),
                     4 * 10000);
             OutputPort<Chunk<SequenceRead>> sequenceReads = new ParallelProcessor<>(bufferedReaderPort,
-                    CUtils.chunked(new DummyProcessor()), 1);
+                    CUtils.chunked(new ReadProcessor()), 1);
             OrderedOutputPort<SequenceRead> orderedReadsPort = new OrderedOutputPort<>(CUtils.unchunked(sequenceReads),
                     SequenceRead::getId);
             for (SequenceRead sequenceRead : CUtils.it(orderedReadsPort)) {
@@ -290,6 +290,21 @@ public final class PerformanceTestIO {
             else if (firstRead == null)
                 firstRead = parsedRead.toSequenceRead(false, mifReader.groupEdges, "R1");
             return firstRead;
+        }
+    }
+
+    private class ReadProcessor implements Processor<ParsedRead, SequenceRead> {
+        long id = 0;
+
+        @Override
+        public SequenceRead process(ParsedRead parsedRead) {
+            if (parsedRead == null)
+                return null;
+            SingleReadImpl firstRead = (SingleReadImpl)(parsedRead.toSequenceRead(false,
+                    mifReader.groupEdges, "R1"));
+            NSequenceWithQuality seq = firstRead.getData();
+            String description = firstRead.getDescription();
+            return new SingleReadImpl(id++, seq, description);
         }
     }
 
