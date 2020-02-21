@@ -114,7 +114,7 @@ public final class PerformanceTestIO {
         ArrayList<String> correctedGroups = new ArrayList<>();
         ArrayList<String> sortedGroups = new ArrayList<>();
         ArrayList<GroupEdge> groupEdges = new ArrayList<>();
-        long firstReadSerializedLength = -1;
+        int firstReadSerializedLength = -1;
         long originalNumberOfReads = -1;
         String mifVersionInfo;
 
@@ -163,7 +163,7 @@ public final class PerformanceTestIO {
         @Override
         public synchronized void close() {
             if (!closed) {
-                originalNumberOfReads = finished ? input.readLong() : parsedReadsTaken;
+                originalNumberOfReads = parsedReadsTaken;
                 input.close();
                 finished = true;
                 closed = true;
