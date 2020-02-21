@@ -49,6 +49,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static com.milaboratory.minnn.cli.CliUtils.floatFormat;
 import static com.milaboratory.minnn.cli.Defaults.BUILTIN_READ_GROUPS_NUM;
@@ -341,9 +342,50 @@ public final class ReadProcessor {
     private class ReadParserProcessor implements Processor<IndexedSequenceRead, ParsedRead> {
         @Override
         public ParsedRead process(IndexedSequenceRead input) {
+            Match bestMatch = null;
+            boolean reverseMatch = false;
+
+            if (tryReverseOrder) {
+                NSequenceWithQuality[] sequences = StreamSupport.stream(input.sequenceRead.spliterator(), false)
+                        .map(SingleRead::getData).toArray(NSequenceWithQuality[]::new);
+                int numberOfReads = sequences.length;
+                if (numberOfReads == 1)
+                    bestMatch = pattern.match(sequences[0]).getBestMatch(fairSorting);
+                else {
+                    NSequenceWithQuality[] sequencesWithSwap = sequences.clone();
+                    sequencesWithSwap[numberOfReads - 2] = sequences[numberOfReads - 1];
+                    sequencesWithSwap[numberOfReads - 1] = sequences[numberOfReads - 2];
+                    MultiNSequenceWithQualityImpl notSwappedTarget = new MultiNSequenceWithQualityImpl(sequences);
+                    MultiNSequenceWithQualityImpl swappedTarget = new MultiNSequenceWithQualityImpl(sequencesWithSwap);
+                    Match notSwappedMatch = pattern.match(notSwappedTarget).getBestMatch(fairSorting);
+                    Match swappedMatch = pattern.match(swappedTarget).getBestMatch(fairSorting);
+                    if (notSwappedMatch == null) {
+                        if (swappedMatch != null) {
+                            bestMatch = swappedMatch;
+                            reverseMatch = true;
+                        }
+                    } else {
+                        if (swappedMatch != null) {
+                            if (swappedMatch.getScore() > notSwappedMatch.getScore()) {
+                                bestMatch = swappedMatch;
+                                reverseMatch = true;
+                            } else
+                                bestMatch = notSwappedMatch;
+                        } else
+                            bestMatch = notSwappedMatch;
+                    }
+                }
+            } else {
+                MultiNSequenceWithQualityImpl target = new MultiNSequenceWithQualityImpl(StreamSupport.stream(
+                        input.sequenceRead.spliterator(), false).map(SingleRead::getData)
+                        .toArray(NSequenceWithQuality[]::new));
+                bestMatch = pattern.match(target).getBestMatch(fairSorting);
+            }
+
             int numberOfTargetsOverride = pattern.getConfiguration().defaultGroupsOverride
                     ? outputNumberOfTargets : -1;
-            return new ParsedRead(input.sequenceRead, false, numberOfTargetsOverride, null,
+            return new ParsedRead(input.sequenceRead, reverseMatch, numberOfTargetsOverride,
+                    (bestMatch == null) ? null : descriptionGroups.addDescriptionGroups(bestMatch, input.sequenceRead),
                     0, input.index);
         }
     }
