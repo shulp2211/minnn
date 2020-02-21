@@ -95,7 +95,7 @@ public final class MatchedGroupEdge extends MatchedItem {
 
     public static MatchedGroupEdge read(PrimitivI input) {
         GroupEdge groupEdge = input.readObject(GroupEdge.class);
-        int position = input.readInt();
+        int position = input.readVarIntZigZag();
         NSequenceWithQuality target = input.readObject(NSequenceWithQuality.class);
         byte targetId = input.readByte();
         NSequenceWithQuality valueOverride = input.readObject(NSequenceWithQuality.class);
@@ -106,7 +106,7 @@ public final class MatchedGroupEdge extends MatchedItem {
 
     public static void write(PrimitivO output, MatchedGroupEdge object) {
         output.writeObject(object.getGroupEdge());
-        output.writeInt(object.getPosition());
+        output.writeVarIntZigZag(object.getPosition());
         output.writeObject(object.getTarget());
         output.writeByte(object.getTargetId());
         output.writeObject(object.getValueOverride());

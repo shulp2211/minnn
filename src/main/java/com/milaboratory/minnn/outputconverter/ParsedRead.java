@@ -382,17 +382,17 @@ public final class ParsedRead {
     public static ParsedRead read(PrimitivI input) {
         SequenceRead originalRead = input.readObject(SequenceRead.class);
         boolean reverseMatch = input.readBoolean();
-        int numberOfTargetsOverride = input.readInt();
+        int numberOfTargetsOverride = input.readVarIntZigZag();
         Match bestMatch = input.readObject(Match.class);
-        int consensusReads = input.readInt();
+        int consensusReads = input.readVarIntZigZag();
         return new ParsedRead(originalRead, reverseMatch, numberOfTargetsOverride, bestMatch, consensusReads);
     }
 
     public static void write(PrimitivO output, ParsedRead object) {
         output.writeObject(object.getOriginalRead());
         output.writeBoolean(object.isReverseMatch());
-        output.writeInt(object.getRawNumberOfTargetsOverride());
+        output.writeVarIntZigZag(object.getRawNumberOfTargetsOverride());
         output.writeObject(object.getBestMatch());
-        output.writeInt(object.getConsensusReads());
+        output.writeVarIntZigZag(object.getConsensusReads());
     }
 }
