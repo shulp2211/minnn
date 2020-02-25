@@ -107,6 +107,9 @@ public final class DemultiplexAction extends ACommandWithSmartOverwrite implemen
                         return;
                     for (String f : existingFiles)
                         handleExistenceOfOutputFile(f);
+                    if (isSkipExecution() && !verbose && (getOutputFiles().size() > 1))
+                        warn("Skipping " + DEMULTIPLEX_ACTION_NAME + ". All output files already exist and contain "
+                                + "correct binary data obtained from the specified input file.");
                 } else
                     handleExistenceOfOutputFile(existingFiles.get(0));
             }
