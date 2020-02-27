@@ -47,7 +47,7 @@ Extract action uses internal heuristics to speed up the search and reduce the nu
 using pattern sequences and logical operators. This can produce wrong results in rare cases. There is the option
 :code:`--fair-sorting` to always do full search, but this is much slower than default unfair sorting.
 
-:code:`--threads` option sets the number of threads for pattern matching. It is recommended to set it equal to the
+:code:`--threads` option sets the number of threads for pattern matching. By default, it is equal to available
 number of CPU cores.
 
 :code:`--not-matched-output` argument allows to write not matched reads to the separate MIF file. By default (if this
