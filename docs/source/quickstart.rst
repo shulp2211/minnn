@@ -17,11 +17,18 @@ following actions:
    Note that extract action will check all reads in order specified in :code:`--input` argument. It differs from
    behavior of old versions of MiNNN that also tried swapped :code:`R1` and :code:`R2` by default. Details about
    command line arguments and syntax can be found in :ref:`extract` and :ref:`pattern_syntax` sections.
+
+#. Sort reads by barcode values.
+
+   .. code-block:: text
+
+      minnn sort --input extracted.mif --output extracted_sorted.mif --groups SB1 SB2
+
 #. Correct mismatches and indels in barcodes.
 
    .. code-block:: text
 
-      minnn correct --input extracted.mif --output corrected.mif --groups SB1 SB2
+      minnn correct --input extracted_sorted.mif --output corrected.mif --groups SB1 SB2
 
 #. Filter out garbage reads.
 
@@ -41,13 +48,13 @@ following actions:
 
    .. code-block:: text
 
-      minnn sort --input filtered.mif --output sorted.mif --groups SB1 SB2
+      minnn sort --input filtered.mif --output filtered_sorted.mif --groups SB1 SB2
 
 #. Calculate consensuses.
 
    .. code-block:: text
 
-      minnn consensus --input sorted.mif --output consensus.mif --max-consensuses-per-cluster 1 --groups SB1 SB2
+      minnn consensus --input filtered_sorted.mif --output consensus.mif --max-consensuses-per-cluster 1 --groups SB1 SB2
 
 #. Export consensuses to FASTQ files.
 
